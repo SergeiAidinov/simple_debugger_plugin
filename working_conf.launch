@@ -69,7 +69,7 @@
         <setEntry value="jakarta.xml.bind-api@default:default"/>
         <setEntry value="jakarta.xml.bind@default:default"/>
         <setEntry value="javassist@default:default"/>
-        <setEntry value="javax.activation@default:default"/>
+        <setEntry value="javax.activation*1.2.2.v20221203-1659@default:default"/>
         <setEntry value="javax.xml.jre@default:default"/>
         <setEntry value="jaxen@default:default"/>
         <setEntry value="json@default:default"/>

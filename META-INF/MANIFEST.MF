@@ -1,6 +1,7 @@
 Bundle-ManifestVersion: 2
 Bundle-Name: AppLifeCycle Minimal
-Bundle-SymbolicName: plugin_lifecycle;singleton:=true
-Bundle-Version: 1.0.0
+Bundle-SymbolicName: com.example.app.lifecycle;singleton:=true
 Require-Bundle: org.eclipse.ui,
- org.eclipse.core.runtime
+ org.eclipse.core.runtime,
+ org.eclipse.debug.core
+Bundle-Version: 1.0.0
