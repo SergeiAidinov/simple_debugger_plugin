@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="ASCII"?>
-<fragment:ModelFragments xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:basic="http://www.eclipse.org/ui/2010/UIModel/application/descriptor/basic" xmlns:fragment="http://www.eclipse.org/ui/2010/UIModel/fragment" xmi:id="_BxaXACerEeWxCPrV0pAZQQ">
-  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_EI7oACerEeWxCPrV0pAZQQ" featurename="descriptors" parentElementId="xpath:/">
-    <elements xsi:type="basic:PartDescriptor" xmi:id="_KMklcCerEeWxCPrV0pAZQQ" elementId="test.partDescFragment.ASampleE4View" label="Sample View" iconURI="platform:/plugin/com.example.app.lifecycle/icons/Sample.png" tooltip="" category="Sample Category" closeable="true" 
-      contributionURI="bundleclass://com.example.app.lifecycle/com.example.app.lifecycle.parts.SampleView"> <tags>View</tags>
-      <tags>categoryTag:Sample Category</tags>
-    </elements>
-  </fragments>
-</fragment:ModelFragments>
+<application:Application xmi:version="2.0" 
+    xmlns:xmi="http://www.omg.org/XMI" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns:application="http://www.eclipse.org/ui/2010/UIModel/application"
+    xmlns:menu="http://www.eclipse.org/ui/2010/UIModel/application/ui/menu"
+    xmlns:advanced="http://www.eclipse.org/ui/2010/UIModel/application/ui/advanced"
+    xmi:id="_uK_9gJ7pEee-s-Vv4s9x8A" 
+    elementId="com.example.app.lifecycle.application"
+    lifeCycleURI="bundleclass://com.example.app.lifecycle/com.example.app.lifecycle.AppLifeCycle"> <children xsi:type="application:MWindow" xmi:id="_uK_9gZ7pEee-s-Vv4s9x8A" elementId="MainWindow" label="My e4 LifeCycle App">
+    
+    <children xsi:type="advanced:MPartSashContainer" xmi:id="_N6yv8J7sEee-s-Vv4s9x8A">
+      <children xsi:type="advanced:MPartStack" xmi:id="_N6yv8Z7sEee-s-Vv4s9x8A" elementId="DefaultStack">
+        <children xsi:type="basic:MPlaceholder" xmi:id="_N6yv8p7sEee-s-Vv4s9x8A" elementId="test.partDescFragment.ASampleE4View"/>
+      </children>
+    </children>
+    
+  </children>
+  
+</application:Application>

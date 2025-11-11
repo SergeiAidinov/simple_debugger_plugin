@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?eclipse version="3.4"?>
 <plugin>
+<extension point="org.eclipse.ui.startup">
+   <startup class="com.example.app.lifecycle.AppLifeCycle"/>
+</extension>
 
-   <extension
-         id="com.example.app.lifecycle.fragment"
-         point="org.eclipse.e4.workbench.model">
-      <fragment
-            apply="notexists"
-            uri="fragment.e4xmi">
-      </fragment>
-   </extension>
-
+    <!--<extension
+          point="org.eclipse.e4.workbench.lifecycle">
+        <lifeCycle
+              uri="bundleclass://com.example.app.lifecycle/com.example.app.lifecycle.AppLifeCycle">
+        </lifeCycle>
+    </extension>-->
 </plugin>
