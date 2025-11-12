@@ -1,35 +1,28 @@
-package com.gmail.aydinov.sergey.plugin_lifecycle;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointListener;
-import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.model.IBreakpoint;
-import org.eclipse.ui.IStartup;
-import org.eclipse.ui.PlatformUI;
 
-public class AppLifeCycle implements IStartup {
-
-	private IBreakpointManager iBreakpointManager;
+public class BreakePointListener implements IBreakpointListener {
 
 	@Override
-	public void earlyStartup() {
-		System.out.println("AppLifeCycle: earlyStartup() called!");
-		try {
-			Thread.currentThread().sleep(5000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		};
-			
-			iBreakpointManager = DebugPlugin.getDefault().getBreakpointManager();
-			iBreakpointManager.setEnabled(true);
-			BreakePointListener breakePointListener = new BreakePointListener();
-			iBreakpointManager.addBreakpointListener(breakePointListener);
+	public void breakpointAdded(IBreakpoint breakpoint) {
+		printBreakpoint(breakpoint, "ADDED");
 		
 	}
 
+	@Override
+	public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
+		printBreakpoint(breakpoint, "REMOVED");	
+	}
+
+	@Override
+	public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
+		printBreakpoint(breakpoint, "CHANGED");		
+	}
+	
 	private void printBreakpoint(IBreakpoint bp, String action) {
 		try {
 			IResource resource = bp.getMarker().getResource();
@@ -46,4 +39,6 @@ public class AppLifeCycle implements IStartup {
 			e.printStackTrace();
 		}
 	}
+
+
 }
