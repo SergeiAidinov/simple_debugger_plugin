@@ -10,7 +10,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 import java.util.stream.Collectors;
+
+import org.eclipse.e4.ui.internal.workbench.swt.handlers.ThemeUtil;
 
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
@@ -37,33 +41,31 @@ import com.sun.jdi.request.EventRequestManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.exception.VirtualMachineConfigurationException;
 
-public class SimpleDebuggerWorkFlow  {
+public class SimpleDebuggerWorkFlow {
+
+	private static SimpleDebuggerWorkFlow instance = null;
 
 	private VirtualMachine virtualMachine = null;
 	private final Map<ReferenceType, TargetApplicationElementRepresentation> referencesAtClassesAndInterfaces = new HashMap<>();
 	private String host;
 	private Integer port;
 	private Method method = null;
-	private static final Map<SimpleDebuggerWorkFlowIdentifier, SimpleDebuggerWorkFlow> CACHE = new WeakHashMap<>();
+	// private static final Map<SimpleDebuggerWorkFlowIdentifier,
+	// SimpleDebuggerWorkFlow> CACHE = new WeakHashMap<>();
 
 	private SimpleDebuggerWorkFlow(String host, int port) throws IllegalStateException {
 		this.host = host;
 		this.port = port;
-		try {
-			configureVirtualMachine();
-		} catch (IOException e) {
-			throw new IllegalStateException();
-		}
-		createReferencesToClassesOfTargetApplication();
 	}
 
-	public static synchronized SimpleDebuggerWorkFlow instanceOfHostAndPort(String host, Integer port) {
-		SimpleDebuggerWorkFlowIdentifier simpleDebuggerWorkFlowidentifier = new SimpleDebuggerWorkFlowIdentifier(host,
-				port);
-		return CACHE.computeIfAbsent(simpleDebuggerWorkFlowidentifier, k -> new SimpleDebuggerWorkFlow(host, port));
+	public static SimpleDebuggerWorkFlow instance(String host, int port) {
+		if (Objects.isNull(instance))
+			instance = new SimpleDebuggerWorkFlow(host, port);
+		return instance;
 	}
-	
+
 	public void debug() throws IOException, AbsentInformationException {
 		EventRequestManager eventRequestManager = virtualMachine.eventRequestManager();
 		System.out.println("referencesAtClassesAndInterfaces.size: " + referencesAtClassesAndInterfaces.size());
@@ -83,8 +85,8 @@ public class SimpleDebuggerWorkFlow  {
 		 */
 		Optional<Location> loc = findLocation(method, 29);
 		loc.ifPresent(l -> {
-		    BreakpointRequest bp = eventRequestManager.createBreakpointRequest(l);
-		    bp.enable();
+			BreakpointRequest bp = eventRequestManager.createBreakpointRequest(l);
+			bp.enable();
 		});
 
 		EventQueue queue = virtualMachine.eventQueue();
@@ -115,21 +117,20 @@ public class SimpleDebuggerWorkFlow  {
 			}
 		}
 	}
-	
-	public Optional<Location> findLocation(Method method, int sourceLine) {
-	    try {
-	        for (Location l : method.allLineLocations()) {
-	            if (l.lineNumber() == sourceLine) {
-	                return Optional.of(l);
-	            }
-	        }
-	    } catch (AbsentInformationException e) {
-	        // в этом случае исходники не доступны: метод скомпилирован без -g
-	        return Optional.empty();
-	    }
-	    return Optional.empty();
-	}
 
+	public Optional<Location> findLocation(Method method, int sourceLine) {
+		try {
+			for (Location l : method.allLineLocations()) {
+				if (l.lineNumber() == sourceLine) {
+					return Optional.of(l);
+				}
+			}
+		} catch (AbsentInformationException e) {
+			// в этом случае исходники не доступны: метод скомпилирован без -g
+			return Optional.empty();
+		}
+		return Optional.empty();
+	}
 
 	public List<? extends TargetApplicationElementRepresentation> getTargetApplicationStatus() {
 		return referencesAtClassesAndInterfaces.values().stream().collect(Collectors.toList());
@@ -168,26 +169,48 @@ public class SimpleDebuggerWorkFlow  {
 		System.out.println("referencesAtClasses: " + referencesAtClassesAndInterfaces.size());
 	}
 
-	private void configureVirtualMachine() throws IOException {
-		VirtualMachineManager virtualMachineManager = Bootstrap.virtualMachineManager();
-		AttachingConnector connector = virtualMachineManager.attachingConnectors().stream()
-				.filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
-		Map<String, Connector.Argument> arguments = connector.defaultArguments();
-		arguments.get("hostname").setValue(host);
-		arguments.get("port").setValue(String.valueOf(port));
-		System.out.println("Connecting to " + host + ":" + port + "...");
-		VirtualMachine virtualMachine = null;
+	public boolean configureVirtualMachine() {
 		try {
-			virtualMachine = connector.attach(arguments);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (IllegalConnectorArgumentsException e) {
-			e.printStackTrace();
+			this.virtualMachine = doConfigureVirtualMachine();
+		} catch (VirtualMachineConfigurationException virtualMachineConfigurationException) {
+			try {
+				Thread.currentThread().sleep(2000);
+				configureVirtualMachine();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
-		if (Objects.isNull(virtualMachine))
-			throw new IOException("Could not attach to VM on port " + port);
 		System.out.println("Connected to VM: " + virtualMachine.name());
-		this.virtualMachine = virtualMachine;
+		return true;
+	}
+
+	private VirtualMachine doConfigureVirtualMachine() {
+		FutureTask<VirtualMachine> futureTaskVirtualMachine = null;
+		try {
+			futureTaskVirtualMachine = new FutureTask<VirtualMachine>(() -> {
+				VirtualMachineManager virtualMachineManager = Bootstrap.virtualMachineManager();
+				AttachingConnector connector = virtualMachineManager.attachingConnectors().stream()
+						.filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
+				Map<String, Connector.Argument> arguments = connector.defaultArguments();
+				arguments.get("hostname").setValue(host);
+				arguments.get("port").setValue(String.valueOf(port));
+				System.out.println("Connecting to " + host + ":" + port + "...");
+				VirtualMachine virtualMachine = null;
+				virtualMachine = connector.attach(arguments);
+				return virtualMachine;
+			});
+		} catch (Exception e) {
+			throw new VirtualMachineConfigurationException();
+		}
+		new Thread(futureTaskVirtualMachine).start();
+		try {
+			if (Objects.nonNull(futureTaskVirtualMachine.get())) {
+				return futureTaskVirtualMachine.get();
+			} else
+				throw new VirtualMachineConfigurationException();
+		} catch (Exception e) {
+			throw new VirtualMachineConfigurationException();
+		}
 	}
 
 	@Override
@@ -195,32 +218,4 @@ public class SimpleDebuggerWorkFlow  {
 		return "SimpleDebuggerWorkFlow [virtualMachine=" + virtualMachine + ", referencesAtClasses="
 				+ referencesAtClassesAndInterfaces + ", host=" + host + ", port=" + port + "]";
 	}
-
-	private static class SimpleDebuggerWorkFlowIdentifier {
-		private String host;
-		private Integer port;
-
-		public SimpleDebuggerWorkFlowIdentifier(String host, Integer port) {
-			this.host = host;
-			this.port = port;
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(host, port);
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			SimpleDebuggerWorkFlowIdentifier other = (SimpleDebuggerWorkFlowIdentifier) obj;
-			return Objects.equals(host, other.host) && Objects.equals(port, other.port);
-		}
-	}
-
 }

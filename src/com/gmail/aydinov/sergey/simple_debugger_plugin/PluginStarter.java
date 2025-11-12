@@ -1,6 +1,9 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin;
 
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
@@ -8,8 +11,12 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IStartup;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakePointListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
 
 public class PluginStarter implements IStartup {
+	
+	private SimpleDebuggerWorkFlow simpleDebuggerWorkFlow;
+	CountDownLatch latch = new CountDownLatch(2);
 
 	@Override
 	public void earlyStartup() {
@@ -28,8 +35,33 @@ public class PluginStarter implements IStartup {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+			} finally {
+				latch.countDown();
 			}
 		});
+		
+		FutureTask<SimpleDebuggerWorkFlow> futureTaskSimpleDebuggerWorkFlow = 
+				new FutureTask<>(() -> SimpleDebuggerWorkFlow.instance("localhost", 8000));
+		new Thread(futureTaskSimpleDebuggerWorkFlow).start();
+		try {
+			simpleDebuggerWorkFlow = futureTaskSimpleDebuggerWorkFlow.get();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			latch.countDown();
+		}
+		try {
+			latch.await();
+	        System.out.println("Обе задачи завершены. Результат future: " + simpleDebuggerWorkFlow);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		simpleDebuggerWorkFlow.configureVirtualMachine();
 	}
 
 	private void scheduleRetry() {
