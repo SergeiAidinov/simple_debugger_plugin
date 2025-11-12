@@ -2,21 +2,14 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin;
 
 import java.util.Objects;
 
-import org.eclipse.core.resources.IMarkerDelta;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.debug.core.DebugPlugin;
-import org.eclipse.debug.core.IBreakpointListener;
 import org.eclipse.debug.core.IBreakpointManager;
-import org.eclipse.debug.core.model.IBreakpoint;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IStartup;
-import org.eclipse.ui.PlatformUI;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakePointListener;
 
 public class PluginStarter implements IStartup {
-
-	private IBreakpointManager iBreakpointManager;
 
 	@Override
 	public void earlyStartup() {
@@ -52,7 +45,7 @@ public class PluginStarter implements IStartup {
 	}
 
 	private boolean registerListener() {
-		iBreakpointManager = DebugPlugin.getDefault().getBreakpointManager();
+		IBreakpointManager iBreakpointManager = DebugPlugin.getDefault().getBreakpointManager();
 		iBreakpointManager.setEnabled(true);
 		BreakePointListener breakePointListener = new BreakePointListener();
 		iBreakpointManager.addBreakpointListener(breakePointListener);
