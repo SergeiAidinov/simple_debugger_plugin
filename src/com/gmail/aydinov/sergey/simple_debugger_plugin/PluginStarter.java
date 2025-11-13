@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin;
 
+import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -12,70 +13,27 @@ import org.eclipse.ui.IStartup;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakePointListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
+import com.sun.jdi.AbsentInformationException;
 
 public class PluginStarter implements IStartup {
-	
+
 	private SimpleDebuggerWorkFlow simpleDebuggerWorkFlow;
-	private final CountDownLatch latch = new CountDownLatch(2);
+	// private final CountDownLatch latch = new CountDownLatch(2);
 
 	@Override
 	public void earlyStartup() {
 		System.out.println("[AppLifeCycle] earlyStartup called.");
-
-		// Выполнить регистрацию после инициализации UI
-		Display.getDefault().asyncExec(() -> {
-			try {
-				DebugPlugin debugPlugin = DebugPlugin.getDefault();
-				if (Objects.nonNull(debugPlugin) && Objects.nonNull(debugPlugin.getBreakpointManager())) {
-					registerListener();
-				} else {
-					System.out.println("[AppLifeCycle] DebugPlugin not yet ready, retrying...");
-					// Если DebugPlugin ещё не готов — повторим через секунду
-					scheduleRetry();
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			} finally {
-				latch.countDown();
-			}
-		});
-
-		FutureTask<SimpleDebuggerWorkFlow> futureTaskSimpleDebuggerWorkFlow = 
-				new FutureTask<>(() -> SimpleDebuggerWorkFlow.instance("localhost", 8000));
-		new Thread(futureTaskSimpleDebuggerWorkFlow).start();
+		simpleDebuggerWorkFlow = SimpleDebuggerWorkFlow.Factory.create("localhost", 8000);
 		try {
-			simpleDebuggerWorkFlow = futureTaskSimpleDebuggerWorkFlow.get();
-		} catch (Throwable e) {
+			simpleDebuggerWorkFlow.debug();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}  finally {
-			latch.countDown();
-		}
-		try {
-			latch.await();
-	        System.out.println("Обе задачи завершены. Результат future: " + simpleDebuggerWorkFlow);
-		} catch (InterruptedException e) {
+		} catch (AbsentInformationException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
+		System.err.println("[DEBUG] earlyStartup reached end");
 
-	private void scheduleRetry() {
-		Display.getDefault().timerExec(1000, () -> {
-			DebugPlugin debugPlugin = DebugPlugin.getDefault();
-			if (Objects.nonNull(debugPlugin) && Objects.nonNull(debugPlugin.getBreakpointManager())) {
-				registerListener();
-			} else {
-				System.out.println("[AppLifeCycle] Still not ready, retrying again...");
-				scheduleRetry();
-			}
-		});
-	}
-
-	private boolean registerListener() {
-		IBreakpointManager iBreakpointManager = DebugPlugin.getDefault().getBreakpointManager();
-		iBreakpointManager.setEnabled(true);
-		BreakePointListener breakePointListener = new BreakePointListener();
-		iBreakpointManager.addBreakpointListener(breakePointListener);
-		System.out.println("[AppLifeCycle] Breakpoint listener registered!");
-		return true;
 	}
 }

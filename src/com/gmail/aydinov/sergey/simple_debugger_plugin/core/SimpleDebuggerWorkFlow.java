@@ -11,10 +11,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.e4.ui.internal.workbench.swt.handlers.ThemeUtil;
 import org.eclipse.swt.widgets.Display;
@@ -48,32 +52,53 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.exception.VirtualMachineC
 
 public class SimpleDebuggerWorkFlow {
 
-	private static SimpleDebuggerWorkFlow instance = null;
-	private TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
+	private String host;
+	private Integer port;
+	private VirtualMachine virtualMachine;
 
-	
-	//private Method method = null;
+	// private static SimpleDebuggerWorkFlow instance = null;
+	// private TargetVirtualMachineRepresentation
+	// targetVirtualMachineRepresentation;
+
+	// private Method method = null;
 	// private static final Map<SimpleDebuggerWorkFlowIdentifier,
 	// SimpleDebuggerWorkFlow> CACHE = new WeakHashMap<>();
 
-	private SimpleDebuggerWorkFlow(String host, int port) throws IllegalStateException {
-		targetVirtualMachineRepresentation = TargetVirtualMachineRepresentation.instance(host, port);
+	/*
+	 * private SimpleDebuggerWorkFlow(String host, int port) throws
+	 * IllegalStateException { targetVirtualMachineRepresentation =
+	 * TargetVirtualMachineRepresentation.instance(host, port); }
+	 */
+
+	/*
+	 * public static SimpleDebuggerWorkFlow instance(String host, int port) { if
+	 * (Objects.isNull(instance)) instance = new SimpleDebuggerWorkFlow(host, port);
+	 * return instance; }
+	 * 
+	 * public List<ReferenceType> getClassesOfTargetApplication() { return
+	 * targetVirtualMachineRepresentation.getVirtualMachine().allClasses(); }
+	 */
+
+	private SimpleDebuggerWorkFlow(String host, Integer port, VirtualMachine virtualMachine) {
+		this.host = host;
+		this.port = port;
+		this.virtualMachine = virtualMachine;
 	}
 
-	public static SimpleDebuggerWorkFlow instance(String host, int port) {
-		if (Objects.isNull(instance))
-			instance = new SimpleDebuggerWorkFlow(host, port);
-		return instance;
-	}
-	
 	public List<ReferenceType> getClassesOfTargetApplication() {
-		return targetVirtualMachineRepresentation.getVirtualMachine().allClasses();
+		return virtualMachine.allClasses();
+	}
+
+	@Override
+	public String toString() {
+		return "SimpleDebuggerWorkFlow [host=" + host + ", port=" + port + ", virtualMachine=" + virtualMachine + "]";
 	}
 
 	public void debug() throws IOException, AbsentInformationException {
-		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
-		Display.getDefault();
-		//System.out.println("referencesAtClassesAndInterfaces.size: " + referencesAtClassesAndInterfaces.size());
+		System.out.println("DEBUG");
+		EventRequestManager eventRequestManager = virtualMachine.eventRequestManager();
+//		 System.out.println("referencesAtClassesAndInterfaces.size: " +
+//		 referencesAtClassesAndInterfaces.size());
 
 //		for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : referencesAtClassesAndInterfaces
 //				.values()) {
@@ -83,7 +108,7 @@ public class SimpleDebuggerWorkFlow {
 //				method = targetApplicationElementRepresentation.getMethods().stream()
 //						.filter(m -> m.name().contains("sayHello")).findAny().orElse(null);
 //			}
-		//}
+		// }
 		/*
 		 * Location location = method.location(); BreakpointRequest bpReq =
 		 * eventRequestManager.createBreakpointRequest(location); bpReq.enable();
@@ -94,7 +119,7 @@ public class SimpleDebuggerWorkFlow {
 //			bp.enable();
 //		});
 
-		EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
+		EventQueue queue = virtualMachine.eventQueue();
 		System.out.println("Waiting for events...");
 
 		while (true) {
@@ -117,7 +142,7 @@ public class SimpleDebuggerWorkFlow {
 					}
 					Map<LocalVariable, Value> values = frame.getValues(frame.visibleVariables());
 					values.values().stream().forEach(v -> System.out.println(v));
-					targetVirtualMachineRepresentation.getVirtualMachine().resume();
+					virtualMachine.resume();
 				}
 			}
 		}
@@ -137,8 +162,96 @@ public class SimpleDebuggerWorkFlow {
 		return Optional.empty();
 	}
 
-	
+	public static class Factory {
 
-	
+		private static SimpleDebuggerWorkFlow instance;
+
+		public static synchronized SimpleDebuggerWorkFlow create(String host, int port) {
+			if (instance != null)
+				throw new IllegalStateException("SimpleDebuggerWorkFlow already created");
+
+			instance = initialize(host, port);
+			return instance;
+		}
+
+		private static SimpleDebuggerWorkFlow initialize(String host, int port) {
+			CountDownLatch latch = new CountDownLatch(2);
+
+			// 1. Регистрация слушателя после готовности UI
+			Display.getDefault().asyncExec(() -> {
+				try {
+					DebugPlugin plugin = DebugPlugin.getDefault();
+					if (plugin != null && plugin.getBreakpointManager() != null) {
+						registerListener();
+					} else {
+						System.out.println("[Factory] DebugPlugin not yet ready, retrying...");
+						scheduleRetry();
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				} finally {
+					latch.countDown();
+				}
+			});
+
+			// 2. Асинхронное подключение к VM
+			FutureTask<VirtualMachine> futureTask = new FutureTask<>(() -> configureVirtualMachine(host, port));
+			new Thread(futureTask).start();
+
+			VirtualMachine vm = null;
+			try {
+				vm = futureTask.get();
+				latch.await(); // ждём регистрацию слушателя
+				System.out.println("[Factory] Both tasks completed successfully.");
+			} catch (Exception e) {
+				System.out.println("Timeout!!!");
+			}
+
+			return new SimpleDebuggerWorkFlow(host, port, vm);
+		}
+
+		private static void scheduleRetry() {
+			Display.getDefault().timerExec(1000, () -> {
+				DebugPlugin plugin = DebugPlugin.getDefault();
+				if (plugin != null && plugin.getBreakpointManager() != null) {
+					registerListener();
+				} else {
+					System.out.println("[Factory] Still not ready, retrying...");
+					scheduleRetry();
+				}
+			});
+		}
+
+		private static void registerListener() {
+			IBreakpointManager manager = DebugPlugin.getDefault().getBreakpointManager();
+			manager.setEnabled(true);
+			BreakePointListener listener = new BreakePointListener();
+			manager.addBreakpointListener(listener);
+			System.out.println("[Factory] Breakpoint listener registered!");
+		}
+
+		private static VirtualMachine configureVirtualMachine(String host, int port) {
+			VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
+			AttachingConnector connector = vmm.attachingConnectors().stream()
+					.filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
+			Map<String, Connector.Argument> args = connector.defaultArguments();
+			args.get("hostname").setValue(host);
+			args.get("port").setValue(String.valueOf(port));
+
+			while (true) {
+				System.out.println("Connecting to " + host + ":" + port + "...");
+				try {
+					VirtualMachine vm = connector.attach(args);
+					System.out.println("Successfully connected to VM at " + host + ":" + port + ".");
+					return vm;
+				} catch (Exception e) {
+					try {
+						TimeUnit.SECONDS.sleep(2);
+					} catch (InterruptedException ignored) {
+					}
+				}
+			}
+		}
+	}
 
 }
