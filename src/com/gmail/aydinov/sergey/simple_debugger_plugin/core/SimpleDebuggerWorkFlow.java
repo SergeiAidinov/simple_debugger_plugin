@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.e4.ui.internal.workbench.swt.handlers.ThemeUtil;
+import org.eclipse.swt.widgets.Display;
 
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
@@ -71,6 +72,7 @@ public class SimpleDebuggerWorkFlow {
 
 	public void debug() throws IOException, AbsentInformationException {
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
+		Display.getDefault();
 		//System.out.println("referencesAtClassesAndInterfaces.size: " + referencesAtClassesAndInterfaces.size());
 
 //		for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : referencesAtClassesAndInterfaces

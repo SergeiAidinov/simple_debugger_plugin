@@ -39,29 +39,23 @@ public class PluginStarter implements IStartup {
 				latch.countDown();
 			}
 		});
-		
+
 		FutureTask<SimpleDebuggerWorkFlow> futureTaskSimpleDebuggerWorkFlow = 
 				new FutureTask<>(() -> SimpleDebuggerWorkFlow.instance("localhost", 8000));
 		new Thread(futureTaskSimpleDebuggerWorkFlow).start();
 		try {
 			simpleDebuggerWorkFlow = futureTaskSimpleDebuggerWorkFlow.get();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
+		} catch (Throwable e) {
 			e.printStackTrace();
-		} catch (ExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
+		}  finally {
 			latch.countDown();
 		}
 		try {
 			latch.await();
 	        System.out.println("Обе задачи завершены. Результат future: " + simpleDebuggerWorkFlow);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		//simpleDebuggerWorkFlow.configureVirtualMachine();
 	}
 
 	private void scheduleRetry() {
