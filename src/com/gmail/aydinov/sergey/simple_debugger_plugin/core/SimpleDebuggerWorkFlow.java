@@ -1,33 +1,21 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.WeakHashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
-import org.eclipse.debug.core.model.IBreakpoint;
-import org.eclipse.e4.ui.internal.workbench.swt.handlers.ThemeUtil;
 import org.eclipse.swt.widgets.Display;
 
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
-import com.sun.jdi.ClassType;
 import com.sun.jdi.IncompatibleThreadStateException;
-import com.sun.jdi.InterfaceType;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -38,17 +26,11 @@ import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.VirtualMachineManager;
 import com.sun.jdi.connect.AttachingConnector;
 import com.sun.jdi.connect.Connector;
-import com.sun.jdi.connect.IllegalConnectorArgumentsException;
 import com.sun.jdi.event.BreakpointEvent;
 import com.sun.jdi.event.Event;
 import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
-import com.sun.jdi.request.BreakpointRequest;
 import com.sun.jdi.request.EventRequestManager;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.exception.VirtualMachineConfigurationException;
 
 public class SimpleDebuggerWorkFlow {
 
@@ -167,7 +149,7 @@ public class SimpleDebuggerWorkFlow {
 	    private static SimpleDebuggerWorkFlow instance;
 
 	    public static synchronized void create(String host, int port, OnWorkflowReadyListener listener) {
-	        if (instance != null) {
+	        if (Objects.nonNull(instance)) {
 	            throw new IllegalStateException("SimpleDebuggerWorkFlow already created");
 	        }
 
@@ -179,7 +161,7 @@ public class SimpleDebuggerWorkFlow {
 	            Display.getDefault().asyncExec(() -> {
 	                try {
 	                    DebugPlugin plugin = DebugPlugin.getDefault();
-	                    if (plugin != null && plugin.getBreakpointManager() != null) {
+	                    if (Objects.nonNull(plugin) && Objects.nonNull(plugin.getBreakpointManager())) {
 	                        registerListener();
 	                    } else {
 	                        scheduleRetry(); // если UI ещё не готов
@@ -207,7 +189,7 @@ public class SimpleDebuggerWorkFlow {
 	                instance = new SimpleDebuggerWorkFlow(host, port, vm);
 
 	                // Вызываем callback
-	                if (listener != null) {
+	                if (Objects.nonNull(listener)) {
 	                    listener.onReady(instance);
 	                }
 
@@ -220,7 +202,7 @@ public class SimpleDebuggerWorkFlow {
 	    private static void scheduleRetry() {
 	        Display.getDefault().timerExec(1000, () -> {
 	            DebugPlugin plugin = DebugPlugin.getDefault();
-	            if (plugin != null && plugin.getBreakpointManager() != null) {
+	            if (Objects.nonNull(plugin) && Objects.nonNull(plugin.getBreakpointManager())) {
 	                registerListener();
 	            } else {
 	                scheduleRetry();
