@@ -10,7 +10,6 @@ public class BreakePointListener implements IBreakpointListener {
 	@Override
 	public void breakpointAdded(IBreakpoint breakpoint) {
 		printBreakpoint(breakpoint, "ADDED");
-		
 	}
 
 	@Override
@@ -23,14 +22,14 @@ public class BreakePointListener implements IBreakpointListener {
 		printBreakpoint(breakpoint, "CHANGED");		
 	}
 	
-	private void printBreakpoint(IBreakpoint bp, String action) {
+	private void printBreakpoint(IBreakpoint breakpoint, String action) {
 		try {
-			IResource resource = bp.getMarker().getResource();
+			IResource resource = breakpoint.getMarker().getResource();
 			String projectName = (resource != null && resource.getProject() != null) ? resource.getProject().getName()
 					: "Unknown Project";
 			String fileName = (resource != null) ? resource.getName() : "Unknown File";
-			int lineNumber = bp.getMarker().getAttribute("lineNumber", -1);
-			boolean enabled = bp.isEnabled();
+			int lineNumber = breakpoint.getMarker().getAttribute("lineNumber", -1);
+			boolean enabled = breakpoint.isEnabled();
 
 			System.out.println(action + " -> проект: " + projectName + ", файл: " + fileName + ", строка: " + lineNumber
 					+ ", включён: " + enabled);

@@ -10,10 +10,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.stream.Collectors;
 
+import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.e4.ui.internal.workbench.swt.handlers.ThemeUtil;
 
 import com.sun.jdi.AbsentInformationException;
@@ -46,18 +48,15 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.exception.VirtualMachineC
 public class SimpleDebuggerWorkFlow {
 
 	private static SimpleDebuggerWorkFlow instance = null;
+	private TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 
-	private VirtualMachine virtualMachine = null;
-	private final Map<ReferenceType, TargetApplicationElementRepresentation> referencesAtClassesAndInterfaces = new HashMap<>();
-	private String host;
-	private Integer port;
-	private Method method = null;
+	
+	//private Method method = null;
 	// private static final Map<SimpleDebuggerWorkFlowIdentifier,
 	// SimpleDebuggerWorkFlow> CACHE = new WeakHashMap<>();
 
 	private SimpleDebuggerWorkFlow(String host, int port) throws IllegalStateException {
-		this.host = host;
-		this.port = port;
+		targetVirtualMachineRepresentation = TargetVirtualMachineRepresentation.instance(host, port);
 	}
 
 	public static SimpleDebuggerWorkFlow instance(String host, int port) {
@@ -65,31 +64,35 @@ public class SimpleDebuggerWorkFlow {
 			instance = new SimpleDebuggerWorkFlow(host, port);
 		return instance;
 	}
+	
+	public List<ReferenceType> getClassesOfTargetApplication() {
+		return targetVirtualMachineRepresentation.getVirtualMachine().allClasses();
+	}
 
 	public void debug() throws IOException, AbsentInformationException {
-		EventRequestManager eventRequestManager = virtualMachine.eventRequestManager();
-		System.out.println("referencesAtClassesAndInterfaces.size: " + referencesAtClassesAndInterfaces.size());
+		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
+		//System.out.println("referencesAtClassesAndInterfaces.size: " + referencesAtClassesAndInterfaces.size());
 
-		for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : referencesAtClassesAndInterfaces
-				.values()) {
-			System.out.println("==> " + targetApplicationElementRepresentation.prettyPrint());
-			if (targetApplicationElementRepresentation.getTargetApplicationElementType()
-					.equals(TargetApplicationElementType.CLASS) && Objects.isNull(method)) {
-				method = targetApplicationElementRepresentation.getMethods().stream()
-						.filter(m -> m.name().contains("sayHello")).findAny().orElse(null);
-			}
-		}
+//		for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : referencesAtClassesAndInterfaces
+//				.values()) {
+//			System.out.println("==> " + targetApplicationElementRepresentation.prettyPrint());
+//			if (targetApplicationElementRepresentation.getTargetApplicationElementType()
+//					.equals(TargetApplicationElementType.CLASS) && Objects.isNull(method)) {
+//				method = targetApplicationElementRepresentation.getMethods().stream()
+//						.filter(m -> m.name().contains("sayHello")).findAny().orElse(null);
+//			}
+		//}
 		/*
 		 * Location location = method.location(); BreakpointRequest bpReq =
 		 * eventRequestManager.createBreakpointRequest(location); bpReq.enable();
 		 */
-		Optional<Location> loc = findLocation(method, 29);
-		loc.ifPresent(l -> {
-			BreakpointRequest bp = eventRequestManager.createBreakpointRequest(l);
-			bp.enable();
-		});
+//		Optional<Location> loc = findLocation(method, 29);
+//		loc.ifPresent(l -> {
+//			BreakpointRequest bp = eventRequestManager.createBreakpointRequest(l);
+//			bp.enable();
+//		});
 
-		EventQueue queue = virtualMachine.eventQueue();
+		EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
 		System.out.println("Waiting for events...");
 
 		while (true) {
@@ -112,7 +115,7 @@ public class SimpleDebuggerWorkFlow {
 					}
 					Map<LocalVariable, Value> values = frame.getValues(frame.visibleVariables());
 					values.values().stream().forEach(v -> System.out.println(v));
-					virtualMachine.resume();
+					targetVirtualMachineRepresentation.getVirtualMachine().resume();
 				}
 			}
 		}
@@ -132,90 +135,8 @@ public class SimpleDebuggerWorkFlow {
 		return Optional.empty();
 	}
 
-	public List<? extends TargetApplicationElementRepresentation> getTargetApplicationStatus() {
-		return referencesAtClassesAndInterfaces.values().stream().collect(Collectors.toList());
-	}
+	
 
-	private void createReferencesToClassesOfTargetApplication() {
-		System.out.println("Target class not loaded yet. Waiting...");
-		List<ReferenceType> loadedClassesAndInterfaces = new ArrayList<ReferenceType>();
-		while (loadedClassesAndInterfaces.isEmpty()) {
-			loadedClassesAndInterfaces.addAll(virtualMachine.allClasses());
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				continue;
-			}
-		}
-		loadedClassesAndInterfaces = loadedClassesAndInterfaces.stream().filter(lci -> lci.name().contains("target"))
-				.toList();
-		System.out.println("Loaded " + loadedClassesAndInterfaces.size() + " classes.");
-		Set<ReferenceType> references = loadedClassesAndInterfaces.stream().filter(clr -> Objects.nonNull(clr))
-				.map(clr -> clr.classLoader()).filter(clr -> Objects.nonNull(clr))
-				.flatMap(rt -> rt.definedClasses().stream()).collect(Collectors.toSet());
-		Optional<TargetApplicationElementType> targetApplicationElementTypeOptional;
-		for (ReferenceType referenceType : references) {
-			targetApplicationElementTypeOptional = Optional.empty();
-			if (referenceType instanceof ClassType) {
-				targetApplicationElementTypeOptional = Optional.of(TargetApplicationElementType.CLASS);
-			} else if (referenceType instanceof InterfaceType) {
-				targetApplicationElementTypeOptional = Optional.of(TargetApplicationElementType.INTERFACE);
-			}
-			targetApplicationElementTypeOptional.ifPresent(type -> referencesAtClassesAndInterfaces.put(referenceType,
-					new TargetApplicationClassOrInterfaceRepresentation(referenceType.name(), type,
-							referenceType.allMethods().stream().collect(Collectors.toSet()),
-							referenceType.allFields().stream().collect(Collectors.toSet()))));
-		}
-		System.out.println("referencesAtClasses: " + referencesAtClassesAndInterfaces.size());
-	}
+	
 
-	public boolean configureVirtualMachine() {
-		try {
-			this.virtualMachine = doConfigureVirtualMachine();
-		} catch (VirtualMachineConfigurationException virtualMachineConfigurationException) {
-			try {
-				Thread.currentThread().sleep(2000);
-				configureVirtualMachine();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		System.out.println("Connected to VM: " + virtualMachine.name());
-		return true;
-	}
-
-	private VirtualMachine doConfigureVirtualMachine() {
-		FutureTask<VirtualMachine> futureTaskVirtualMachine = null;
-		try {
-			futureTaskVirtualMachine = new FutureTask<VirtualMachine>(() -> {
-				VirtualMachineManager virtualMachineManager = Bootstrap.virtualMachineManager();
-				AttachingConnector connector = virtualMachineManager.attachingConnectors().stream()
-						.filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
-				Map<String, Connector.Argument> arguments = connector.defaultArguments();
-				arguments.get("hostname").setValue(host);
-				arguments.get("port").setValue(String.valueOf(port));
-				System.out.println("Connecting to " + host + ":" + port + "...");
-				VirtualMachine virtualMachine = null;
-				virtualMachine = connector.attach(arguments);
-				return virtualMachine;
-			});
-		} catch (Exception e) {
-			throw new VirtualMachineConfigurationException();
-		}
-		new Thread(futureTaskVirtualMachine).start();
-		try {
-			if (Objects.nonNull(futureTaskVirtualMachine.get())) {
-				return futureTaskVirtualMachine.get();
-			} else
-				throw new VirtualMachineConfigurationException();
-		} catch (Exception e) {
-			throw new VirtualMachineConfigurationException();
-		}
-	}
-
-	@Override
-	public String toString() {
-		return "SimpleDebuggerWorkFlow [virtualMachine=" + virtualMachine + ", referencesAtClasses="
-				+ referencesAtClassesAndInterfaces + ", host=" + host + ", port=" + port + "]";
-	}
 }

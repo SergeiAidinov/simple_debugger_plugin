@@ -16,7 +16,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFl
 public class PluginStarter implements IStartup {
 	
 	private SimpleDebuggerWorkFlow simpleDebuggerWorkFlow;
-	CountDownLatch latch = new CountDownLatch(2);
+	private final CountDownLatch latch = new CountDownLatch(2);
 
 	@Override
 	public void earlyStartup() {
@@ -61,7 +61,7 @@ public class PluginStarter implements IStartup {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		simpleDebuggerWorkFlow.configureVirtualMachine();
+		//simpleDebuggerWorkFlow.configureVirtualMachine();
 	}
 
 	private void scheduleRetry() {
