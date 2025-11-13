@@ -84,7 +84,7 @@ public class SimpleDebuggerWorkFlow {
 		this.port = port;
 		this.virtualMachine = virtualMachine;
 	}
-
+	
 	public List<ReferenceType> getClassesOfTargetApplication() {
 		return virtualMachine.allClasses();
 	}
@@ -164,94 +164,101 @@ public class SimpleDebuggerWorkFlow {
 
 	public static class Factory {
 
-		private static SimpleDebuggerWorkFlow instance;
+	    private static SimpleDebuggerWorkFlow instance;
 
-		public static synchronized SimpleDebuggerWorkFlow create(String host, int port) {
-			if (instance != null)
-				throw new IllegalStateException("SimpleDebuggerWorkFlow already created");
+	    public static synchronized void create(String host, int port, OnWorkflowReadyListener listener) {
+	        if (instance != null) {
+	            throw new IllegalStateException("SimpleDebuggerWorkFlow already created");
+	        }
 
-			instance = initialize(host, port);
-			return instance;
-		}
+	        // Запуск асинхронного потока для инициализации
+	        new Thread(() -> {
+	            CountDownLatch latch = new CountDownLatch(2);
 
-		private static SimpleDebuggerWorkFlow initialize(String host, int port) {
-			CountDownLatch latch = new CountDownLatch(2);
+	            // 1. Асинхронная регистрация listener'a
+	            Display.getDefault().asyncExec(() -> {
+	                try {
+	                    DebugPlugin plugin = DebugPlugin.getDefault();
+	                    if (plugin != null && plugin.getBreakpointManager() != null) {
+	                        registerListener();
+	                    } else {
+	                        scheduleRetry(); // если UI ещё не готов
+	                    }
+	                } catch (Exception e) {
+	                    e.printStackTrace();
+	                } finally {
+	                    latch.countDown();
+	                }
+	            });
 
-			// 1. Регистрация слушателя после готовности UI
-			Display.getDefault().asyncExec(() -> {
-				try {
-					DebugPlugin plugin = DebugPlugin.getDefault();
-					if (plugin != null && plugin.getBreakpointManager() != null) {
-						registerListener();
-					} else {
-						System.out.println("[Factory] DebugPlugin not yet ready, retrying...");
-						scheduleRetry();
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				} finally {
-					latch.countDown();
-				}
-			});
+	            // 2. Асинхронное подключение к VM
+	            FutureTask<VirtualMachine> futureTask = new FutureTask<>(() -> configureVirtualMachine(host, port));
+	            new Thread(futureTask).start();
 
-			// 2. Асинхронное подключение к VM
-			FutureTask<VirtualMachine> futureTask = new FutureTask<>(() -> configureVirtualMachine(host, port));
-			new Thread(futureTask).start();
+	            VirtualMachine vm = null;
+	            try {
+	                vm = futureTask.get();   // ждем бесконечно, как ты и хотел
+	                latch.countDown();
 
-			VirtualMachine vm = null;
-			try {
-				vm = futureTask.get();
-				latch.await(); // ждём регистрацию слушателя
-				System.out.println("[Factory] Both tasks completed successfully.");
-			} catch (Exception e) {
-				System.out.println("Timeout!!!");
-			}
+	                // Ждем обе задачи
+	                latch.await();
 
-			return new SimpleDebuggerWorkFlow(host, port, vm);
-		}
+	                // Создаем workflow
+	                instance = new SimpleDebuggerWorkFlow(host, port, vm);
 
-		private static void scheduleRetry() {
-			Display.getDefault().timerExec(1000, () -> {
-				DebugPlugin plugin = DebugPlugin.getDefault();
-				if (plugin != null && plugin.getBreakpointManager() != null) {
-					registerListener();
-				} else {
-					System.out.println("[Factory] Still not ready, retrying...");
-					scheduleRetry();
-				}
-			});
-		}
+	                // Вызываем callback
+	                if (listener != null) {
+	                    listener.onReady(instance);
+	                }
 
-		private static void registerListener() {
-			IBreakpointManager manager = DebugPlugin.getDefault().getBreakpointManager();
-			manager.setEnabled(true);
-			BreakePointListener listener = new BreakePointListener();
-			manager.addBreakpointListener(listener);
-			System.out.println("[Factory] Breakpoint listener registered!");
-		}
+	            } catch (Exception e) {
+	                e.printStackTrace();
+	            }
+	        }).start();
+	    }
 
-		private static VirtualMachine configureVirtualMachine(String host, int port) {
-			VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
-			AttachingConnector connector = vmm.attachingConnectors().stream()
-					.filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
-			Map<String, Connector.Argument> args = connector.defaultArguments();
-			args.get("hostname").setValue(host);
-			args.get("port").setValue(String.valueOf(port));
+	    private static void scheduleRetry() {
+	        Display.getDefault().timerExec(1000, () -> {
+	            DebugPlugin plugin = DebugPlugin.getDefault();
+	            if (plugin != null && plugin.getBreakpointManager() != null) {
+	                registerListener();
+	            } else {
+	                scheduleRetry();
+	            }
+	        });
+	    }
 
-			while (true) {
-				System.out.println("Connecting to " + host + ":" + port + "...");
-				try {
-					VirtualMachine vm = connector.attach(args);
-					System.out.println("Successfully connected to VM at " + host + ":" + port + ".");
-					return vm;
-				} catch (Exception e) {
-					try {
-						TimeUnit.SECONDS.sleep(2);
-					} catch (InterruptedException ignored) {
-					}
-				}
-			}
-		}
+	    private static void registerListener() {
+	        IBreakpointManager manager = DebugPlugin.getDefault().getBreakpointManager();
+	        manager.setEnabled(true);
+	        BreakePointListener listener = new BreakePointListener();
+	        manager.addBreakpointListener(listener);
+	        System.out.println("[Factory] Breakpoint listener registered!");
+	    }
+
+	    private static VirtualMachine configureVirtualMachine(String host, int port) {
+	        VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
+	        AttachingConnector connector = vmm.attachingConnectors().stream()
+	                .filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
+	        Map<String, Connector.Argument> args = connector.defaultArguments();
+	        args.get("hostname").setValue(host);
+	        args.get("port").setValue(String.valueOf(port));
+
+	        VirtualMachine vm = null;
+	        while (true) {
+	            try {
+	                System.out.println("Connecting to " + host + ":" + port + "...");
+	                vm = connector.attach(args);
+	                System.out.println("Successfully connected to VM at " + host + ":" + port + ".");
+	                return vm;
+	            } catch (Exception e) {
+	                try {
+	                    TimeUnit.SECONDS.sleep(2);
+	                } catch (InterruptedException ignored) {}
+	            }
+	        }
+	    }
 	}
+
 
 }
