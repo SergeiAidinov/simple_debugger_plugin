@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
@@ -31,6 +33,7 @@ import com.sun.jdi.event.Event;
 import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
 import com.sun.jdi.request.EventRequestManager;
+
 
 public class SimpleDebuggerWorkFlow {
 
@@ -148,13 +151,14 @@ public class SimpleDebuggerWorkFlow {
 
 	    private static SimpleDebuggerWorkFlow instance;
 
-	    public static synchronized void create(String host, int port, OnWorkflowReadyListener listener) {
+	    public static synchronized SimpleDebuggerWorkFlow create(String host, int port, OnWorkflowReadyListener listener) {
+	    	AtomicReference<VirtualMachine> vmRef = new AtomicReference<>();
 	        if (Objects.nonNull(instance)) {
 	            throw new IllegalStateException("SimpleDebuggerWorkFlow already created");
 	        }
 
 	        // Запуск асинхронного потока для инициализации
-	        new Thread(() -> {
+	       // new Thread(() -> {
 	            CountDownLatch latch = new CountDownLatch(2);
 
 	            // 1. Асинхронная регистрация listener'a
@@ -174,19 +178,25 @@ public class SimpleDebuggerWorkFlow {
 	            });
 
 	            // 2. Асинхронное подключение к VM
-	            FutureTask<VirtualMachine> futureTask = new FutureTask<>(() -> configureVirtualMachine(host, port));
-	            new Thread(futureTask).start();
-
-	            VirtualMachine vm = null;
+//	            FutureTask<VirtualMachine> futureTask = new FutureTask<>(() -> configureVirtualMachine(host, port));
+//	            new Thread(futureTask).start();
+	           
+	            CompletableFuture<VirtualMachine> completableFutureVirtualMachine = 
+	            		CompletableFuture.supplyAsync(() -> { return configureVirtualMachine(host, port);}
+	            		);
+	            completableFutureVirtualMachine.thenRun(latch::countDown);
+	            completableFutureVirtualMachine.thenAccept(r -> vmRef.set(r));
+	           
 	            try {
-	                vm = futureTask.get();   // ждем бесконечно, как ты и хотел
-	                latch.countDown();
+					/*
+					 * vm = futureTask.get(); // ждем бесконечно, как ты и хотел latch.countDown();
+					 */
 
 	                // Ждем обе задачи
 	                latch.await();
 
 	                // Создаем workflow
-	                instance = new SimpleDebuggerWorkFlow(host, port, vm);
+	                instance = new SimpleDebuggerWorkFlow(host, port, vmRef.get());
 
 	                // Вызываем callback
 	                if (Objects.nonNull(listener)) {
@@ -195,8 +205,11 @@ public class SimpleDebuggerWorkFlow {
 
 	            } catch (Exception e) {
 	                e.printStackTrace();
+	                
+	                //return instance;
 	            }
-	        }).start();
+	        //}).start();
+				return instance;
 	    }
 
 	    private static void scheduleRetry() {
