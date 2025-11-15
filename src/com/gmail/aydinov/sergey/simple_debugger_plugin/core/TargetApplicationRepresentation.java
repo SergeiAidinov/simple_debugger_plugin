@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,8 +11,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.model.IBreakpoint;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementType;
@@ -21,11 +24,17 @@ import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
 
 public class TargetApplicationRepresentation {
+	
+	private final IBreakpointManager iBreakpointManager;
+
+	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager) {
+		this.iBreakpointManager = iBreakpointManager;
+	}
 
 	// private final SimpleDebuggerWorkFlow simpleDebuggerWorkFlow;
 	//private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final Map<ReferenceType, TargetApplicationElementRepresentation> referencesAtClassesAndInterfaces = new HashMap<>();
-	Set<IBreakpoint> breakpoints = ConcurrentHashMap.newKeySet();
+	private final Set<BreakpointWrapper> breakpoints = ConcurrentHashMap.newKeySet();
 
 //	public TargetApplicationRepresentation(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation) {
 //		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
@@ -37,6 +46,12 @@ public class TargetApplicationRepresentation {
 
 	public List<? extends TargetApplicationElementRepresentation> getTargetApplicationStatus() {
 		return referencesAtClassesAndInterfaces.values().stream().collect(Collectors.toList());
+	}
+	
+	public void refreshBreakePoints() {
+		breakpoints.clear();
+		breakpoints.addAll(Arrays.asList(iBreakpointManager.getBreakpoints())
+		.stream().map(bp -> new BreakpointWrapper(bp)).collect(Collectors.toSet()));
 	}
 
 	public void refreshReferencesToClassesOfTargetApplication(VirtualMachine virtualMachine) {

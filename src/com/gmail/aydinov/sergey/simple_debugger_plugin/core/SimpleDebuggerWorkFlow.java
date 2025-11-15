@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,13 +36,12 @@ import com.sun.jdi.request.EventRequestManager;
 public class SimpleDebuggerWorkFlow {
 	
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
-	private final IBreakpointManager breakpointManager;
+	//private final IBreakpointManager breakpointManager;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	
-	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation, IBreakpointManager manager) {
+	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation, IBreakpointManager breakpointManagermanager) {
 		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
-		this.breakpointManager = manager;
-		targetApplicationRepresentation = new TargetApplicationRepresentation();
+		targetApplicationRepresentation = new TargetApplicationRepresentation(breakpointManagermanager);
 	}
 
 	/*
@@ -84,7 +84,6 @@ public class SimpleDebuggerWorkFlow {
 	public void debug() throws IOException, AbsentInformationException {
 		System.out.println("DEBUG");
 		targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-		
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
 //		 System.out.println("referencesAtClassesAndInterfaces.size: " +
 //		 referencesAtClassesAndInterfaces.size());
