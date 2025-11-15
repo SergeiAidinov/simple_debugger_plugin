@@ -18,26 +18,33 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElem
 import com.sun.jdi.ClassType;
 import com.sun.jdi.InterfaceType;
 import com.sun.jdi.ReferenceType;
+import com.sun.jdi.VirtualMachine;
 
 public class TargetApplicationRepresentation {
-	
-	private final SimpleDebuggerWorkFlow simpleDebuggerWorkFlow;
+
+	// private final SimpleDebuggerWorkFlow simpleDebuggerWorkFlow;
+	//private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final Map<ReferenceType, TargetApplicationElementRepresentation> referencesAtClassesAndInterfaces = new HashMap<>();
 	Set<IBreakpoint> breakpoints = ConcurrentHashMap.newKeySet();
-	
-	public TargetApplicationRepresentation(SimpleDebuggerWorkFlow simpleDebuggerWorkFlow) {
-		this.simpleDebuggerWorkFlow = simpleDebuggerWorkFlow;
-	}
-	
+
+//	public TargetApplicationRepresentation(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation) {
+//		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
+//	}
+
+//	public TargetApplicationRepresentation(SimpleDebuggerWorkFlow simpleDebuggerWorkFlow) {
+//		this.simpleDebuggerWorkFlow = simpleDebuggerWorkFlow;
+//	}
+
 	public List<? extends TargetApplicationElementRepresentation> getTargetApplicationStatus() {
 		return referencesAtClassesAndInterfaces.values().stream().collect(Collectors.toList());
 	}
-	
-	private void createReferencesToClassesOfTargetApplication() {
+
+	public void refreshReferencesToClassesOfTargetApplication(VirtualMachine virtualMachine) {
+		referencesAtClassesAndInterfaces.clear();
 		System.out.println("Target class not loaded yet. Waiting...");
 		List<ReferenceType> loadedClassesAndInterfaces = new ArrayList<ReferenceType>();
 		while (loadedClassesAndInterfaces.isEmpty()) {
-			loadedClassesAndInterfaces.addAll(simpleDebuggerWorkFlow.getClassesOfTargetApplication());
+			loadedClassesAndInterfaces.addAll(virtualMachine.allClasses());
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
@@ -65,6 +72,5 @@ public class TargetApplicationRepresentation {
 		}
 		System.out.println("referencesAtClasses: " + referencesAtClassesAndInterfaces.size());
 	}
-
 
 }

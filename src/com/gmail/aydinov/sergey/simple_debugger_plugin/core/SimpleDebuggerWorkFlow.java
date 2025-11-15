@@ -37,6 +37,12 @@ import com.sun.jdi.request.EventRequestManager;
 public class SimpleDebuggerWorkFlow {
 	
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
+	private final TargetApplicationRepresentation targetApplicationRepresentation;
+	
+	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation) {
+		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
+		targetApplicationRepresentation = new TargetApplicationRepresentation();
+	}
 
 	/*
 	 * private String host; private Integer port; private VirtualMachine
@@ -72,13 +78,13 @@ public class SimpleDebuggerWorkFlow {
 		return targetVirtualMachineRepresentation.getVirtualMachine().allClasses();
 	}
 
-	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation) {
-		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
-	}
+	
 
 
 	public void debug() throws IOException, AbsentInformationException {
 		System.out.println("DEBUG");
+		targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+		
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
 //		 System.out.println("referencesAtClassesAndInterfaces.size: " +
 //		 referencesAtClassesAndInterfaces.size());
