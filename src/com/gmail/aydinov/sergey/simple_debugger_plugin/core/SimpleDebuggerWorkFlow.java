@@ -6,9 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
@@ -37,10 +35,12 @@ import com.sun.jdi.request.EventRequestManager;
 public class SimpleDebuggerWorkFlow {
 	
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
+	private final IBreakpointManager breakpointManager;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	
-	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation) {
+	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation, IBreakpointManager manager) {
 		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
+		this.breakpointManager = manager;
 		targetApplicationRepresentation = new TargetApplicationRepresentation();
 	}
 
@@ -151,85 +151,60 @@ public class SimpleDebuggerWorkFlow {
 		return Optional.empty();
 	}
 
+	
 	public static class Factory {
 
-	    private static SimpleDebuggerWorkFlow instance;
+	    public static void create(String host, int port, OnWorkflowReadyListener listener) {
 
-	    public static synchronized SimpleDebuggerWorkFlow create(String host, int port, OnWorkflowReadyListener listener) {
-	    	AtomicReference<VirtualMachine> vmRef = new AtomicReference<>();
-	        if (Objects.nonNull(instance)) {
-	            throw new IllegalStateException("SimpleDebuggerWorkFlow already created");
-	        }
+	        CompletableFuture<VirtualMachine> vmFuture =
+	                CompletableFuture.supplyAsync(() -> configureVirtualMachine(host, port));
 
-	        // Запуск асинхронного потока для инициализации
-	       // new Thread(() -> {
-	            CountDownLatch latch = new CountDownLatch(2);
+	        CompletableFuture<IBreakpointManager> bpmFuture =
+	                waitForBreakpointManager()
+	                        .thenApply(manager -> {
+	                            registerBreakpointListener(manager);
+	                            return manager;
+	                        });
 
-	            // 1. Асинхронная регистрация listener'a
-	            Display.getDefault().asyncExec(() -> {
-	                try {
-	                    DebugPlugin plugin = DebugPlugin.getDefault();
-	                    if (Objects.nonNull(plugin) && Objects.nonNull(plugin.getBreakpointManager())) {
-	                        registerListener();
-	                    } else {
-	                        scheduleRetry(); // если UI ещё не готов
-	                    }
-	                } catch (Exception e) {
-	                    e.printStackTrace();
-	                } finally {
-	                    latch.countDown();
-	                }
-	            });
-
-	            // 2. Асинхронное подключение к VM
-//	            FutureTask<VirtualMachine> futureTask = new FutureTask<>(() -> configureVirtualMachine(host, port));
-//	            new Thread(futureTask).start();
-	           
-	            CompletableFuture<VirtualMachine> completableFutureVirtualMachine = 
-	            		CompletableFuture.supplyAsync(() -> { return configureVirtualMachine(host, port);}
-	            		);
-	            completableFutureVirtualMachine.thenRun(latch::countDown);
-	            completableFutureVirtualMachine.thenAccept(r -> vmRef.set(r));
-	           
-	            try {
-					/*
-					 * vm = futureTask.get(); // ждем бесконечно, как ты и хотел latch.countDown();
-					 */
-
-	                // Ждем обе задачи
-	                latch.await();
-
-	                // Создаем workflow
-	                
-	                instance = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vmRef.get()));
-
-	                // Вызываем callback
-	                if (Objects.nonNull(listener)) {
-	                    listener.onReady(instance);
-	                }
-
-	            } catch (Exception e) {
-	                e.printStackTrace();
-	                
-	                //return instance;
-	            }
-	        //}).start();
-				return instance;
-	    }
-
-	    private static void scheduleRetry() {
-	        Display.getDefault().timerExec(1000, () -> {
-	            DebugPlugin plugin = DebugPlugin.getDefault();
-	            if (Objects.nonNull(plugin) && Objects.nonNull(plugin.getBreakpointManager())) {
-	                registerListener();
-	            } else {
-	                scheduleRetry();
-	            }
+	        // Когда **оба** готовы → создаём workflow
+	        vmFuture.thenCombine(bpmFuture, (vm, bpManager) -> {
+	            return new SimpleDebuggerWorkFlow(
+	                    new TargetVirtualMachineRepresentation(host, port, vm),
+	                    bpManager
+	            );
+	        }).thenAccept(workflow -> {
+	            if (Objects.nonNull(listener)) listener.onReady(workflow);
 	        });
 	    }
 
-	    private static void registerListener() {
-	        IBreakpointManager manager = DebugPlugin.getDefault().getBreakpointManager();
+	    /**
+	     * Асинхронное ожидание доступности IBreakpointManager
+	     * НЕ вызывает рекурсию и НЕ блокирует UI.
+	     */
+	    private static CompletableFuture<IBreakpointManager> waitForBreakpointManager() {
+	        CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();
+
+	        Runnable check = new Runnable() {
+	            @Override
+	            public void run() {
+	                DebugPlugin plugin = DebugPlugin.getDefault();
+
+	                if (Objects.nonNull(plugin) && Objects.nonNull(plugin.getBreakpointManager())) {
+	                    future.complete(plugin.getBreakpointManager());
+	                } else {
+	                    // Повторная попытка через 1000 мс
+	                    Display.getDefault().timerExec(1000, this);
+	                }
+	            }
+	        };
+
+	        // Запускаем первый чек в UI-потоке
+	        Display.getDefault().asyncExec(check);
+
+	        return future;
+	    }
+
+	    private static void registerBreakpointListener(IBreakpointManager manager) {
 	        manager.setEnabled(true);
 	        BreakePointListener listener = new BreakePointListener();
 	        manager.addBreakpointListener(listener);
@@ -239,26 +214,29 @@ public class SimpleDebuggerWorkFlow {
 	    private static VirtualMachine configureVirtualMachine(String host, int port) {
 	        VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
 	        AttachingConnector connector = vmm.attachingConnectors().stream()
-	                .filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
+	                .filter(c -> c.name().equals("com.sun.jdi.SocketAttach"))
+	                .findAny()
+	                .orElseThrow();
+
 	        Map<String, Connector.Argument> args = connector.defaultArguments();
 	        args.get("hostname").setValue(host);
 	        args.get("port").setValue(String.valueOf(port));
 
-	        VirtualMachine vm = null;
 	        while (true) {
 	            try {
 	                System.out.println("Connecting to " + host + ":" + port + "...");
-	                vm = connector.attach(args);
-	                System.out.println("Successfully connected to VM at " + host + ":" + port + ".");
+	                VirtualMachine vm = connector.attach(args);
+	                System.out.println("Successfully connected to VM.");
 	                return vm;
-	            } catch (Exception e) {
+	            } catch (Exception ignored) {
 	                try {
-	                    TimeUnit.SECONDS.sleep(2);
-	                } catch (InterruptedException ignored) {}
+	                    TimeUnit.SECONDS.sleep(1);
+	                } catch (InterruptedException ignored2) {}
 	            }
 	        }
 	    }
 	}
+
 
 
 }
