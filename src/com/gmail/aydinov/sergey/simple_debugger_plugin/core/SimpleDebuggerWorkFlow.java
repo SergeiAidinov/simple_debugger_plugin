@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -36,10 +35,13 @@ import com.sun.jdi.request.EventRequestManager;
 
 
 public class SimpleDebuggerWorkFlow {
+	
+	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 
-	private String host;
-	private Integer port;
-	private VirtualMachine virtualMachine;
+	/*
+	 * private String host; private Integer port; private VirtualMachine
+	 * virtualMachine;
+	 */
 
 	// private static SimpleDebuggerWorkFlow instance = null;
 	// private TargetVirtualMachineRepresentation
@@ -64,24 +66,20 @@ public class SimpleDebuggerWorkFlow {
 	 * targetVirtualMachineRepresentation.getVirtualMachine().allClasses(); }
 	 */
 
-	private SimpleDebuggerWorkFlow(String host, Integer port, VirtualMachine virtualMachine) {
-		this.host = host;
-		this.port = port;
-		this.virtualMachine = virtualMachine;
-	}
+	
 	
 	public List<ReferenceType> getClassesOfTargetApplication() {
-		return virtualMachine.allClasses();
+		return targetVirtualMachineRepresentation.getVirtualMachine().allClasses();
 	}
 
-	@Override
-	public String toString() {
-		return "SimpleDebuggerWorkFlow [host=" + host + ", port=" + port + ", virtualMachine=" + virtualMachine + "]";
+	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation) {
+		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
 	}
+
 
 	public void debug() throws IOException, AbsentInformationException {
 		System.out.println("DEBUG");
-		EventRequestManager eventRequestManager = virtualMachine.eventRequestManager();
+		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
 //		 System.out.println("referencesAtClassesAndInterfaces.size: " +
 //		 referencesAtClassesAndInterfaces.size());
 
@@ -104,7 +102,7 @@ public class SimpleDebuggerWorkFlow {
 //			bp.enable();
 //		});
 
-		EventQueue queue = virtualMachine.eventQueue();
+		EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
 		System.out.println("Waiting for events...");
 
 		while (true) {
@@ -127,7 +125,7 @@ public class SimpleDebuggerWorkFlow {
 					}
 					Map<LocalVariable, Value> values = frame.getValues(frame.visibleVariables());
 					values.values().stream().forEach(v -> System.out.println(v));
-					virtualMachine.resume();
+					targetVirtualMachineRepresentation.getVirtualMachine().resume();
 				}
 			}
 		}
@@ -196,7 +194,8 @@ public class SimpleDebuggerWorkFlow {
 	                latch.await();
 
 	                // Создаем workflow
-	                instance = new SimpleDebuggerWorkFlow(host, port, vmRef.get());
+	                
+	                instance = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vmRef.get()));
 
 	                // Вызываем callback
 	                if (Objects.nonNull(listener)) {
