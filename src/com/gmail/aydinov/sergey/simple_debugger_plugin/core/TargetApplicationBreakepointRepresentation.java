@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 
 import org.eclipse.debug.core.IBreakpointManager;
@@ -36,6 +37,16 @@ public class TargetApplicationBreakepointRepresentation {
 	}
 
 	private final Set<BreakpointWrapper> breakpoints = ConcurrentHashMap.newKeySet();
+	private final ConcurrentLinkedDeque<BreakpointRequest> breakpointRequests = new ConcurrentLinkedDeque<>();
+	private final ConcurrentLinkedDeque<Location> locations = new ConcurrentLinkedDeque<>();
+	
+	public ConcurrentLinkedDeque<BreakpointRequest> getBreakpointRequests() {
+		return breakpointRequests;
+	}
+	
+	public ConcurrentLinkedDeque<Location> getLocations() {
+		return locations;
+	}
 
 	public synchronized boolean addBreakepoint(BreakpointWrapper breakpointWrapper) {
 		Optional<Method> methodOptional = getMethodForBreakpoint(breakpointWrapper.get(), virtualMachine);
@@ -43,8 +54,12 @@ public class TargetApplicationBreakepointRepresentation {
 			int line = getLineNumber(breakpointWrapper.get());
 			Optional<Location> location = findLocation(methodOptional.get(), line);
 			if (location.isPresent()) {
-				BreakpointRequest bp = eventRequestManager.createBreakpointRequest(location.get());
-				bp.enable();
+				/*
+				 * BreakpointRequest breakpointRequest =
+				 * eventRequestManager.createBreakpointRequest(location.get());
+				 * breakpointRequest.enable(); breakpointRequests.offer(breakpointRequest);
+				 */
+				locations.offer(location.get());
 				return breakpoints.add(breakpointWrapper);
 			}
 		}
