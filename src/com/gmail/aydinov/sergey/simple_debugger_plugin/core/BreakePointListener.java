@@ -5,7 +5,9 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.debug.core.IBreakpointListener;
 import org.eclipse.debug.core.model.IBreakpoint;
 
-public class BreakePointListener implements IBreakpointListener {
+import com.sun.jdi.request.BreakpointRequest;
+
+public class BreakePointListener implements IBreakpointListener, BreakpointHitListener {
 
 	@Override
 	public void breakpointAdded(IBreakpoint breakpoint) {
@@ -37,6 +39,12 @@ public class BreakePointListener implements IBreakpointListener {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public void onBreakpointHit(BreakpointRequest request) {
+		// TODO Auto-generated method stub
+		
 	}
 
 

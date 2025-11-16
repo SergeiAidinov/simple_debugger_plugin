@@ -23,17 +23,21 @@ import com.sun.jdi.InterfaceType;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.EventRequestManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakpointHitListener;
 
 public class TargetApplicationRepresentation {
 
-	
 	private final Map<ReferenceType, TargetApplicationElementRepresentation> referencesAtClassesAndInterfaces = new ConcurrentHashMap<ReferenceType, TargetApplicationElementRepresentation>();
-	//private final Set<BreakpointWrapper> breakpoints = ConcurrentHashMap.newKeySet();
-	private final TargetApplicationBreakepointRepresentation targetApplicationBreakepointRepresentation; 
+	// private final Set<BreakpointWrapper> breakpoints =
+	// ConcurrentHashMap.newKeySet();
+	private final TargetApplicationBreakepointRepresentation targetApplicationBreakepointRepresentation;
 
-	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager, EventRequestManager eventRequestManager, VirtualMachine virtualMachine) {
-		
-		targetApplicationBreakepointRepresentation = new TargetApplicationBreakepointRepresentation(iBreakpointManager, eventRequestManager, virtualMachine);
+	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
+			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
+			BreakpointHitListener breakpointListener) {
+		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakepointRepresentation(
+				iBreakpointManager, eventRequestManager, virtualMachine);
+		targetApplicationBreakepointRepresentation.addListener(breakpointListener);
 	}
 
 	public TargetApplicationBreakepointRepresentation getTargetApplicationBreakepointRepresentation() {

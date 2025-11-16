@@ -46,12 +46,12 @@ public class SimpleDebuggerWorkFlow {
 	private final DebugPlugin debugPlugin; // новое поле
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
-			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin) {
+			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin, BreakpointHitListener breakpointListener) {
 		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
 				.eventRequestManager();
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
-				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine());
+				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 		// this.manager = manager;
 		this.debugPlugin = debugPlugin;
 	}
@@ -61,74 +61,78 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	public void debug() throws IOException, AbsentInformationException {
-	    System.out.println("DEBUG");
+		System.out.println("DEBUG");
 
-	    // Обновляем данные о target приложении
-	    targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-	    targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
+		// Обновляем данные о target приложении
+		targetApplicationRepresentation
+				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
 
-	    // Получаем JDI EventRequestManager
-	    EventRequestManager erm = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
+		// Получаем JDI EventRequestManager
+		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
+				.eventRequestManager();
 
-	    // Создаём BreakpointRequest один раз для всех Location
-	    ConcurrentLinkedDeque<Location> locationsQueue = targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().getLocations();
-	    for (Location loc : locationsQueue) {
-	        BreakpointRequest bpReq = erm.createBreakpointRequest(loc);
-	        bpReq.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD); // или SUSPEND_ALL
-	        bpReq.enable();
-	    }
+		// Создаём BreakpointRequest один раз для всех Location
+		ConcurrentLinkedDeque<Location> locationsQueue = targetApplicationRepresentation
+				.getTargetApplicationBreakepointRepresentation().getLocations();
 
-	    System.out.println("Waiting for events...");
-	    EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
+		for (Location location : locationsQueue) {
+			BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(location);
+			breakpointRequest.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD); // или SUSPEND_ALL
+			breakpointRequest.enable();
+		}
 
-	    while (true) {
-	        try {
-	            EventSet eventSet = queue.remove(); // блокирует до события
+		System.out.println("Waiting for events...");
+		EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
 
-	            for (Event event : eventSet) {
-	                if (event instanceof BreakpointEvent bpEvent) {
-	                    handleBreakpointEvent(bpEvent);
-	                } else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
-	                    System.out.println("Target VM stopped");
-	                    return;
-	                }
-	            }
+		while (true) {
+			try {
+				EventSet eventSet = queue.remove(); // блокирует до события
 
-	            // После обработки всех событий нужно их резюмировать
-	            eventSet.resume();
+				for (Event event : eventSet) {
+					if (event instanceof BreakpointEvent bpEvent) {
+						handleBreakpointEvent(bpEvent);
+					} else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
+						System.out.println("Target VM stopped");
+						return;
+					}
+				}
 
-	        } catch (InterruptedException e) {
-	            e.printStackTrace();
-	        }
-	    }
+				// После обработки всех событий нужно их резюмировать
+				eventSet.resume();
+
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	// Отдельный метод для обработки события
 	private void handleBreakpointEvent(BreakpointEvent bpEvent) {
-	    ThreadReference thread = bpEvent.thread();
-	    Location loc = bpEvent.location();
-	    try {
-	        StackFrame frame = thread.frame(0);
-	        System.out.println("Breakpoint hit at " + loc.declaringType().name() + "." + frame.location().method().name() +
-	                " line " + loc.lineNumber());
+		ThreadReference thread = bpEvent.thread();
+		Location loc = bpEvent.location();
+		try {
+			StackFrame frame = thread.frame(0);
+			System.out.println("Breakpoint hit at " + loc.declaringType().name() + "."
+					+ frame.location().method().name() + " line " + loc.lineNumber());
 
-	        // Локальные переменные
-	        for (LocalVariable var : frame.visibleVariables()) {
-	            Value val = frame.getValue(var);
-	            System.out.println(var.name() + " = " + val);
-	        }
+			// Локальные переменные
+			// Локальные переменные
+			for (LocalVariable var : frame.visibleVariables()) {
+				Value val = frame.getValue(var);
+				System.out.println(var.name() + " = " + val);
+			}
 
-	    } catch (IncompatibleThreadStateException | AbsentInformationException e) {
-	        e.printStackTrace();
-	    }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
-
 
 	public Optional<Location> findLocation(Method method, int sourceLine) {
 		try {
-			for (Location l : method.allLineLocations()) {
-				if (l.lineNumber() == sourceLine) {
-					return Optional.of(l);
+			for (Location location : method.allLineLocations()) {
+				if (location.lineNumber() == sourceLine) {
+					return Optional.of(location);
 				}
 			}
 		} catch (AbsentInformationException e) {
@@ -142,23 +146,28 @@ public class SimpleDebuggerWorkFlow {
 
 		public static void create(String host, int port, OnWorkflowReadyListener listener) {
 
-			// 1️⃣ Асинхронное подключение к JVM через JDI
+			// 1️⃣ Подключение к JVM асинхронно
 			CompletableFuture<VirtualMachine> vmFuture = CompletableFuture
 					.supplyAsync(() -> configureVirtualMachine(host, port));
 
-			// 2️⃣ Асинхронное получение DebugPlugin и BPM
-			CompletableFuture<IBreakpointManager> bpmFuture = getDebugPluginAndBreakpointManager()
-					.thenApply(manager -> {
-						registerBreakpointListener(manager);
-						return manager;
-					});
+			// 2️⃣ Асинхронное ожидание DebugPlugin и BreakpointManager
+			CompletableFuture<IBreakpointManager> bpmFuture = getDebugPluginAndBreakpointManager();
 
-			// 3️⃣ Когда оба готовы, создаём workflow
+			// 3️⃣ Когда оба готовы — создаём workflow с listener
 			vmFuture.thenCombine(bpmFuture, (vm, bpManager) -> {
-				DebugPlugin plugin = DebugPlugin.getDefault(); // уже гарантированно готов
 
+				DebugPlugin plugin = DebugPlugin.getDefault();
+
+				// 🔹 создаём и регистрируем listener
+				BreakePointListener breakpointListener = new BreakePointListener();
+				bpManager.setEnabled(true);
+				bpManager.addBreakpointListener(breakpointListener);
+				System.out.println("[Factory] Breakpoint listener registered!");
+
+				// 🔹 создаём workflow с listener
 				return new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpManager,
-						plugin);
+						plugin, breakpointListener);
+
 			}).thenAccept(workflow -> {
 				if (listener != null)
 					listener.onReady(workflow);
@@ -166,7 +175,6 @@ public class SimpleDebuggerWorkFlow {
 		}
 
 		// -------------------
-		// Асинхронное ожидание DebugPlugin и IBreakpointManager
 		private static CompletableFuture<IBreakpointManager> getDebugPluginAndBreakpointManager() {
 			CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();
 
@@ -177,7 +185,6 @@ public class SimpleDebuggerWorkFlow {
 					if (plugin != null && plugin.getBreakpointManager() != null) {
 						future.complete(plugin.getBreakpointManager());
 					} else {
-						// Планируем повторную проверку через 500 мс
 						Display.getDefault().timerExec(500, this);
 					}
 				}
@@ -188,16 +195,6 @@ public class SimpleDebuggerWorkFlow {
 		}
 
 		// -------------------
-		// Регистрация собственного BreakpointListener
-		private static void registerBreakpointListener(IBreakpointManager manager) {
-			manager.setEnabled(true);
-			BreakePointListener listener = new BreakePointListener();
-			manager.addBreakpointListener(listener);
-			System.out.println("[Factory] Breakpoint listener registered!");
-		}
-
-		// -------------------
-		// Подключение к JVM через JDI
 		private static VirtualMachine configureVirtualMachine(String host, int port) {
 			VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
 			AttachingConnector connector = vmm.attachingConnectors().stream()
@@ -220,6 +217,11 @@ public class SimpleDebuggerWorkFlow {
 					}
 				}
 			}
+		}
+
+		// -------------------
+		public interface OnWorkflowReadyListener {
+			void onReady(SimpleDebuggerWorkFlow workflow);
 		}
 	}
 

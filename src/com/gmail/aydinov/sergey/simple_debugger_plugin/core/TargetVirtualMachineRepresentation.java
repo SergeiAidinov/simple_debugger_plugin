@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import com.sun.jdi.VirtualMachine;
+import com.sun.jdi.request.EventRequestManager;
 
 public class TargetVirtualMachineRepresentation {
 	
