@@ -6,8 +6,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFl
 
 public class PluginStarter implements IStartup {
 
-	private SimpleDebuggerWorkFlow simpleDebuggerWorkFlow;
-
 	@Override
 	public void earlyStartup() {
 		System.out.println("[AppLifeCycle] earlyStartup called.");

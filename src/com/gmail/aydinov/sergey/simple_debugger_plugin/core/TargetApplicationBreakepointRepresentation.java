@@ -1,0 +1,131 @@
+package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import org.eclipse.debug.core.IBreakpointManager;
+import org.eclipse.debug.core.model.IBreakpoint;
+
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
+import com.sun.jdi.AbsentInformationException;
+import com.sun.jdi.Location;
+import com.sun.jdi.Method;
+import com.sun.jdi.request.BreakpointRequest;
+import com.sun.jdi.request.EventRequestManager;
+import com.sun.jdi.*;
+import java.util.List;
+import java.util.Optional;
+import org.eclipse.debug.core.model.IBreakpoint;
+import org.eclipse.core.resources.IMarker;
+
+public class TargetApplicationBreakepointRepresentation {
+
+	private final IBreakpointManager iBreakpointManager;
+	private final EventRequestManager eventRequestManager;
+	private final VirtualMachine virtualMachine;
+
+	public TargetApplicationBreakepointRepresentation(IBreakpointManager iBreakpointManager,
+			EventRequestManager eventRequestManager, VirtualMachine virtualMachine) {
+		this.iBreakpointManager = iBreakpointManager;
+		this.eventRequestManager = eventRequestManager;
+		this.virtualMachine = virtualMachine;
+	}
+
+	private final Set<BreakpointWrapper> breakpoints = ConcurrentHashMap.newKeySet();
+
+	public synchronized boolean addBreakepoint(BreakpointWrapper breakpointWrapper) {
+		Optional<Method> methodOptional = getMethodForBreakpoint(breakpointWrapper.get(), virtualMachine);
+		if (methodOptional.isPresent()) {
+			int line = getLineNumber(breakpointWrapper.get());
+			Optional<Location> location = findLocation(methodOptional.get(), line);
+			if (location.isPresent()) {
+				BreakpointRequest bp = eventRequestManager.createBreakpointRequest(location.get());
+				bp.enable();
+				return breakpoints.add(breakpointWrapper);
+			}
+		}
+		return false;
+	}
+
+	public Set<BreakpointWrapper> getBreakpoints() {
+		Set<BreakpointWrapper> breakpointWrappers = new HashSet<BreakpointWrapper>();
+		breakpointWrappers.addAll(breakpoints);
+		return breakpointWrappers;
+	}
+
+	public synchronized void refreshBreakePoints() {
+		breakpoints.clear();
+		Arrays.asList(iBreakpointManager.getBreakpoints()).stream()
+				.forEach(bp -> addBreakepoint(new BreakpointWrapper(bp)));
+		breakpoints.stream().forEach(bpw -> System.out.println("===> " + bpw.get()));
+	}
+
+	private Optional<Location> findLocation(Method method, int sourceLine) {
+		try {
+			for (Location l : method.allLineLocations()) {
+				if (l.lineNumber() == sourceLine) {
+					return Optional.of(l);
+				}
+			}
+		} catch (AbsentInformationException e) {
+			// в этом случае исходники не доступны: метод скомпилирован без -g
+			return Optional.empty();
+		}
+		return Optional.empty();
+	}
+
+	public String getTypeName(IBreakpoint bp) {
+		try {
+			IMarker marker = bp.getMarker();
+			if (marker != null) {
+				return marker.getAttribute("org.eclipse.jdt.debug.core.typeName", (String) null);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public int getLineNumber(IBreakpoint bp) {
+		try {
+			IMarker marker = bp.getMarker();
+			if (marker != null) {
+				return marker.getAttribute(IMarker.LINE_NUMBER, -1);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return -1;
+	}
+
+	public Optional<Method> getMethodForBreakpoint(IBreakpoint bp, VirtualMachine vm) {
+		String className = getTypeName(bp);
+		int lineNumber = getLineNumber(bp);
+
+		if (className == null || lineNumber < 0)
+			return Optional.empty();
+
+		List<ReferenceType> classes = vm.classesByName(className);
+		if (classes.isEmpty())
+			return Optional.empty();
+		ReferenceType refType = classes.get(0);
+
+		try {
+			for (Method m : refType.allMethods()) {
+				for (Location loc : m.allLineLocations()) {
+					if (loc.lineNumber() == lineNumber) {
+						return Optional.of(m);
+					}
+				}
+			}
+		} catch (AbsentInformationException e) {
+			e.printStackTrace();
+		}
+		return Optional.empty();
+	}
+
+}

@@ -22,36 +22,30 @@ import com.sun.jdi.ClassType;
 import com.sun.jdi.InterfaceType;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
+import com.sun.jdi.request.EventRequestManager;
 
 public class TargetApplicationRepresentation {
-	
-	private final IBreakpointManager iBreakpointManager;
 
-	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager) {
-		this.iBreakpointManager = iBreakpointManager;
+	
+	private final Map<ReferenceType, TargetApplicationElementRepresentation> referencesAtClassesAndInterfaces = new ConcurrentHashMap<ReferenceType, TargetApplicationElementRepresentation>();
+	//private final Set<BreakpointWrapper> breakpoints = ConcurrentHashMap.newKeySet();
+	private final TargetApplicationBreakepointRepresentation targetApplicationBreakepointRepresentation; 
+
+	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager, EventRequestManager eventRequestManager, VirtualMachine virtualMachine) {
+		
+		targetApplicationBreakepointRepresentation = new TargetApplicationBreakepointRepresentation(iBreakpointManager, eventRequestManager, virtualMachine);
 	}
 
-	// private final SimpleDebuggerWorkFlow simpleDebuggerWorkFlow;
-	//private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
-	private final Map<ReferenceType, TargetApplicationElementRepresentation> referencesAtClassesAndInterfaces = new HashMap<>();
-	private final Set<BreakpointWrapper> breakpoints = ConcurrentHashMap.newKeySet();
+	public TargetApplicationBreakepointRepresentation getTargetApplicationBreakepointRepresentation() {
+		return targetApplicationBreakepointRepresentation;
+	}
 
-//	public TargetApplicationRepresentation(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation) {
-//		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
-//	}
-
-//	public TargetApplicationRepresentation(SimpleDebuggerWorkFlow simpleDebuggerWorkFlow) {
-//		this.simpleDebuggerWorkFlow = simpleDebuggerWorkFlow;
-//	}
+	public Map<ReferenceType, TargetApplicationElementRepresentation> getReferencesAtClassesAndInterfaces() {
+		return referencesAtClassesAndInterfaces;
+	}
 
 	public List<? extends TargetApplicationElementRepresentation> getTargetApplicationStatus() {
 		return referencesAtClassesAndInterfaces.values().stream().collect(Collectors.toList());
-	}
-	
-	public void refreshBreakePoints() {
-		breakpoints.clear();
-		breakpoints.addAll(Arrays.asList(iBreakpointManager.getBreakpoints())
-		.stream().map(bp -> new BreakpointWrapper(bp)).collect(Collectors.toSet()));
 	}
 
 	public void refreshReferencesToClassesOfTargetApplication(VirtualMachine virtualMachine) {
