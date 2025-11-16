@@ -83,9 +83,10 @@ public class SimpleDebuggerWorkFlow {
 		}
 
 		System.out.println("Waiting for events...");
-		EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
+		EventQueue queue;
 
 		while (true) {
+			queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
 			try {
 				EventSet eventSet = queue.remove(); // блокирует до события
 

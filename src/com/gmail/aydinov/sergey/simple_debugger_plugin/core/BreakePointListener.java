@@ -5,13 +5,17 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.debug.core.IBreakpointListener;
 import org.eclipse.debug.core.model.IBreakpoint;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 import com.sun.jdi.request.BreakpointRequest;
 
 public class BreakePointListener implements IBreakpointListener, BreakpointHitListener {
+	
+	TargetApplicationBreakepointRepresentation targetApplicationBreakepointRepresentation;
 
 	@Override
 	public void breakpointAdded(IBreakpoint breakpoint) {
 		printBreakpoint(breakpoint, "ADDED");
+		targetApplicationBreakepointRepresentation.addBreakepoint(new BreakpointWrapper(breakpoint));
 	}
 
 	@Override
@@ -41,9 +45,11 @@ public class BreakePointListener implements IBreakpointListener, BreakpointHitLi
 		}
 	}
 
+
 	@Override
-	public void onBreakpointHit(BreakpointRequest request) {
-		// TODO Auto-generated method stub
+	public void registerTargetApplicationBreakepointRepresentation(
+			TargetApplicationBreakepointRepresentation targetApplicationBreakepointRepresentation) {
+		this.targetApplicationBreakepointRepresentation = targetApplicationBreakepointRepresentation;
 		
 	}
 

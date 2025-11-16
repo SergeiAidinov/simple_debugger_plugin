@@ -34,10 +34,11 @@ public class TargetApplicationRepresentation {
 
 	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
 			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
-			BreakpointHitListener breakpointListener) {
+			BreakpointHitListener breakpointHitListener) {
 		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakepointRepresentation(
 				iBreakpointManager, eventRequestManager, virtualMachine);
-		targetApplicationBreakepointRepresentation.addListener(breakpointListener);
+		breakpointHitListener.registerTargetApplicationBreakepointRepresentation(targetApplicationBreakepointRepresentation);
+		//targetApplicationBreakepointRepresentation.addListener(breakpointListener);
 	}
 
 	public TargetApplicationBreakepointRepresentation getTargetApplicationBreakepointRepresentation() {
