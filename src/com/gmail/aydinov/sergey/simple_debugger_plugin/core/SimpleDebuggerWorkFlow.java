@@ -46,7 +46,8 @@ public class SimpleDebuggerWorkFlow {
 	private final DebugPlugin debugPlugin; // новое поле
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
-			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin, BreakpointHitListener breakpointListener) {
+			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin,
+			BreakpointRegistrationListener breakpointListener) {
 		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
 				.eventRequestManager();
@@ -170,7 +171,7 @@ public class SimpleDebuggerWorkFlow {
 						plugin, breakpointListener);
 
 			}).thenAccept(workflow -> {
-				if (listener != null)
+				if (Objects.nonNull(listener))
 					listener.onReady(workflow);
 			});
 		}
@@ -183,7 +184,7 @@ public class SimpleDebuggerWorkFlow {
 				@Override
 				public void run() {
 					DebugPlugin plugin = DebugPlugin.getDefault();
-					if (plugin != null && plugin.getBreakpointManager() != null) {
+					if (Objects.nonNull(plugin) &&  Objects.nonNull(plugin.getBreakpointManager())) {
 						future.complete(plugin.getBreakpointManager());
 					} else {
 						Display.getDefault().timerExec(500, this);
@@ -218,11 +219,6 @@ public class SimpleDebuggerWorkFlow {
 					}
 				}
 			}
-		}
-
-		// -------------------
-		public interface OnWorkflowReadyListener {
-			void onReady(SimpleDebuggerWorkFlow workflow);
 		}
 	}
 

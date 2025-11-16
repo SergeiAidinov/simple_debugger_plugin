@@ -8,7 +8,7 @@ import org.eclipse.debug.core.model.IBreakpoint;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 import com.sun.jdi.request.BreakpointRequest;
 
-public class BreakePointListener implements IBreakpointListener, BreakpointHitListener {
+public class BreakePointListener implements IBreakpointListener, BreakpointRegistrationListener {
 	
 	TargetApplicationBreakepointRepresentation targetApplicationBreakepointRepresentation;
 
@@ -47,7 +47,7 @@ public class BreakePointListener implements IBreakpointListener, BreakpointHitLi
 
 
 	@Override
-	public void registerTargetApplicationBreakepointRepresentation(
+	public void register(
 			TargetApplicationBreakepointRepresentation targetApplicationBreakepointRepresentation) {
 		this.targetApplicationBreakepointRepresentation = targetApplicationBreakepointRepresentation;
 		
