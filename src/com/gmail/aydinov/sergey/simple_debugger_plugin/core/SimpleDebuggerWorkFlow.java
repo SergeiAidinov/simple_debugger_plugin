@@ -22,6 +22,7 @@ import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
+import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.VirtualMachineManager;
@@ -31,7 +32,10 @@ import com.sun.jdi.event.BreakpointEvent;
 import com.sun.jdi.event.Event;
 import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
+import com.sun.jdi.event.VMDeathEvent;
+import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.request.BreakpointRequest;
+import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
 
 public class SimpleDebuggerWorkFlow {
@@ -57,62 +61,68 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	public void debug() throws IOException, AbsentInformationException {
-		System.out.println("DEBUG");
-		targetApplicationRepresentation
-				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
-		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().getBreakpoints().stream()
-				.forEach(bp -> System.out.println(bp));
-		// EventRequestManager eventRequestManager =
-		// targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
-		// EventQueue queue =
-		// targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
+	    System.out.println("DEBUG");
 
-		//while (true) {
-			System.out.println("hi-hi!");
-			EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
-					.eventRequestManager();
-//			ConcurrentLinkedDeque<BreakpointRequest> queue = targetApplicationRepresentation
-//					.getTargetApplicationBreakepointRepresentation().getBreakpointRequests();
-			//ConcurrentLinkedDeque<Location> queue = targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().getLocations();
-			EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
-			System.out.println("Waiting for events...");
+	    // Обновляем данные о target приложении
+	    targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+	    targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
 
-			while (true) {
-				EventSet eventSet = null;
-				try {
-					eventSet = queue.remove();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				for (Event event : eventSet) {
-					if (event instanceof BreakpointEvent breakpointEvent) {
-						System.out.println("Breakpoint hit at method: " + breakpointEvent.location().method().name());
-						BreakpointEvent bp = (BreakpointEvent) event;
-						StackFrame frame = null;
-						try {
-							frame = bp.thread().frame(0);
-						} catch (IncompatibleThreadStateException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						Map<LocalVariable, Value> values = frame.getValues(frame.visibleVariables());
-						values.values().stream().forEach(v -> System.out.println(v));
-						targetVirtualMachineRepresentation.getVirtualMachine().resume();
-					}
-				}
-			}
-		//}
-//
-//			
-//			try {
-//				Thread.currentThread().sleep(1000);
-//			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
+	    // Получаем JDI EventRequestManager
+	    EventRequestManager erm = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
 
+	    // Создаём BreakpointRequest один раз для всех Location
+	    ConcurrentLinkedDeque<Location> locationsQueue = targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().getLocations();
+	    for (Location loc : locationsQueue) {
+	        BreakpointRequest bpReq = erm.createBreakpointRequest(loc);
+	        bpReq.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD); // или SUSPEND_ALL
+	        bpReq.enable();
+	    }
+
+	    System.out.println("Waiting for events...");
+	    EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
+
+	    while (true) {
+	        try {
+	            EventSet eventSet = queue.remove(); // блокирует до события
+
+	            for (Event event : eventSet) {
+	                if (event instanceof BreakpointEvent bpEvent) {
+	                    handleBreakpointEvent(bpEvent);
+	                } else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
+	                    System.out.println("Target VM stopped");
+	                    return;
+	                }
+	            }
+
+	            // После обработки всех событий нужно их резюмировать
+	            eventSet.resume();
+
+	        } catch (InterruptedException e) {
+	            e.printStackTrace();
+	        }
+	    }
 	}
+
+	// Отдельный метод для обработки события
+	private void handleBreakpointEvent(BreakpointEvent bpEvent) {
+	    ThreadReference thread = bpEvent.thread();
+	    Location loc = bpEvent.location();
+	    try {
+	        StackFrame frame = thread.frame(0);
+	        System.out.println("Breakpoint hit at " + loc.declaringType().name() + "." + frame.location().method().name() +
+	                " line " + loc.lineNumber());
+
+	        // Локальные переменные
+	        for (LocalVariable var : frame.visibleVariables()) {
+	            Value val = frame.getValue(var);
+	            System.out.println(var.name() + " = " + val);
+	        }
+
+	    } catch (IncompatibleThreadStateException | AbsentInformationException e) {
+	        e.printStackTrace();
+	    }
+	}
+
 
 	public Optional<Location> findLocation(Method method, int sourceLine) {
 		try {
