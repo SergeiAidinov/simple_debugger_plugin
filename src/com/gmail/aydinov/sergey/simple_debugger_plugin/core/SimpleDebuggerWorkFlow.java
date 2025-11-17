@@ -103,6 +103,18 @@ public class SimpleDebuggerWorkFlow {
 				System.out.println("eventSet.size() " + eventSet.size());
 				for (Event event : eventSet) {
 					if (event instanceof BreakpointEvent bpEvent) {
+//						Display.getDefault().asyncExec(() -> {
+//						    try {
+//						        IWorkbenchPage page = PlatformUI.getWorkbench()
+//						                .getActiveWorkbenchWindow()
+//						                .getActivePage();
+//						        BreakpointsView view = (BreakpointsView) page.showView(BreakpointsView.ID);
+//						        view.setModel(targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation());
+//						    } catch (PartInitException e) {
+//						        e.printStackTrace();
+//						    }
+//						});
+
 						handleBreakpointEvent(bpEvent);
 					} else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
 						System.out.println("Target VM stopped");

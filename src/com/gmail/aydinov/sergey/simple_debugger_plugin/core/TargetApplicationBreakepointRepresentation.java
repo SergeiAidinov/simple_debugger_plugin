@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
 import org.eclipse.debug.core.IBreakpointManager;
@@ -41,10 +42,21 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 	//private final Set<BreakpointWrapper> breakpointWrappers = ConcurrentHashMap.newKeySet();
 	private final Set<BreakpointRequestWrapper> breakpointRequestWrappers = new ConcurrentHashMap().newKeySet();
 	//private final ConcurrentLinkedDeque<Location> locations = new ConcurrentLinkedDeque<>();
+	private final Set<BreakpointHitListener> listeners = new CopyOnWriteArraySet<>();
+
 
 	public Set<BreakpointRequestWrapper> getBreakpointRequests() {
 		return breakpointRequestWrappers;
 	}
+	
+	public void addListener(BreakpointHitListener listener) {
+	    listeners.add(listener);
+	}
+
+	public void removeListener(BreakpointHitListener listener) {
+	    listeners.remove(listener);
+	}
+
 
 //	public ConcurrentLinkedDeque<Location> getLocations() {
 //		return locations;
