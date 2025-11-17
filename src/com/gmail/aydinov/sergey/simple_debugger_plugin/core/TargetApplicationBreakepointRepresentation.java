@@ -23,7 +23,7 @@ import java.util.Optional;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.core.resources.IMarker;
 
-public class TargetApplicationBreakepointRepresentation {
+public class TargetApplicationBreakepointRepresentation implements BreakpointSubscriber {
 
 	private final IBreakpointManager iBreakpointManager;
 	private final EventRequestManager eventRequestManager;
@@ -48,6 +48,7 @@ public class TargetApplicationBreakepointRepresentation {
 		return locations;
 	}
 
+	@Override
 	public synchronized boolean addBreakepoint(BreakpointWrapper breakpointWrapper) {
 		Optional<Method> methodOptional = getMethodForBreakpoint(breakpointWrapper.get(), virtualMachine);
 		if (methodOptional.isPresent()) {
@@ -64,6 +65,16 @@ public class TargetApplicationBreakepointRepresentation {
 			}
 		}
 		return false;
+	}
+	
+	@Override
+	public void deleteBreakepoint(BreakpointWrapper breakpointWrapper) {
+		
+	}
+	
+	@Override
+	public void changeBreakpoint(BreakpointWrapper breakpointWrapper) {
+		
 	}
 
 	public Set<BreakpointWrapper> getBreakpoints() {

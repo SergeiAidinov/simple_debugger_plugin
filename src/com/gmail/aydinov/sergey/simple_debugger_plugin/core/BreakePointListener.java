@@ -10,12 +10,12 @@ import com.sun.jdi.request.BreakpointRequest;
 
 public class BreakePointListener implements IBreakpointListener, BreakpointRegistrationListener {
 	
-	TargetApplicationBreakepointRepresentation targetApplicationBreakepointRepresentation;
+	BreakpointSubscriber subscriber;
 
 	@Override
 	public void breakpointAdded(IBreakpoint breakpoint) {
 		printBreakpoint(breakpoint, "ADDED");
-		targetApplicationBreakepointRepresentation.addBreakepoint(new BreakpointWrapper(breakpoint));
+		subscriber.addBreakepoint(new BreakpointWrapper(breakpoint));
 	}
 
 	@Override
@@ -48,8 +48,8 @@ public class BreakePointListener implements IBreakpointListener, BreakpointRegis
 
 	@Override
 	public void register(
-			TargetApplicationBreakepointRepresentation targetApplicationBreakepointRepresentation) {
-		this.targetApplicationBreakepointRepresentation = targetApplicationBreakepointRepresentation;
+			BreakpointSubscriber targetApplicationBreakepointRepresentation) {
+		this.subscriber = targetApplicationBreakepointRepresentation;
 		
 	}
 
