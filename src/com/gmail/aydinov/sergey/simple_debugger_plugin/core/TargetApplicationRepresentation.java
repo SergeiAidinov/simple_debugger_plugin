@@ -23,7 +23,7 @@ import com.sun.jdi.InterfaceType;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.EventRequestManager;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakpointRegistrationListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakpointSubscriberRegistrar;
 
 public class TargetApplicationRepresentation {
 
@@ -34,7 +34,7 @@ public class TargetApplicationRepresentation {
 
 	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
 			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
-			BreakpointRegistrationListener breakpointHitListener) {
+			BreakpointSubscriberRegistrar breakpointHitListener) {
 		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakepointRepresentation(
 				iBreakpointManager, eventRequestManager, virtualMachine);
 		breakpointHitListener.register(targetApplicationBreakepointRepresentation);

@@ -3,4 +3,15 @@
 <extension point="org.eclipse.ui.startup">
    <startup class="com.gmail.aydinov.sergey.simple_debugger_plugin.PluginStarter"/>
 </extension>
+<extension
+      point="org.eclipse.ui.views">
+   <view
+         name="Breakpoints"
+         icon="icons/breakpoints.png"  
+         category="com.gmail.aydinov.sergey.simple_debugger_plugin"
+         class="com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakpointsView"
+         id="com.gmail.aydinov.sergey.simple_debugger_plugin.view.breakpointsView">
+   </view>
+</extension>
+
 </plugin>

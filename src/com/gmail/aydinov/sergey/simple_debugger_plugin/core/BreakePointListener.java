@@ -9,7 +9,7 @@ import org.eclipse.debug.core.model.IBreakpoint;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 import com.sun.jdi.request.BreakpointRequest;
 
-public class BreakePointListener implements IBreakpointListener, BreakpointRegistrationListener {
+public class BreakePointListener implements IBreakpointListener, BreakpointSubscriberRegistrar {
 	
 	BreakpointSubscriber subscriber;
 

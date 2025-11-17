@@ -17,8 +17,12 @@ import java.util.stream.Collectors;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointRequestWrapper;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakpointsView;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.IncompatibleThreadStateException;
@@ -52,7 +56,7 @@ public class SimpleDebuggerWorkFlow {
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin,
-			BreakpointRegistrationListener breakpointListener) {
+			BreakpointSubscriberRegistrar breakpointListener) {
 		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
 				.eventRequestManager();
@@ -68,7 +72,16 @@ public class SimpleDebuggerWorkFlow {
 
 	public void debug() throws IOException, AbsentInformationException {
 		System.out.println("DEBUG");
+		Display.getDefault().asyncExec(() -> {
+			try {
+				IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 
+				BreakpointsView view = (BreakpointsView) page.showView(BreakpointsView.ID);
+				view.setModel(targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
 		// Обновляем данные о target приложении
 		targetApplicationRepresentation
 				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
@@ -84,7 +97,7 @@ public class SimpleDebuggerWorkFlow {
 		while (true) {
 			System.out.println("Start iteration...");
 			queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
-			
+
 			try {
 				EventSet eventSet = queue.remove(); // блокирует до события
 				System.out.println("eventSet.size() " + eventSet.size());

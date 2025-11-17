@@ -38,7 +38,7 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 		this.virtualMachine = virtualMachine;
 	}
 
-	private final Set<BreakpointWrapper> breakpointWrappers = ConcurrentHashMap.newKeySet();
+	//private final Set<BreakpointWrapper> breakpointWrappers = ConcurrentHashMap.newKeySet();
 	private final Set<BreakpointRequestWrapper> breakpointRequestWrappers = new ConcurrentHashMap().newKeySet();
 	//private final ConcurrentLinkedDeque<Location> locations = new ConcurrentLinkedDeque<>();
 
@@ -59,7 +59,7 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 			if (location.isPresent()) {
 				BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(location.get());
 				breakpointRequest.enable();
-				breakpointWrappers.add(breakpointWrapper);
+				//breakpointWrappers.add(breakpointWrapper);
 				//locations.offer(location.get());
 				breakpointRequestWrappers.add(new BreakpointRequestWrapper(breakpointRequest, breakpointWrapper));
 			}
@@ -78,7 +78,7 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 	        eventRequestManager.deleteEventRequest(request);
 
 	        breakpointRequestWrappers.remove(wrapper);
-	        breakpointWrappers.remove(breakpointWrapper);
+	        //breakpointWrappers.remove(breakpointWrapper);
 	        //locations.remove(request.location());
 	    });
 	}
@@ -95,10 +95,10 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 	}
 
 	public synchronized void refreshBreakePoints() {
-		breakpointWrappers.clear();
+		breakpointRequestWrappers.clear();
 		Arrays.asList(iBreakpointManager.getBreakpoints()).stream()
 				.forEach(bp -> addBreakepoint(new BreakpointWrapper(bp)));
-		breakpointWrappers.stream().forEach(bpw -> System.out.println("===> " + bpw.get()));
+		breakpointRequestWrappers.stream().forEach(bpw -> System.out.println("===> " + bpw.getBreakpointRequest()));
 	}
 
 	private Optional<Location> findLocation(Method method, int sourceLine) {
