@@ -4,7 +4,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 
 public interface BreakpointSubscriber {
 
-	boolean addBreakepoint(BreakpointWrapper breakpointWrapper);
+	void addBreakepoint(BreakpointWrapper breakpointWrapper);
 
 	void deleteBreakepoint(BreakpointWrapper breakpointWrapper);
 

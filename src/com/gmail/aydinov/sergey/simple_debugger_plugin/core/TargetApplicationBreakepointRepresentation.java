@@ -17,6 +17,7 @@ import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.request.BreakpointRequest;
+import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
 import com.sun.jdi.*;
 import java.util.List;
@@ -24,7 +25,7 @@ import java.util.Optional;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.core.resources.IMarker;
 
-public class TargetApplicationBreakepointRepresentation implements BreakpointSubscriber {
+public class TargetApplicationBreakepointRepresentation implements BreakpointSubscriber  {
 
 	private final IBreakpointManager iBreakpointManager;
 	private final EventRequestManager eventRequestManager;
@@ -37,43 +38,49 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 		this.virtualMachine = virtualMachine;
 	}
 
-	private final Set<BreakpointWrapper> breakpoints = ConcurrentHashMap.newKeySet();
-	private final ConcurrentLinkedDeque<BreakpointRequestWrapper> breakpointRequestWrappers = new ConcurrentLinkedDeque<>();
-	private final ConcurrentLinkedDeque<Location> locations = new ConcurrentLinkedDeque<>();
+	private final Set<BreakpointWrapper> breakpointWrappers = ConcurrentHashMap.newKeySet();
+	private final Set<BreakpointRequestWrapper> breakpointRequestWrappers = new ConcurrentHashMap().newKeySet();
+	//private final ConcurrentLinkedDeque<Location> locations = new ConcurrentLinkedDeque<>();
 
-	public ConcurrentLinkedDeque<BreakpointRequestWrapper> getBreakpointRequests() {
+	public Set<BreakpointRequestWrapper> getBreakpointRequests() {
 		return breakpointRequestWrappers;
 	}
 
-	public ConcurrentLinkedDeque<Location> getLocations() {
-		return locations;
-	}
+//	public ConcurrentLinkedDeque<Location> getLocations() {
+//		return locations;
+//	}
 
 	@Override
-	public synchronized boolean addBreakepoint(BreakpointWrapper breakpointWrapper) {
+	public synchronized void addBreakepoint(BreakpointWrapper breakpointWrapper) {
 		Optional<Method> methodOptional = getMethodForBreakpoint(breakpointWrapper.get(), virtualMachine);
 		if (methodOptional.isPresent()) {
 			int line = getLineNumber(breakpointWrapper.get());
 			Optional<Location> location = findLocation(methodOptional.get(), line);
 			if (location.isPresent()) {
-
 				BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(location.get());
 				breakpointRequest.enable();
-				breakpointRequestWrappers.offer(new BreakpointRequestWrapper(breakpointRequest));
-
-				locations.offer(location.get());
-				breakpoints.add(breakpointWrapper);
-				breakpoints.add(breakpointWrapper);
-				System.out.println(breakpointRequestWrappers.size());
-				return true;
+				breakpointWrappers.add(breakpointWrapper);
+				//locations.offer(location.get());
+				breakpointRequestWrappers.add(new BreakpointRequestWrapper(breakpointRequest, breakpointWrapper));
 			}
 		}
-		return false;
 	}
 
 	@Override
 	public void deleteBreakepoint(BreakpointWrapper breakpointWrapper) {
+		Optional<BreakpointRequestWrapper> wrapperOpt = breakpointRequestWrappers.stream()
+	            .filter(w -> w.getBreakpointWrapper().equals(breakpointWrapper))
+	            .findFirst();
 
+	    wrapperOpt.ifPresent(wrapper -> {
+	        BreakpointRequest request = wrapper.getRequest();
+	        request.disable();
+	        eventRequestManager.deleteEventRequest(request);
+
+	        breakpointRequestWrappers.remove(wrapper);
+	        breakpointWrappers.remove(breakpointWrapper);
+	        //locations.remove(request.location());
+	    });
 	}
 
 	@Override
@@ -83,15 +90,15 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 
 	public Set<BreakpointWrapper> getBreakpoints() {
 		Set<BreakpointWrapper> breakpointWrappers = new HashSet<BreakpointWrapper>();
-		breakpointWrappers.addAll(breakpoints);
+		breakpointWrappers.addAll(breakpointWrappers);
 		return breakpointWrappers;
 	}
 
 	public synchronized void refreshBreakePoints() {
-		breakpoints.clear();
+		breakpointWrappers.clear();
 		Arrays.asList(iBreakpointManager.getBreakpoints()).stream()
 				.forEach(bp -> addBreakepoint(new BreakpointWrapper(bp)));
-		breakpoints.stream().forEach(bpw -> System.out.println("===> " + bpw.get()));
+		breakpointWrappers.stream().forEach(bpw -> System.out.println("===> " + bpw.get()));
 	}
 
 	private Optional<Location> findLocation(Method method, int sourceLine) {

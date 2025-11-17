@@ -103,7 +103,7 @@ public class SimpleDebuggerWorkFlow {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			System.out.println("End iteration.");
+			System.out.println("End iteration." + "\n");
 		}
 	}
 

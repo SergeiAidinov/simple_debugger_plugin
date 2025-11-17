@@ -20,12 +20,13 @@ public class BreakePointListener implements IBreakpointListener, BreakpointRegis
 
 	@Override
 	public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
-		printBreakpoint(breakpoint, "REMOVED");	
+		printBreakpoint(breakpoint, "REMOVED");
+		subscriber.deleteBreakepoint(new BreakpointWrapper(breakpoint));	
 	}
 
 	@Override
 	public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
-		printBreakpoint(breakpoint, "CHANGED");		
+		//printBreakpoint(breakpoint, "CHANGED");		
 	}
 	
 	private void printBreakpoint(IBreakpoint breakpoint, String action) {
