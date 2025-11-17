@@ -3,8 +3,6 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.debug.core.model.IBreakpoint;
 
-import java.util.Optional;
-
 public class BreakpointWrapper implements Comparable<BreakpointWrapper> {
 
     private final IBreakpoint bp;
@@ -13,26 +11,23 @@ public class BreakpointWrapper implements Comparable<BreakpointWrapper> {
 
     public BreakpointWrapper(IBreakpoint bp) {
         this.bp = bp;
-        this.path = Optional.ofNullable(bp)
-                .map(IBreakpoint::getMarker)
-                .map(IMarker::getResource)
-                .map(r -> r.getFullPath().toString())
-                .orElse("");
-        this.line = Optional.ofNullable(bp)
-                .map(IBreakpoint::getMarker)
-                .map(marker -> marker.getAttribute(IMarker.LINE_NUMBER, -1))
-                .orElse(-1);
+        IMarker marker = bp != null ? bp.getMarker() : null;
+        this.path = (marker != null && marker.getResource() != null)
+                        ? marker.getResource().getFullPath().toString()
+                        : "";
+        this.line = (marker != null) ? marker.getAttribute(IMarker.LINE_NUMBER, -1) : -1;
     }
 
-    public Optional<IBreakpoint> get() {
-        return Optional.ofNullable(bp);
+    public IBreakpoint get() {
+        return bp;
     }
 
     @Override
     public int compareTo(BreakpointWrapper o) {
         if (o == null) return 1;
         int cmp = path.compareTo(o.path);
-        return cmp != 0 ? cmp : Integer.compare(line, o.line);
+        if (cmp != 0) return cmp;
+        return Integer.compare(line, o.line);
     }
 
     @Override
