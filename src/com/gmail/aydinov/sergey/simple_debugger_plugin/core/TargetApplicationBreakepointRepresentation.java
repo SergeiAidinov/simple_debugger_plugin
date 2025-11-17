@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.model.IBreakpoint;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointRequestWrapper;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Location;
@@ -37,13 +38,13 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 	}
 
 	private final Set<BreakpointWrapper> breakpoints = ConcurrentHashMap.newKeySet();
-	private final ConcurrentLinkedDeque<BreakpointRequest> breakpointRequests = new ConcurrentLinkedDeque<>();
+	private final ConcurrentLinkedDeque<BreakpointRequestWrapper> breakpointRequestWrappers = new ConcurrentLinkedDeque<>();
 	private final ConcurrentLinkedDeque<Location> locations = new ConcurrentLinkedDeque<>();
-	
-	public ConcurrentLinkedDeque<BreakpointRequest> getBreakpointRequests() {
-		return breakpointRequests;
+
+	public ConcurrentLinkedDeque<BreakpointRequestWrapper> getBreakpointRequests() {
+		return breakpointRequestWrappers;
 	}
-	
+
 	public ConcurrentLinkedDeque<Location> getLocations() {
 		return locations;
 	}
@@ -55,26 +56,29 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 			int line = getLineNumber(breakpointWrapper.get());
 			Optional<Location> location = findLocation(methodOptional.get(), line);
 			if (location.isPresent()) {
-				
-				  BreakpointRequest breakpointRequest =
-				  eventRequestManager.createBreakpointRequest(location.get());
-				  breakpointRequest.enable(); breakpointRequests.offer(breakpointRequest);
-				 
+
+				BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(location.get());
+				breakpointRequest.enable();
+				breakpointRequestWrappers.offer(new BreakpointRequestWrapper(breakpointRequest));
+
 				locations.offer(location.get());
-				return breakpoints.add(breakpointWrapper);
+				breakpoints.add(breakpointWrapper);
+				breakpoints.add(breakpointWrapper);
+				System.out.println(breakpointRequestWrappers.size());
+				return true;
 			}
 		}
 		return false;
 	}
-	
+
 	@Override
 	public void deleteBreakepoint(BreakpointWrapper breakpointWrapper) {
-		
+
 	}
-	
+
 	@Override
 	public void changeBreakpoint(BreakpointWrapper breakpointWrapper) {
-		
+
 	}
 
 	public Set<BreakpointWrapper> getBreakpoints() {

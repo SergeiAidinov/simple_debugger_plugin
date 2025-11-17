@@ -2,18 +2,23 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.swt.widgets.Display;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointRequestWrapper;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.IncompatibleThreadStateException;
@@ -73,24 +78,16 @@ public class SimpleDebuggerWorkFlow {
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
 				.eventRequestManager();
 
-		// Создаём BreakpointRequest один раз для всех Location
-		ConcurrentLinkedDeque<Location> locationsQueue = targetApplicationRepresentation
-				.getTargetApplicationBreakepointRepresentation().getLocations();
-
-		for (Location location : locationsQueue) {
-			BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(location);
-			breakpointRequest.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD); // или SUSPEND_ALL
-			breakpointRequest.enable();
-		}
-
 		System.out.println("Waiting for events...");
 		EventQueue queue;
 
 		while (true) {
+			System.out.println("Start iteration...");
 			queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
+			
 			try {
 				EventSet eventSet = queue.remove(); // блокирует до события
-
+				System.out.println("eventSet.size() " + eventSet.size());
 				for (Event event : eventSet) {
 					if (event instanceof BreakpointEvent bpEvent) {
 						handleBreakpointEvent(bpEvent);
@@ -106,6 +103,7 @@ public class SimpleDebuggerWorkFlow {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			System.out.println("End iteration.");
 		}
 	}
 
@@ -184,7 +182,7 @@ public class SimpleDebuggerWorkFlow {
 				@Override
 				public void run() {
 					DebugPlugin plugin = DebugPlugin.getDefault();
-					if (Objects.nonNull(plugin) &&  Objects.nonNull(plugin.getBreakpointManager())) {
+					if (Objects.nonNull(plugin) && Objects.nonNull(plugin.getBreakpointManager())) {
 						future.complete(plugin.getBreakpointManager());
 					} else {
 						Display.getDefault().timerExec(500, this);
