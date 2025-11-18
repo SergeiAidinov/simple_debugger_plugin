@@ -1,7 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
+import com.sun.jdi.Location;
 
 public interface BreakpointHitListener {
-	void onBreakpointHit(BreakpointWrapper wrapper);
+	void onBreakpointHit(Location location);
 }

@@ -15,8 +15,9 @@ import org.eclipse.ui.part.ViewPart;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.TargetApplicationBreakepointRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakpointHitListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
+import com.sun.jdi.Location;
 
-public class BreakpointsView extends ViewPart {
+public class BreakpointsView extends ViewPart implements BreakpointHitListener {
 
     public static final String ID = "com.gmail.aydinov.sergey.simple_debugger_plugin.view.breakpointsView";
 
@@ -35,9 +36,19 @@ public class BreakpointsView extends ViewPart {
         fileColumn.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
-                return ((BreakpointWrapper) element).get().getMarker().getResource().getName();
+
+                if (element instanceof Location loc) {
+                    try {
+                        return loc.sourceName();
+                    } catch (Exception e) {
+                        return "<no source>";
+                    }
+                }
+
+                return "<unknown>";
             }
         });
+
 
         // Столбец строки
         TableViewerColumn lineColumn = new TableViewerColumn(viewer, SWT.NONE);
@@ -46,9 +57,19 @@ public class BreakpointsView extends ViewPart {
         lineColumn.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
-                return String.valueOf(((BreakpointWrapper) element).get().getMarker().getAttribute(IMarker.LINE_NUMBER, -1));
+
+                if (element instanceof Location loc) {
+                    try {
+                        return String.valueOf(loc.lineNumber());
+                    } catch (Exception e) {
+                        return "-";
+                    }
+                }
+
+                return "-";
             }
         });
+
 
         viewer.getTable().setHeaderVisible(true);
         viewer.getTable().setLinesVisible(true);
@@ -65,37 +86,50 @@ public class BreakpointsView extends ViewPart {
     public void setModel(TargetApplicationBreakepointRepresentation model) {
         this.breakpointRepresentation = model;
 
+        // Подписываем view как слушателя
+        model.addListener(this);
+
+        // При первом подключении сразу обновляем таблицу
+        refreshViewer(null);
+    }
+
         // Подписка на новые брейкпойнты
-        breakpointRepresentation.addListener(new BreakpointHitListener() {
-            @Override
-            public void onBreakpointHit(BreakpointWrapper wrapper) {
-                Display.getDefault().asyncExec(() -> {
-                    if (viewer != null && !viewer.getControl().isDisposed()) {
-                        refreshViewer();
-                    }
-                });
-            }
-        });
+//        breakpointRepresentation.addListener(new BreakpointHitListener() {
+//            @Override
+//            public void onBreakpointHit(BreakpointWrapper wrapper) {
+//                Display.getDefault().asyncExec(() -> {
+//                    if (viewer != null && !viewer.getControl().isDisposed()) {
+//                        refreshViewer();
+//                    }
+//                });
+//            }
+//        });
 
         // Обновляем таблицу сразу, если viewer уже создан
+//        if (viewer != null && !viewer.getControl().isDisposed()) {
+//            refreshViewer();
+//        }
+//    }
+
+    private void refreshViewer(Location loc) {
         if (viewer != null && !viewer.getControl().isDisposed()) {
-            refreshViewer();
-        }
-    }
 
-    private void refreshViewer() {
-        if (viewer != null && !viewer.getControl().isDisposed() && breakpointRepresentation != null) {
-            Set<BreakpointWrapper> bps = breakpointRepresentation.getBreakpoints();
-
-            // Отладочный вывод
-            System.out.println("Refreshing viewer, breakpoints count: " + bps.size());
-            for (BreakpointWrapper bp : bps) {
-                System.out.println("BP: " + bp.get().getMarker().getResource().getName()
-                                   + ":" + bp.get().getMarker().getAttribute(IMarker.LINE_NUMBER, -1));
-            }
-
-            viewer.setInput(bps);
+            // Временный input — массив из одного Location
+            viewer.setInput(new Location[] { loc });
             viewer.refresh();
+
+            System.out.println("Viewer refreshed with location: " + loc);
         }
     }
+
+
+		@Override
+		public void onBreakpointHit(Location location) {
+			Display.getDefault().asyncExec(() -> {
+              if (viewer != null && !viewer.getControl().isDisposed()) {
+                  refreshViewer(location);
+              }
+          });
+      }
+			
 }

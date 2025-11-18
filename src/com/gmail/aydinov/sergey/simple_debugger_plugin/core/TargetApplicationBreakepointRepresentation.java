@@ -177,4 +177,11 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 		return Optional.empty();
 	}
 
+	public void fireBreakpointHit(Location loc) {
+		for (BreakpointHitListener listener : listeners) {
+			listener.onBreakpointHit(loc);
+		}
+		
+	}
+
 }
