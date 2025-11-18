@@ -13,8 +13,22 @@ public class DebugWindow {
 
     private Shell shell;
     private CTabFolder tabFolder;
+    
+    
 
-    public DebugWindow(Display display) {
+    public DebugWindow() {
+    	shell = new Shell();
+        shell.setText("Simple Debugger");
+        shell.setSize(800, 600);
+        shell.setLayout(new FillLayout());
+
+        tabFolder = new CTabFolder(shell, SWT.BORDER);
+        tabFolder.setSimple(false);
+
+        createTabs();
+	}
+
+	public DebugWindow(Display display) {
         shell = new Shell(display);
         shell.setText("Simple Debugger");
         shell.setSize(800, 600);

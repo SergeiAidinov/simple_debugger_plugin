@@ -22,6 +22,7 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointRequestWrapper;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakepintViewController;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakpointsView;
 import com.sun.jdi.AbsentInformationException;
@@ -74,16 +75,15 @@ public class SimpleDebuggerWorkFlow {
 
 	public void debug() throws IOException, AbsentInformationException {
 		System.out.println("DEBUG");
-//		Display.getDefault().asyncExec(() -> {
-//			try {
-//				IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-//
-//				BreakpointsView view = (BreakpointsView) page.showView(BreakpointsView.ID);
-//				view.setController(BreakepintViewController.instance());
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//			}
-//		});
+		
+		Display.getDefault().asyncExec(() -> {
+		    DebugWindow debugWindow = new DebugWindow();
+		   // debugWindow.setController(debugWindowManager);
+		    debugWindow.open();
+		});
+
+
+		
 		// Обновляем данные о target приложении
 		targetApplicationRepresentation
 				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
