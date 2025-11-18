@@ -18,6 +18,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakepintViewController;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.InterfaceType;
 import com.sun.jdi.ReferenceType;
@@ -38,6 +39,7 @@ public class TargetApplicationRepresentation {
 		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakepointRepresentation(
 				iBreakpointManager, eventRequestManager, virtualMachine);
 		breakpointHitListener.register(targetApplicationBreakepointRepresentation);
+		BreakepintViewController.instance().setTargetApplicationBreakepointRepresentation(targetApplicationBreakepointRepresentation);
 		//targetApplicationBreakepointRepresentation.addListener(breakpointListener);
 	}
 

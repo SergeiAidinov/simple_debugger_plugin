@@ -41,11 +41,17 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 
 	//private final Set<BreakpointWrapper> breakpointWrappers = ConcurrentHashMap.newKeySet();
 	private final Set<BreakpointRequestWrapper> breakpointRequestWrappers = new ConcurrentHashMap().newKeySet();
-	//private final ConcurrentLinkedDeque<Location> locations = new ConcurrentLinkedDeque<>();
+	private final ConcurrentLinkedDeque<Location> locations = new ConcurrentLinkedDeque<>();
 
 
 	public Set<BreakpointRequestWrapper> getBreakpointRequests() {
 		return breakpointRequestWrappers;
+	}
+	
+	
+
+	public ConcurrentLinkedDeque<Location> getLocations() {
+		return locations;
 	}
 
 	@Override
@@ -58,7 +64,7 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 				BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(location.get());
 				breakpointRequest.enable();
 				//breakpointWrappers.add(breakpointWrapper);
-				//locations.offer(location.get());
+				locations.offer(location.get());
 				breakpointRequestWrappers.add(new BreakpointRequestWrapper(breakpointRequest, breakpointWrapper));
 			}
 		}
@@ -77,7 +83,7 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 
 	        breakpointRequestWrappers.remove(wrapper);
 	        //breakpointWrappers.remove(breakpointWrapper);
-	        //locations.remove(request.location());
+	        locations.remove(request.location());
 	    });
 	}
 

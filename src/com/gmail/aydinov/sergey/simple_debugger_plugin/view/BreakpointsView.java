@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.view;
 
+import java.util.Collection;
 import java.util.Set;
 
 import org.eclipse.core.resources.IMarker;
@@ -90,7 +91,7 @@ public class BreakpointsView extends ViewPart implements BreakpointHitListener {
         breakepintViewController.setBreakpointHitListener(this);
 
         // При первом подключении сразу обновляем таблицу
-        refreshViewer(null);
+        bulkRefreshViewer(BreakepintViewController.instance().getAllLocations());
     }
 
         // Подписка на новые брейкпойнты
@@ -111,15 +112,43 @@ public class BreakpointsView extends ViewPart implements BreakpointHitListener {
 //        }
 //    }
 
-    private void refreshViewer(Location loc) {
-        if (viewer != null && !viewer.getControl().isDisposed()) {
+    private void bulkRefreshViewer(Collection<Location> locs) {
+    	    if (viewer == null || viewer.getControl().isDisposed()) {
+    	        return;
+    	    }
 
-            // Временный input — массив из одного Location
-            viewer.setInput(new Location[] { loc });
-            viewer.refresh();
+    	    if (locs == null || locs.isEmpty()) {
+    	        viewer.setInput(new Location[0]);
+    	        viewer.refresh();
+    	        return;
+    	    }
 
-            System.out.println("Viewer refreshed with location: " + loc);
-        }
+    	    // Преобразуем коллекцию в массив для TableViewer
+    	    Location[] locArray = locs.toArray(new Location[0]);
+    	    viewer.setInput(locArray);
+    	    viewer.refresh();
+
+    	    // Отладочный вывод
+    	    System.out.println("Viewer refreshed. Total locations: " + locArray.length);
+    	    for (Location l : locArray) {
+    	        try {
+    	            System.out.println(" -> " + l.declaringType().name() + ":" + l.lineNumber());
+    	        } catch (Exception e) {
+    	            System.out.println(" -> <unknown location>");
+    	        }
+    	    }
+    	}
+
+	private void refreshViewer(Location loc) {
+//        if (viewer != null && !viewer.getControl().isDisposed()) {
+//
+//            // Временный input — массив из одного Location
+//            viewer.setInput(new Location[] { loc });
+//            viewer.refresh();
+//
+//            System.out.println("Viewer refreshed with location: " + loc);
+//        }
+		bulkRefreshViewer(BreakepintViewController.instance().getAllLocations());
     }
 
 
