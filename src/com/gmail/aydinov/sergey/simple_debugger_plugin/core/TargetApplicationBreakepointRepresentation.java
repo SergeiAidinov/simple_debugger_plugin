@@ -42,25 +42,11 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 	//private final Set<BreakpointWrapper> breakpointWrappers = ConcurrentHashMap.newKeySet();
 	private final Set<BreakpointRequestWrapper> breakpointRequestWrappers = new ConcurrentHashMap().newKeySet();
 	//private final ConcurrentLinkedDeque<Location> locations = new ConcurrentLinkedDeque<>();
-	private final Set<BreakpointHitListener> listeners = new CopyOnWriteArraySet<>();
 
 
 	public Set<BreakpointRequestWrapper> getBreakpointRequests() {
 		return breakpointRequestWrappers;
 	}
-	
-	public void addListener(BreakpointHitListener listener) {
-	    listeners.add(listener);
-	}
-
-	public void removeListener(BreakpointHitListener listener) {
-	    listeners.remove(listener);
-	}
-
-
-//	public ConcurrentLinkedDeque<Location> getLocations() {
-//		return locations;
-//	}
 
 	@Override
 	public synchronized void addBreakepoint(BreakpointWrapper breakpointWrapper) {
@@ -175,13 +161,6 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 			e.printStackTrace();
 		}
 		return Optional.empty();
-	}
-
-	public void fireBreakpointHit(Location loc) {
-		for (BreakpointHitListener listener : listeners) {
-			listener.onBreakpointHit(loc);
-		}
-		
 	}
 
 }

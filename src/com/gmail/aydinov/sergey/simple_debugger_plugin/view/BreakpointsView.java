@@ -22,7 +22,7 @@ public class BreakpointsView extends ViewPart implements BreakpointHitListener {
     public static final String ID = "com.gmail.aydinov.sergey.simple_debugger_plugin.view.breakpointsView";
 
     private TableViewer viewer;
-    private TargetApplicationBreakepointRepresentation breakpointRepresentation;
+    private BreakepintViewController breakepintViewController;
 
     @Override
     public void createPartControl(Composite parent) {
@@ -83,11 +83,11 @@ public class BreakpointsView extends ViewPart implements BreakpointHitListener {
     /**
      * Связать view с моделью и подписаться на события добавления брейкпойнтов
      */
-    public void setModel(TargetApplicationBreakepointRepresentation model) {
-        this.breakpointRepresentation = model;
+    public void setController(BreakepintViewController breakepintViewController) {
+        this.breakepintViewController = breakepintViewController;
 
         // Подписываем view как слушателя
-        model.addListener(this);
+        breakepintViewController.setBreakpointHitListener(this);
 
         // При первом подключении сразу обновляем таблицу
         refreshViewer(null);

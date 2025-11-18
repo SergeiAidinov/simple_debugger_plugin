@@ -22,6 +22,7 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointRequestWrapper;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakepintViewController;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakpointsView;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
@@ -53,6 +54,7 @@ public class SimpleDebuggerWorkFlow {
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	// private final IBreakpointManager manager;
 	private final DebugPlugin debugPlugin; // новое поле
+	//private final BreakepintViewController breakepintViewController = BreakepintViewController.instance();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin,
@@ -77,7 +79,7 @@ public class SimpleDebuggerWorkFlow {
 				IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 
 				BreakpointsView view = (BreakpointsView) page.showView(BreakpointsView.ID);
-				view.setModel(targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation());
+				view.setController(BreakepintViewController.instance());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -124,7 +126,7 @@ public class SimpleDebuggerWorkFlow {
 	private void handleBreakpointEvent(BreakpointEvent bpEvent) {
 		ThreadReference thread = bpEvent.thread();
 		Location loc = bpEvent.location();
-        targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().fireBreakpointHit(loc);
+		BreakepintViewController.instance().fireBreakpointHit(loc);;
 		try {
 			
 			StackFrame frame = thread.frame(0);
