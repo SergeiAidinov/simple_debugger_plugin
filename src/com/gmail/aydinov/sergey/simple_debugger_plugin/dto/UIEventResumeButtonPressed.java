@@ -1,5 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
-public abstract class UIEvent {
+public class UIEventResumeButtonPressed extends UIEvent {
 
 }

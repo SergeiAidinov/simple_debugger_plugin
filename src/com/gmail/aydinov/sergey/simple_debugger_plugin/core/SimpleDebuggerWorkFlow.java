@@ -78,6 +78,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 		// this.manager = manager;
 		this.debugPlugin = debugPlugin;
 		DebugWindowManager.instance().setDebugEventProvider(this);
+		//debugEventListener = DebugWindowManager.instance().getOrCreateWindow();
 
 	}
 
@@ -207,7 +208,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 		return classAndMethod + " " + sourceAndLine;
 	}
 
-	public Optional<Location> findLocation(Method method, int sourceLine) {
+	private Optional<Location> findLocation(Method method, int sourceLine) {
 		try {
 			for (Location location : method.allLineLocations()) {
 				if (location.lineNumber() == sourceLine) {
@@ -223,7 +224,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 
 	@Override
 	public void handleUiEvent(UIEvent uIevent) {
-		// TODO Auto-generated method stub
+		System.out.println("Button pressed");
 
 	}
 
