@@ -17,7 +17,7 @@ public class OpenDebugWindowHandler extends AbstractHandler {
         Display display = Display.getDefault();
 
         if (window == null || window.getShell().isDisposed()) {
-            window = new DebugWindow(display);
+            window = new DebugWindow();
             window.open();
         } else {
             window.getShell().setActive();

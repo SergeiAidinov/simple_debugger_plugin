@@ -23,6 +23,7 @@ import org.eclipse.ui.PlatformUI;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointRequestWrapper;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakepintViewController;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakpointsView;
 import com.sun.jdi.AbsentInformationException;
@@ -77,11 +78,13 @@ public class SimpleDebuggerWorkFlow {
 		System.out.println("DEBUG");
 		
 		Display.getDefault().asyncExec(() -> {
-		    DebugWindow debugWindow = new DebugWindow();
-		   // debugWindow.setController(debugWindowManager);
-		    debugWindow.open();
-		});
+		    DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
 
+		    if (window == null || !window.isOpen()) {
+		        //window = DebugWindowManager.instance().getOrCreateWindow(); // создаём окно
+		        window.open(); // обязательно открываем shell
+		    }
+		});
 
 		
 		// Обновляем данные о target приложении
@@ -126,7 +129,8 @@ public class SimpleDebuggerWorkFlow {
 	private void handleBreakpointEvent(BreakpointEvent bpEvent) {
 		ThreadReference thread = bpEvent.thread();
 		Location loc = bpEvent.location();
-		BreakepintViewController.instance().fireBreakpointHit(loc);;
+		DebugWindowManager.instance().updateLocation(loc, thread);
+		
 		try {
 			
 			StackFrame frame = thread.frame(0);

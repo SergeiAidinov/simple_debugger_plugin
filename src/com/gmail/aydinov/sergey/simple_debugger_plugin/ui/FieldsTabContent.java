@@ -1,10 +1,15 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
+import java.util.Map;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+
+import com.sun.jdi.Field;
+import com.sun.jdi.Value;
 
 public class FieldsTabContent {
 
@@ -30,4 +35,9 @@ public class FieldsTabContent {
     public Composite getControl() {
         return root;
     }
+
+	public void updateFields(Map<Field, Value> fields) {
+		// TODO Auto-generated method stub
+		
+	}
 }

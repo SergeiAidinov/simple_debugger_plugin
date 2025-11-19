@@ -17,8 +17,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.TargetApplicationBre
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakpointHitListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 import com.sun.jdi.Location;
+import com.sun.jdi.ThreadReference;
 
-public class BreakpointsView extends ViewPart implements BreakpointHitListener {
+public class BreakpointsView extends ViewPart {
 
     public static final String ID = "com.gmail.aydinov.sergey.simple_debugger_plugin.view.breakpointsView";
 
@@ -88,7 +89,7 @@ public class BreakpointsView extends ViewPart implements BreakpointHitListener {
         this.breakepintViewController = breakepintViewController;
 
         // Подписываем view как слушателя
-        breakepintViewController.setBreakpointHitListener(this);
+        // breakepintViewController.setBreakpointHitListener(this);
 
         // При первом подключении сразу обновляем таблицу
         bulkRefreshViewer(BreakepintViewController.instance().getAllLocations());
@@ -152,13 +153,19 @@ public class BreakpointsView extends ViewPart implements BreakpointHitListener {
     }
 
 
-		@Override
-		public void onBreakpointHit(Location location) {
-			Display.getDefault().asyncExec(() -> {
-              if (viewer != null && !viewer.getControl().isDisposed()) {
-                  refreshViewer(location);
-              }
-          });
-      }
+//		@Override
+//		public void onBreakpointHit(Location location) {
+//			Display.getDefault().asyncExec(() -> {
+//              if (viewer != null && !viewer.getControl().isDisposed()) {
+//                  refreshViewer(location);
+//              }
+//          });
+//      }
+//
+//		@Override
+//		public void onBreakpointHit(Location location, ThreadReference thread) {
+//			// TODO Auto-generated method stub
+//			
+//		}
 			
 }
