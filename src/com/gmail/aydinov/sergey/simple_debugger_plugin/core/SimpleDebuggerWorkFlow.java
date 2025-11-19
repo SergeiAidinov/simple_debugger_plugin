@@ -1,7 +1,9 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -152,11 +154,15 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 
 			// Локальные переменные
 			// Локальные переменные
-			for (LocalVariable var : frame.visibleVariables()) {
-				Value val = frame.getValue(var);
-				System.out.println(var.name() + " = " + val);
+			Map<LocalVariable, Value> localVariables = new HashMap<LocalVariable, Value>();
+			for (LocalVariable localVariable : frame.visibleVariables()) {
+				Value value = frame.getValue(localVariable);
+				localVariables.put(localVariable, value);
+				System.out.println(localVariable.name() + " = " + value);
 			}
-
+			
+			DebugEvent debugEvent = new DebugEvent(localVariables);
+			debugEventListener.handleDebugEvent(debugEvent);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

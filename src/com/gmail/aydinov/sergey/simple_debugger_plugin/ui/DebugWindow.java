@@ -174,7 +174,37 @@ System.out.println();
 
 	@Override
 	public void handleDebugEvent(DebugEvent debugEvent) {
-		// TODO Auto-generated method stub
+		 Display.getDefault().asyncExec(() -> {
+	            try {
+	                if (shell.isDisposed()) return;
+
+	                resumeButton.setEnabled(true);   // ← включаем кнопку при остановке
+
+	                // Верхняя рамка стека
+	                //StackFrame frame = thread.frame(0);
+
+	                // Локальные переменные
+//	                List<LocalVariable> vars = frame.visibleVariables();
+//	                Map<LocalVariable, Value> values = frame.getValues(vars);
+	                variablesTab.updateVariables(debugEvent.getLocalVariables());
+
+	                // Поля объекта
+//	                ObjectReference thisObject = frame.thisObject();
+//	                if (thisObject != null) {
+//	                    Map<Field, Value> fields = thisObject.getValues(
+//	                            thisObject.referenceType().fields()
+//	                    );
+//	                    fieldsTab.updateFields(fields);
+//	                }
+
+	                // Стек вызовов
+//	                List<StackFrame> frames = thread.frames();
+//	                stackTab.updateStack(frames);
+
+	            } catch (Exception e) {
+	                e.printStackTrace();
+	            }
+	        });
 		
 	}
 
