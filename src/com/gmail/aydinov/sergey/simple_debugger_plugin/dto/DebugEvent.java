@@ -10,8 +10,8 @@ import com.sun.jdi.Value;
 
 public class DebugEvent {
 	
-	private final Map<LocalVariable, Value> localVariables;
 	private final String className;
+	private final Map<LocalVariable, Value> localVariables;
 	private final Map<Field, Value> fields;
 	private final List<StackFrame> frames;
 	private final String stackDescription;
@@ -27,11 +27,12 @@ public class DebugEvent {
 		
 	}
 	
+	
 	public String getClassName() {
 		return className;
 	}
-	
-	
+
+
 	public Map<Field, Value> getFields() {
 		return fields;
 	}
