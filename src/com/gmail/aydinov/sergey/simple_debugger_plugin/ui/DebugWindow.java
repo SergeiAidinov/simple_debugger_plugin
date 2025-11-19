@@ -39,66 +39,72 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 	private final String STOP_INFO = "Stopped at: ";
 
 	public DebugWindow() {
-		uiEventListener = SimpleDebuggerWorkFlow.Factory.getInstanceOfSimpleDebuggerWorkFlow();
-		Display display = Display.getDefault();
-		shell = new Shell(display);
-		shell.setText("Simple Debugger");
-		shell.setSize(800, 600);
-		shell.setLayout(new GridLayout(1, false));
+	    uiEventListener = SimpleDebuggerWorkFlow.Factory.getInstanceOfSimpleDebuggerWorkFlow();
+	    Display display = Display.getDefault();
+	    shell = new Shell(display);
+	    shell.setText("Simple Debugger");
+	    shell.setSize(800, 600);
+	    shell.setLayout(new GridLayout(1, false));
 
-		// Панель для кнопок
-		// Панель сверху
-		Composite topPanel = new Composite(shell, SWT.NONE);
-		topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-		topPanel.setLayout(new GridLayout(3, false)); // ← ровно 3 столбца
-		
-		// 3) Кнопка справа
-				resumeButton = new Button(topPanel, SWT.PUSH);
-				resumeButton.setText("Resume");
-				resumeButton.setEnabled(false);
-				resumeButton.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false));
+	    // ----------------- Панель сверху -----------------
+	    Composite topPanel = new Composite(shell, SWT.NONE);
+	    topPanel.setLayout(new GridLayout(3, false)); // 3 колонки
+	    GridData topPanelGD = new GridData(SWT.FILL, SWT.TOP, true, false);
+	    topPanel.setLayoutData(topPanelGD);
 
+	    // 1) Label слева
+	    locationLabel = new Label(topPanel, SWT.NONE);
+	    locationLabel.setText(STOP_INFO);
+	    GridData labelGD = new GridData(SWT.FILL, SWT.CENTER, true, false); // вертикальное центрирование
+	    locationLabel.setLayoutData(labelGD);
 
-		// 1) Лейбл слева — имя класса и метода
-		locationLabel = new Label(topPanel, SWT.NONE);
-		locationLabel.setText(STOP_INFO); // обновишь позже в updateLocation()
-		locationLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+	    // 2) Spacer
+	    Composite spacer = new Composite(topPanel, SWT.NONE);
+	    spacer.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-		// 2) Пустой заполнитель — занимает всё между лейблом и кнопкой
-		Composite spacer = new Composite(topPanel, SWT.NONE);
-		spacer.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false)); // ← тянется
+	    // 3) Кнопка справа
+	    resumeButton = new Button(topPanel, SWT.PUSH);
+	    resumeButton.setText("Resume");
+	    resumeButton.setEnabled(false);
+	    GridData buttonGD = new GridData(SWT.RIGHT, SWT.CENTER, false, false); // вертикальное центрирование
+	    resumeButton.setLayoutData(buttonGD);
 
-		
-		// TAB folder
-		tabFolder = new CTabFolder(shell, SWT.BORDER);
-		tabFolder.setSimple(false);
-		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+	    // Устанавливаем высоту панели: на 10 пикселей выше кнопки
+	    int buttonHeight = resumeButton.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
+	    topPanelGD.heightHint = buttonHeight + 20;
 
-		// Табы
-		variablesTab = new VariablesTabContent(tabFolder);
-		CTabItem varItem = new CTabItem(tabFolder, SWT.NONE);
-		varItem.setText("Variables");
-		varItem.setControl(variablesTab.getControl());
+	    // ----------------- TAB folder -----------------
+	    tabFolder = new CTabFolder(shell, SWT.BORDER);
+	    tabFolder.setSimple(false);
+	    tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-		fieldsTab = new FieldsTabContent(tabFolder);
-		CTabItem fieldsItem = new CTabItem(tabFolder, SWT.NONE);
-		fieldsItem.setText("Fields");
-		fieldsItem.setControl(fieldsTab.getControl());
+	    // Таб-страницы
+	    variablesTab = new VariablesTabContent(tabFolder);
+	    CTabItem varItem = new CTabItem(tabFolder, SWT.NONE);
+	    varItem.setText("Variables");
+	    varItem.setControl(variablesTab.getControl());
 
-		stackTab = new StackTabContent(tabFolder);
-		CTabItem stackItem = new CTabItem(tabFolder, SWT.NONE);
-		stackItem.setText("Stack");
-		stackItem.setControl(stackTab.getControl());
+	    fieldsTab = new FieldsTabContent(tabFolder);
+	    CTabItem fieldsItem = new CTabItem(tabFolder, SWT.NONE);
+	    fieldsItem.setText("Fields");
+	    fieldsItem.setControl(fieldsTab.getControl());
 
-		evalTab = new EvaluateTabContent(tabFolder);
-		CTabItem evalItem = new CTabItem(tabFolder, SWT.NONE);
-		evalItem.setText("Evaluate");
-		evalItem.setControl(evalTab.getControl());
+	    stackTab = new StackTabContent(tabFolder);
+	    CTabItem stackItem = new CTabItem(tabFolder, SWT.NONE);
+	    stackItem.setText("Stack");
+	    stackItem.setControl(stackTab.getControl());
 
-		tabFolder.setSelection(0);
+	    evalTab = new EvaluateTabContent(tabFolder);
+	    CTabItem evalItem = new CTabItem(tabFolder, SWT.NONE);
+	    evalItem.setText("Evaluate");
+	    evalItem.setControl(evalTab.getControl());
 
-		hookResumeButton();
+	    tabFolder.setSelection(0);
+
+	    // ----------------- Hook кнопки Resume -----------------
+	    hookResumeButton();
 	}
+
 
 	public void setDebugEventProvider(DebugEventProvider debugEventProvider) {
 		this.debugEventProvider = debugEventProvider;
