@@ -55,23 +55,23 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 	    // 1) Label слева
 	    locationLabel = new Label(topPanel, SWT.NONE);
 	    locationLabel.setText(STOP_INFO);
-	    GridData labelGD = new GridData(SWT.FILL, SWT.CENTER, true, false); // вертикальное центрирование
+	    GridData labelGD = new GridData(SWT.FILL, SWT.TOP, true, false); // вертикальное центрирование
 	    locationLabel.setLayoutData(labelGD);
 
 	    // 2) Spacer
 	    Composite spacer = new Composite(topPanel, SWT.NONE);
-	    spacer.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+	    spacer.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
 	    // 3) Кнопка справа
 	    resumeButton = new Button(topPanel, SWT.PUSH);
 	    resumeButton.setText("Resume");
 	    resumeButton.setEnabled(false);
-	    GridData buttonGD = new GridData(SWT.RIGHT, SWT.CENTER, false, false); // вертикальное центрирование
+	    GridData buttonGD = new GridData(SWT.RIGHT, SWT.TOP, false, false); // вертикальное центрирование
 	    resumeButton.setLayoutData(buttonGD);
 
 	    // Устанавливаем высоту панели: на 10 пикселей выше кнопки
 	    int buttonHeight = resumeButton.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
-	    topPanelGD.heightHint = buttonHeight + 20;
+	    topPanelGD.heightHint = buttonHeight + 10;
 
 	    // ----------------- TAB folder -----------------
 	    tabFolder = new CTabFolder(shell, SWT.BORDER);
