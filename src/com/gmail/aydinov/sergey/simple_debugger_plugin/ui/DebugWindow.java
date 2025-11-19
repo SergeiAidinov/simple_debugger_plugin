@@ -188,6 +188,7 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 //	                Map<LocalVariable, Value> values = frame.getValues(vars);
 	                variablesTab.updateVariables(debugEvent.getLocalVariables());
 	                fieldsTab.updateFields(debugEvent.getFields());
+	                stackTab.updateStack(debugEvent.getStackDescription());
 
 	                // Поля объекта
 //	                ObjectReference thisObject = frame.thisObject();

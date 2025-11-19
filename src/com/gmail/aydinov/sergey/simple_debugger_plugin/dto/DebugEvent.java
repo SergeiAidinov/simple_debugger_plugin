@@ -1,9 +1,11 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
+import java.util.List;
 import java.util.Map;
 
 import com.sun.jdi.Field;
 import com.sun.jdi.LocalVariable;
+import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
 
 public class DebugEvent {
@@ -11,11 +13,16 @@ public class DebugEvent {
 	private final Map<LocalVariable, Value> localVariables;
 	private final String className;
 	private final Map<Field, Value> fields;
+	private final List<StackFrame> frames;
+	private final String stackDescription;
 
-	public DebugEvent(String className, Map<Field, Value> fields, Map<LocalVariable, Value> localVariables) {
+	public DebugEvent(String className, Map<Field, Value> fields, Map<LocalVariable, Value> localVariables,
+			List<StackFrame> frames, String stackDescription) {
 		this.className = className;
 		this.fields = fields;
 		this.localVariables = localVariables;
+		this.frames = frames;
+		this.stackDescription = stackDescription;
 		
 		
 	}
@@ -33,4 +40,12 @@ public class DebugEvent {
 		return localVariables;
 	}
 
+	public List<StackFrame> getFrames() {
+		return frames;
+	}
+
+	public String getStackDescription() {
+		return stackDescription;
+	}
+	
 }

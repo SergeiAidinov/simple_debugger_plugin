@@ -1,14 +1,22 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
 
+import com.sun.jdi.AbsentInformationException;
+import com.sun.jdi.Field;
+import com.sun.jdi.LocalVariable;
+import com.sun.jdi.Location;
 import com.sun.jdi.StackFrame;
+import com.sun.jdi.Value;
 
 public class StackTabContent {
 
@@ -30,9 +38,11 @@ public class StackTabContent {
     public Composite getControl() {
         return root;
     }
+    
+    public void updateStack(String stackDescription) {
+    	table.removeAll(); // очистить таблицу
+    	TableItem item = new TableItem(table, SWT.NONE);
+        item.setText(0, stackDescription);
 
-	public void updateStack(List<StackFrame> frames) {
-		// TODO Auto-generated method stub
-		
-	}
+    }
 }

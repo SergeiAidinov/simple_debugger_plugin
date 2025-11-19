@@ -166,11 +166,43 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 
 			}
 			String className = loc.declaringType().name();
-			DebugEvent debugEvent = new DebugEvent(className, fields, localVariables);
+			List<StackFrame> frames = thread.frames();
+			String stackDescription = compileStackInfo(thread.frames());
+			DebugEvent debugEvent = new DebugEvent(className, fields, localVariables, frames, stackDescription);
 			debugEventListener.handleDebugEvent(debugEvent);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	private String compileStackInfo(List<StackFrame> frames) {
+		  String classAndMethod = "Unknown";
+            String sourceAndLine = "Unknown";
+		for (StackFrame frame : frames) {
+            if (frame == null) continue;
+            try {
+                Location loc = frame.location();
+                if (loc != null) {
+                    String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
+                    String method = loc.method() != null ? loc.method().name() : "unknown";
+                    int line = loc.lineNumber();
+
+                    classAndMethod = className + "." + method + "()";
+
+                    try {
+                        String src = loc.sourceName();
+                        sourceAndLine = src + ":" + line;
+                    } catch (AbsentInformationException aie) {
+                        sourceAndLine = "Unknown:" + line;
+                    }
+                }
+            } catch (Exception e) {
+                // защищаемся от возможных исключений JDI
+                e.printStackTrace();
+            }
+		
+		}
+		return classAndMethod + " " + sourceAndLine;
 	}
 
 	public Optional<Location> findLocation(Method method, int sourceLine) {
