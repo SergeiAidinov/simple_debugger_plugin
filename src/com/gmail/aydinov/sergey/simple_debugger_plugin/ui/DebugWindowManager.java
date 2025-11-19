@@ -42,14 +42,11 @@ public class DebugWindowManager implements DebugEventListener, UiEventProvider {
     }
 
     /** Обновляет окно данными из JDI */
-    public void updateLocation(Location loc, ThreadReference thread) {
-        Display.getDefault().asyncExec(() -> {
-            DebugWindow w = getOrCreateWindow();
-            if (w != null && w.isOpen()) {
-                w.updateLocation(loc, thread);
-            }
-        });
-    }
+	/*
+	 * public void updateLocation(Location loc, ThreadReference thread) {
+	 * Display.getDefault().asyncExec(() -> { DebugWindow w = getOrCreateWindow();
+	 * if (w != null && w.isOpen()) { w.updateLocation(loc, thread); } }); }
+	 */
 
 	public void setDebugEventProvider(DebugEventProvider debugEventProvider) {
 		this.debugEventProvider = debugEventProvider;

@@ -1,14 +1,17 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
 
 import com.sun.jdi.Field;
+import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Value;
 
 public class FieldsTabContent {
@@ -37,7 +40,16 @@ public class FieldsTabContent {
     }
 
 	public void updateFields(Map<Field, Value> fields) {
-		// TODO Auto-generated method stub
+		table.removeAll(); // очистить таблицу
+
+        for (Entry<Field, Value> entry : fields.entrySet()) {
+            Field field = entry.getKey();
+            Value value = entry.getValue();
+            TableItem item = new TableItem(table, SWT.NONE);
+            item.setText(0, field.name());
+            item.setText(1, value.toString());
+           // item.setText(2, valueToString(value));
+        }
 		
 	}
 }
