@@ -7,6 +7,11 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
@@ -34,47 +39,58 @@ public class DebugWindow {
     private EvaluateTabContent evalTab;
 
     public DebugWindow() {
-        Display display = Display.getDefault();
+    	Display display = Display.getDefault();
         shell = new Shell(display);
         shell.setText("Simple Debugger");
         shell.setSize(800, 600);
-        shell.setLayout(new FillLayout());
+        shell.setLayout(new GridLayout(1, false));
 
+        // Панель для кнопок
+        Composite topPanel = new Composite(shell, SWT.NONE);
+        topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+        topPanel.setLayout(new RowLayout(SWT.HORIZONTAL));
+
+        Button resumeButton = new Button(topPanel, SWT.PUSH);
+        resumeButton.setText("Resume");
+        resumeButton.setEnabled(false); // включать только когда есть остановка
+
+        // TAB folder
         tabFolder = new CTabFolder(shell, SWT.BORDER);
         tabFolder.setSimple(false);
+        tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        createTabs();
-    }
-
-    private void createTabs() {
-        // --- Variables Tab ---
+        // Табы
         variablesTab = new VariablesTabContent(tabFolder);
-        CTabItem variablesItem = new CTabItem(tabFolder, SWT.NONE);
-        variablesItem.setText("Variables");
-        variablesItem.setControl(variablesTab.getControl());
+        CTabItem varItem = new CTabItem(tabFolder, SWT.NONE);
+        varItem.setText("Variables");
+        varItem.setControl(variablesTab.getControl());
 
-        // --- Fields Tab ---
         fieldsTab = new FieldsTabContent(tabFolder);
         CTabItem fieldsItem = new CTabItem(tabFolder, SWT.NONE);
         fieldsItem.setText("Fields");
         fieldsItem.setControl(fieldsTab.getControl());
 
-        // --- Stack Tab ---
         stackTab = new StackTabContent(tabFolder);
         CTabItem stackItem = new CTabItem(tabFolder, SWT.NONE);
         stackItem.setText("Stack");
         stackItem.setControl(stackTab.getControl());
 
-        // --- Evaluate Tab ---
         evalTab = new EvaluateTabContent(tabFolder);
         CTabItem evalItem = new CTabItem(tabFolder, SWT.NONE);
         evalItem.setText("Evaluate");
         evalItem.setControl(evalTab.getControl());
 
         tabFolder.setSelection(0);
+
+        hookResumeButton();
     }
 
-    public void open() {
+    private void hookResumeButton() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void open() {
         shell.open();
     }
 
