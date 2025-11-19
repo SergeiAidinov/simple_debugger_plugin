@@ -1,7 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
-import com.sun.jdi.Location;
-import com.sun.jdi.ThreadReference;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
 
 /**
 Слушатель событий от дебаггера → UI
@@ -9,12 +8,5 @@ import com.sun.jdi.ThreadReference;
 
 public interface DebugEventListener {
 
-    /** Остановились на брейкпойнте */
-    void onBreakpointHit(Location location, ThreadReference thread);
-
-    /** Виртуальная машина возобновила выполнение */
-    void onResume();
-
-    /** Дебаггер завершился */
-    void onTerminate();
+   void handleDebugEvent(DebugEvent debugEvent);
 }

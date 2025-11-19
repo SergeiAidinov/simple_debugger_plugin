@@ -22,6 +22,8 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointRequestWrapper;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakepintViewController;
@@ -50,14 +52,14 @@ import com.sun.jdi.request.BreakpointRequest;
 import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
 
-public class SimpleDebuggerWorkFlow {
+public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvider{
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	// private final IBreakpointManager manager;
 	private final DebugPlugin debugPlugin; // новое поле
 	//private final BreakepintViewController breakepintViewController = BreakepintViewController.instance();
-	private DebugEventListener listener;
+	private DebugEventListener debugEventListener;
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin,
@@ -69,12 +71,18 @@ public class SimpleDebuggerWorkFlow {
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 		// this.manager = manager;
 		this.debugPlugin = debugPlugin;
+		DebugWindowManager.instance().setDebugEventProvider(this);
+		
+		
+		
+	}
+ 
+
+	public void setDebugEventListener(DebugEventListener debugEventListener) {
+		this.debugEventListener = debugEventListener;
 	}
 
-	public void setListener(DebugEventListener listener) {
-	    this.listener = listener;
-	}
-	
+
 	public List<ReferenceType> getClassesOfTargetApplication() {
 		return targetVirtualMachineRepresentation.getVirtualMachine().allClasses();
 	}
@@ -126,15 +134,12 @@ public class SimpleDebuggerWorkFlow {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			System.out.println("End iteration." + "\n");
+			System.out.println("End iteration. DebugEventListener: " + debugEventListener + "\n");
 		}
 	}
 
 	// Отдельный метод для обработки события
 	private void handleBreakpointEvent(BreakpointEvent bpEvent) {
-		if (listener != null) {
-		    listener.onBreakpointHit(bpEvent.location(), bpEvent.thread());
-		}
 		ThreadReference thread = bpEvent.thread();
 		Location loc = bpEvent.location();
 		DebugWindowManager.instance().updateLocation(loc, thread);
@@ -171,7 +176,25 @@ public class SimpleDebuggerWorkFlow {
 		return Optional.empty();
 	}
 
+	@Override
+	public void handleUiEvent(UIEvent uIevent) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void sendDebugEvent(DebugEvent debugEvent) {
+		// TODO Auto-generated method stub
+		
+	}
+	
 	public static class Factory {
+		
+		private static SimpleDebuggerWorkFlow DEBUGGER_INSTANCE;
+		
+		public static SimpleDebuggerWorkFlow getInstanceOfSimpleDebuggerWorkFlow() {
+			return DEBUGGER_INSTANCE;
+		}
 
 		public static void create(String host, int port, OnWorkflowReadyListener listener) {
 
@@ -194,8 +217,10 @@ public class SimpleDebuggerWorkFlow {
 				System.out.println("[Factory] Breakpoint listener registered!");
 
 				// 🔹 создаём workflow с listener
-				return new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpManager,
+				
+				DEBUGGER_INSTANCE = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpManager,
 						plugin, breakpointListener);
+				return DEBUGGER_INSTANCE;
 
 			}).thenAccept(workflow -> {
 				if (Objects.nonNull(listener))

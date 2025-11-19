@@ -18,7 +18,13 @@ import org.eclipse.swt.widgets.Shell;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.VariablesTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.FieldsTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.StackTabContent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugWindowListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.EvaluateTabContent;
 import com.sun.jdi.Field;
 import com.sun.jdi.LocalVariable;
@@ -28,7 +34,7 @@ import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Value;
 
-public class DebugWindow {
+public class DebugWindow implements DebugEventListener, UiEventProvider {
 
     private Shell shell;
     private CTabFolder tabFolder;
@@ -40,9 +46,11 @@ public class DebugWindow {
     private EvaluateTabContent evalTab;
     private Button resumeButton;
     private ThreadReference suspendedThread;
-    private DebugWindowListener listener;
+    private DebugEventProvider debugEventProvider;
+    private UiEventListener uiEventListener;
 
     public DebugWindow() {
+    	uiEventListener = SimpleDebuggerWorkFlow.Factory.getInstanceOfSimpleDebuggerWorkFlow();
     	Display display = Display.getDefault();
         shell = new Shell(display);
         shell.setText("Simple Debugger");
@@ -89,11 +97,12 @@ public class DebugWindow {
         hookResumeButton();
     }
     
-    public void setListener(DebugWindowListener listener) {
-        this.listener = listener;
-    }
+	public void setDebugEventProvider(DebugEventProvider debugEventProvider) {
+		this.debugEventProvider = debugEventProvider;
+	}
 
-    private void hookResumeButton() {
+	private void hookResumeButton() {
+		System.out.println();
         resumeButton.addListener(SWT.Selection, e -> {
             if (suspendedThread != null) {
                 try {
@@ -126,7 +135,7 @@ public class DebugWindow {
      * Вызывается из DebugWindowManager, безопасно через UI-поток.
      */
     public void updateLocation(Location location, ThreadReference thread) {
-
+System.out.println();
         // сохраняем поток, чтобы кнопка Resume могла его продолжить
         this.suspendedThread = thread;
 
@@ -162,5 +171,18 @@ public class DebugWindow {
             }
         });
     }
+
+	@Override
+	public void handleDebugEvent(DebugEvent debugEvent) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void sendUiEvent(UIEvent uiEvent) {
+		// TODO Auto-generated method stub
+		
+	}
 
 }
