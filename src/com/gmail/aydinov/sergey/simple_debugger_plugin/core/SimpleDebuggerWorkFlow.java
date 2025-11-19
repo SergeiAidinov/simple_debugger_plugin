@@ -57,6 +57,7 @@ public class SimpleDebuggerWorkFlow {
 	// private final IBreakpointManager manager;
 	private final DebugPlugin debugPlugin; // новое поле
 	//private final BreakepintViewController breakepintViewController = BreakepintViewController.instance();
+	private DebugEventListener listener;
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin,
@@ -70,6 +71,10 @@ public class SimpleDebuggerWorkFlow {
 		this.debugPlugin = debugPlugin;
 	}
 
+	public void setListener(DebugEventListener listener) {
+	    this.listener = listener;
+	}
+	
 	public List<ReferenceType> getClassesOfTargetApplication() {
 		return targetVirtualMachineRepresentation.getVirtualMachine().allClasses();
 	}
@@ -127,6 +132,9 @@ public class SimpleDebuggerWorkFlow {
 
 	// Отдельный метод для обработки события
 	private void handleBreakpointEvent(BreakpointEvent bpEvent) {
+		if (listener != null) {
+		    listener.onBreakpointHit(bpEvent.location(), bpEvent.thread());
+		}
 		ThreadReference thread = bpEvent.thread();
 		Location loc = bpEvent.location();
 		DebugWindowManager.instance().updateLocation(loc, thread);

@@ -18,6 +18,7 @@ import org.eclipse.swt.widgets.Shell;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.VariablesTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.FieldsTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.StackTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugWindowListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.EvaluateTabContent;
 import com.sun.jdi.Field;
 import com.sun.jdi.LocalVariable;
@@ -37,6 +38,9 @@ public class DebugWindow {
     private FieldsTabContent fieldsTab;
     private StackTabContent stackTab;
     private EvaluateTabContent evalTab;
+    private Button resumeButton;
+    private ThreadReference suspendedThread;
+    private DebugWindowListener listener;
 
     public DebugWindow() {
     	Display display = Display.getDefault();
@@ -50,7 +54,7 @@ public class DebugWindow {
         topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
         topPanel.setLayout(new RowLayout(SWT.HORIZONTAL));
 
-        Button resumeButton = new Button(topPanel, SWT.PUSH);
+        resumeButton = new Button(topPanel, SWT.PUSH);
         resumeButton.setText("Resume");
         resumeButton.setEnabled(false); // включать только когда есть остановка
 
@@ -84,11 +88,26 @@ public class DebugWindow {
 
         hookResumeButton();
     }
+    
+    public void setListener(DebugWindowListener listener) {
+        this.listener = listener;
+    }
 
     private void hookResumeButton() {
-		// TODO Auto-generated method stub
-		
-	}
+        resumeButton.addListener(SWT.Selection, e -> {
+            if (suspendedThread != null) {
+                try {
+                    suspendedThread.resume();   // ← правильно возобновляет ТОЛЬКО этот поток
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
+                resumeButton.setEnabled(false); // выключаем до следующего стопа
+                suspendedThread = null;
+            }
+        });
+    }
+    
 
 	public void open() {
         shell.open();
@@ -107,9 +126,15 @@ public class DebugWindow {
      * Вызывается из DebugWindowManager, безопасно через UI-поток.
      */
     public void updateLocation(Location location, ThreadReference thread) {
+
+        // сохраняем поток, чтобы кнопка Resume могла его продолжить
+        this.suspendedThread = thread;
+
         Display.getDefault().asyncExec(() -> {
             try {
                 if (shell.isDisposed()) return;
+
+                resumeButton.setEnabled(true);   // ← включаем кнопку при остановке
 
                 // Верхняя рамка стека
                 StackFrame frame = thread.frame(0);
@@ -122,7 +147,9 @@ public class DebugWindow {
                 // Поля объекта
                 ObjectReference thisObject = frame.thisObject();
                 if (thisObject != null) {
-                    Map<Field, Value> fields = thisObject.getValues(thisObject.referenceType().fields());
+                    Map<Field, Value> fields = thisObject.getValues(
+                            thisObject.referenceType().fields()
+                    );
                     fieldsTab.updateFields(fields);
                 }
 
@@ -130,11 +157,10 @@ public class DebugWindow {
                 List<StackFrame> frames = thread.frames();
                 stackTab.updateStack(frames);
 
-                // Evaluate вкладка — остаётся для пользовательского ввода
-
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
     }
+
 }
