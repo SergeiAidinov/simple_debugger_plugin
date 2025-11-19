@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -65,7 +66,9 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 	private final DebugPlugin debugPlugin; // новое поле
 	// private final BreakepintViewController breakepintViewController =
 	// BreakepintViewController.instance();
+	private CountDownLatch countDownLatch = null;
 	private DebugEventListener debugEventListener;
+	
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin,
@@ -173,6 +176,10 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 			String stackDescription = compileStackInfo(thread.frames());
 			DebugEvent debugEvent = new DebugEvent(className, methodName, lineNumber, fields, localVariables, frames, stackDescription);
 			debugEventListener.handleDebugEvent(debugEvent);
+			countDownLatch = new CountDownLatch(1);
+			targetVirtualMachineRepresentation.getVirtualMachine().suspend();
+			countDownLatch.await();
+			targetVirtualMachineRepresentation.getVirtualMachine().resume();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -225,6 +232,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 	@Override
 	public void handleUiEvent(UIEvent uIevent) {
 		System.out.println("Button pressed");
+		countDownLatch.countDown();
 
 	}
 
