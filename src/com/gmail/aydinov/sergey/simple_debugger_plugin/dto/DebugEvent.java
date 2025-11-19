@@ -8,17 +8,24 @@ import com.sun.jdi.LocalVariable;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
 
+/**
+ * 
+ */
 public class DebugEvent {
 	
 	private final String className;
+	private final String methodName;
+	private final int lineNumber;
 	private final Map<LocalVariable, Value> localVariables;
 	private final Map<Field, Value> fields;
 	private final List<StackFrame> frames;
 	private final String stackDescription;
 
-	public DebugEvent(String className, Map<Field, Value> fields, Map<LocalVariable, Value> localVariables,
+	public DebugEvent(String className, String methodName, int lineNumber, Map<Field, Value> fields, Map<LocalVariable, Value> localVariables,
 			List<StackFrame> frames, String stackDescription) {
 		this.className = className;
+		this.methodName = methodName;
+		this.lineNumber = lineNumber;
 		this.fields = fields;
 		this.localVariables = localVariables;
 		this.frames = frames;
@@ -32,6 +39,14 @@ public class DebugEvent {
 		return className;
 	}
 
+	public String getMethodName() {
+		return methodName;
+	}
+	
+
+	public int getLineNumber() {
+		return lineNumber;
+	}
 
 	public Map<Field, Value> getFields() {
 		return fields;

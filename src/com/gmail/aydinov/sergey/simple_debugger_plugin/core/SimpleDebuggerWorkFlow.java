@@ -166,9 +166,11 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 
 			}
 			String className = loc.declaringType().name();
+			String methodName = loc.method().name();
+			int lineNumber = loc.lineNumber();
 			List<StackFrame> frames = thread.frames();
 			String stackDescription = compileStackInfo(thread.frames());
-			DebugEvent debugEvent = new DebugEvent(className, fields, localVariables, frames, stackDescription);
+			DebugEvent debugEvent = new DebugEvent(className, methodName, lineNumber, fields, localVariables, frames, stackDescription);
 			debugEventListener.handleDebugEvent(debugEvent);
 		} catch (Exception e) {
 			e.printStackTrace();
