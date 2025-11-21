@@ -37,7 +37,7 @@ public class DebugWindowManager implements DebugEventListener, UiEventProvider {
             });
         }
         debugWindow.setDebugEventProvider(debugEventProvider);
-        SimpleDebuggerWorkFlow.Factory.getInstanceOfSimpleDebuggerWorkFlow().setDebugEventListener(debugWindow);
+        //SimpleDebuggerWorkFlow.Factory.getInstanceOfSimpleDebuggerWorkFlow().setDebugEventListener(debugWindow);
         return debugWindow;
     }
 

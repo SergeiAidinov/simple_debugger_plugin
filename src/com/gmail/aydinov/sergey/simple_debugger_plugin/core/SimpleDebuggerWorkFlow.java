@@ -80,7 +80,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 		// this.manager = manager;
 		this.debugPlugin = debugPlugin;
-		DebugWindowManager.instance().setDebugEventProvider(this);
+		//DebugWindowManager.instance().setDebugEventProvider(this);
 		//debugEventListener = DebugWindowManager.instance().getOrCreateWindow();
 
 	}
@@ -98,7 +98,9 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 
 		Display.getDefault().asyncExec(() -> {
 			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-
+			setDebugEventListener(window);
+			window.setDebugEventProvider(this);
+			window.setUiEventListener(this);
 			if (window == null || !window.isOpen()) {
 				// window = DebugWindowManager.instance().getOrCreateWindow(); // создаём окно
 				window.open(); // обязательно открываем shell
@@ -244,11 +246,11 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 
 	public static class Factory {
 
-		private static SimpleDebuggerWorkFlow DEBUGGER_INSTANCE;
+		//private static SimpleDebuggerWorkFlow DEBUGGER_INSTANCE;
 
-		public static SimpleDebuggerWorkFlow getInstanceOfSimpleDebuggerWorkFlow() {
-			return DEBUGGER_INSTANCE;
-		}
+//		public static SimpleDebuggerWorkFlow getInstanceOfSimpleDebuggerWorkFlow() {
+//			return DEBUGGER_INSTANCE;
+//		}
 
 		public static void create(String host, int port, OnWorkflowReadyListener listener) {
 
@@ -272,9 +274,11 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 
 				// 🔹 создаём workflow с listener
 
-				DEBUGGER_INSTANCE = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
+//				DEBUGGER_INSTANCE = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
+//						bpManager, plugin, breakpointListener);
+//				return DEBUGGER_INSTANCE;
+				return new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
 						bpManager, plugin, breakpointListener);
-				return DEBUGGER_INSTANCE;
 
 			}).thenAccept(workflow -> {
 				if (Objects.nonNull(listener))

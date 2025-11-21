@@ -36,10 +36,11 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 	private ThreadReference suspendedThread;
 	private DebugEventProvider debugEventProvider;
 	private UiEventListener uiEventListener;
+	
 	private final String STOP_INFO = "Stopped at: ";
 
 	public DebugWindow() {
-		uiEventListener = SimpleDebuggerWorkFlow.Factory.getInstanceOfSimpleDebuggerWorkFlow();
+		//uiEventListener = SimpleDebuggerWorkFlow.Factory.getInstanceOfSimpleDebuggerWorkFlow();
 		Display display = Display.getDefault();
 		shell = new Shell(display);
 		shell.setText("Simple Debugger");
@@ -103,6 +104,14 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 
 		// ----------------- Hook кнопки Resume -----------------
 		hookResumeButton();
+	}
+	
+	public UiEventListener getUiEventListener() {
+		return uiEventListener;
+	}
+
+	public void setUiEventListener(UiEventListener uiEventListener) {
+		this.uiEventListener = uiEventListener;
 	}
 
 	private void hookResumeButton() {
