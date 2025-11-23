@@ -9,6 +9,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventListener;
@@ -115,9 +116,21 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 		});
 	}
 
-	private void handleWindowClose() {
+	private boolean handleWindowClose() {
+
+		MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO);
+		messageBox.setText("Confirmation");
+		messageBox.setMessage("Close the debugger window?");
+
+		int response = messageBox.open();
+		if (response == SWT.NO) {
+			return false; // отменяем закрытие
+		}
+
+		// закрываем
 		System.out.println("Debug window closed");
 		sendUiEvent(new UIEventWindowClosed());
+		return true; // разрешаем закрытие
 	}
 
 	public UiEventListener getUiEventListener() {
