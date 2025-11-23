@@ -19,6 +19,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventResumeButtonPressed;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventWindowClosed;
 import com.sun.jdi.ThreadReference;
 
 public class DebugWindow implements DebugEventListener, UiEventProvider {
@@ -36,11 +37,12 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 	private ThreadReference suspendedThread;
 	private DebugEventProvider debugEventProvider;
 	private UiEventListener uiEventListener;
-	
+
 	private final String STOP_INFO = "Stopped at: ";
 
 	public DebugWindow() {
-		//uiEventListener = SimpleDebuggerWorkFlow.Factory.getInstanceOfSimpleDebuggerWorkFlow();
+		// uiEventListener =
+		// SimpleDebuggerWorkFlow.Factory.getInstanceOfSimpleDebuggerWorkFlow();
 		Display display = Display.getDefault();
 		shell = new Shell(display);
 		shell.setText("Simple Debugger");
@@ -104,8 +106,20 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 
 		// ----------------- Hook кнопки Resume -----------------
 		hookResumeButton();
+		hookCross();
 	}
-	
+
+	private void hookCross() {
+		shell.addListener(SWT.Close, event -> {
+			handleWindowClose();
+		});
+	}
+
+	private void handleWindowClose() {
+		System.out.println("Debug window closed");
+		sendUiEvent(new UIEventWindowClosed());
+	}
+
 	public UiEventListener getUiEventListener() {
 		return uiEventListener;
 	}
@@ -116,9 +130,9 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 
 	private void hookResumeButton() {
 		resumeButton.addListener(SWT.Selection, e -> {
-		    pressResumeButton();
+			pressResumeButton();
 		});
-		
+
 	}
 
 	public void setDebugEventProvider(DebugEventProvider debugEventProvider) {

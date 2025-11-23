@@ -28,6 +28,8 @@ import org.eclipse.ui.PlatformUI;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointRequestWrapper;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventResumeButtonPressed;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventWindowClosed;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakepintViewController;
@@ -68,7 +70,6 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 	// BreakepintViewController.instance();
 	private CountDownLatch countDownLatch = null;
 	private DebugEventListener debugEventListener;
-	
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin,
@@ -80,8 +81,8 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 		// this.manager = manager;
 		this.debugPlugin = debugPlugin;
-		//DebugWindowManager.instance().setDebugEventProvider(this);
-		//debugEventListener = DebugWindowManager.instance().getOrCreateWindow();
+		// DebugWindowManager.instance().setDebugEventProvider(this);
+		// debugEventListener = DebugWindowManager.instance().getOrCreateWindow();
 
 	}
 
@@ -129,15 +130,12 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 				for (Event event : eventSet) {
 					if (event instanceof BreakpointEvent bpEvent) {
 						handleBreakpointEvent(bpEvent);
+						eventSet.resume();
 					} else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
 						System.out.println("Target VM stopped");
 						return;
 					}
 				}
-
-				// После обработки всех событий нужно их резюмировать
-				eventSet.resume();
-
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -176,43 +174,43 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 			int lineNumber = loc.lineNumber();
 			List<StackFrame> frames = thread.frames();
 			String stackDescription = compileStackInfo(thread.frames());
-			DebugEvent debugEvent = new DebugEvent(className, methodName, lineNumber, fields, localVariables, frames, stackDescription);
+			DebugEvent debugEvent = new DebugEvent(className, methodName, lineNumber, fields, localVariables, frames,
+					stackDescription);
 			debugEventListener.handleDebugEvent(debugEvent);
 			countDownLatch = new CountDownLatch(1);
-			targetVirtualMachineRepresentation.getVirtualMachine().suspend();
 			countDownLatch.await();
-			targetVirtualMachineRepresentation.getVirtualMachine().resume();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
 	private String compileStackInfo(List<StackFrame> frames) {
-		  String classAndMethod = "Unknown";
-            String sourceAndLine = "Unknown";
+		String classAndMethod = "Unknown";
+		String sourceAndLine = "Unknown";
 		for (StackFrame frame : frames) {
-            if (frame == null) continue;
-            try {
-                Location loc = frame.location();
-                if (loc != null) {
-                    String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
-                    String method = loc.method() != null ? loc.method().name() : "unknown";
-                    int line = loc.lineNumber();
+			if (frame == null)
+				continue;
+			try {
+				Location loc = frame.location();
+				if (loc != null) {
+					String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
+					String method = loc.method() != null ? loc.method().name() : "unknown";
+					int line = loc.lineNumber();
 
-                    classAndMethod = className + "." + method + "()";
+					classAndMethod = className + "." + method + "()";
 
-                    try {
-                        String src = loc.sourceName();
-                        sourceAndLine = src + ":" + line;
-                    } catch (AbsentInformationException aie) {
-                        sourceAndLine = "Unknown:" + line;
-                    }
-                }
-            } catch (Exception e) {
-                // защищаемся от возможных исключений JDI
-                e.printStackTrace();
-            }
-		
+					try {
+						String src = loc.sourceName();
+						sourceAndLine = src + ":" + line;
+					} catch (AbsentInformationException aie) {
+						sourceAndLine = "Unknown:" + line;
+					}
+				}
+			} catch (Exception e) {
+				// защищаемся от возможных исключений JDI
+				e.printStackTrace();
+			}
+
 		}
 		return classAndMethod + " " + sourceAndLine;
 	}
@@ -233,9 +231,22 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 
 	@Override
 	public void handleUiEvent(UIEvent uIevent) {
-		System.out.println("Button pressed");
-		countDownLatch.countDown();
+		if (uIevent instanceof UIEventResumeButtonPressed) {
+			System.out.println("Button pressed");
+			countDownLatch.countDown();
+			return;
+		}
 
+		if (uIevent instanceof UIEventWindowClosed) {
+			System.out.println("Window closed — stopping debug loop");
+			countDownLatch.countDown();
+			try {
+				targetVirtualMachineRepresentation.getVirtualMachine().resume();
+				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
+			} catch (Exception ignored) {
+			}
+			return;
+		}
 	}
 
 	@Override
@@ -246,7 +257,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 
 	public static class Factory {
 
-		//private static SimpleDebuggerWorkFlow DEBUGGER_INSTANCE;
+		// private static SimpleDebuggerWorkFlow DEBUGGER_INSTANCE;
 
 //		public static SimpleDebuggerWorkFlow getInstanceOfSimpleDebuggerWorkFlow() {
 //			return DEBUGGER_INSTANCE;
@@ -277,8 +288,8 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 //				DEBUGGER_INSTANCE = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
 //						bpManager, plugin, breakpointListener);
 //				return DEBUGGER_INSTANCE;
-				return new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
-						bpManager, plugin, breakpointListener);
+				return new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpManager,
+						plugin, breakpointListener);
 
 			}).thenAccept(workflow -> {
 				if (Objects.nonNull(listener))
