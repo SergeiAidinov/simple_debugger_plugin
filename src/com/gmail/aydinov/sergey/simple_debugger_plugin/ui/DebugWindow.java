@@ -111,10 +111,12 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 	}
 
 	private void hookCross() {
-		shell.addListener(SWT.Close, event -> {
-			handleWindowClose();
-		});
+	    shell.addListener(SWT.Close, event -> {
+	        event.doit = false; // запретить автоматическое закрытие
+	        handleWindowClose();
+	    });
 	}
+
 
 	private boolean handleWindowClose() {
 
@@ -130,6 +132,7 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 		// закрываем
 		System.out.println("Debug window closed");
 		sendUiEvent(new UIEventWindowClosed());
+		shell.dispose();
 		return true; // разрешаем закрытие
 	}
 

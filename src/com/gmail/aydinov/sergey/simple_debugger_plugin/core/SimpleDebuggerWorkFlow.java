@@ -70,6 +70,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 	// BreakepintViewController.instance();
 	private CountDownLatch countDownLatch = null;
 	private DebugEventListener debugEventListener;
+	private boolean running = true;
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin,
@@ -120,7 +121,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 		System.out.println("Waiting for events...");
 		EventQueue queue;
 
-		while (true) {
+		while (running) {
 			System.out.println("Start iteration...");
 			queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
 
@@ -245,6 +246,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
 			} catch (Exception ignored) {
 			}
+			running = false;
 			return;
 		}
 	}
