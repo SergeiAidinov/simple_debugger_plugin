@@ -29,6 +29,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointRequestWrap
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventResumeButtonPressed;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventUpdateVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventWindowClosed;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
@@ -36,8 +37,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakepintViewContro
 import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakpointsView;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
+import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.InvalidTypeException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -147,14 +150,14 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 	// Отдельный метод для обработки события
 	private void handleBreakpointEvent(BreakpointEvent bpEvent) {
 		ThreadReference thread = bpEvent.thread();
-		Location loc = bpEvent.location();
+		Location location = bpEvent.location();
 		// DebugWindowManager.instance().updateLocation(loc, thread);
 
 		try {
 
 			StackFrame frame = thread.frame(0);
-			System.out.println("Breakpoint hit at " + loc.declaringType().name() + "."
-					+ frame.location().method().name() + " line " + loc.lineNumber());
+			System.out.println("Breakpoint hit at " + location.declaringType().name() + "."
+					+ frame.location().method().name() + " line " + location.lineNumber());
 
 			// Локальные переменные
 			// Локальные переменные
@@ -170,15 +173,15 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 				fields = thisObject.getValues(thisObject.referenceType().fields());
 
 			}
-			String className = loc.declaringType().name();
-			String methodName = loc.method().name();
-			int lineNumber = loc.lineNumber();
+			String className = location.declaringType().name();
+			String methodName = location.method().name();
+			int lineNumber = location.lineNumber();
 			List<StackFrame> frames = thread.frames();
 			String stackDescription = compileStackInfo(thread.frames());
 			DebugEvent debugEvent = new DebugEvent(className, methodName, lineNumber, fields, localVariables, frames,
 					stackDescription);
-			debugEventListener.handleDebugEvent(debugEvent);
 			countDownLatch = new CountDownLatch(1);
+			debugEventListener.handleDebugEvent(debugEvent);
 			countDownLatch.await();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -197,9 +200,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 					String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
 					String method = loc.method() != null ? loc.method().name() : "unknown";
 					int line = loc.lineNumber();
-
 					classAndMethod = className + "." + method + "()";
-
 					try {
 						String src = loc.sourceName();
 						sourceAndLine = src + ":" + line;
@@ -248,6 +249,43 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 			}
 			running = false;
 			return;
+		}
+
+		if (uIevent instanceof UIEventUpdateVariable) {
+			UIEventUpdateVariable uiEventUpdateVariable = (UIEventUpdateVariable) uIevent;
+			Value jdiValue = createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
+					uiEventUpdateVariable.getLocalVariable(), uiEventUpdateVariable.getNewValue());
+			try {
+				uiEventUpdateVariable.getStackFrame().setValue(uiEventUpdateVariable.getLocalVariable(), jdiValue);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private Value createJdiValueFromString(VirtualMachine vm, LocalVariable var, String str) {
+		String type = var.typeName();
+		switch (type) {
+		case "int":
+			return vm.mirrorOf(Integer.parseInt(str));
+		case "long":
+			return vm.mirrorOf(Long.parseLong(str));
+		case "short":
+			return vm.mirrorOf(Short.parseShort(str));
+		case "byte":
+			return vm.mirrorOf(Byte.parseByte(str));
+		case "char":
+			return vm.mirrorOf(str.charAt(0));
+		case "boolean":
+			return vm.mirrorOf(Boolean.parseBoolean(str));
+		case "float":
+			return vm.mirrorOf(Float.parseFloat(str));
+		case "double":
+			return vm.mirrorOf(Double.parseDouble(str));
+		case "java.lang.String":
+			return vm.mirrorOf(str);
+		default:
+			throw new IllegalArgumentException("Unsupported type: " + type);
 		}
 	}
 

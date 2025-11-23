@@ -20,7 +20,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventResumeButtonPressed;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventUpdateVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventWindowClosed;
+import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 
 public class DebugWindow implements DebugEventListener, UiEventProvider {
@@ -83,7 +85,7 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		// Таб-страницы
-		variablesTab = new VariablesTabContent(tabFolder);
+		variablesTab = new VariablesTabContent(tabFolder, this);
 		CTabItem varItem = new CTabItem(tabFolder, SWT.NONE);
 		varItem.setText("Variables");
 		varItem.setControl(variablesTab.getControl());
@@ -183,7 +185,9 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 				locationLabel.setText(STOP_INFO + debugEvent.getClassName() + "." + debugEvent.getMethodName()
 						+ " line:" + debugEvent.getLineNumber());
 				resumeButton.setEnabled(true); // ← включаем кнопку при остановке
-				variablesTab.updateVariables(debugEvent.getLocalVariables());
+				StackFrame stackFrame = debugEvent.getFrames().get(0);
+				variablesTab.updateVariables(stackFrame, debugEvent.getLocalVariables());
+			 //	sendUiEvent(new UIEventUpdateVariable());
 				fieldsTab.updateFields(debugEvent.getFields());
 				stackTab.updateStack(debugEvent.getStackDescription());
 			} catch (Exception e) {
