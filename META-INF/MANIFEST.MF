@@ -3,5 +3,6 @@ Bundle-Name: AppLifeCycle Minimal
 Bundle-SymbolicName: com.example.app.lifecycle;singleton:=true
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
- org.eclipse.debug.core
+ org.eclipse.debug.core,
+ org.eclipse.core.resources
 Bundle-Version: 1.0.0
