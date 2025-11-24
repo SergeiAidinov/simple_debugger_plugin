@@ -17,6 +17,12 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
@@ -148,7 +154,8 @@ public class SimpleDebuggerWorkFlow
 						ThreadReference thread = bpEvent.thread();
 						org.eclipse.debug.core.DebugEvent debugEvent = convertJdiToDebugEvent(thread, event);
 						org.eclipse.debug.core.DebugEvent[] events = { debugEvent };
-						autoBreakpointHighlighter.handleDebugEvents(events);
+						ITextEditor activeEditor = getActiveTextEditor();
+						autoBreakpointHighlighter.highlightLine(activeEditor, 16);
 						targetApplicationStatus = TargetApplicationStatus.STOPPED_AT_BREAKPOINT;
 						stoppedAtBreakpoint(bpEvent);
 						eventSet.resume();
@@ -163,6 +170,25 @@ public class SimpleDebuggerWorkFlow
 			System.out.println("End iteration. DebugEventListener: " + debugEventListener + "\n");
 		}
 	}
+	
+	public ITextEditor getActiveTextEditor() {
+		 final ITextEditor[] result = new ITextEditor[1];
+
+		    PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
+		        IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		        if (window == null) return;
+
+		        IWorkbenchPage page = window.getActivePage();
+		        if (page == null) return;
+
+		        IEditorPart part = page.getActiveEditor();
+		        if (part instanceof ITextEditor) {
+		            result[0] = (ITextEditor) part;
+		        }
+		    });
+
+		    return result[0];
+    }
 
 	// Отдельный метод для обработки события
 	private void stoppedAtBreakpoint(BreakpointEvent bpEvent) {

@@ -15,60 +15,59 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-public class AutoBreakpointHighlighter implements IDebugEventSetListener {
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.Position;
+import org.eclipse.jface.text.source.Annotation;
+import org.eclipse.jface.text.source.IAnnotationModel;
+import org.eclipse.ui.texteditor.ITextEditor;
+import org.eclipse.swt.widgets.Display;
 
-    @Override
-    public void handleDebugEvents(DebugEvent[] events) {
-        for (DebugEvent event : events) {
-            if (event.getKind() == DebugEvent.SUSPEND) {
-                Object source = event.getSource();
-                if (source instanceof IThread) {
-                    highlightCurrentLine((IThread) source);
-                }
-            }
-        }
-    }
+public class AutoBreakpointHighlighter {
 
-    private void highlightCurrentLine(IThread thread) {
-        if (!(thread instanceof IJavaThread)) return;
-        IJavaThread javaThread = (IJavaThread) thread;
+    private Annotation currentAnnotation;
+    private int currentLine = -1;
+
+    public void highlightLine(ITextEditor editor, int lineNumber) {
+        if (editor == null) return;
+
+        IAnnotationModel annotationModel = editor.getDocumentProvider().getAnnotationModel(editor.getEditorInput());
+        IDocument document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
+        if (annotationModel == null || document == null) return;
 
         try {
-            if (javaThread.getTopStackFrame() == null) return;
+            int offset = document.getLineOffset(lineNumber);
+            int length = document.getLineLength(lineNumber);
 
-            int lineNumber = javaThread.getTopStackFrame().getLineNumber();
-            String fileName = javaThread.getTopStackFrame().getName();
-
-            PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
-                try {
-                    IEditorPart editorPart = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-                            .getActivePage()
-                            .getActiveEditor();
-
-                    if (editorPart instanceof ITextEditor textEditor) {
-                        IAnnotationModel annotationModel = textEditor.getDocumentProvider()
-                                .getAnnotationModel(textEditor.getEditorInput());
-
-                        Annotation annotation = new Annotation("org.eclipse.jdt.debug.highlight", false, "Current line");
-                        Position position = new Position(getLineOffset(textEditor, lineNumber), getLineLength(textEditor, lineNumber));
-                        annotationModel.addAnnotation(annotation, position);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+            Display.getDefault().asyncExec(() -> {
+                // Снять старую аннотацию
+                if (currentAnnotation != null) {
+                    annotationModel.removeAnnotation(currentAnnotation);
                 }
+
+                // Добавить новую
+                currentAnnotation = new Annotation("org.eclipse.debug.ui.breakpoint", false, "Stopped here");
+                annotationModel.addAnnotation(currentAnnotation, new Position(offset, length));
+                currentLine = lineNumber;
             });
-        } catch (DebugException e) {
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private int getLineOffset(ITextEditor editor, int lineNumber) throws Exception {
-        return editor.getDocumentProvider().getDocument(editor.getEditorInput()).getLineOffset(lineNumber - 1);
-    }
+    public void clearHighlight(ITextEditor editor) {
+        if (editor == null || currentAnnotation == null) return;
 
-    private int getLineLength(ITextEditor editor, int lineNumber) throws Exception {
-        return editor.getDocumentProvider().getDocument(editor.getEditorInput()).getLineLength(lineNumber - 1);
+        IAnnotationModel annotationModel = editor.getDocumentProvider().getAnnotationModel(editor.getEditorInput());
+        if (annotationModel != null) {
+            Display.getDefault().asyncExec(() -> {
+                annotationModel.removeAnnotation(currentAnnotation);
+                currentAnnotation = null;
+                currentLine = -1;
+            });
+        }
     }
 }
+
 
 
