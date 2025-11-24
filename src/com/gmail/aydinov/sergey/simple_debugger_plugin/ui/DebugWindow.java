@@ -22,6 +22,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventResumeButtonPressed;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventUpdateVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventWindowClosed;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 
@@ -133,7 +134,7 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 
 		// закрываем
 		System.out.println("Debug window closed");
-		sendUiEvent(new UIEventWindowClosed());
+		sendUiEvent(new UserClosedWindowUiEvent());
 		shell.dispose();
 		return true; // разрешаем закрытие
 	}

@@ -80,7 +80,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 	
 	@Override
 	public void terminate() {
-		// TODO Auto-generated method stub
+		System.out.println("TERMINATE");
 		
 	}
 
@@ -233,34 +233,35 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 
 	@Override
 	public void handleUiEvent(UIEvent uIevent) {
-		if (uIevent instanceof UIEventResumeButtonPressed) {
-			System.out.println("Button pressed");
-			countDownLatch.countDown();
-			return;
-		}
-
-		if (uIevent instanceof UIEventWindowClosed) {
-			System.out.println("Window closed — stopping debug loop");
-			countDownLatch.countDown();
-			try {
-				targetVirtualMachineRepresentation.getVirtualMachine().resume();
-				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
-			} catch (Exception ignored) {
-			}
-			running = false;
-			return;
-		}
-
-		if (uIevent instanceof UIEventUpdateVariable) {
-			UIEventUpdateVariable uiEventUpdateVariable = (UIEventUpdateVariable) uIevent;
-			Value jdiValue = createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-					uiEventUpdateVariable.getLocalVariable(), uiEventUpdateVariable.getNewValue());
-			try {
-				uiEventUpdateVariable.getStackFrame().setValue(uiEventUpdateVariable.getLocalVariable(), jdiValue);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
+		uiEventQueue.addEvent(uIevent);
+//		if (uIevent instanceof UIEventResumeButtonPressed) {
+//			System.out.println("Button pressed");
+//			countDownLatch.countDown();
+//			return;
+//		}
+//
+//		if (uIevent instanceof UIEventWindowClosed) {
+//			System.out.println("Window closed — stopping debug loop");
+//			countDownLatch.countDown();
+//			try {
+//				targetVirtualMachineRepresentation.getVirtualMachine().resume();
+//				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
+//			} catch (Exception ignored) {
+//			}
+//			running = false;
+//			return;
+//		}
+//
+//		if (uIevent instanceof UIEventUpdateVariable) {
+//			UIEventUpdateVariable uiEventUpdateVariable = (UIEventUpdateVariable) uIevent;
+//			Value jdiValue = createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
+//					uiEventUpdateVariable.getLocalVariable(), uiEventUpdateVariable.getNewValue());
+//			try {
+//				uiEventUpdateVariable.getStackFrame().setValue(uiEventUpdateVariable.getLocalVariable(), jdiValue);
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		}
 	}
 
 	private Value createJdiValueFromString(VirtualMachine vm, LocalVariable var, String str) {
