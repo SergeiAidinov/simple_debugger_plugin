@@ -7,7 +7,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
 import com.sun.jdi.Location;
 import com.sun.jdi.ThreadReference;
@@ -59,7 +59,7 @@ public class DebugWindowManager implements DebugEventListener, UiEventProvider {
 	}
 
 	@Override
-	public void handleDebugEvent(DebugEvent debugEvent) {
+	public void handleDebugEvent(SimpleDebugEvent debugEvent) {
 		// TODO Auto-generated method stub
 		
 	}

@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 import java.util.List;
 import java.util.Map;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebugEventType;
 import com.sun.jdi.Field;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.StackFrame;
@@ -11,8 +12,9 @@ import com.sun.jdi.Value;
 /**
  * 
  */
-public class DebugEvent {
+public class SimpleDebugEvent {
 	
+	private final SimpleDebugEventType simpleDebugEventType;
 	private final String className;
 	private final String methodName;
 	private final int lineNumber;
@@ -21,8 +23,9 @@ public class DebugEvent {
 	private final List<StackFrame> frames;
 	private final String stackDescription;
 
-	public DebugEvent(String className, String methodName, int lineNumber, Map<Field, Value> fields, Map<LocalVariable, Value> localVariables,
+	public SimpleDebugEvent(SimpleDebugEventType simpleDebugEventType, String className, String methodName, int lineNumber, Map<Field, Value> fields, Map<LocalVariable, Value> localVariables,
 			List<StackFrame> frames, String stackDescription) {
+		this.simpleDebugEventType = simpleDebugEventType;
 		this.className = className;
 		this.methodName = methodName;
 		this.lineNumber = lineNumber;
@@ -30,11 +33,12 @@ public class DebugEvent {
 		this.localVariables = localVariables;
 		this.frames = frames;
 		this.stackDescription = stackDescription;
-		
-		
 	}
 	
-	
+	public SimpleDebugEventType getSimpleDebugEventType() {
+		return simpleDebugEventType;
+	}
+
 	public String getClassName() {
 		return className;
 	}

@@ -20,7 +20,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
@@ -62,7 +62,7 @@ public class SimpleDebuggerWorkFlow
 	private CountDownLatch countDownLatch = null;
 	private DebugEventListener debugEventListener;
 	private boolean running = true;
-	private final UiEventQueue uiEventQueue = UiEventQueue.instance();
+	private final SimpleDebuggerEventQueue simpleDebuggerEventQueue = SimpleDebuggerEventQueue.instance();
 	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
 	private final AutoBreakpointHighlighter autoBreakpointHighlighter = new AutoBreakpointHighlighter();
 
@@ -78,8 +78,8 @@ public class SimpleDebuggerWorkFlow
 		this.debugPlugin = debugPlugin;
 		DebugWindowManager.instance().setDebugEventProvider(this);
 		// debugEventListener = DebugWindowManager.instance().getOrCreateWindow();
-		UiEventProcessor uiEventProcessor = new UiEventProcessor(uiEventQueue, this, targetVirtualMachineRepresentation,
-				this);
+		UiEventProcessor uiEventProcessor = new UiEventProcessor(simpleDebuggerEventQueue, this,
+				targetVirtualMachineRepresentation, this);
 		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
 		uiEventProcessorThread.setDaemon(true);
 		uiEventProcessorThread.start();
@@ -143,10 +143,9 @@ public class SimpleDebuggerWorkFlow
 				for (Event event : eventSet) {
 					if (event instanceof BreakpointEvent bpEvent) {
 						ThreadReference thread = bpEvent.thread();
-						org.eclipse.debug.core.DebugEvent debugEvent = convertJdiToDebugEvent(thread, event);
-						org.eclipse.debug.core.DebugEvent[] events = { debugEvent };
-						ITextEditor activeEditor = getActiveTextEditor();
-						autoBreakpointHighlighter.highlightLine(activeEditor, 16);
+//						org.eclipse.debug.core.DebugEvent debugEvent = convertJdiToDebugEvent(thread, event);
+//						org.eclipse.debug.core.DebugEvent[] events = { debugEvent };
+
 						targetApplicationStatus = TargetApplicationStatus.STOPPED_AT_BREAKPOINT;
 						stoppedAtBreakpoint(bpEvent);
 						eventSet.resume();
@@ -161,25 +160,27 @@ public class SimpleDebuggerWorkFlow
 			System.out.println("End iteration. DebugEventListener: " + debugEventListener + "\n");
 		}
 	}
-	
+
 	public ITextEditor getActiveTextEditor() {
-		 final ITextEditor[] result = new ITextEditor[1];
+		final ITextEditor[] result = new ITextEditor[1];
 
-		    PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
-		        IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		        if (window == null) return;
+		Display.getDefault().syncExec(() -> {
+			IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+			if (window == null)
+				return;
 
-		        IWorkbenchPage page = window.getActivePage();
-		        if (page == null) return;
+			IWorkbenchPage page = window.getActivePage();
+			if (page == null)
+				return;
 
-		        IEditorPart part = page.getActiveEditor();
-		        if (part instanceof ITextEditor) {
-		            result[0] = (ITextEditor) part;
-		        }
-		    });
+			IEditorPart part = page.getActiveEditor();
+			if (part instanceof ITextEditor) {
+				result[0] = (ITextEditor) part;
+			}
+		});
 
-		    return result[0];
-    }
+		return result[0];
+	}
 
 	// Отдельный метод для обработки события
 	private void stoppedAtBreakpoint(BreakpointEvent bpEvent) {
@@ -187,7 +188,8 @@ public class SimpleDebuggerWorkFlow
 		ThreadReference thread = bpEvent.thread();
 		Location location = bpEvent.location();
 		// DebugWindowManager.instance().updateLocation(loc, thread);
-
+		ITextEditor activeEditor = getActiveTextEditor();
+		// autoBreakpointHighlighter.highlightBreakpoint(location);
 		try {
 
 			StackFrame frame = thread.frame(0);
@@ -213,10 +215,11 @@ public class SimpleDebuggerWorkFlow
 			int lineNumber = location.lineNumber();
 			List<StackFrame> frames = thread.frames();
 			String stackDescription = compileStackInfo(thread.frames());
-			DebugEvent debugEvent = new DebugEvent(className, methodName, lineNumber, fields, localVariables, frames,
-					stackDescription);
+			SimpleDebugEvent debugEvent = new SimpleDebugEvent(SimpleDebugEventType.REFRESH_DATA, className, methodName,
+					lineNumber, fields, localVariables, frames, stackDescription);
 			countDownLatch = new CountDownLatch(1);
-			debugEventListener.handleDebugEvent(debugEvent);
+			// debugEventListener.handleDebugEvent(debugEvent);
+			sendDebugEvent(debugEvent);
 			countDownLatch.await();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -268,7 +271,7 @@ public class SimpleDebuggerWorkFlow
 
 	@Override
 	public void handleUiEvent(UIEvent uIevent) {
-		uiEventQueue.addEvent(uIevent);
+		simpleDebuggerEventQueue.addUiEvent(uIevent);
 //		if (uIevent instanceof UIEventResumeButtonPressed) {
 //			System.out.println("Button pressed");
 //			countDownLatch.countDown();
@@ -349,8 +352,8 @@ public class SimpleDebuggerWorkFlow
 	}
 
 	@Override
-	public void sendDebugEvent(DebugEvent debugEvent) {
-		// TODO Auto-generated method stub
+	public void sendDebugEvent(SimpleDebugEvent debugEvent) {
+		simpleDebuggerEventQueue.addDebugEvent(debugEvent);
 
 	}
 

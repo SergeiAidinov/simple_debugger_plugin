@@ -14,9 +14,11 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebugEventProcessor;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserPressedResumeUiEvent;
@@ -108,15 +110,19 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 		// ----------------- Hook кнопки Resume -----------------
 		hookResumeButton();
 		hookCross();
+
+		SimpleDebugEventProcessor simpleDebugEventProcessor = new SimpleDebugEventProcessor(this);
+		Thread thread = new Thread(simpleDebugEventProcessor);
+		thread.setDaemon(true);
+		thread.start();
 	}
 
 	private void hookCross() {
-	    shell.addListener(SWT.Close, event -> {
-	        event.doit = false; // запретить автоматическое закрытие
-	        handleWindowClose();
-	    });
+		shell.addListener(SWT.Close, event -> {
+			event.doit = false; // запретить автоматическое закрытие
+			handleWindowClose();
+		});
 	}
-
 
 	private boolean handleWindowClose() {
 
@@ -175,23 +181,30 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 	}
 
 	@Override
-	public void handleDebugEvent(DebugEvent debugEvent) {
+	public void handleDebugEvent(SimpleDebugEvent debugEvent) {
 		Display.getDefault().asyncExec(() -> {
 			try {
 				if (shell.isDisposed())
 					return;
-				locationLabel.setText(STOP_INFO + debugEvent.getClassName() + "." + debugEvent.getMethodName()
-						+ " line:" + debugEvent.getLineNumber());
-				resumeButton.setEnabled(true); // ← включаем кнопку при остановке
-				StackFrame stackFrame = debugEvent.getFrames().get(0);
-				variablesTab.updateVariables(stackFrame, debugEvent.getLocalVariables());
-			 //	sendUiEvent(new UIEventUpdateVariable());
-				fieldsTab.updateFields(debugEvent.getFields());
-				stackTab.updateStack(debugEvent.getStackDescription());
+				if (debugEvent.getSimpleDebugEventType().equals(SimpleDebugEventType.REFRESH_DATA))
+					refreshData(debugEvent);
+
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		});
+
+	}
+
+	private void refreshData(SimpleDebugEvent debugEvent) {
+		locationLabel.setText(STOP_INFO + debugEvent.getClassName() + "." + debugEvent.getMethodName() + " line:"
+				+ debugEvent.getLineNumber());
+		resumeButton.setEnabled(true); // ← включаем кнопку при остановке
+		StackFrame stackFrame = debugEvent.getFrames().get(0);
+		variablesTab.updateVariables(stackFrame, debugEvent.getLocalVariables());
+//	sendUiEvent(new UIEventUpdateVariable());
+		fieldsTab.updateFields(debugEvent.getFields());
+		stackTab.updateStack(debugEvent.getStackDescription());
 
 	}
 

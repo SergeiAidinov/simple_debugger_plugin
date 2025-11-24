@@ -1,105 +1,166 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jface.viewers.CellEditor;
+import org.eclipse.jface.viewers.ICellModifier;
+import org.eclipse.jface.viewers.ITableLabelProvider;
+import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.jface.viewers.TextCellEditor;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.TableEditor;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
-import org.eclipse.swt.widgets.TableColumn;
-import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.jface.viewers.IStructuredContentProvider;
+import org.eclipse.jface.viewers.Viewer;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventUpdateVariable;
-import com.sun.jdi.BooleanValue;
-import com.sun.jdi.ByteValue;
-import com.sun.jdi.CharValue;
-import com.sun.jdi.DoubleValue;
-import com.sun.jdi.FloatValue;
-import com.sun.jdi.IntegerValue;
 import com.sun.jdi.LocalVariable;
-import com.sun.jdi.LongValue;
-import com.sun.jdi.ShortValue;
 import com.sun.jdi.StackFrame;
-import com.sun.jdi.StringReference;
 import com.sun.jdi.Value;
-import com.sun.jdi.VirtualMachine;
 
 public class VariablesTabContent {
 
-	private final UiEventProvider uiEventProvider;
+    private final UiEventProvider uiEventProvider;
     private final Table table;
+    private final TableViewer viewer;
     private StackFrame currentStackFrame;
 
-	public VariablesTabContent(Composite parent, UiEventProvider uiEventProvider) {
+    private static class VarEntry {
+        LocalVariable localVar;
+        String type;
+        String value;
+
+        VarEntry(LocalVariable localVar, Value val) {
+            this.localVar = localVar;
+            this.type = localVar.typeName();
+            this.value = valueToString(val);
+        }
+    }
+
+    private final List<VarEntry> entries = new ArrayList<>();
+
+    public VariablesTabContent(Composite parent, UiEventProvider uiEventProvider) {
         this.uiEventProvider = uiEventProvider;
-		table = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION);
+
+        table = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION);
         table.setHeaderVisible(true);
         table.setLinesVisible(true);
 
-        TableColumn colName = new TableColumn(table, SWT.LEFT);
-        colName.setText("Name");
-        colName.setWidth(200);
+        viewer = new TableViewer(table);
+        viewer.setColumnProperties(new String[]{"name", "type", "value"});
 
-        TableColumn colType = new TableColumn(table, SWT.LEFT);
-        colType.setText("Type");
-        colType.setWidth(200);
+        createColumn("Name", 200, 0);
+        createColumn("Type", 200, 1);
+        createColumn("Value", 200, 2);
 
-        TableColumn colValue = new TableColumn(table, SWT.LEFT);
-        colValue.setText("Value");
-        colValue.setWidth(200);
+        viewer.setCellEditors(new CellEditor[]{null, null, new TextCellEditor(table)});
+
+        viewer.setCellModifier(new ICellModifier() {
+            @Override
+            public boolean canModify(Object element, String property) {
+                return "value".equals(property);
+            }
+
+            @Override
+            public Object getValue(Object element, String property) {
+                return ((VarEntry) element).value;
+            }
+
+            @Override
+            public void modify(Object element, String property, Object value) {
+                VarEntry var;
+                if (element instanceof org.eclipse.swt.widgets.TableItem) {
+                    var = (VarEntry) ((org.eclipse.swt.widgets.TableItem) element).getData();
+                } else {
+                    var = (VarEntry) element;
+                }
+
+                var.value = (String) value;
+
+                if (currentStackFrame != null) {
+                    uiEventProvider.sendUiEvent(new UIEventUpdateVariable(currentStackFrame, var.localVar, var.value));
+                }
+
+                viewer.update(var, null);
+            }
+        });
+
+        // ContentProvider
+        viewer.setContentProvider(new IStructuredContentProvider() {
+            @Override
+            public Object[] getElements(Object inputElement) {
+                if (inputElement instanceof List) {
+                    return ((List<?>) inputElement).toArray();
+                }
+                return new Object[0];
+            }
+
+            @Override
+            public void dispose() {}
+
+            @Override
+            public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {}
+        });
+
+        // LabelProvider
+        viewer.setLabelProvider(new ITableLabelProvider() {
+            @Override
+            public String getColumnText(Object element, int columnIndex) {
+                VarEntry var = (VarEntry) element;
+                switch (columnIndex) {
+                    case 0: return var.localVar.name();
+                    case 1: return var.type;
+                    case 2: return var.value;
+                }
+                return "";
+            }
+
+            @Override
+            public org.eclipse.swt.graphics.Image getColumnImage(Object element, int columnIndex) {
+                return null;
+            }
+
+            @Override
+            public void addListener(org.eclipse.jface.viewers.ILabelProviderListener listener) {}
+            @Override
+            public void dispose() {}
+            @Override
+            public boolean isLabelProperty(Object element, String property) { return false; }
+            @Override
+            public void removeListener(org.eclipse.jface.viewers.ILabelProviderListener listener) {}
+        });
+    }
+
+    private void createColumn(String title, int width, int index) {
+        TableViewerColumn col = new TableViewerColumn(viewer, SWT.LEFT);
+        col.getColumn().setText(title);
+        col.getColumn().setWidth(width);
+        col.getColumn().setResizable(true);
+        col.getColumn().setMoveable(true);
     }
 
     public Table getControl() {
         return table;
     }
 
-    /**
-     * Обновляет таблицу переменных и сохраняет текущий стек-фрейм
-     * @param stackFrame 
-     */
     public void updateVariables(StackFrame stackFrame, Map<LocalVariable, Value> vars) {
-        table.removeAll();
-        //this.currentStackFrame = frame;
-        
-       // LocalVariable localVariable;
-        //String newValue;
+        currentStackFrame = stackFrame;
 
+        entries.clear();
         for (Map.Entry<LocalVariable, Value> entry : vars.entrySet()) {
-            LocalVariable localVar = entry.getKey();
-            Value val = entry.getValue();
-
-            TableItem item = new TableItem(table, SWT.NONE);
-            item.setText(0, localVar.name());
-            item.setText(1, localVar.typeName());
-            item.setText(2, valueToString(val));
-
-            TableEditor editor = new TableEditor(table);
-            editor.grabHorizontal = true;
-            Text valueText = new Text(table, SWT.NONE);
-            valueText.setText(valueToString(val));
-            editor.setEditor(valueText, item, 2);
-
-            valueText.addListener(SWT.FocusOut, e -> {
-                String newValue = valueText.getText();
-                try {
-                    setVariableValue(stackFrame, localVar, newValue); // обновляем через JDI
-                    item.setText(2, newValue);
-
-                    // 🔹 создаём событие только после изменения
-                    //UIEventUpdateVariable event = new UIEventUpdateVariable(localVar, newValue);
-                   // sendUiEvent(event);
-
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    valueText.setText(valueToString(val)); // откат при ошибке
-                }
-            });
+            entries.add(new VarEntry(entry.getKey(), entry.getValue()));
         }
+
+        viewer.setInput(entries);
     }
 
-    private String valueToString(Value v) {
+    private static String valueToString(Value v) {
         if (v == null) return "null";
         try {
             return v.toString();
@@ -107,18 +168,4 @@ public class VariablesTabContent {
             return "<error>";
         }
     }
-
-    /**
-     * Изменяет значение локальной переменной через JDI
-     */
-    private void setVariableValue(StackFrame stackFrame, LocalVariable var, String newValue) throws Exception {
-//        if (currentStackFrame == null) return;
-//        VirtualMachine vm = currentStackFrame.virtualMachine();
-//        Value v = createJdiValueFromString(vm, var, newValue);
-//        currentStackFrame.setValue(var, v);
-        uiEventProvider.sendUiEvent(new UIEventUpdateVariable(stackFrame, var, newValue));
-        
-    }
-
-    
 }

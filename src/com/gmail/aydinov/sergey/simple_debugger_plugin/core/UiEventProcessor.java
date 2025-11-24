@@ -10,13 +10,13 @@ import com.sun.jdi.VirtualMachine;
 
 public class UiEventProcessor implements Runnable {
 
-	private final UiEventQueue eventQueue;
+	private final SimpleDebuggerEventQueue eventQueue;
 	private volatile boolean running = true;
 	private final TargetApplicationResumer targetApplicationResumer;
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final DebuggerTerminator debuggerTerminator;
 
-	public UiEventProcessor(UiEventQueue queue, TargetApplicationResumer targetApplicationResumer,
+	public UiEventProcessor(SimpleDebuggerEventQueue queue, TargetApplicationResumer targetApplicationResumer,
 			TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			DebuggerTerminator debuggerTerminator) {
 		this.eventQueue = queue;
@@ -31,7 +31,7 @@ public class UiEventProcessor implements Runnable {
 		while (running) {
 			//if ()
 			try {
-				UIEvent event = eventQueue.takeEvent();
+				UIEvent event = eventQueue.takeUiEvent();
 				System.out.println(event);
 				handleEvent(event);
 			} catch (InterruptedException e) {
