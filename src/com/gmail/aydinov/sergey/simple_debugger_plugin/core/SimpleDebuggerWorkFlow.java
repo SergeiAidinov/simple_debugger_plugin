@@ -89,9 +89,7 @@ public class SimpleDebuggerWorkFlow
 	@Override
 	public void terminate() {
 		System.out.println("TERMINATE");
-		running = false;
-		targetVirtualMachineRepresentation.getVirtualMachine().resume();
-		countDownLatch.countDown();
+		System.exit(0);
 
 	}
 

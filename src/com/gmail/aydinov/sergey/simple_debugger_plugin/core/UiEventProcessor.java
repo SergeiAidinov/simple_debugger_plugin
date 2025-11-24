@@ -48,7 +48,7 @@ public class UiEventProcessor implements Runnable {
 		}
 
 		if (uIevent instanceof UserClosedWindowUiEvent) {
-			targetVirtualMachineRepresentation.getVirtualMachine().resume();
+			//targetVirtualMachineRepresentation.getVirtualMachine().resume();
 			debuggerTerminator.terminate();
 			running = false;
 			return;
