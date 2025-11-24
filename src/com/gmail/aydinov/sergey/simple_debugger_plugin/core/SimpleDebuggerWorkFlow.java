@@ -13,12 +13,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
-import org.eclipse.debug.core.ILaunch;
-import org.eclipse.debug.core.model.IDebugTarget;
-import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
@@ -26,9 +22,6 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventResumeButtonPressed;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventUpdateVariable;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventWindowClosed;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.sun.jdi.AbsentInformationException;
@@ -104,7 +97,7 @@ public class SimpleDebuggerWorkFlow
 
 	@Override
 	public void resumeTargetApplication() {
-		// TODO Auto-generated method stub
+		countDownLatch.countDown();
 
 	}
 

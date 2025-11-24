@@ -14,15 +14,12 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventResumeButtonPressed;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventUpdateVariable;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventWindowClosed;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserPressedResumeUiEvent;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 
@@ -161,7 +158,7 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 	private void pressResumeButton() {
 		System.out.println("pressResumeButton()" + uiEventListener);
 		Display.getDefault().asyncExec(() -> {
-			sendUiEvent(new UIEventResumeButtonPressed());
+			sendUiEvent(new UserPressedResumeUiEvent());
 		});
 	}
 
