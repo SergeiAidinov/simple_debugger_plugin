@@ -200,8 +200,8 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 		locationLabel.setText(STOP_INFO + debugEvent.getClassName() + "." + debugEvent.getMethodName() + " line:"
 				+ debugEvent.getLineNumber());
 		resumeButton.setEnabled(true); // ← включаем кнопку при остановке
-		StackFrame stackFrame = debugEvent.getFrames().get(0);
-		variablesTab.updateVariables(stackFrame, debugEvent.getLocalVariables());
+		//StackFrame stackFrame = debugEvent.getFrames().get(0);
+		variablesTab.updateVariables(/*stackFrame, */ debugEvent.getLocalVariables());
 //	sendUiEvent(new UIEventUpdateVariable());
 		fieldsTab.updateFields(debugEvent.getFields());
 		stackTab.updateStack(debugEvent.getStackDescription());

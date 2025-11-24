@@ -29,7 +29,7 @@ public class VariablesTabContent {
     private final UiEventProvider uiEventProvider;
     private final Table table;
     private final TableViewer viewer;
-    private StackFrame currentStackFrame;
+  //  private StackFrame currentStackFrame;
 
     private static class VarEntry {
         LocalVariable localVar;
@@ -83,9 +83,10 @@ public class VariablesTabContent {
 
                 var.value = (String) value;
 
-                if (currentStackFrame != null) {
-                    uiEventProvider.sendUiEvent(new UIEventUpdateVariable(currentStackFrame, var.localVar, var.value));
-                }
+				/*
+				 * if (currentStackFrame != null) { uiEventProvider.sendUiEvent(new
+				 * UIEventUpdateVariable(currentStackFrame, var.localVar, var.value)); }
+				 */
 
                 viewer.update(var, null);
             }
@@ -149,8 +150,8 @@ public class VariablesTabContent {
         return table;
     }
 
-    public void updateVariables(StackFrame stackFrame, Map<LocalVariable, Value> vars) {
-        currentStackFrame = stackFrame;
+    public void updateVariables(/*StackFrame stackFrame, */ Map<LocalVariable, Value> vars) {
+       // currentStackFrame = stackFrame;
 
         entries.clear();
         for (Map.Entry<LocalVariable, Value> entry : vars.entrySet()) {
