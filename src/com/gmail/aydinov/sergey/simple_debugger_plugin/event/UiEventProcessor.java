@@ -1,8 +1,8 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerTerminator;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.TargetApplicationResumer;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEventUpdateVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;

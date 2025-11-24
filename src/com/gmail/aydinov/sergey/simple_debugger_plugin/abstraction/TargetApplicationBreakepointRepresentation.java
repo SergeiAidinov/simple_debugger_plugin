@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.Arrays;
 import java.util.HashSet;

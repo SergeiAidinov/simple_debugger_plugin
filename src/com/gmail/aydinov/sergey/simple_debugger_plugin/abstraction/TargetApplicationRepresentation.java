@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.debug.core.IBreakpointManager;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementType;
