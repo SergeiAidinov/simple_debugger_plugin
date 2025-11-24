@@ -1,8 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -12,19 +10,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.eclipse.debug.core.IBreakpointManager;
-import org.eclipse.debug.core.model.IBreakpoint;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakepintViewController;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.InterfaceType;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.EventRequestManager;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakpointSubscriberRegistrar;
 
 public class TargetApplicationRepresentation {
 
@@ -39,7 +33,7 @@ public class TargetApplicationRepresentation {
 		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakepointRepresentation(
 				iBreakpointManager, eventRequestManager, virtualMachine);
 		breakpointHitListener.register(targetApplicationBreakepointRepresentation);
-		BreakepintViewController.instance().setTargetApplicationBreakepointRepresentation(targetApplicationBreakepointRepresentation);
+		//BreakepintViewController.instance().setTargetApplicationBreakepointRepresentation(targetApplicationBreakepointRepresentation);
 		//targetApplicationBreakepointRepresentation.addListener(breakpointListener);
 	}
 

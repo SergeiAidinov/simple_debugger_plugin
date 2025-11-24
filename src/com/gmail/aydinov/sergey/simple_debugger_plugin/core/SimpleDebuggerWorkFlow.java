@@ -1,31 +1,20 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointRequestWrapper;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventResumeButtonPressed;
@@ -33,14 +22,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventUpdateVariable
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventWindowClosed;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakepintViewController;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakpointsView;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
-import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.Field;
-import com.sun.jdi.IncompatibleThreadStateException;
-import com.sun.jdi.InvalidTypeException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -59,8 +43,6 @@ import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
-import com.sun.jdi.request.BreakpointRequest;
-import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
 
 public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvider {
@@ -85,7 +67,7 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 		// this.manager = manager;
 		this.debugPlugin = debugPlugin;
-		// DebugWindowManager.instance().setDebugEventProvider(this);
+		DebugWindowManager.instance().setDebugEventProvider(this);
 		// debugEventListener = DebugWindowManager.instance().getOrCreateWindow();
 
 	}
