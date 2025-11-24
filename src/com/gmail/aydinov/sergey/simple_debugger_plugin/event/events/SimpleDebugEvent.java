@@ -3,7 +3,6 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event.events;
 import java.util.List;
 import java.util.Map;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebugEventType;
 import com.sun.jdi.Field;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.StackFrame;

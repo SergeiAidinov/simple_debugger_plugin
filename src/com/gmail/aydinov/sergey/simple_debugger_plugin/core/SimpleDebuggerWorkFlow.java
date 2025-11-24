@@ -24,6 +24,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
