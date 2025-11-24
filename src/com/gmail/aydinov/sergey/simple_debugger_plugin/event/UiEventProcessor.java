@@ -1,8 +1,8 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerTerminator;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.TargetApplicationResumer;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.Terminable;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.Resumable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEventUpdateVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;
@@ -15,13 +15,13 @@ public class UiEventProcessor implements Runnable {
 
 	private final SimpleDebuggerEventQueue eventQueue;
 	private volatile boolean running = true;
-	private final TargetApplicationResumer targetApplicationResumer;
+	private final Resumable targetApplicationResumer;
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
-	private final DebuggerTerminator debuggerTerminator;
+	private final Terminable debuggerTerminator;
 
-	public UiEventProcessor(SimpleDebuggerEventQueue queue, TargetApplicationResumer targetApplicationResumer,
+	public UiEventProcessor(SimpleDebuggerEventQueue queue, Resumable targetApplicationResumer,
 			TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
-			DebuggerTerminator debuggerTerminator) {
+			Terminable debuggerTerminator) {
 		this.eventQueue = queue;
 		this.targetApplicationResumer = targetApplicationResumer;
 		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;

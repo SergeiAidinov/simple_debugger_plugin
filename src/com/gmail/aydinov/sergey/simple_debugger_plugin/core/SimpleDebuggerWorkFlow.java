@@ -57,12 +57,12 @@ import com.sun.jdi.event.VMStartEvent;
 import com.sun.jdi.request.EventRequestManager;
 
 public class SimpleDebuggerWorkFlow
-		implements UiEventListener, DebugEventProvider, TargetApplicationResumer, DebuggerTerminator {
+		implements /* UiEventListener, DebugEventProvider, */ Resumable, Terminable {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	// private final IBreakpointManager manager;
-	private final DebugPlugin debugPlugin; // новое поле
+	//private final DebugPlugin debugPlugin; // новое поле
 	// private final BreakepintViewController breakepintViewController =
 	// BreakepintViewController.instance();
 	private CountDownLatch countDownLatch = null;
@@ -73,16 +73,16 @@ public class SimpleDebuggerWorkFlow
 	private final AutoBreakpointHighlighter autoBreakpointHighlighter = new AutoBreakpointHighlighter();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
-			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin,
-			BreakpointSubscriberRegistrar breakpointListener) {
+			IBreakpointManager iBreakpointManager /*, DebugPlugin debugPlugin, */
+			, BreakpointSubscriberRegistrar breakpointListener) {
 		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
 				.eventRequestManager();
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 		// this.manager = manager;
-		this.debugPlugin = debugPlugin;
-		DebugWindowManager.instance().setDebugEventProvider(this);
+		//this.debugPlugin = debugPlugin;
+		//DebugWindowManager.instance().setDebugEventProvider(this);
 		// debugEventListener = DebugWindowManager.instance().getOrCreateWindow();
 		UiEventProcessor uiEventProcessor = new UiEventProcessor(simpleDebuggerEventQueue, this,
 				targetVirtualMachineRepresentation, this);
@@ -119,8 +119,8 @@ public class SimpleDebuggerWorkFlow
 		Display.getDefault().asyncExec(() -> {
 			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
 			setDebugEventListener(window);
-			window.setDebugEventProvider(this);
-			window.setUiEventListener(this);
+			//window.setDebugEventProvider(this);
+			//window.setUiEventListener(this);
 			if (window == null || !window.isOpen()) {
 				// window = DebugWindowManager.instance().getOrCreateWindow(); // создаём окно
 				window.open(); // обязательно открываем shell
@@ -128,8 +128,8 @@ public class SimpleDebuggerWorkFlow
 		});
 
 		// Обновляем данные о target приложении
-		targetApplicationRepresentation
-				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+//		targetApplicationRepresentation
+//				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
 		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
 
 		// Получаем JDI EventRequestManager
@@ -225,7 +225,7 @@ public class SimpleDebuggerWorkFlow
 					lineNumber, fields, localVariables, frames, stackDescription);
 			countDownLatch = new CountDownLatch(1);
 			// debugEventListener.handleDebugEvent(debugEvent);
-			sendDebugEvent(debugEvent);
+			// sendDebugEvent(debugEvent);
 			countDownLatch.await();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -275,9 +275,9 @@ public class SimpleDebuggerWorkFlow
 		return Optional.empty();
 	}
 
-	@Override
-	public void handleUiEvent(UIEvent uIevent) {
-		simpleDebuggerEventQueue.addUiEvent(uIevent);
+//	@Override
+//	public void handleUiEvent(UIEvent uIevent) {
+//		simpleDebuggerEventQueue.addUiEvent(uIevent);
 //		if (uIevent instanceof UIEventResumeButtonPressed) {
 //			System.out.println("Button pressed");
 //			countDownLatch.countDown();
@@ -306,7 +306,7 @@ public class SimpleDebuggerWorkFlow
 //				e.printStackTrace();
 //			}
 //		}
-	}
+//	}
 
 	private Value createJdiValueFromString(VirtualMachine vm, LocalVariable var, String str) {
 		String type = var.typeName();
@@ -357,11 +357,11 @@ public class SimpleDebuggerWorkFlow
 		return null; // если событие не обрабатываем
 	}
 
-	@Override
-	public void sendDebugEvent(SimpleDebugEvent debugEvent) {
-		simpleDebuggerEventQueue.addDebugEvent(debugEvent);
-
-	}
+//	@Override
+//	public void sendDebugEvent(SimpleDebugEvent debugEvent) {
+//		simpleDebuggerEventQueue.addDebugEvent(debugEvent);
+//
+//	}
 
 	public static class Factory {
 
@@ -383,7 +383,7 @@ public class SimpleDebuggerWorkFlow
 			// 3️⃣ Когда оба готовы — создаём workflow с listener
 			vmFuture.thenCombine(bpmFuture, (vm, bpManager) -> {
 
-				DebugPlugin plugin = DebugPlugin.getDefault();
+				//DebugPlugin plugin = DebugPlugin.getDefault();
 
 				// 🔹 создаём и регистрируем listener
 				BreakePointListener breakpointListener = new BreakePointListener();
@@ -396,8 +396,8 @@ public class SimpleDebuggerWorkFlow
 //				DEBUGGER_INSTANCE = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
 //						bpManager, plugin, breakpointListener);
 //				return DEBUGGER_INSTANCE;
-				return new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpManager,
-						plugin, breakpointListener);
+				return new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm) ,  bpManager /*,*/
+						/*plugin, */ , breakpointListener);
 
 			}).thenAccept(workflow -> {
 				if (Objects.nonNull(listener))
