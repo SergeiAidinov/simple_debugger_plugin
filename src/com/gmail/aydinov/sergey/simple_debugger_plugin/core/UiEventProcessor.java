@@ -27,6 +27,7 @@ public class UiEventProcessor implements Runnable {
 
 	@Override
 	public void run() {
+		System.out.println("THREAD STARTED");
 		while (running) {
 			try {
 				UIEvent event = eventQueue.takeEvent();

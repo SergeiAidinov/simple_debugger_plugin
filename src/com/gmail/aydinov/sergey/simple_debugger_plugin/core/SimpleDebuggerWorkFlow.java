@@ -45,7 +45,7 @@ import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.request.EventRequestManager;
 
-public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvider {
+public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvider, TargetApplicationResumer, DebuggerTerminator {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
@@ -56,6 +56,8 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 	private CountDownLatch countDownLatch = null;
 	private DebugEventListener debugEventListener;
 	private boolean running = true;
+	private final UiEventQueue uiEventQueue = UiEventQueue.instance();
+	
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin,
@@ -69,7 +71,23 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 		this.debugPlugin = debugPlugin;
 		DebugWindowManager.instance().setDebugEventProvider(this);
 		// debugEventListener = DebugWindowManager.instance().getOrCreateWindow();
+		UiEventProcessor uiEventProcessor = new UiEventProcessor(uiEventQueue, this, targetVirtualMachineRepresentation, this);
+		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
+		uiEventProcessorThread.setDaemon(true);
+		uiEventProcessorThread.start();
 
+	}
+	
+	@Override
+	public void terminate() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void resumeTargetApplication() {
+		// TODO Auto-generated method stub
+		
 	}
 
 	public void setDebugEventListener(DebugEventListener debugEventListener) {
