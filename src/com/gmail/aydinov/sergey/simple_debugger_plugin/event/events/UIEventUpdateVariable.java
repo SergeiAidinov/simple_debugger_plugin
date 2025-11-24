@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.event.events;
 
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.StackFrame;

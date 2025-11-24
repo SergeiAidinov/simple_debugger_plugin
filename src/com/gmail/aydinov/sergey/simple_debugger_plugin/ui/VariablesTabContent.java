@@ -18,8 +18,8 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEventUpdateVariable;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEventUpdateVariable;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;

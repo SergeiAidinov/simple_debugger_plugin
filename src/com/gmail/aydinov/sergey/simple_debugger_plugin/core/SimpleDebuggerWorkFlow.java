@@ -20,8 +20,11 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventProcessor;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.sun.jdi.AbsentInformationException;

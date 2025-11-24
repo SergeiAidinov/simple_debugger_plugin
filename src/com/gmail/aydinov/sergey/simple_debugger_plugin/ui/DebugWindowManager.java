@@ -5,10 +5,10 @@ import org.eclipse.swt.widgets.Display;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventListener;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.UiEventProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEvent;
 import com.sun.jdi.Location;
 import com.sun.jdi.ThreadReference;
 
