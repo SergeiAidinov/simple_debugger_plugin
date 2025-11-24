@@ -22,12 +22,12 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventQueue;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventListener;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventProcessor;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.SimpleDebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventProcessor;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.sun.jdi.AbsentInformationException;
@@ -61,10 +61,6 @@ public class SimpleDebuggerWorkFlow
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
-	// private final IBreakpointManager manager;
-	//private final DebugPlugin debugPlugin; // новое поле
-	// private final BreakepintViewController breakepintViewController =
-	// BreakepintViewController.instance();
 	private CountDownLatch countDownLatch = null;
 	private DebugEventListener debugEventListener;
 	private boolean running = true;
@@ -80,10 +76,6 @@ public class SimpleDebuggerWorkFlow
 				.eventRequestManager();
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
-		// this.manager = manager;
-		//this.debugPlugin = debugPlugin;
-		//DebugWindowManager.instance().setDebugEventProvider(this);
-		// debugEventListener = DebugWindowManager.instance().getOrCreateWindow();
 		UiEventProcessor uiEventProcessor = new UiEventProcessor(simpleDebuggerEventQueue, this,
 				targetVirtualMachineRepresentation, this);
 		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
@@ -118,9 +110,7 @@ public class SimpleDebuggerWorkFlow
 
 		Display.getDefault().asyncExec(() -> {
 			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-			setDebugEventListener(window);
-			//window.setDebugEventProvider(this);
-			//window.setUiEventListener(this);
+			//setDebugEventListener(window);
 			if (window == null || !window.isOpen()) {
 				// window = DebugWindowManager.instance().getOrCreateWindow(); // создаём окно
 				window.open(); // обязательно открываем shell
@@ -128,8 +118,6 @@ public class SimpleDebuggerWorkFlow
 		});
 
 		// Обновляем данные о target приложении
-//		targetApplicationRepresentation
-//				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
 		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
 
 		// Получаем JDI EventRequestManager
@@ -149,9 +137,6 @@ public class SimpleDebuggerWorkFlow
 				for (Event event : eventSet) {
 					if (event instanceof BreakpointEvent bpEvent) {
 						ThreadReference thread = bpEvent.thread();
-//						org.eclipse.debug.core.DebugEvent debugEvent = convertJdiToDebugEvent(thread, event);
-//						org.eclipse.debug.core.DebugEvent[] events = { debugEvent };
-
 						targetApplicationStatus = TargetApplicationStatus.STOPPED_AT_BREAKPOINT;
 						stoppedAtBreakpoint(bpEvent);
 						eventSet.resume();
@@ -193,9 +178,7 @@ public class SimpleDebuggerWorkFlow
 
 		ThreadReference thread = bpEvent.thread();
 		Location location = bpEvent.location();
-		// DebugWindowManager.instance().updateLocation(loc, thread);
 		ITextEditor activeEditor = getActiveTextEditor();
-		// autoBreakpointHighlighter.highlightBreakpoint(location);
 		try {
 
 			StackFrame frame = thread.frame(0);
@@ -224,8 +207,6 @@ public class SimpleDebuggerWorkFlow
 			SimpleDebugEvent debugEvent = new SimpleDebugEvent(SimpleDebugEventType.REFRESH_DATA, className, methodName,
 					lineNumber, fields, localVariables, frames, stackDescription);
 			countDownLatch = new CountDownLatch(1);
-			// debugEventListener.handleDebugEvent(debugEvent);
-			// sendDebugEvent(debugEvent);
 			countDownLatch.await();
 		} catch (Exception e) {
 			e.printStackTrace();

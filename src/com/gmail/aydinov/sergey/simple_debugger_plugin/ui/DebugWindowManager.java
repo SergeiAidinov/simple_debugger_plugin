@@ -5,14 +5,14 @@ import org.eclipse.swt.widgets.Display;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventListener;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 import com.sun.jdi.Location;
 import com.sun.jdi.ThreadReference;
 
-public class DebugWindowManager implements DebugEventListener, UiEventProvider {
+public class DebugWindowManager /*implements DebugEventListener, UiEventProvider*/ {
 	
     private static DebugWindowManager INSTANCE;
     private DebugWindow debugWindow;
@@ -52,16 +52,16 @@ public class DebugWindowManager implements DebugEventListener, UiEventProvider {
 		this.debugEventProvider = debugEventProvider;
 	}
 
-	@Override
-	public void sendUiEvent(UIEvent uiEvent) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void handleDebugEvent(SimpleDebugEvent debugEvent) {
-		// TODO Auto-generated method stub
-		
-	}
+//	@Override
+//	public void sendUiEvent(UIEvent uiEvent) {
+//		// TODO Auto-generated method stub
+//		
+//	}
+//
+//	@Override
+//	public void handleDebugEvent(SimpleDebugEvent debugEvent) {
+//		// TODO Auto-generated method stub
+//		
+//	}
     
 }

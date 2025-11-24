@@ -18,15 +18,15 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEventUpdateVariable;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEventUpdateVariable;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
 
 public class VariablesTabContent {
 
-    private final UiEventProvider uiEventProvider;
+    //private final UiEventProvider uiEventProvider;
     private final Table table;
     private final TableViewer viewer;
   //  private StackFrame currentStackFrame;
@@ -45,8 +45,8 @@ public class VariablesTabContent {
 
     private final List<VarEntry> entries = new ArrayList<>();
 
-    public VariablesTabContent(Composite parent, UiEventProvider uiEventProvider) {
-        this.uiEventProvider = uiEventProvider;
+    public VariablesTabContent(Composite parent) {
+       // this.uiEventProvider = uiEventProvider;
 
         table = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION);
         table.setHeaderVisible(true);

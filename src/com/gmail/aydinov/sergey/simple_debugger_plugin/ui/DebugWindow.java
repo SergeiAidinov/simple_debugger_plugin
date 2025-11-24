@@ -15,17 +15,17 @@ import org.eclipse.swt.widgets.Shell;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebugEventProcessor;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventListener;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UiEventProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.SimpleDebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserPressedResumeUiEvent;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 
-public class DebugWindow implements DebugEventListener, UiEventProvider {
+public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 
 	private Shell shell;
 	private CTabFolder tabFolder;
@@ -85,7 +85,7 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		// Таб-страницы
-		variablesTab = new VariablesTabContent(tabFolder, this);
+		variablesTab = new VariablesTabContent(tabFolder);
 		CTabItem varItem = new CTabItem(tabFolder, SWT.NONE);
 		varItem.setText("Variables");
 		varItem.setControl(variablesTab.getControl());
@@ -137,7 +137,7 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 
 		// закрываем
 		System.out.println("Debug window closed");
-		sendUiEvent(new UserClosedWindowUiEvent());
+		//sendUiEvent(new UserClosedWindowUiEvent());
 		shell.dispose();
 		return true; // разрешаем закрытие
 	}
@@ -164,7 +164,7 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 	private void pressResumeButton() {
 		System.out.println("pressResumeButton()" + uiEventListener);
 		Display.getDefault().asyncExec(() -> {
-			sendUiEvent(new UserPressedResumeUiEvent());
+			//sendUiEvent(new UserPressedResumeUiEvent());
 		});
 	}
 
@@ -180,7 +180,6 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 		return shell;
 	}
 
-	@Override
 	public void handleDebugEvent(SimpleDebugEvent debugEvent) {
 		Display.getDefault().asyncExec(() -> {
 			try {
@@ -205,12 +204,6 @@ public class DebugWindow implements DebugEventListener, UiEventProvider {
 //	sendUiEvent(new UIEventUpdateVariable());
 		fieldsTab.updateFields(debugEvent.getFields());
 		stackTab.updateStack(debugEvent.getStackDescription());
-
-	}
-
-	@Override
-	public void sendUiEvent(UIEvent uiEvent) {
-		uiEventListener.handleUiEvent(uiEvent);
 
 	}
 

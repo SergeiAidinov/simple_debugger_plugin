@@ -1,8 +1,8 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventQueue;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 
 public class SimpleDebugEventProcessor implements Runnable {

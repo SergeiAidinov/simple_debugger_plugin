@@ -1,11 +1,11 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.events.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 
 
 public class SimpleDebuggerEventQueue {
