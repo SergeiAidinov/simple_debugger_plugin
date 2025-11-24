@@ -13,6 +13,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
+import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.model.IDebugTarget;
+import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.swt.widgets.Display;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugEvent;
@@ -41,11 +44,15 @@ import com.sun.jdi.event.BreakpointEvent;
 import com.sun.jdi.event.Event;
 import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
+import com.sun.jdi.event.ExceptionEvent;
+import com.sun.jdi.event.StepEvent;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
+import com.sun.jdi.event.VMStartEvent;
 import com.sun.jdi.request.EventRequestManager;
 
-public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvider, TargetApplicationResumer, DebuggerTerminator {
+public class SimpleDebuggerWorkFlow
+		implements UiEventListener, DebugEventProvider, TargetApplicationResumer, DebuggerTerminator {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
@@ -57,7 +64,8 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 	private DebugEventListener debugEventListener;
 	private boolean running = true;
 	private final UiEventQueue uiEventQueue = UiEventQueue.instance();
-	
+	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
+	private final AutoBreakpointHighlighter autoBreakpointHighlighter = new AutoBreakpointHighlighter();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, DebugPlugin debugPlugin,
@@ -71,23 +79,27 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 		this.debugPlugin = debugPlugin;
 		DebugWindowManager.instance().setDebugEventProvider(this);
 		// debugEventListener = DebugWindowManager.instance().getOrCreateWindow();
-		UiEventProcessor uiEventProcessor = new UiEventProcessor(uiEventQueue, this, targetVirtualMachineRepresentation, this);
+		UiEventProcessor uiEventProcessor = new UiEventProcessor(uiEventQueue, this, targetVirtualMachineRepresentation,
+				this);
 		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
 		uiEventProcessorThread.setDaemon(true);
 		uiEventProcessorThread.start();
 
 	}
-	
+
 	@Override
 	public void terminate() {
 		System.out.println("TERMINATE");
-		
+		running = false;
+		targetVirtualMachineRepresentation.getVirtualMachine().resume();
+		countDownLatch.countDown();
+
 	}
 
 	@Override
 	public void resumeTargetApplication() {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public void setDebugEventListener(DebugEventListener debugEventListener) {
@@ -133,7 +145,12 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 				System.out.println("eventSet.size() " + eventSet.size());
 				for (Event event : eventSet) {
 					if (event instanceof BreakpointEvent bpEvent) {
-						handleBreakpointEvent(bpEvent);
+						ThreadReference thread = bpEvent.thread();
+						org.eclipse.debug.core.DebugEvent debugEvent = convertJdiToDebugEvent(thread, event);
+						org.eclipse.debug.core.DebugEvent[] events = { debugEvent };
+						autoBreakpointHighlighter.handleDebugEvents(events);
+						targetApplicationStatus = TargetApplicationStatus.STOPPED_AT_BREAKPOINT;
+						stoppedAtBreakpoint(bpEvent);
 						eventSet.resume();
 					} else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
 						System.out.println("Target VM stopped");
@@ -148,7 +165,8 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 	}
 
 	// Отдельный метод для обработки события
-	private void handleBreakpointEvent(BreakpointEvent bpEvent) {
+	private void stoppedAtBreakpoint(BreakpointEvent bpEvent) {
+
 		ThreadReference thread = bpEvent.thread();
 		Location location = bpEvent.location();
 		// DebugWindowManager.instance().updateLocation(loc, thread);
@@ -288,6 +306,29 @@ public class SimpleDebuggerWorkFlow implements UiEventListener, DebugEventProvid
 		default:
 			throw new IllegalArgumentException("Unsupported type: " + type);
 		}
+	}
+
+	private org.eclipse.debug.core.DebugEvent convertJdiToDebugEvent(ThreadReference thread, Event event) {
+		int kind = org.eclipse.debug.core.DebugEvent.SUSPEND; // для примера — остановка на брейкпоинте
+		int detail = org.eclipse.debug.core.DebugEvent.BREAKPOINT; // деталь события
+		DummyDebugElement source = new DummyDebugElement();
+		if (event instanceof BreakpointEvent) {
+			return new org.eclipse.debug.core.DebugEvent(source, org.eclipse.debug.core.DebugEvent.SUSPEND,
+					org.eclipse.debug.core.DebugEvent.BREAKPOINT);
+		} else if (event instanceof StepEvent) {
+			return new org.eclipse.debug.core.DebugEvent(source, org.eclipse.debug.core.DebugEvent.SUSPEND,
+					org.eclipse.debug.core.DebugEvent.STEP_END);
+		} else if (event instanceof ExceptionEvent) {
+			// return new org.eclipse.debug.core.DebugEvent(debugTarget,
+			// org.eclipse.debug.core.DebugEvent.SUSPEND,
+			// org.eclipse.debug.core.DebugEvent.EXCEPTION);
+		} else if (event instanceof VMStartEvent) {
+			return new org.eclipse.debug.core.DebugEvent(source, org.eclipse.debug.core.DebugEvent.CREATE);
+		} else if (event instanceof VMDeathEvent || event instanceof VMDisconnectEvent) {
+			return new org.eclipse.debug.core.DebugEvent(source, org.eclipse.debug.core.DebugEvent.TERMINATE);
+		}
+		// другие события можно добавить по мере необходимости
+		return null; // если событие не обрабатываем
 	}
 
 	@Override

@@ -29,6 +29,7 @@ public class UiEventProcessor implements Runnable {
 	public void run() {
 		System.out.println("THREAD STARTED");
 		while (running) {
+			//if ()
 			try {
 				UIEvent event = eventQueue.takeEvent();
 				System.out.println(event);
@@ -47,6 +48,7 @@ public class UiEventProcessor implements Runnable {
 		}
 
 		if (uIevent instanceof UserClosedWindowUiEvent) {
+			targetVirtualMachineRepresentation.getVirtualMachine().resume();
 			debuggerTerminator.terminate();
 			running = false;
 			return;
