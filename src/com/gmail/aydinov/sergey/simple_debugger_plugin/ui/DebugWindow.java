@@ -222,7 +222,7 @@ public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 		}
 		// stackFrame.getValues(l);
 		
-		variablesTab.updateVariables(stackFrame, stackFrame.getValues(l));
+		variablesTab.updateVariables(stackFrame.getValues(l));
 //	sendUiEvent(new UIEventUpdateVariable());
 		fieldsTab.updateFields(debugEvent.getFields());
 		stackTab.updateStack(debugEvent.getStackDescription());
