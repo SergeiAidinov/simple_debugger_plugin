@@ -22,12 +22,11 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.sun.jdi.AbsentInformationException;
@@ -55,30 +54,26 @@ import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.event.VMStartEvent;
 import com.sun.jdi.request.EventRequestManager;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventCollector;
 
-public class SimpleDebuggerWorkFlow
-		implements /* UiEventListener, DebugEventProvider, */ Resumable, Terminable {
+public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventProvider, */ Resumable, Terminable {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	private CountDownLatch countDownLatch = null;
 	private DebugEventListener debugEventListener;
 	private boolean running = true;
-	//private final SimpleDebuggerEventQueue simpleDebuggerEventQueue = SimpleDebuggerEventQueue.instance();
 	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
 	private final AutoBreakpointHighlighter autoBreakpointHighlighter = new AutoBreakpointHighlighter();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
-			IBreakpointManager iBreakpointManager /*, DebugPlugin debugPlugin, */
-			, BreakpointSubscriberRegistrar breakpointListener) {
+			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
 		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
 				.eventRequestManager();
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
-		UiEventProcessor uiEventProcessor = new UiEventProcessor(this);
+		UiEventProcessor uiEventProcessor = new UiEventProcessor(this, this);
 		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
 		uiEventProcessorThread.setDaemon(true);
 		uiEventProcessorThread.start();
@@ -111,7 +106,7 @@ public class SimpleDebuggerWorkFlow
 
 		Display.getDefault().asyncExec(() -> {
 			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-			//setDebugEventListener(window);
+			// setDebugEventListener(window);
 			if (window == null || !window.isOpen()) {
 				// window = DebugWindowManager.instance().getOrCreateWindow(); // создаём окно
 				window.open(); // обязательно открываем shell
@@ -366,7 +361,7 @@ public class SimpleDebuggerWorkFlow
 			// 3️⃣ Когда оба готовы — создаём workflow с listener
 			vmFuture.thenCombine(bpmFuture, (vm, bpManager) -> {
 
-				//DebugPlugin plugin = DebugPlugin.getDefault();
+				// DebugPlugin plugin = DebugPlugin.getDefault();
 
 				// 🔹 создаём и регистрируем listener
 				BreakePointListener breakpointListener = new BreakePointListener();
@@ -379,8 +374,9 @@ public class SimpleDebuggerWorkFlow
 //				DEBUGGER_INSTANCE = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
 //						bpManager, plugin, breakpointListener);
 //				return DEBUGGER_INSTANCE;
-				return new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm) ,  bpManager /*,*/
-						/*plugin, */ , breakpointListener);
+				return new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
+						bpManager /* , */
+				/* plugin, */ , breakpointListener);
 
 			}).thenAccept(workflow -> {
 				if (Objects.nonNull(listener))

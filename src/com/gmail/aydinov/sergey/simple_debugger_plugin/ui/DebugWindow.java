@@ -149,6 +149,7 @@ public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 		System.out.println("Debug window closed");
 		//sendUiEvent(new UserClosedWindowUiEvent());
 		shell.dispose();
+		uiEventCollector.collectUiEvent(new UserClosedWindowUiEvent());
 		return true; // разрешаем закрытие
 	}
 

@@ -15,6 +15,7 @@ public class UiEventProcessor implements Runnable {
 	
 	private volatile boolean running = true;
 	private final Resumable resumable;
+	private final Terminable terminable;
 	
 	
 
@@ -33,8 +34,9 @@ public class UiEventProcessor implements Runnable {
 //		this.debuggerTerminator = debuggerTerminator;
 //	}
 
-	public UiEventProcessor(Resumable resumable) {
+	public UiEventProcessor(Resumable resumable, Terminable terminable) {
 		this.resumable = resumable;
+		this.terminable = terminable;
 	}
 
 	@Override
@@ -60,8 +62,8 @@ public class UiEventProcessor implements Runnable {
 		}
 
 		if (uIevent instanceof UserClosedWindowUiEvent) {
-			//targetVirtualMachineRepresentation.getVirtualMachine().resume();
-			//debuggerTerminator.terminate();
+			terminable.terminate();
+			
 			running = false;
 			return;
 		}
