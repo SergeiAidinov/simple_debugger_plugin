@@ -32,6 +32,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEventUpdateVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.VarEntry;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserChangedVariable;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.Field;
@@ -77,7 +79,6 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 				.eventRequestManager();
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
-		
 
 	}
 
@@ -98,12 +99,16 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 		return currentBreakpointEvent;
 	}
 
-	public void updateVariables(UIEventUpdateVariable uiEventUpdateVariable) {
+	public void updateVariables(UserChangedVariable userChangedVariable) {
 		targetVirtualMachineRepresentation.getVirtualMachine().suspend();
-		Value jdiValue = createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-				uiEventUpdateVariable.getLocalVariable(), uiEventUpdateVariable.getNewValue());
+		VarEntry varEntry = userChangedVariable.getVarEntry();
+		LocalVariable localVariable = varEntry.getLocalVar();
+		String value = (String) varEntry.getNewValue();
+		Value jdiValue = createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(), localVariable,
+				value);
 		try {
-			uiEventUpdateVariable.getStackFrame().setValue(uiEventUpdateVariable.getLocalVariable(), jdiValue);
+			StackFrame farme = currentBreakpointEvent.thread().frame(0);
+			farme.setValue(localVariable, jdiValue);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -123,7 +128,6 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 
 		Display.getDefault().asyncExec(() -> {
 			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-			// setDebugEventListener(window);
 			if (window == null || !window.isOpen()) {
 				// window = DebugWindowManager.instance().getOrCreateWindow(); // создаём окно
 				window.open(); // обязательно открываем shell
@@ -152,7 +156,7 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 						currentBreakpointEvent = bpEvent;
 						ThreadReference thread = bpEvent.thread();
 						targetApplicationStatus = TargetApplicationStatus.STOPPED_AT_BREAKPOINT;
-						stoppedAtBreakpoint(bpEvent);
+						startBreakpointSession(bpEvent);
 						eventSet.resume();
 					} else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
 						System.out.println("Target VM stopped");
@@ -166,30 +170,9 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 		}
 	}
 
-	public ITextEditor getActiveTextEditor() {
-		final ITextEditor[] result = new ITextEditor[1];
-
-		Display.getDefault().syncExec(() -> {
-			IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-			if (window == null)
-				return;
-
-			IWorkbenchPage page = window.getActivePage();
-			if (page == null)
-				return;
-
-			IEditorPart part = page.getActiveEditor();
-			if (part instanceof ITextEditor) {
-				result[0] = (ITextEditor) part;
-			}
-		});
-
-		return result[0];
-	}
-
 	// Отдельный метод для обработки события
-	private void stoppedAtBreakpoint(BreakpointEvent bpEvent) {
-		
+	private void startBreakpointSession(BreakpointEvent bpEvent) {
+
 		UiEventProcessor uiEventProcessor = new UiEventProcessor(this);
 		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
 		uiEventProcessorThread.setDaemon(true);
@@ -197,14 +180,11 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 
 		ThreadReference thread = bpEvent.thread();
 		Location location = bpEvent.location();
-		ITextEditor activeEditor = getActiveTextEditor();
 		try {
 
 			StackFrame frame = thread.frame(0);
 			System.out.println("Breakpoint hit at " + location.declaringType().name() + "."
 					+ frame.location().method().name() + " line " + location.lineNumber());
-
-			
 
 			// Локальные переменные
 			// Локальные переменные
@@ -264,53 +244,6 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 		return classAndMethod + " " + sourceAndLine;
 	}
 
-	private Optional<Location> findLocation(Method method, int sourceLine) {
-		try {
-			for (Location location : method.allLineLocations()) {
-				if (location.lineNumber() == sourceLine) {
-					return Optional.of(location);
-				}
-			}
-		} catch (AbsentInformationException e) {
-			// в этом случае исходники не доступны: метод скомпилирован без -g
-			return Optional.empty();
-		}
-		return Optional.empty();
-	}
-
-//	@Override
-//	public void handleUiEvent(UIEvent uIevent) {
-//		simpleDebuggerEventQueue.addUiEvent(uIevent);
-//		if (uIevent instanceof UIEventResumeButtonPressed) {
-//			System.out.println("Button pressed");
-//			countDownLatch.countDown();
-//			return;
-//		}
-//
-//		if (uIevent instanceof UIEventWindowClosed) {
-//			System.out.println("Window closed — stopping debug loop");
-//			countDownLatch.countDown();
-//			try {
-//				targetVirtualMachineRepresentation.getVirtualMachine().resume();
-//				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
-//			} catch (Exception ignored) {
-//			}
-//			running = false;
-//			return;
-//		}
-//
-//		if (uIevent instanceof UIEventUpdateVariable) {
-//			UIEventUpdateVariable uiEventUpdateVariable = (UIEventUpdateVariable) uIevent;
-//			Value jdiValue = createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-//					uiEventUpdateVariable.getLocalVariable(), uiEventUpdateVariable.getNewValue());
-//			try {
-//				uiEventUpdateVariable.getStackFrame().setValue(uiEventUpdateVariable.getLocalVariable(), jdiValue);
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//			}
-//		}
-//	}
-
 	private Value createJdiValueFromString(VirtualMachine vm, LocalVariable var, String str) {
 		String type = var.typeName();
 		switch (type) {
@@ -337,43 +270,7 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 		}
 	}
 
-	private org.eclipse.debug.core.DebugEvent convertJdiToDebugEvent(ThreadReference thread, Event event) {
-		int kind = org.eclipse.debug.core.DebugEvent.SUSPEND; // для примера — остановка на брейкпоинте
-		int detail = org.eclipse.debug.core.DebugEvent.BREAKPOINT; // деталь события
-		DummyDebugElement source = new DummyDebugElement();
-		if (event instanceof BreakpointEvent) {
-			return new org.eclipse.debug.core.DebugEvent(source, org.eclipse.debug.core.DebugEvent.SUSPEND,
-					org.eclipse.debug.core.DebugEvent.BREAKPOINT);
-		} else if (event instanceof StepEvent) {
-			return new org.eclipse.debug.core.DebugEvent(source, org.eclipse.debug.core.DebugEvent.SUSPEND,
-					org.eclipse.debug.core.DebugEvent.STEP_END);
-		} else if (event instanceof ExceptionEvent) {
-			// return new org.eclipse.debug.core.DebugEvent(debugTarget,
-			// org.eclipse.debug.core.DebugEvent.SUSPEND,
-			// org.eclipse.debug.core.DebugEvent.EXCEPTION);
-		} else if (event instanceof VMStartEvent) {
-			return new org.eclipse.debug.core.DebugEvent(source, org.eclipse.debug.core.DebugEvent.CREATE);
-		} else if (event instanceof VMDeathEvent || event instanceof VMDisconnectEvent) {
-			return new org.eclipse.debug.core.DebugEvent(source, org.eclipse.debug.core.DebugEvent.TERMINATE);
-		}
-		// другие события можно добавить по мере необходимости
-		return null; // @Override
-
-	}
-
-//	@Override
-//	public void sendDebugEvent(SimpleDebugEvent debugEvent) {
-//		simpleDebuggerEventQueue.addDebugEvent(debugEvent);
-//
-//	}
-
 	public static class Factory {
-
-		// private static SimpleDebuggerWorkFlow DEBUGGER_INSTANCE;
-
-//		public static SimpleDebuggerWorkFlow getInstanceOfSimpleDebuggerWorkFlow() {
-//			return DEBUGGER_INSTANCE;
-//		}
 
 		public static void create(String host, int port, OnWorkflowReadyListener listener) {
 
@@ -394,12 +291,6 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 				bpManager.setEnabled(true);
 				bpManager.addBreakpointListener(breakpointListener);
 				System.out.println("[Factory] Breakpoint listener registered!");
-
-				// 🔹 создаём workflow с listener
-
-//				DEBUGGER_INSTANCE = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
-//						bpManager, plugin, breakpointListener);
-//				return DEBUGGER_INSTANCE;
 				return new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
 						bpManager /* , */
 				/* plugin, */ , breakpointListener);

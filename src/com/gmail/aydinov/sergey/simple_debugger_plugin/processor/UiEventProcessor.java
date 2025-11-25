@@ -78,9 +78,11 @@ public class UiEventProcessor implements Runnable {
 		}
 
 		if (uIevent instanceof UserChangedVariable) {
-//			UIEventUpdateVariable uiEventUpdateVariable = (UIEventUpdateVariable) uIevent;
+			UserChangedVariable userChangedVariable = (UserChangedVariable) uIevent;
 //			updatable.updateVariables(uiEventUpdateVariable);
+			updatable.updateVariables(userChangedVariable);
 			System.out.println("PROCESS: " + uIevent);
+			return;
 		}
 	}
 

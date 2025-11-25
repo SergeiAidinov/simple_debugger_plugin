@@ -35,17 +35,7 @@ public class VariablesTabContent {
   //  private StackFrame currentStackFrame;
     UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
 
-    private static class VarEntry {
-        LocalVariable localVar;
-        String type;
-        String value;
-
-        VarEntry(LocalVariable localVar, Value val) {
-            this.localVar = localVar;
-            this.type = localVar.typeName();
-            this.value = valueToString(val);
-        }
-    }
+    
 
     private final List<VarEntry> entries = new ArrayList<>();
 
@@ -73,28 +63,21 @@ public class VariablesTabContent {
 
             @Override
             public Object getValue(Object element, String property) {
-                return ((VarEntry) element).value;
+                return ((VarEntry) element).getValue();
             }
 
             @Override
-            public void modify(Object element, String property, Object value) {
-                VarEntry var;
+            public void modify(Object element, String property, Object newValue) {
+                VarEntry varEntry;
                 if (element instanceof org.eclipse.swt.widgets.TableItem) {
-                    var = (VarEntry) ((org.eclipse.swt.widgets.TableItem) element).getData();
+                    varEntry = (VarEntry) ((org.eclipse.swt.widgets.TableItem) element).getData();
                 } else {
-                    var = (VarEntry) element;
+                    varEntry = (VarEntry) element;
                 }
-
-                var.value = (String) value;
-                System.out.println("ENTER: " + var.value);
-                uiEventCollector.collectUiEvent(new UserChangedVariable());
-
-				/*
-				 * if (currentStackFrame != null) { uiEventProvider.sendUiEvent(new
-				 * UIEventUpdateVariable(currentStackFrame, var.localVar, var.value)); }
-				 */
-
-                viewer.update(var, null);
+                varEntry.setNewValue(newValue);
+                System.out.println("ENTER: " + varEntry.getValue());
+                uiEventCollector.collectUiEvent(new UserChangedVariable(varEntry));
+                viewer.update(varEntry, null);
             }
         });
 
@@ -121,9 +104,9 @@ public class VariablesTabContent {
             public String getColumnText(Object element, int columnIndex) {
                 VarEntry var = (VarEntry) element;
                 switch (columnIndex) {
-                    case 0: return var.localVar.name();
-                    case 1: return var.type;
-                    case 2: return var.value;
+                    case 0: return var.getLocalVar().name();
+                    case 1: return var.getType();
+                    case 2: return (String) var.getValue();
                 }
                 return "";
             }
@@ -167,12 +150,5 @@ public class VariablesTabContent {
         viewer.setInput(entries);
     }
 
-    private static String valueToString(Value v) {
-        if (v == null) return "null";
-        try {
-            return v.toString();
-        } catch (Exception e) {
-            return "<error>";
-        }
-    }
+    
 }

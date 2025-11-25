@@ -1,9 +1,9 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEventUpdateVariable;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserChangedVariable;
 
 public interface Updatable {
 	
-	void updateVariables(UIEventUpdateVariable uiEventUpdateVariable);
+	void updateVariables(UserChangedVariable userChangedVariable);
 
 }
