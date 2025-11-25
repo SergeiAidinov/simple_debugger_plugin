@@ -24,9 +24,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEventUpdateVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.sun.jdi.AbsentInformationException;
@@ -55,7 +58,7 @@ import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.event.VMStartEvent;
 import com.sun.jdi.request.EventRequestManager;
 
-public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventProvider, */ Resumable, Terminable {
+public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventProvider, */ WorkFlow {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
@@ -65,6 +68,7 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
 	private final AutoBreakpointHighlighter autoBreakpointHighlighter = new AutoBreakpointHighlighter();
+	private BreakpointEvent currentBreakpointEvent;
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
@@ -73,7 +77,7 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 				.eventRequestManager();
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
-		UiEventProcessor uiEventProcessor = new UiEventProcessor(this, this);
+		UiEventProcessor uiEventProcessor = new UiEventProcessor(this);
 		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
 		uiEventProcessorThread.setDaemon(true);
 		uiEventProcessorThread.start();
@@ -91,6 +95,22 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 	public void resumeTargetApplication() {
 		countDownLatch.countDown();
 
+	}
+
+	public BreakpointEvent getCurrentBreakpointEvent() {
+		return currentBreakpointEvent;
+	}
+
+	public void updateVariables(UIEventUpdateVariable uiEventUpdateVariable) {
+		targetVirtualMachineRepresentation.getVirtualMachine().suspend();
+		Value jdiValue = createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
+				uiEventUpdateVariable.getLocalVariable(), uiEventUpdateVariable.getNewValue());
+		try {
+			uiEventUpdateVariable.getStackFrame().setValue(uiEventUpdateVariable.getLocalVariable(), jdiValue);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		targetVirtualMachineRepresentation.getVirtualMachine().resume();
 	}
 
 	public void setDebugEventListener(DebugEventListener debugEventListener) {
@@ -132,6 +152,7 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 				System.out.println("eventSet.size() " + eventSet.size());
 				for (Event event : eventSet) {
 					if (event instanceof BreakpointEvent bpEvent) {
+						currentBreakpointEvent = bpEvent;
 						ThreadReference thread = bpEvent.thread();
 						targetApplicationStatus = TargetApplicationStatus.STOPPED_AT_BREAKPOINT;
 						stoppedAtBreakpoint(bpEvent);
@@ -180,6 +201,8 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 			StackFrame frame = thread.frame(0);
 			System.out.println("Breakpoint hit at " + location.declaringType().name() + "."
 					+ frame.location().method().name() + " line " + location.lineNumber());
+
+			
 
 			// Локальные переменные
 			// Локальные переменные
@@ -332,7 +355,8 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 			return new org.eclipse.debug.core.DebugEvent(source, org.eclipse.debug.core.DebugEvent.TERMINATE);
 		}
 		// другие события можно добавить по мере необходимости
-		return null; // если событие не обрабатываем
+		return null; // @Override
+
 	}
 
 //	@Override
@@ -429,5 +453,4 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 			}
 		}
 	}
-
 }

@@ -1,23 +1,31 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
+import java.text.spi.BreakIteratorProvider;
+
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakpointEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.Resumable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.Terminable;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.Updatable;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.WorkFlow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEventUpdateVariable;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.Resumable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserPressedResumeUiEvent;
+import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.LocalVariable;
+import com.sun.jdi.StackFrame;
+import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
+import com.sun.jdi.event.BreakpointEvent;
 
 public class UiEventProcessor implements Runnable {
-	
+
 	private volatile boolean running = true;
 	private final Resumable resumable;
 	private final Terminable terminable;
-	
-	
+	private final Updatable updatable;
 
 //	private final SimpleDebuggerEventQueue eventQueue;
 //	
@@ -34,16 +42,17 @@ public class UiEventProcessor implements Runnable {
 //		this.debuggerTerminator = debuggerTerminator;
 //	}
 
-	public UiEventProcessor(Resumable resumable, Terminable terminable) {
-		this.resumable = resumable;
-		this.terminable = terminable;
+	public UiEventProcessor(WorkFlow workFlow) {
+		this.resumable = workFlow;
+		this.terminable = workFlow;
+		this.updatable = workFlow;
 	}
 
 	@Override
 	public void run() {
 		System.out.println("THREAD STARTED");
 		while (running) {
-			//if ()
+			// if ()
 			try {
 				UIEvent event = SimpleDebuggerEventQueue.instance().takeUiEvent();
 				System.out.println(event);
@@ -63,21 +72,14 @@ public class UiEventProcessor implements Runnable {
 
 		if (uIevent instanceof UserClosedWindowUiEvent) {
 			terminable.terminate();
-			
 			running = false;
 			return;
 		}
 
-//		if (uIevent instanceof UIEventUpdateVariable) {
-//			UIEventUpdateVariable uiEventUpdateVariable = (UIEventUpdateVariable) uIevent;
-//			Value jdiValue = createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-//					uiEventUpdateVariable.getLocalVariable(), uiEventUpdateVariable.getNewValue());
-//			try {
-//				uiEventUpdateVariable.getStackFrame().setValue(uiEventUpdateVariable.getLocalVariable(), jdiValue);
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//			}
-//		}
+		if (uIevent instanceof UIEventUpdateVariable) {
+			UIEventUpdateVariable uiEventUpdateVariable = (UIEventUpdateVariable) uIevent;
+			updatable.updateVariables(uiEventUpdateVariable);
+		}
 	}
 
 	private Value createJdiValueFromString(VirtualMachine vm, LocalVariable var, String str) {

@@ -12,19 +12,14 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebugEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventListener;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserPressedResumeUiEvent;
-import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 
 public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {

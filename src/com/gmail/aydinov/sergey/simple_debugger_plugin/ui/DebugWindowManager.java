@@ -48,9 +48,9 @@ public class DebugWindowManager /*implements DebugEventListener, UiEventProvider
 	 * if (w != null && w.isOpen()) { w.updateLocation(loc, thread); } }); }
 	 */
 
-	public void setDebugEventProvider(DebugEventProvider debugEventProvider) {
-		this.debugEventProvider = debugEventProvider;
-	}
+//	public void setDebugEventProvider(DebugEventProvider debugEventProvider) {
+//		this.debugEventProvider = debugEventProvider;
+//	}
 
 //	@Override
 //	public void sendUiEvent(UIEvent uiEvent) {
