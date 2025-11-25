@@ -10,6 +10,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.Updatable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.WorkFlow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEventUpdateVariable;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserChangedVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserPressedResumeUiEvent;
 import com.sun.jdi.IncompatibleThreadStateException;
@@ -76,9 +77,10 @@ public class UiEventProcessor implements Runnable {
 			return;
 		}
 
-		if (uIevent instanceof UIEventUpdateVariable) {
-			UIEventUpdateVariable uiEventUpdateVariable = (UIEventUpdateVariable) uIevent;
-			updatable.updateVariables(uiEventUpdateVariable);
+		if (uIevent instanceof UserChangedVariable) {
+//			UIEventUpdateVariable uiEventUpdateVariable = (UIEventUpdateVariable) uIevent;
+//			updatable.updateVariables(uiEventUpdateVariable);
+			System.out.println("PROCESS: " + uIevent);
 		}
 	}
 

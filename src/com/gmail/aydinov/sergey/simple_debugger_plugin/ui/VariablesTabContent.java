@@ -18,11 +18,14 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEventUpdateVariable;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserChangedVariable;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 
 public class VariablesTabContent {
 
@@ -30,6 +33,7 @@ public class VariablesTabContent {
     private final Table table;
     private final TableViewer viewer;
   //  private StackFrame currentStackFrame;
+    UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
 
     private static class VarEntry {
         LocalVariable localVar;
@@ -82,6 +86,8 @@ public class VariablesTabContent {
                 }
 
                 var.value = (String) value;
+                System.out.println("ENTER: " + var.value);
+                uiEventCollector.collectUiEvent(new UserChangedVariable());
 
 				/*
 				 * if (currentStackFrame != null) { uiEventProvider.sendUiEvent(new

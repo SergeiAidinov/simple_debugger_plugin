@@ -77,10 +77,7 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 				.eventRequestManager();
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
-		UiEventProcessor uiEventProcessor = new UiEventProcessor(this);
-		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
-		uiEventProcessorThread.setDaemon(true);
-		uiEventProcessorThread.start();
+		
 
 	}
 
@@ -192,6 +189,11 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 
 	// Отдельный метод для обработки события
 	private void stoppedAtBreakpoint(BreakpointEvent bpEvent) {
+		
+		UiEventProcessor uiEventProcessor = new UiEventProcessor(this);
+		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
+		uiEventProcessorThread.setDaemon(true);
+		uiEventProcessorThread.start();
 
 		ThreadReference thread = bpEvent.thread();
 		Location location = bpEvent.location();
