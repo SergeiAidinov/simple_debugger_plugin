@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
+import java.util.List;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
@@ -20,7 +22,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserPressedResumeUiEvent;
+import com.sun.jdi.AbsentInformationException;
+import com.sun.jdi.LocalVariable;
+import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
+import com.sun.jdi.VirtualMachine;
 
 public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 
@@ -205,12 +211,24 @@ public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 		locationLabel.setText(STOP_INFO + debugEvent.getClassName() + "." + debugEvent.getMethodName() + " line:"
 				+ debugEvent.getLineNumber());
 		resumeButton.setEnabled(true); // ← включаем кнопку при остановке
-		//StackFrame stackFrame = debugEvent.getFrames().get(0);
-		variablesTab.updateVariables(/*stackFrame, */ debugEvent.getLocalVariables());
+		StackFrame stackFrame = debugEvent.getFrames().get(0);
+		VirtualMachine vm = stackFrame.virtualMachine();
+		 List<LocalVariable> l = null;
+		try {
+			l = stackFrame.visibleVariables();
+		} catch (AbsentInformationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// stackFrame.getValues(l);
+		
+		variablesTab.updateVariables(stackFrame, stackFrame.getValues(l));
 //	sendUiEvent(new UIEventUpdateVariable());
 		fieldsTab.updateFields(debugEvent.getFields());
 		stackTab.updateStack(debugEvent.getStackDescription());
 
 	}
+	
+	
 
 }
