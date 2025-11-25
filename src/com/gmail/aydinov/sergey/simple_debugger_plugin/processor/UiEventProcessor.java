@@ -12,20 +12,29 @@ import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 
 public class UiEventProcessor implements Runnable {
-
-	private final SimpleDebuggerEventQueue eventQueue;
+	
 	private volatile boolean running = true;
-	private final Resumable targetApplicationResumer;
-	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
-	private final Terminable debuggerTerminator;
+	private final Resumable resumable;
+	
+	
 
-	public UiEventProcessor(SimpleDebuggerEventQueue queue, Resumable targetApplicationResumer,
-			TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
-			Terminable debuggerTerminator) {
-		this.eventQueue = queue;
-		this.targetApplicationResumer = targetApplicationResumer;
-		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
-		this.debuggerTerminator = debuggerTerminator;
+//	private final SimpleDebuggerEventQueue eventQueue;
+//	
+//	private final Resumable targetApplicationResumer;
+//	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
+//	private final Terminable debuggerTerminator;
+//
+//	public UiEventProcessor(SimpleDebuggerEventQueue queue, Resumable targetApplicationResumer,
+//			TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
+//			Terminable debuggerTerminator) {
+//		this.eventQueue = queue;
+//		this.targetApplicationResumer = targetApplicationResumer;
+//		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
+//		this.debuggerTerminator = debuggerTerminator;
+//	}
+
+	public UiEventProcessor(Resumable resumable) {
+		this.resumable = resumable;
 	}
 
 	@Override
@@ -34,7 +43,7 @@ public class UiEventProcessor implements Runnable {
 		while (running) {
 			//if ()
 			try {
-				UIEvent event = eventQueue.takeUiEvent();
+				UIEvent event = SimpleDebuggerEventQueue.instance().takeUiEvent();
 				System.out.println(event);
 				handleEvent(event);
 			} catch (InterruptedException e) {
@@ -46,27 +55,27 @@ public class UiEventProcessor implements Runnable {
 	private void handleEvent(UIEvent uIevent) {
 		if (uIevent instanceof UserPressedResumeUiEvent) {
 			System.out.println("Button pressed");
-			targetApplicationResumer.resumeTargetApplication();
+			resumable.resumeTargetApplication();
 			return;
 		}
 
 		if (uIevent instanceof UserClosedWindowUiEvent) {
 			//targetVirtualMachineRepresentation.getVirtualMachine().resume();
-			debuggerTerminator.terminate();
+			//debuggerTerminator.terminate();
 			running = false;
 			return;
 		}
 
-		if (uIevent instanceof UIEventUpdateVariable) {
-			UIEventUpdateVariable uiEventUpdateVariable = (UIEventUpdateVariable) uIevent;
-			Value jdiValue = createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-					uiEventUpdateVariable.getLocalVariable(), uiEventUpdateVariable.getNewValue());
-			try {
-				uiEventUpdateVariable.getStackFrame().setValue(uiEventUpdateVariable.getLocalVariable(), jdiValue);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
+//		if (uIevent instanceof UIEventUpdateVariable) {
+//			UIEventUpdateVariable uiEventUpdateVariable = (UIEventUpdateVariable) uIevent;
+//			Value jdiValue = createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
+//					uiEventUpdateVariable.getLocalVariable(), uiEventUpdateVariable.getNewValue());
+//			try {
+//				uiEventUpdateVariable.getStackFrame().setValue(uiEventUpdateVariable.getLocalVariable(), jdiValue);
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		}
 	}
 
 	private Value createJdiValueFromString(VirtualMachine vm, LocalVariable var, String str) {

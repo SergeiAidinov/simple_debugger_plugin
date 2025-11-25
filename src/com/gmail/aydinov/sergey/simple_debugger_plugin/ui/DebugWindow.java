@@ -15,6 +15,8 @@ import org.eclipse.swt.widgets.Shell;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebugEventProcessor;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
@@ -39,7 +41,7 @@ public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 	private Label locationLabel;
 	private ThreadReference suspendedThread;
 	private DebugEventProvider debugEventProvider;
-	private UiEventListener uiEventListener;
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
 
 	private final String STOP_INFO = "Stopped at: ";
 
@@ -98,6 +100,14 @@ public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 		stackTab = new StackTabContent(tabFolder);
 		CTabItem stackItem = new CTabItem(tabFolder, SWT.NONE);
 		stackItem.setText("Stack");
+		
+		//public UiEventListener getUiEventListener() {
+//			return uiEventListener;
+//			}
+		//
+//			public void setUiEventListener(UiEventListener uiEventListener) {
+//				this.uiEventListener = uiEventListener;
+//			}
 		stackItem.setControl(stackTab.getControl());
 
 		evalTab = new EvaluateTabContent(tabFolder);
@@ -142,13 +152,13 @@ public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 		return true; // разрешаем закрытие
 	}
 
-	public UiEventListener getUiEventListener() {
-		return uiEventListener;
-	}
-
-	public void setUiEventListener(UiEventListener uiEventListener) {
-		this.uiEventListener = uiEventListener;
-	}
+//	public UiEventListener getUiEventListener() {
+//		return uiEventListener;
+//	}
+//
+//	public void setUiEventListener(UiEventListener uiEventListener) {
+//		this.uiEventListener = uiEventListener;
+//	}
 
 	private void hookResumeButton() {
 		resumeButton.addListener(SWT.Selection, e -> {
@@ -162,9 +172,9 @@ public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 	}
 
 	private void pressResumeButton() {
-		System.out.println("pressResumeButton()" + uiEventListener);
+		System.out.println("pressResumeButton()" + uiEventCollector);
 		Display.getDefault().asyncExec(() -> {
-			//sendUiEvent(new UserPressedResumeUiEvent());
+			uiEventCollector.collectUiEvent(new UserPressedResumeUiEvent());
 		});
 	}
 

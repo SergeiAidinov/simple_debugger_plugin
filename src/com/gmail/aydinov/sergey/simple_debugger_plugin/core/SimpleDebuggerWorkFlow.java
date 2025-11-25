@@ -55,6 +55,7 @@ import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.event.VMStartEvent;
 import com.sun.jdi.request.EventRequestManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventCollector;
 
 public class SimpleDebuggerWorkFlow
 		implements /* UiEventListener, DebugEventProvider, */ Resumable, Terminable {
@@ -64,7 +65,8 @@ public class SimpleDebuggerWorkFlow
 	private CountDownLatch countDownLatch = null;
 	private DebugEventListener debugEventListener;
 	private boolean running = true;
-	private final SimpleDebuggerEventQueue simpleDebuggerEventQueue = SimpleDebuggerEventQueue.instance();
+	//private final SimpleDebuggerEventQueue simpleDebuggerEventQueue = SimpleDebuggerEventQueue.instance();
+	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
 	private final AutoBreakpointHighlighter autoBreakpointHighlighter = new AutoBreakpointHighlighter();
 
@@ -76,8 +78,7 @@ public class SimpleDebuggerWorkFlow
 				.eventRequestManager();
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
-		UiEventProcessor uiEventProcessor = new UiEventProcessor(simpleDebuggerEventQueue, this,
-				targetVirtualMachineRepresentation, this);
+		UiEventProcessor uiEventProcessor = new UiEventProcessor(this);
 		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
 		uiEventProcessorThread.setDaemon(true);
 		uiEventProcessorThread.start();
@@ -206,6 +207,7 @@ public class SimpleDebuggerWorkFlow
 			String stackDescription = compileStackInfo(thread.frames());
 			SimpleDebugEvent debugEvent = new SimpleDebugEvent(SimpleDebugEventType.REFRESH_DATA, className, methodName,
 					lineNumber, fields, localVariables, frames, stackDescription);
+			simpleDebugEventCollector.collectDebugEvent(debugEvent);
 			countDownLatch = new CountDownLatch(1);
 			countDownLatch.await();
 		} catch (Exception e) {
