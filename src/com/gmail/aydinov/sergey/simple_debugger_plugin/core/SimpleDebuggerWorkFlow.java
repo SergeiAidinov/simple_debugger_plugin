@@ -67,7 +67,7 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
-	private CountDownLatch countDownLatch = null;
+	//private CountDownLatch countDownLatch = null;
 	private DebugEventListener debugEventListener;
 	private boolean running = true;
 	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
@@ -88,6 +88,17 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 	}
 
 	@Override
+	public synchronized SimpleDebugSessionRepresentation getSimpleDebugSessionRepresentation() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private synchronized void setSimpleDebugSessionRepresentation(
+			SimpleDebugSessionRepresentation simpleDebugSessionRepresentation) {
+		this.simpleDebugSessionRepresentation = simpleDebugSessionRepresentation;
+	}
+
+	@Override
 	public void terminate() {
 		System.out.println("TERMINATE");
 		System.exit(0);
@@ -96,7 +107,7 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 
 	@Override
 	public void resumeTargetApplication() {
-		countDownLatch.countDown();
+		//countDownLatch.countDown();
 
 	}
 
@@ -105,7 +116,6 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 //	}
 
 	public void updateVariables(UserChangedVariable userChangedVariable) {
-		targetVirtualMachineRepresentation.getVirtualMachine().suspend();
 		VarEntry varEntry = userChangedVariable.getVarEntry();
 		LocalVariable localVariable = varEntry.getLocalVar();
 		String value = (String) varEntry.getNewValue();
@@ -117,7 +127,6 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		targetVirtualMachineRepresentation.getVirtualMachine().resume();
 	}
 
 	public void setDebugEventListener(DebugEventListener debugEventListener) {
@@ -154,11 +163,22 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 			System.out.println("eventSet.size() " + eventSet.size());
 			for (Event event : eventSet) {
 				if (event instanceof BreakpointEvent breakpointEvent) {
-					simpleDebugSessionRepresentation = new SimpleDebugSessionRepresentation(
-							targetVirtualMachineRepresentation, breakpointEvent);
 					targetApplicationStatus = TargetApplicationStatus.STOPPED_AT_BREAKPOINT;
+					setSimpleDebugSessionRepresentation(
+							new SimpleDebugSessionRepresentation(targetVirtualMachineRepresentation, breakpointEvent));
+					//countDownLatch = new CountDownLatch(1);
 					refreshUserInterface();
-					startBreakpointSession(breakpointEvent);
+					UiEventProcessor uiEventProcessor = new UiEventProcessor(this);
+					Thread uiEventProcessorThread = new Thread(uiEventProcessor);
+					uiEventProcessorThread.setDaemon(true);
+					uiEventProcessorThread.start();
+					try {
+						uiEventProcessorThread.join();
+						//countDownLatch.await();
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					eventSet.resume();
 				} else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
 					System.out.println("Target VM stopped");
@@ -169,20 +189,6 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 		}
 	}
 
-	private void startBreakpointSession(BreakpointEvent breakpointEvent) {
-
-		UiEventProcessor uiEventProcessor = new UiEventProcessor(this);
-		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
-		uiEventProcessorThread.setDaemon(true);
-		uiEventProcessorThread.start();
-		countDownLatch = new CountDownLatch(1);
-		try {
-			countDownLatch.await();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 
 	private boolean refreshUserInterface() {
 		ThreadReference threadReference = simpleDebugSessionRepresentation.getBreakpointEvent().thread();
@@ -339,4 +345,5 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 			}
 		}
 	}
+
 }

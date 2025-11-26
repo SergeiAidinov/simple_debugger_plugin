@@ -1,7 +1,9 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
 import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
@@ -20,6 +22,7 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
 		return INSTANCE;
 	}
 
+	//private final Queue<UIEvent> uIEventQueue = new ConcurrentLinkedQueue<>();
 	private final BlockingQueue<UIEvent> uIEventQueue = new LinkedBlockingQueue<>();
 	private final BlockingQueue<SimpleDebugEvent> debugEventQueue = new LinkedBlockingQueue<>();
 

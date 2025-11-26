@@ -177,7 +177,7 @@ public class DebugWindow /* implements DebugEventListener, UiEventProvider */ {
 	}
 
 	private void pressResumeButton() {
-		System.out.println("pressResumeButton()" + uiEventCollector);
+		System.out.println("pressed Resume Button ");
 		Display.getDefault().asyncExec(() -> {
 			uiEventCollector.collectUiEvent(new UserPressedResumeUiEvent());
 		});

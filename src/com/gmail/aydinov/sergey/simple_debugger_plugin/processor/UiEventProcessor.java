@@ -1,10 +1,12 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
 import java.text.spi.BreakIteratorProvider;
+import java.util.Objects;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreakpointEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.Resumable;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebugSessionInformer;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.Terminable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.Updatable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.WorkFlow;
@@ -27,6 +29,7 @@ public class UiEventProcessor implements Runnable {
 	private final Resumable resumable;
 	private final Terminable terminable;
 	private final Updatable updatable;
+	private final SimpleDebugSessionInformer simpleDebugSessionInformer;
 
 //	private final SimpleDebuggerEventQueue eventQueue;
 //	
@@ -47,15 +50,16 @@ public class UiEventProcessor implements Runnable {
 		this.resumable = workFlow;
 		this.terminable = workFlow;
 		this.updatable = workFlow;
+		this.simpleDebugSessionInformer = workFlow;
 	}
 
 	@Override
 	public void run() {
 		System.out.println("THREAD STARTED");
 		while (running) {
-			// if ()
 			try {
 				UIEvent event = SimpleDebuggerEventQueue.instance().takeUiEvent();
+				if (event instanceof UserPressedResumeUiEvent) break;
 				System.out.println(event);
 				handleEvent(event);
 			} catch (InterruptedException e) {
