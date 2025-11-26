@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
 import java.text.spi.BreakIteratorProvider;
+import java.util.List;
 import java.util.Objects;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
@@ -15,7 +16,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEventU
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserChangedVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserPressedResumeUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
+import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.InvalidTypeException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
@@ -59,7 +63,8 @@ public class UiEventProcessor implements Runnable {
 		while (running) {
 			try {
 				UIEvent event = SimpleDebuggerEventQueue.instance().takeUiEvent();
-				if (event instanceof UserPressedResumeUiEvent) break;
+				if (event instanceof UserPressedResumeUiEvent)
+					break;
 				System.out.println(event);
 				handleEvent(event);
 			} catch (InterruptedException e) {
@@ -83,7 +88,6 @@ public class UiEventProcessor implements Runnable {
 
 		if (uIevent instanceof UserChangedVariable) {
 			UserChangedVariable userChangedVariable = (UserChangedVariable) uIevent;
-//			updatable.updateVariables(uiEventUpdateVariable);
 			updatable.updateVariables(userChangedVariable);
 			System.out.println("PROCESS: " + uIevent);
 			return;

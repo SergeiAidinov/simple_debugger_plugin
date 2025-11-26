@@ -31,7 +31,7 @@ import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 
-public class DebugWindow /* implements DebugEventListener, UiEventProvider */ {
+public class DebugWindow {
 
 	private Shell shell;
 	private CTabFolder tabFolder;
@@ -50,8 +50,6 @@ public class DebugWindow /* implements DebugEventListener, UiEventProvider */ {
 	private final String STOP_INFO = "Stopped at: ";
 
 	public DebugWindow() {
-		// uiEventListener =
-		// SimpleDebuggerWorkFlow.Factory.getInstanceOfSimpleDebuggerWorkFlow();
 		Display display = Display.getDefault();
 		shell = new Shell(display);
 		shell.setText("Simple Debugger");
@@ -104,14 +102,6 @@ public class DebugWindow /* implements DebugEventListener, UiEventProvider */ {
 		stackTab = new StackTabContent(tabFolder);
 		CTabItem stackItem = new CTabItem(tabFolder, SWT.NONE);
 		stackItem.setText("Stack");
-
-		// public UiEventListener getUiEventListener() {
-//			return uiEventListener;
-//			}
-		//
-//			public void setUiEventListener(UiEventListener uiEventListener) {
-//				this.uiEventListener = uiEventListener;
-//			}
 		stackItem.setControl(stackTab.getControl());
 
 		evalTab = new EvaluateTabContent(tabFolder);
@@ -156,14 +146,6 @@ public class DebugWindow /* implements DebugEventListener, UiEventProvider */ {
 		uiEventCollector.collectUiEvent(new UserClosedWindowUiEvent());
 		return true; // разрешаем закрытие
 	}
-
-//	public UiEventListener getUiEventListener() {
-//		return uiEventListener;
-//	}
-//
-//	public void setUiEventListener(UiEventListener uiEventListener) {
-//		this.uiEventListener = uiEventListener;
-//	}
 
 	private void hookResumeButton() {
 		resumeButton.addListener(SWT.Selection, e -> {
@@ -211,22 +193,39 @@ public class DebugWindow /* implements DebugEventListener, UiEventProvider */ {
 	}
 
 	private void refreshData(SimpleDebugEvent debugEvent) {
-		locationLabel.setText(STOP_INFO + debugEvent.getClassName() + "." + debugEvent.getMethodName() + " line:"
-				+ debugEvent.getLineNumber());
-		resumeButton.setEnabled(true); // ← включаем кнопку при остановке
-		StackFrame stackFrame = debugEvent.getFrame();
-		VirtualMachine vm = stackFrame.virtualMachine();
-		List<LocalVariable> localVariables = Collections.EMPTY_LIST;
-		try {
-			localVariables = stackFrame.visibleVariables();
-		} catch (AbsentInformationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		Map<LocalVariable, Value> vars = stackFrame.getValues(localVariables);
-		variablesTab.updateVariables(vars);
-		fieldsTab.updateFields(debugEvent.getFields());
-		stackTab.updateStack(debugEvent.getStackDescription());
+	    // -----------------------------
+	    // 0. Проверка наличия debugEvent
+	    // -----------------------------
+	    if (debugEvent == null) {
+	        System.out.println("refreshData: debugEvent = null -> skip");
+	        return;
+	    }
+
+	    // -----------------------------
+	    // 1. Обновляем UI (безопасно)
+	    // -----------------------------
+	    locationLabel.setText(
+	            STOP_INFO + debugEvent.getClassName() + "." +
+	            debugEvent.getMethodName() + " line:" + debugEvent.getLineNumber()
+	    );
+	    resumeButton.setEnabled(true);
+
+	    // -----------------------------
+	    // 2. Используем сохранённые локальные переменные
+	    // -----------------------------
+	    Map<LocalVariable, Value> vars = debugEvent.getLocalVariables();
+	    if (vars == null) {
+	        vars = Collections.emptyMap();
+	    }
+
+	    // -----------------------------
+	    // 3. Обновляем вкладки
+	    // -----------------------------
+	    variablesTab.updateVariables(vars);
+	    fieldsTab.updateFields(debugEvent.getFields() != null ? debugEvent.getFields() : Collections.emptyMap());
+	    stackTab.updateStack(debugEvent.getStackDescription() != null ? debugEvent.getStackDescription() : "Unknown");
 	}
+
+
 
 }

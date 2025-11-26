@@ -29,18 +29,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollecto
 
 public class VariablesTabContent {
 
-    //private final UiEventProvider uiEventProvider;
     private final Table table;
     private final TableViewer viewer;
-  //  private StackFrame currentStackFrame;
-    UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
-
-    
-
+    private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
     private final List<VarEntry> entries = new ArrayList<>();
 
     public VariablesTabContent(Composite parent) {
-       // this.uiEventProvider = uiEventProvider;
 
         table = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION);
         table.setHeaderVisible(true);
@@ -75,7 +69,7 @@ public class VariablesTabContent {
                     varEntry = (VarEntry) element;
                 }
                 varEntry.setNewValue(newValue);
-                System.out.println("ENTER: " + varEntry.getValue());
+                System.out.println("ENTER: " + varEntry.getNewValue());
                 uiEventCollector.collectUiEvent(new UserChangedVariable(varEntry));
                 viewer.update(varEntry, null);
             }
