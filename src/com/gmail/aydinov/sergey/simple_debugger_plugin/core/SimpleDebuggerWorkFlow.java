@@ -20,6 +20,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.SimpleDebugSessionRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventCollector;
@@ -34,9 +35,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.VarEntry;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserChangedVariable;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.Field;
+import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -69,8 +72,10 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 	private boolean running = true;
 	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
-	private final AutoBreakpointHighlighter autoBreakpointHighlighter = new AutoBreakpointHighlighter();
-	private BreakpointEvent currentBreakpointEvent;
+	// private final AutoBreakpointHighlighter autoBreakpointHighlighter = new
+	// AutoBreakpointHighlighter();
+	// private BreakpointEvent currentBreakpointEvent;
+	private SimpleDebugSessionRepresentation simpleDebugSessionRepresentation;
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
@@ -95,19 +100,19 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 
 	}
 
-	public BreakpointEvent getCurrentBreakpointEvent() {
-		return currentBreakpointEvent;
-	}
+//	public BreakpointEvent getCurrentBreakpointEvent() {
+//		return currentBreakpointEvent;
+//	}
 
 	public void updateVariables(UserChangedVariable userChangedVariable) {
 		targetVirtualMachineRepresentation.getVirtualMachine().suspend();
 		VarEntry varEntry = userChangedVariable.getVarEntry();
 		LocalVariable localVariable = varEntry.getLocalVar();
 		String value = (String) varEntry.getNewValue();
-		Value jdiValue = createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(), localVariable,
-				value);
+		Value jdiValue = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
+				localVariable, value);
 		try {
-			StackFrame farme = currentBreakpointEvent.thread().frame(0);
+			StackFrame farme = simpleDebugSessionRepresentation.getBreakpointEvent().thread().frame(0);
 			farme.setValue(localVariable, jdiValue);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -125,7 +130,6 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 
 	public void debug() throws IOException, AbsentInformationException {
 		System.out.println("DEBUG");
-
 		Display.getDefault().asyncExec(() -> {
 			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
 			if (window == null || !window.isOpen()) {
@@ -133,91 +137,106 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 				window.open(); // обязательно открываем shell
 			}
 		});
-
 		// Обновляем данные о target приложении
 		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
-
-		// Получаем JDI EventRequestManager
-		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
-				.eventRequestManager();
-
 		System.out.println("Waiting for events...");
 		EventQueue queue;
-
 		while (running) {
 			System.out.println("Start iteration...");
 			queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
-
+			EventSet eventSet = null;
 			try {
-				EventSet eventSet = queue.remove(); // блокирует до события
-				System.out.println("eventSet.size() " + eventSet.size());
-				for (Event event : eventSet) {
-					if (event instanceof BreakpointEvent bpEvent) {
-						currentBreakpointEvent = bpEvent;
-						ThreadReference thread = bpEvent.thread();
-						targetApplicationStatus = TargetApplicationStatus.STOPPED_AT_BREAKPOINT;
-						startBreakpointSession(bpEvent);
-						eventSet.resume();
-					} else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
-						System.out.println("Target VM stopped");
-						return;
-					}
-				}
+				eventSet = queue.remove();
 			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
+			} // блокирует до события
+			System.out.println("eventSet.size() " + eventSet.size());
+			for (Event event : eventSet) {
+				if (event instanceof BreakpointEvent breakpointEvent) {
+					simpleDebugSessionRepresentation = new SimpleDebugSessionRepresentation(
+							targetVirtualMachineRepresentation, breakpointEvent);
+					targetApplicationStatus = TargetApplicationStatus.STOPPED_AT_BREAKPOINT;
+					refreshUserInterface();
+					startBreakpointSession(breakpointEvent);
+					eventSet.resume();
+				} else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
+					System.out.println("Target VM stopped");
+					return;
+				}
 			}
 			System.out.println("End iteration. DebugEventListener: " + debugEventListener + "\n");
 		}
 	}
 
-	// Отдельный метод для обработки события
-	private void startBreakpointSession(BreakpointEvent bpEvent) {
+	private void startBreakpointSession(BreakpointEvent breakpointEvent) {
 
 		UiEventProcessor uiEventProcessor = new UiEventProcessor(this);
 		Thread uiEventProcessorThread = new Thread(uiEventProcessor);
 		uiEventProcessorThread.setDaemon(true);
 		uiEventProcessorThread.start();
-
-		ThreadReference thread = bpEvent.thread();
-		Location location = bpEvent.location();
+		countDownLatch = new CountDownLatch(1);
 		try {
+			countDownLatch.await();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
-			StackFrame frame = thread.frame(0);
-			System.out.println("Breakpoint hit at " + location.declaringType().name() + "."
-					+ frame.location().method().name() + " line " + location.lineNumber());
+	private boolean refreshUserInterface() {
+		ThreadReference threadReference = simpleDebugSessionRepresentation.getBreakpointEvent().thread();
+		Location location = simpleDebugSessionRepresentation.getBreakpointEvent().location();
+		StackFrame frame = null;
+		try {
+			frame = threadReference.frame(0);
+		} catch (IncompatibleThreadStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (Objects.isNull(frame))
+			return false;
+		System.out.println("Breakpoint hit at " + location.declaringType().name() + "."
+				+ frame.location().method().name() + " line " + location.lineNumber());
 
-			// Локальные переменные
-			// Локальные переменные
-			Map<LocalVariable, Value> localVariables = new HashMap<LocalVariable, Value>();
+		// Локальные переменные
+		Map<LocalVariable, Value> localVariables = new HashMap<LocalVariable, Value>();
+		try {
 			for (LocalVariable localVariable : frame.visibleVariables()) {
 				Value value = frame.getValue(localVariable);
 				localVariables.put(localVariable, value);
 				System.out.println(localVariable.name() + " = " + value);
 			}
-			ObjectReference thisObject = frame.thisObject();
-			Map<Field, Value> fields = Collections.EMPTY_MAP;
-			if (thisObject != null) {
-				fields = thisObject.getValues(thisObject.referenceType().fields());
-
-			}
-			String className = location.declaringType().name();
-			String methodName = location.method().name();
-			int lineNumber = location.lineNumber();
-			List<StackFrame> frames = thread.frames();
-			String stackDescription = compileStackInfo(thread.frames());
-			SimpleDebugEvent debugEvent = new SimpleDebugEvent(SimpleDebugEventType.REFRESH_DATA, className, methodName,
-					lineNumber, fields, localVariables, frames, stackDescription);
-			simpleDebugEventCollector.collectDebugEvent(debugEvent);
-			countDownLatch = new CountDownLatch(1);
-			countDownLatch.await();
-		} catch (Exception e) {
+		} catch (AbsentInformationException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		ObjectReference thisObject = frame.thisObject();
+		Map<Field, Value> fields = Collections.EMPTY_MAP;
+		if (thisObject != null) {
+			fields = thisObject.getValues(thisObject.referenceType().fields());
+
+		}
+		String className = location.declaringType().name();
+		String methodName = location.method().name();
+		int lineNumber = location.lineNumber();
+		String stackDescription = compileStackInfo(threadReference);
+		SimpleDebugEvent debugEvent = new SimpleDebugEvent(SimpleDebugEventType.REFRESH_DATA, className, methodName,
+				lineNumber, fields, localVariables, frame, stackDescription);
+		simpleDebugEventCollector.collectDebugEvent(debugEvent);
+		return true;
 	}
 
-	private String compileStackInfo(List<StackFrame> frames) {
+	private String compileStackInfo(ThreadReference threadReference) {
 		String classAndMethod = "Unknown";
 		String sourceAndLine = "Unknown";
+		List<StackFrame> frames = Collections.EMPTY_LIST;
+		try {
+			frames = threadReference.frames();
+		} catch (IncompatibleThreadStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		for (StackFrame frame : frames) {
 			if (frame == null)
 				continue;
@@ -242,32 +261,6 @@ public class SimpleDebuggerWorkFlow implements /* UiEventListener, DebugEventPro
 
 		}
 		return classAndMethod + " " + sourceAndLine;
-	}
-
-	private Value createJdiValueFromString(VirtualMachine vm, LocalVariable var, String str) {
-		String type = var.typeName();
-		switch (type) {
-		case "int":
-			return vm.mirrorOf(Integer.parseInt(str));
-		case "long":
-			return vm.mirrorOf(Long.parseLong(str));
-		case "short":
-			return vm.mirrorOf(Short.parseShort(str));
-		case "byte":
-			return vm.mirrorOf(Byte.parseByte(str));
-		case "char":
-			return vm.mirrorOf(str.charAt(0));
-		case "boolean":
-			return vm.mirrorOf(Boolean.parseBoolean(str));
-		case "float":
-			return vm.mirrorOf(Float.parseFloat(str));
-		case "double":
-			return vm.mirrorOf(Double.parseDouble(str));
-		case "java.lang.String":
-			return vm.mirrorOf(str);
-		default:
-			throw new IllegalArgumentException("Unsupported type: " + type);
-		}
 	}
 
 	public static class Factory {

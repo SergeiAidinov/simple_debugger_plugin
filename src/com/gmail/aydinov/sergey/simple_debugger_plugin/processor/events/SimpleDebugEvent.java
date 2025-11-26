@@ -19,18 +19,18 @@ public class SimpleDebugEvent {
 	private final int lineNumber;
 	private final Map<LocalVariable, Value> localVariables;
 	private final Map<Field, Value> fields;
-	private final List<StackFrame> frames;
+	private final StackFrame frame;
 	private final String stackDescription;
 
 	public SimpleDebugEvent(SimpleDebugEventType simpleDebugEventType, String className, String methodName, int lineNumber, Map<Field, Value> fields, Map<LocalVariable, Value> localVariables,
-			List<StackFrame> frames, String stackDescription) {
+			StackFrame frame, String stackDescription) {
 		this.simpleDebugEventType = simpleDebugEventType;
 		this.className = className;
 		this.methodName = methodName;
 		this.lineNumber = lineNumber;
 		this.fields = fields;
 		this.localVariables = localVariables;
-		this.frames = frames;
+		this.frame = frame;
 		this.stackDescription = stackDescription;
 	}
 	
@@ -59,8 +59,8 @@ public class SimpleDebugEvent {
 		return localVariables;
 	}
 
-	public List<StackFrame> getFrames() {
-		return frames;
+	public StackFrame getFrame() {
+		return frame;
 	}
 
 	public String getStackDescription() {

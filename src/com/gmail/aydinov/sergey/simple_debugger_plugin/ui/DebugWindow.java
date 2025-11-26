@@ -1,6 +1,8 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
@@ -26,9 +28,10 @@ import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
+import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 
-public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
+public class DebugWindow /* implements DebugEventListener, UiEventProvider */ {
 
 	private Shell shell;
 	private CTabFolder tabFolder;
@@ -101,8 +104,8 @@ public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 		stackTab = new StackTabContent(tabFolder);
 		CTabItem stackItem = new CTabItem(tabFolder, SWT.NONE);
 		stackItem.setText("Stack");
-		
-		//public UiEventListener getUiEventListener() {
+
+		// public UiEventListener getUiEventListener() {
 //			return uiEventListener;
 //			}
 		//
@@ -148,7 +151,7 @@ public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 
 		// закрываем
 		System.out.println("Debug window closed");
-		//sendUiEvent(new UserClosedWindowUiEvent());
+		// sendUiEvent(new UserClosedWindowUiEvent());
 		shell.dispose();
 		uiEventCollector.collectUiEvent(new UserClosedWindowUiEvent());
 		return true; // разрешаем закрытие
@@ -211,24 +214,19 @@ public class DebugWindow /*implements DebugEventListener, UiEventProvider*/ {
 		locationLabel.setText(STOP_INFO + debugEvent.getClassName() + "." + debugEvent.getMethodName() + " line:"
 				+ debugEvent.getLineNumber());
 		resumeButton.setEnabled(true); // ← включаем кнопку при остановке
-		StackFrame stackFrame = debugEvent.getFrames().get(0);
+		StackFrame stackFrame = debugEvent.getFrame();
 		VirtualMachine vm = stackFrame.virtualMachine();
-		 List<LocalVariable> l = null;
+		List<LocalVariable> localVariables = Collections.EMPTY_LIST;
 		try {
-			l = stackFrame.visibleVariables();
+			localVariables = stackFrame.visibleVariables();
 		} catch (AbsentInformationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		// stackFrame.getValues(l);
-		
-		variablesTab.updateVariables(stackFrame.getValues(l));
-//	sendUiEvent(new UIEventUpdateVariable());
+		Map<LocalVariable, Value> vars = stackFrame.getValues(localVariables);
+		variablesTab.updateVariables(vars);
 		fieldsTab.updateFields(debugEvent.getFields());
 		stackTab.updateStack(debugEvent.getStackDescription());
-
 	}
-	
-	
 
 }
