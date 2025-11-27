@@ -1,7 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.swt.SWT;
@@ -27,12 +26,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserPressedResum
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldsTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
-import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.LocalVariable;
-import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Value;
-import com.sun.jdi.VirtualMachine;
 
 public class DebugWindow {
 
@@ -46,8 +42,6 @@ public class DebugWindow {
 	private EvaluateTabContent evalTab;
 	private Button resumeButton;
 	private Label locationLabel;
-	private ThreadReference suspendedThread;
-	private DebugEventProvider debugEventProvider;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
 
 	private final String STOP_INFO = "Stopped at: ";
@@ -158,7 +152,6 @@ public class DebugWindow {
 	}
 
 	public void setDebugEventProvider(DebugEventProvider debugEventProvider) {
-		this.debugEventProvider = debugEventProvider;
 	}
 
 	private void pressResumeButton() {
@@ -228,7 +221,4 @@ public class DebugWindow {
 	    fieldsTab.updateFields(debugEvent.getFields() != null ? debugEvent.getFields() : Collections.emptyMap());
 	    stackTab.updateStack(debugEvent.getStackDescription() != null ? debugEvent.getStackDescription() : "Unknown");
 	}
-
-
-
 }

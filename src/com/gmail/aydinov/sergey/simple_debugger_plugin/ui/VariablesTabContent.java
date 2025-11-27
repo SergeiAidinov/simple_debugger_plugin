@@ -7,24 +7,21 @@ import java.util.Map;
 
 import org.eclipse.jface.viewers.CellEditor;
 import org.eclipse.jface.viewers.ICellModifier;
+import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.TextCellEditor;
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
-import org.eclipse.jface.viewers.IStructuredContentProvider;
-import org.eclipse.jface.viewers.Viewer;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEventUpdateVariable;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserChangedVariable;
 import com.sun.jdi.LocalVariable;
-import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 
 public class VariablesTabContent {
 
@@ -132,8 +129,7 @@ public class VariablesTabContent {
         return table;
     }
 
-    public void updateVariables(/*StackFrame stackFrame, */ Map<LocalVariable, Value> vars) {
-       // currentStackFrame = stackFrame;
+    public void updateVariables(Map<LocalVariable, Value> vars) {
 
         entries.clear();
         for (Map.Entry<LocalVariable, Value> entry : vars.entrySet()) {

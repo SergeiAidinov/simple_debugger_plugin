@@ -11,7 +11,6 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 
 import com.sun.jdi.Field;
-import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Value;
 
 public class FieldsTabContent {
@@ -48,7 +47,6 @@ public class FieldsTabContent {
             TableItem item = new TableItem(table, SWT.NONE);
             item.setText(0, field.name());
             item.setText(1, value.toString());
-           // item.setText(2, valueToString(value));
         }
 		
 	}

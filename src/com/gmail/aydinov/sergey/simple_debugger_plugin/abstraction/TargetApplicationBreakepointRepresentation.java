@@ -2,13 +2,13 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.stream.Collectors;
 
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.model.IBreakpoint;
 
@@ -17,14 +17,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
+import com.sun.jdi.ReferenceType;
+import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.BreakpointRequest;
-import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
-import com.sun.jdi.*;
-import java.util.List;
-import java.util.Optional;
-import org.eclipse.debug.core.model.IBreakpoint;
-import org.eclipse.core.resources.IMarker;
 
 public class TargetApplicationBreakepointRepresentation implements BreakpointSubscriber  {
 
@@ -39,7 +35,6 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 		this.virtualMachine = virtualMachine;
 	}
 
-	//private final Set<BreakpointWrapper> breakpointWrappers = ConcurrentHashMap.newKeySet();
 	private final Set<BreakpointRequestWrapper> breakpointRequestWrappers = new ConcurrentHashMap().newKeySet();
 	private final ConcurrentLinkedDeque<Location> locations = new ConcurrentLinkedDeque<>();
 

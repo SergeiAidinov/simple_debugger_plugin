@@ -2,15 +2,9 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
 import org.eclipse.swt.widgets.Display;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
-import com.sun.jdi.Location;
-import com.sun.jdi.ThreadReference;
 
-public class DebugWindowManager /*implements DebugEventListener, UiEventProvider*/ {
+public class DebugWindowManager {
 	
     private static DebugWindowManager INSTANCE;
     private DebugWindow debugWindow;
@@ -35,31 +29,7 @@ public class DebugWindowManager /*implements DebugEventListener, UiEventProvider
             });
         }
         debugWindow.setDebugEventProvider(debugEventProvider);
-        //SimpleDebuggerWorkFlow.Factory.getInstanceOfSimpleDebuggerWorkFlow().setDebugEventListener(debugWindow);
         return debugWindow;
     }
-
-    /** Обновляет окно данными из JDI */
-	/*
-	 * public void updateLocation(Location loc, ThreadReference thread) {
-	 * Display.getDefault().asyncExec(() -> { DebugWindow w = getOrCreateWindow();
-	 * if (w != null && w.isOpen()) { w.updateLocation(loc, thread); } }); }
-	 */
-
-//	public void setDebugEventProvider(DebugEventProvider debugEventProvider) {
-//		this.debugEventProvider = debugEventProvider;
-//	}
-
-//	@Override
-//	public void sendUiEvent(UIEvent uiEvent) {
-//		// TODO Auto-generated method stub
-//		
-//	}
-//
-//	@Override
-//	public void handleDebugEvent(SimpleDebugEvent debugEvent) {
-//		// TODO Auto-generated method stub
-//		
-//	}
     
 }
