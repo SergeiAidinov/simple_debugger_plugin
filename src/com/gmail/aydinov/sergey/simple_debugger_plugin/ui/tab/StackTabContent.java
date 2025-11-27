@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.List;
 import java.util.Map;

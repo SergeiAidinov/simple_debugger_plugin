@@ -7,6 +7,7 @@ import org.eclipse.debug.core.IBreakpointListener;
 import org.eclipse.debug.core.model.IBreakpoint;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.BreakpointSubscriber;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 import com.sun.jdi.request.BreakpointRequest;
 

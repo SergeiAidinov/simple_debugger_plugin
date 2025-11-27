@@ -2,11 +2,9 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
 import org.eclipse.swt.widgets.Display;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventListener;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventListener;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 import com.sun.jdi.Location;
