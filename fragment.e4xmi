@@ -7,7 +7,7 @@
     xmlns:advanced="http://www.eclipse.org/ui/2010/UIModel/application/ui/advanced"
     xmi:id="_uK_9gJ7pEee-s-Vv4s9x8A" 
     elementId="com.example.app.lifecycle.application"
-    lifeCycleURI="bundleclass://plugin_lifecycle/com.gmail.aydinov.sergey.plugin_lifecycle.AppLifeCycle"> <children xsi:type="application:MWindow" xmi:id="_uK_9gZ7pEee-s-Vv4s9x8A" elementId="MainWindow" label="My e4 LifeCycle App">
+    lifeCycleURI="bundleclass://simple_debugger_plugin/com.gmail.aydinov.sergey.plugin_lifecycle.AppLifeCycle"> <children xsi:type="application:MWindow" xmi:id="_uK_9gZ7pEee-s-Vv4s9x8A" elementId="MainWindow" label="My e4 LifeCycle App">
     
     <children xsi:type="advanced:MPartSashContainer" xmi:id="_N6yv8J7sEee-s-Vv4s9x8A">
       <children xsi:type="advanced:MPartStack" xmi:id="_N6yv8Z7sEee-s-Vv4s9x8A" elementId="DefaultStack">
