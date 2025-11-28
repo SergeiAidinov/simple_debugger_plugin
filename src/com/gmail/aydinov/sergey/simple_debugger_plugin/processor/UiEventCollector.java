@@ -1,6 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
 
 public interface UiEventCollector {
 

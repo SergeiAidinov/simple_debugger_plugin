@@ -17,9 +17,9 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserChangedVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserChangedVariable;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Value;
 

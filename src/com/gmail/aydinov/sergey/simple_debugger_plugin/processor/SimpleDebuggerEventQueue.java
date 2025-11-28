@@ -6,8 +6,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
 
 public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEventCollector {
 
