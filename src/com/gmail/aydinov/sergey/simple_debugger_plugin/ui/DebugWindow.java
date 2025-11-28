@@ -17,7 +17,6 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;

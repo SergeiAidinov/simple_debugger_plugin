@@ -16,6 +16,7 @@ public class SimpleDebugEventDTO {
     private final List<VariableDTO> locals;
     private final List<VariableDTO> fields;
     private final String stackTrace;
+    private final List<TargetApplicationElementRepresentation> targetApplicationElementRepresentationList;
 
     public SimpleDebugEventDTO(SimpleDebugEventType type,
                                String className,
@@ -23,7 +24,8 @@ public class SimpleDebugEventDTO {
                                int lineNumber,
                                List<VariableDTO> fields,
                                List<VariableDTO> locals,
-                               String stackTrace) {
+                               String stackTrace,
+                               List<TargetApplicationElementRepresentation> list) {
         this.type = type;
         this.className = className;
         this.methodName = methodName;
@@ -31,6 +33,7 @@ public class SimpleDebugEventDTO {
         this.fields = fields;
         this.locals = locals;
         this.stackTrace = stackTrace;
+        this.targetApplicationElementRepresentationList = list;
     }
 
     public SimpleDebugEventType getType() { return type; }
@@ -40,10 +43,13 @@ public class SimpleDebugEventDTO {
     public List<VariableDTO> getLocals() { return locals; }
     public List<VariableDTO> getFields() { return fields; }
     public String getStackTrace() { return stackTrace; }
+    public List<TargetApplicationElementRepresentation> getTargetApplicationElementRepresentationList(){return targetApplicationElementRepresentationList;}
 
 	public Map<LocalVariable, Value> getLocalVariablesDTO() {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	
 }
 

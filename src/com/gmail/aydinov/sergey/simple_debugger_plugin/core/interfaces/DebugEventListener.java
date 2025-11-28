@@ -1,6 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEventDTO;
 
 /**
 Слушатель событий от дебаггера → UI
@@ -8,5 +8,5 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
 
 public interface DebugEventListener {
 
-   void handleDebugEvent(SimpleDebugEvent debugEvent);
+   void handleDebugEvent(SimpleDebugEventDTO debugEvent);
 }

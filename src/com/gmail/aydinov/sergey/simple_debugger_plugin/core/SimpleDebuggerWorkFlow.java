@@ -40,7 +40,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflo
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserChangedField;
@@ -104,48 +103,46 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	public void updateVariables(UserChangedVariableDTO userChangedVariableDTO, StackFrame frame) {
-	    if (userChangedVariableDTO == null || frame == null) return;
+		if (userChangedVariableDTO == null || frame == null)
+			return;
 
-	    String varName = userChangedVariableDTO.getName();
-	    Object newValueObj = userChangedVariableDTO.getNewValue();
-	    if (newValueObj == null) return;
+		String varName = userChangedVariableDTO.getName();
+		Object newValueObj = userChangedVariableDTO.getNewValue();
+		if (newValueObj == null)
+			return;
 
-	    String newValueStr = newValueObj.toString();
+		String newValueStr = newValueObj.toString();
 
-	    // Находим локальную переменную по имени
-	    LocalVariable localVariable = null;
-	    try {
-	        for (LocalVariable lv : frame.visibleVariables()) {
-	            if (lv.name().equals(varName)) {
-	                localVariable = lv;
-	                break;
-	            }
-	        }
-	    } catch (AbsentInformationException e) {
-	        System.err.println("Cannot read local variables info: " + e.getMessage());
-	        return;
-	    }
+		// Находим локальную переменную по имени
+		LocalVariable localVariable = null;
+		try {
+			for (LocalVariable lv : frame.visibleVariables()) {
+				if (lv.name().equals(varName)) {
+					localVariable = lv;
+					break;
+				}
+			}
+		} catch (AbsentInformationException e) {
+			System.err.println("Cannot read local variables info: " + e.getMessage());
+			return;
+		}
 
-	    if (localVariable == null) {
-	        System.err.println("Local variable not found: " + varName);
-	        return;
-	    }
+		if (localVariable == null) {
+			System.err.println("Local variable not found: " + varName);
+			return;
+		}
 
-	    // Создаем JDI Value из строки
-	    Value jdiValue = DebugUtils.createJdiValueFromString(
-	            targetVirtualMachineRepresentation.getVirtualMachine(),
-	            localVariable,
-	            newValueStr
-	    );
+		// Создаем JDI Value из строки
+		Value jdiValue = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
+				localVariable, newValueStr);
 
-	    // Устанавливаем новое значение
-	    try {
-	        frame.setValue(localVariable, jdiValue);
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
+		// Устанавливаем новое значение
+		try {
+			frame.setValue(localVariable, jdiValue);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
-
 
 	public List<ReferenceType> getClassesOfTargetApplication() {
 		return targetVirtualMachineRepresentation.getVirtualMachine().allClasses();
@@ -188,16 +185,18 @@ public class SimpleDebuggerWorkFlow {
 //							eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 					Location location = breakpointEvent.location();
 					Display.getDefault().asyncExec(() -> {
-					    try {
-					        ITextEditor editor1 = openEditorForLocation(location);
-					        if (editor1 != null) {
-					            int line = location.lineNumber() - 1;
-					            new CurrentLineHighlighter().highlight(editor1, line);
-					        }
-					    } catch (Exception e) {
-					        e.printStackTrace();
-					    }
+						try {
+							ITextEditor editor1 = openEditorForLocation(location);
+							if (editor1 != null) {
+								int line = location.lineNumber() - 1;
+								new CurrentLineHighlighter().highlight(editor1, line);
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 					});
+					targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+							targetVirtualMachineRepresentation.getVirtualMachine());
 					refreshUserInterface(breakpointEvent);
 					StackFrame frame = null;
 					try {
@@ -227,6 +226,8 @@ public class SimpleDebuggerWorkFlow {
 							e.printStackTrace();
 						}
 						handleEvent(uiEvent, farme);
+						targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+								targetVirtualMachineRepresentation.getVirtualMachine());
 						refreshUserInterface(breakpointEvent);
 					}
 				} else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
@@ -240,92 +241,92 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	public ITextEditor openEditorForLocation(Location location) {
-	    IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-	    if (window == null)
-	        throw new IllegalStateException("Workbench window not ready");
+		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		if (window == null)
+			throw new IllegalStateException("Workbench window not ready");
 
-	    IWorkbenchPage page = window.getActivePage();
-	    if (page == null)
-	        throw new IllegalStateException("No active workbench page");
+		IWorkbenchPage page = window.getActivePage();
+		if (page == null)
+			throw new IllegalStateException("No active workbench page");
 
-	    IFile file = null;
+		IFile file = null;
 		try {
 			file = findIFileForLocation(location);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	    if (file == null || !file.exists())
-	        throw new IllegalArgumentException("IFile not found for location: " + location);
+		if (file == null || !file.exists())
+			throw new IllegalArgumentException("IFile not found for location: " + location);
 
-	    IEditorPart part = null;
+		IEditorPart part = null;
 		try {
 			part = IDE.openEditor(page, file, true);
 		} catch (PartInitException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	    if (!(part instanceof ITextEditor))
-	        throw new IllegalStateException("The editor is not a text editor: " + part);
+		if (!(part instanceof ITextEditor))
+			throw new IllegalStateException("The editor is not a text editor: " + part);
 
-	    return (ITextEditor) part;
+		return (ITextEditor) part;
 	}
 
-	
 	public IFile findIFileForLocation(Location location) {
-	        ReferenceType refType = location.declaringType();
-	        if (refType == null) return null;
+		ReferenceType refType = location.declaringType();
+		if (refType == null)
+			return null;
 
-	        // Имя типа в формате JVM => преобразуем в Java вид
-	        // было: Lcom/example/MyClass;  =>  com.example.MyClass
-	        String jvmName = refType.name();
-	        String className = jvmName.replace('/', '.');
+		// Имя типа в формате JVM => преобразуем в Java вид
+		// было: Lcom/example/MyClass; => com.example.MyClass
+		String jvmName = refType.name();
+		String className = jvmName.replace('/', '.');
 
-	        // Удаляем ведущую 'L' и ';', если они есть
-	        if (className.startsWith("L") && className.endsWith(";")) {
-	            className = className.substring(1, className.length() - 1);
-	        }
+		// Удаляем ведущую 'L' и ';', если они есть
+		if (className.startsWith("L") && className.endsWith(";")) {
+			className = className.substring(1, className.length() - 1);
+		}
 
-	        // Теперь это нормальное имя класса, ищем по нему IType
-	        IWorkspace ws = ResourcesPlugin.getWorkspace();
-	        IWorkspaceRoot root = ws.getRoot();
+		// Теперь это нормальное имя класса, ищем по нему IType
+		IWorkspace ws = ResourcesPlugin.getWorkspace();
+		IWorkspaceRoot root = ws.getRoot();
 
-	        // Перебираем все Java-проекты
-	        for (IProject project : root.getProjects()) {
-	            try {
-					if (!project.isOpen() || !project.hasNature(JavaCore.NATURE_ID))
-					    continue;
-				} catch (CoreException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+		// Перебираем все Java-проекты
+		for (IProject project : root.getProjects()) {
+			try {
+				if (!project.isOpen() || !project.hasNature(JavaCore.NATURE_ID))
+					continue;
+			} catch (CoreException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			IJavaProject javaProject = JavaCore.create(project);
+			IType type = null;
+			try {
+				type = javaProject.findType(className);
+			} catch (JavaModelException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			if (type != null) {
+				ICompilationUnit unit = type.getCompilationUnit();
+				if (unit != null) {
+					IResource resource = null;
+					try {
+						resource = unit.getUnderlyingResource();
+					} catch (JavaModelException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					if (resource instanceof IFile) {
+						return (IFile) resource;
+					}
 				}
-
-	            IJavaProject javaProject = JavaCore.create(project);
-	            IType type = null;
-				try {
-					type = javaProject.findType(className);
-				} catch (JavaModelException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-	            if (type != null) {
-	                ICompilationUnit unit = type.getCompilationUnit();
-	                if (unit != null) {
-	                    IResource resource = null;
-						try {
-							resource = unit.getUnderlyingResource();
-						} catch (JavaModelException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-	                    if (resource instanceof IFile) {
-	                        return (IFile) resource;
-	                    }
-	                }
-	            }
-	        }
-	        return null;
+			}
+		}
+		return null;
 	}
 
 	private void handleEvent(UIEvent uIevent, StackFrame farme) {
@@ -346,128 +347,114 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private void updateField(UserChangedFieldDTO dto, StackFrame frame) {
-	    try {
-	        ReferenceType refType = frame.thisObject() != null
-	                ? frame.thisObject().referenceType()
-	                : frame.location().declaringType();
+		try {
+			ReferenceType refType = frame.thisObject() != null ? frame.thisObject().referenceType()
+					: frame.location().declaringType();
 
-	        Field field = refType.fieldByName(dto.getFieldName());
-	        if (field == null) {
-	            throw new RuntimeException("Field not found: " + dto.getFieldName());
-	        }
+			Field field = refType.fieldByName(dto.getFieldName());
+			if (field == null) {
+				throw new RuntimeException("Field not found: " + dto.getFieldName());
+			}
 
-	        VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
-	        ThreadReference thread = frame.thread();
+			VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
+			ThreadReference thread = frame.thread();
 
-	        Value jdiValue = DebugUtils.createJdiObjectFromString(
-	                vm,
-	                field.type(),
-	                dto.getNewValue(),
-	                thread
-	        );
+			Value jdiValue = DebugUtils.createJdiObjectFromString(vm, field.type(), dto.getNewValue(), thread);
 
-	        // Статические поля меняем напрямую
-	        if (Modifier.isStatic(field.modifiers()) && refType instanceof ClassType) {
-	            ((ClassType) refType).setValue(field, jdiValue);
-	        } else {
-	            // Нестатические поля меняем через invokeMethod (вызываем сеттер)
-	            ObjectReference obj = frame.thisObject();
-	            if (obj != null) {
-	                String setterName = "set" + Character.toUpperCase(dto.getFieldName().charAt(0))
-	                        + dto.getFieldName().substring(1);
-	                List<Method> methods = obj.referenceType().methodsByName(setterName);
-	                if (!methods.isEmpty()) {
-	                    Method setter = methods.get(0);
-	                    obj.invokeMethod(thread, setter, List.of(jdiValue), ObjectReference.INVOKE_SINGLE_THREADED);
-	                } else {
-	                    // Если сеттера нет, меняем напрямую (снимок JDI, работает только на паузе)
-	                    obj.setValue(field, jdiValue);
-	                }
-	            } else {
-	                System.err.println("Cannot set value: instance object is null");
-	            }
-	        }
+			// Статические поля меняем напрямую
+			if (Modifier.isStatic(field.modifiers()) && refType instanceof ClassType) {
+				((ClassType) refType).setValue(field, jdiValue);
+			} else {
+				// Нестатические поля меняем через invokeMethod (вызываем сеттер)
+				ObjectReference obj = frame.thisObject();
+				if (obj != null) {
+					String setterName = "set" + Character.toUpperCase(dto.getFieldName().charAt(0))
+							+ dto.getFieldName().substring(1);
+					List<Method> methods = obj.referenceType().methodsByName(setterName);
+					if (!methods.isEmpty()) {
+						Method setter = methods.get(0);
+						obj.invokeMethod(thread, setter, List.of(jdiValue), ObjectReference.INVOKE_SINGLE_THREADED);
+					} else {
+						// Если сеттера нет, меняем напрямую (снимок JDI, работает только на паузе)
+						obj.setValue(field, jdiValue);
+					}
+				} else {
+					System.err.println("Cannot set value: instance object is null");
+				}
+			}
 
-	        System.out.println("FIELD CHANGED: " + dto);
+			System.out.println("FIELD CHANGED: " + dto);
 
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
-
-
-
 
 	private boolean refreshUserInterface(BreakpointEvent breakpointEvent) {
-	    if (breakpointEvent == null) return false;
+		if (breakpointEvent == null)
+			return false;
+		targetApplicationRepresentation
+				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+		ThreadReference threadReference = breakpointEvent.thread();
+		Location location = breakpointEvent.location();
+		StackFrame frame;
 
-	    ThreadReference threadReference = breakpointEvent.thread();
-	    Location location = breakpointEvent.location();
-	    StackFrame frame;
+		try {
+			frame = threadReference.frame(0);
+		} catch (IncompatibleThreadStateException | IndexOutOfBoundsException e) {
+			System.err.println("Cannot read stack frame: " + e.getMessage());
+			return false;
+		} catch (com.sun.jdi.InvalidStackFrameException e) {
+			System.err.println("Invalid stack frame: " + e.getMessage());
+			return false;
+		}
 
-	    try {
-	        frame = threadReference.frame(0);
-	    } catch (IncompatibleThreadStateException | IndexOutOfBoundsException e) {
-	        System.err.println("Cannot read stack frame: " + e.getMessage());
-	        return false;
-	    } catch (com.sun.jdi.InvalidStackFrameException e) {
-	        System.err.println("Invalid stack frame: " + e.getMessage());
-	        return false;
-	    }
+		if (frame == null)
+			return false;
 
-	    if (frame == null) return false;
+		System.out.println("Breakpoint hit at " + location.declaringType().name() + "."
+				+ frame.location().method().name() + " line " + location.lineNumber());
 
-	    System.out.println("Breakpoint hit at " + location.declaringType().name() + "."
-	            + frame.location().method().name() + " line " + location.lineNumber());
+		// ===== Локальные переменные =====
+		Map<LocalVariable, Value> localVariables = Collections.emptyMap();
+		try {
+			localVariables = frame.getValues(frame.visibleVariables()).entrySet().stream()
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		} catch (AbsentInformationException e) {
+			System.err.println("No debug info: " + e.getMessage());
+		} catch (com.sun.jdi.InvalidStackFrameException e) {
+			System.err.println("Cannot read variables: " + e.getMessage());
+			return false;
+		}
 
-	    // ===== Локальные переменные =====
-	    Map<LocalVariable, Value> localVariables = Collections.emptyMap();
-	    try {
-	        localVariables = frame.getValues(frame.visibleVariables())
-	                              .entrySet()
-	                              .stream()
-	                              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-	    } catch (AbsentInformationException e) {
-	        System.err.println("No debug info: " + e.getMessage());
-	    } catch (com.sun.jdi.InvalidStackFrameException e) {
-	        System.err.println("Cannot read variables: " + e.getMessage());
-	        return false;
-	    }
+		// ===== Поля объекта this =====
+		Map<Field, Value> fields = Collections.emptyMap();
+		ObjectReference thisObject = null;
+		try {
+			thisObject = frame.thisObject();
+		} catch (com.sun.jdi.InvalidStackFrameException e) {
+			System.err.println("Cannot read thisObject: " + e.getMessage());
+		}
 
-	    // ===== Поля объекта this =====
-	    Map<Field, Value> fields = Collections.emptyMap();
-	    ObjectReference thisObject = null;
-	    try {
-	        thisObject = frame.thisObject();
-	    } catch (com.sun.jdi.InvalidStackFrameException e) {
-	        System.err.println("Cannot read thisObject: " + e.getMessage());
-	    }
+		if (thisObject != null) {
+			try {
+				fields = thisObject.getValues(thisObject.referenceType().fields());
+			} catch (com.sun.jdi.InvalidStackFrameException e) {
+				System.err.println("Cannot read fields: " + e.getMessage());
+			}
+		}
 
-	    if (thisObject != null) {
-	        try {
-	            fields = thisObject.getValues(thisObject.referenceType().fields());
-	        } catch (com.sun.jdi.InvalidStackFrameException e) {
-	            System.err.println("Cannot read fields: " + e.getMessage());
-	        }
-	    }
+		// ===== Преобразуем в UI-friendly DTO =====
+		SimpleDebugEventDTO dto = new SimpleDebugEventDTO(SimpleDebugEventType.REFRESH_DATA,
+				location.declaringType().name(), location.method().name(), location.lineNumber(),
+				DebugUtils.mapFields(fields), DebugUtils.mapLocals(localVariables), compileStackInfo(threadReference),
+				targetApplicationRepresentation.getTargetApplicationStatus());
 
-	    // ===== Преобразуем в UI-friendly DTO =====
-	    SimpleDebugEventDTO dto = new SimpleDebugEventDTO(
-	            SimpleDebugEventType.REFRESH_DATA,
-	            location.declaringType().name(),
-	            location.method().name(),
-	            location.lineNumber(),
-	            DebugUtils.mapFields(fields),
-	            DebugUtils.mapLocals(localVariables),
-	            compileStackInfo(threadReference)
-	    );
+		// ===== Отправляем событие в UI =====
+		simpleDebugEventCollector.collectDebugEvent(dto);
 
-	    // ===== Отправляем событие в UI =====
-	    simpleDebugEventCollector.collectDebugEvent(dto);
-
-	    return true;
+		return true;
 	}
-
 
 	private String compileStackInfo(ThreadReference threadReference) {
 		String classAndMethod = "Unknown";

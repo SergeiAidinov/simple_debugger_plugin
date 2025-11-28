@@ -42,7 +42,7 @@ public class TargetApplicationRepresentation {
 		return referencesAtClassesAndInterfaces;
 	}
 
-	public List<? extends TargetApplicationElementRepresentation> getTargetApplicationStatus() {
+	public List<TargetApplicationElementRepresentation> getTargetApplicationStatus() {
 		return referencesAtClassesAndInterfaces.values().stream().collect(Collectors.toList());
 	}
 

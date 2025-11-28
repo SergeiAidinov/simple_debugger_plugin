@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
@@ -199,26 +198,26 @@ public class DebugUtils {
 		throw new RuntimeException("No suitable constructor found for boxed type: " + clazz.name());
 	}
 	
-	public static SimpleDebugEventDTO toDTO(SimpleDebugEvent e) {
-
-        List<VariableDTO> fields = e.getFields().entrySet().stream()
-                .map(DebugUtils::mapField)
-                .collect(Collectors.toList());
-
-        List<VariableDTO> locals = e.getLocalVariables().entrySet().stream()
-                .map(DebugUtils::mapLocal)
-                .collect(Collectors.toList());
-
-        return new SimpleDebugEventDTO(
-                e.getSimpleDebugEventType(),
-                e.getClassName(),
-                e.getMethodName(),
-                e.getLineNumber(),
-                fields,
-                locals,
-                e.getStackDescription()
-        );
-    }
+//	public static SimpleDebugEventDTO toDTO(SimpleDebugEvent e) {
+//
+//        List<VariableDTO> fields = e.getFields().entrySet().stream()
+//                .map(DebugUtils::mapField)
+//                .collect(Collectors.toList());
+//
+//        List<VariableDTO> locals = e.getLocalVariables().entrySet().stream()
+//                .map(DebugUtils::mapLocal)
+//                .collect(Collectors.toList());
+//
+//        return new SimpleDebugEventDTO(
+//                e.getSimpleDebugEventType(),
+//                e.getClassName(),
+//                e.getMethodName(),
+//                e.getLineNumber(),
+//                fields,
+//                locals,
+//                e.getStackDescription()
+//        );
+//    }
 
     private static VariableDTO mapField(Map.Entry<Field, Value> entry) {
         Field f = entry.getKey();
