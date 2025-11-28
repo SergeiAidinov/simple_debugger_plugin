@@ -1,47 +1,43 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
-import com.sun.jdi.LocalVariable;
-import com.sun.jdi.Value;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
 
 public class VarEntry {
-	
-    private final LocalVariable localVar;
+
+    private final String name;
     private final String type;
     private final String value;
     private Object newValue;
-    
-    public VarEntry(LocalVariable localVar, Value val) {
-        this.localVar = localVar;
-        this.type = localVar.typeName();
-        this.value = valueToString(val);
+
+    public VarEntry(VariableDTO dto) {
+        this.name = dto.getName();
+        this.type = dto.getType();
+        this.value = dto.getValue();
     }
-    
+
+    public VarEntry(String name, String type, String value) {
+        this.name = name;
+        this.type = type;
+        this.value = value;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
     public Object getNewValue() {
-		return newValue;
-	}
+        return newValue;
+    }
 
-	public void setNewValue(Object newValue) {
-		this.newValue = newValue;
-	}
-
-	public LocalVariable getLocalVar() {
-		return localVar;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public String getValue() {
-		return value;
-	}
-
-	private String valueToString(Value v) {
-        if (v == null) return "null";
-        try {
-            return v.toString();
-        } catch (Exception e) {
-            return "<error>";
-        }
+    public void setNewValue(Object newValue) {
+        this.newValue = newValue;
     }
 }

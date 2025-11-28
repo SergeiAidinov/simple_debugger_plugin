@@ -1,12 +1,10 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
 
 public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEventCollector {
@@ -24,7 +22,7 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
 
 	//private final Queue<UIEvent> uIEventQueue = new ConcurrentLinkedQueue<>();
 	private final BlockingQueue<UIEvent> uIEventQueue = new LinkedBlockingQueue<>();
-	private final BlockingQueue<SimpleDebugEvent> debugEventQueue = new LinkedBlockingQueue<>();
+	private final BlockingQueue<SimpleDebugEventDTO> debugEventQueue = new LinkedBlockingQueue<>();
 
 	@Override
 	public void collectUiEvent(UIEvent event) {
@@ -38,13 +36,13 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
 	}
 
 	@Override
-	public void collectDebugEvent(SimpleDebugEvent event) {
+	public void collectDebugEvent(SimpleDebugEventDTO event) {
 		debugEventQueue.offer(event); // offer не блокирует
 	}
 
 	// Получить событие для обработки (Worker поток)
 	@Override
-	public SimpleDebugEvent takeDebugEvent() throws InterruptedException {
+	public SimpleDebugEventDTO takeDebugEvent() throws InterruptedException {
 		return debugEventQueue.take(); // блокируется, пока нет событий
 	}
 }

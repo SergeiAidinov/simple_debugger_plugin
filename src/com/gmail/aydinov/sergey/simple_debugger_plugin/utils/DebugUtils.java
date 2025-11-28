@@ -1,17 +1,23 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.utils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
+import com.sun.jdi.Field;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.PrimitiveType;
+import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
-import com.sun.jdi.ThreadReference;
 
 /**
  * Вспомогательный класс-заглушка для локальных переменных
@@ -192,4 +198,88 @@ public class DebugUtils {
 
 		throw new RuntimeException("No suitable constructor found for boxed type: " + clazz.name());
 	}
+	
+	public static SimpleDebugEventDTO toDTO(SimpleDebugEvent e) {
+
+        List<VariableDTO> fields = e.getFields().entrySet().stream()
+                .map(DebugUtils::mapField)
+                .collect(Collectors.toList());
+
+        List<VariableDTO> locals = e.getLocalVariables().entrySet().stream()
+                .map(DebugUtils::mapLocal)
+                .collect(Collectors.toList());
+
+        return new SimpleDebugEventDTO(
+                e.getSimpleDebugEventType(),
+                e.getClassName(),
+                e.getMethodName(),
+                e.getLineNumber(),
+                fields,
+                locals,
+                e.getStackDescription()
+        );
+    }
+
+    private static VariableDTO mapField(Map.Entry<Field, Value> entry) {
+        Field f = entry.getKey();
+        Value v = entry.getValue();
+        return new VariableDTO(f.name(), f.typeName(), valueToString(v));
+    }
+
+    private static VariableDTO mapLocal(Map.Entry<LocalVariable, Value> entry) {
+        LocalVariable v = entry.getKey();
+        Value val = entry.getValue();
+        return new VariableDTO(v.name(), v.typeName(), valueToString(val));
+    }
+
+//    private static String valueToString(Value v) {
+//        return v == null ? "null" : v.toString();
+//    }
+    
+    /**
+     * Преобразует Map<Field, Value> в List<VariableDTO>
+     */
+    public static List<VariableDTO> mapFields(Map<Field, Value> fields) {
+        if (fields == null) return List.of();
+
+        return fields.entrySet().stream()
+                .map(entry -> {
+                    Field field = entry.getKey();
+                    Value value = entry.getValue();
+                    return new VariableDTO(
+                            field.name(),
+                            field.typeName(),
+                            valueToString(value)
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Преобразует Map<LocalVariable, Value> в List<VariableDTO>
+     */
+    public static List<VariableDTO> mapLocals(Map<LocalVariable, Value> locals) {
+        if (locals == null) return List.of();
+
+        return locals.entrySet().stream()
+                .map(entry -> {
+                    LocalVariable local = entry.getKey();
+                    Value value = entry.getValue();
+                    return new VariableDTO(
+                            local.name(),
+                            local.typeName(),
+                            valueToString(value)
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Преобразует Value в строку, безопасно обрабатывая null
+     */
+    private static String valueToString(Value value) {
+        if (value == null) return "null";
+        return value.toString();
+    }
+	
 }

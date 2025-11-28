@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -36,6 +37,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
@@ -92,18 +95,49 @@ public class SimpleDebuggerWorkFlow {
 
 	}
 
-	public void updateVariables(UserChangedVariable userChangedVariable, StackFrame farme) {
-		VarEntry varEntry = userChangedVariable.getVarEntry();
-		LocalVariable localVariable = varEntry.getLocalVar();
-		String value = (String) varEntry.getNewValue();
-		Value jdiValue = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-				localVariable, value);
-		try {
-			farme.setValue(localVariable, jdiValue);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	public void updateVariables(UserChangedVariableDTO userChangedVariableDTO, StackFrame frame) {
+	    if (userChangedVariableDTO == null || frame == null) return;
+
+	    String varName = userChangedVariableDTO.getName();
+	    Object newValueObj = userChangedVariableDTO.getNewValue();
+	    if (newValueObj == null) return;
+
+	    String newValueStr = newValueObj.toString();
+
+	    // Находим локальную переменную по имени
+	    LocalVariable localVariable = null;
+	    try {
+	        for (LocalVariable lv : frame.visibleVariables()) {
+	            if (lv.name().equals(varName)) {
+	                localVariable = lv;
+	                break;
+	            }
+	        }
+	    } catch (AbsentInformationException e) {
+	        System.err.println("Cannot read local variables info: " + e.getMessage());
+	        return;
+	    }
+
+	    if (localVariable == null) {
+	        System.err.println("Local variable not found: " + varName);
+	        return;
+	    }
+
+	    // Создаем JDI Value из строки
+	    Value jdiValue = DebugUtils.createJdiValueFromString(
+	            targetVirtualMachineRepresentation.getVirtualMachine(),
+	            localVariable,
+	            newValueStr
+	    );
+
+	    // Устанавливаем новое значение
+	    try {
+	        frame.setValue(localVariable, jdiValue);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
 	}
+
 
 	public List<ReferenceType> getClassesOfTargetApplication() {
 		return targetVirtualMachineRepresentation.getVirtualMachine().allClasses();
@@ -285,8 +319,8 @@ public class SimpleDebuggerWorkFlow {
 	private void handleEvent(UIEvent uIevent, StackFrame farme) {
 
 		if (uIevent instanceof UserChangedVariable) {
-			UserChangedVariable userChangedVariable = (UserChangedVariable) uIevent;
-			updateVariables(userChangedVariable, farme);
+			UserChangedVariableDTO userChangedVariableDto = (UserChangedVariableDTO) uIevent;
+			updateVariables(userChangedVariableDto, farme);
 			System.out.println("PROCESS: " + uIevent);
 			return;
 		}
@@ -326,74 +360,75 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private boolean refreshUserInterface(BreakpointEvent breakpointEvent) {
-		if (breakpointEvent == null)
-			return false;
-		ThreadReference threadReference = breakpointEvent.thread();
-		Location location = breakpointEvent.location();
-		StackFrame frame;
-		try {
-			frame = threadReference.frame(0);
-		} catch (IncompatibleThreadStateException | IndexOutOfBoundsException e) {
-			// Поток не в состоянии остановки или нет фрейма
-			System.err.println("Cannot read stack frame: " + e.getMessage());
-			return false;
-		} catch (com.sun.jdi.InvalidStackFrameException e) {
-			System.err.println("Invalid stack frame: " + e.getMessage());
-			return false;
-		}
-		if (frame == null)
-			return false;
-		System.out.println("Breakpoint hit at " + location.declaringType().name() + "."
-				+ frame.location().method().name() + " line " + location.lineNumber());
+	    if (breakpointEvent == null) return false;
 
-		// ===== Локальные переменные =====
-		Map<LocalVariable, Value> localVariables = new HashMap<>();
-		try {
-			for (LocalVariable localVariable : frame.visibleVariables()) {
-				try {
-					Value value = frame.getValue(localVariable);
-					localVariables.put(localVariable, value);
-					System.out.println(localVariable.name() + " = " + value);
-				} catch (com.sun.jdi.InvalidStackFrameException ex) {
-					System.err.println("Frame invalid while reading value: " + ex.getMessage());
-					break; // дальше читать смысла нет
-				}
-			}
-		} catch (AbsentInformationException e) {
-			System.err.println("No debug info: " + e.getMessage());
-		} catch (com.sun.jdi.InvalidStackFrameException e) {
-			System.err.println("Cannot read variables: " + e.getMessage());
-			return false;
-		}
+	    ThreadReference threadReference = breakpointEvent.thread();
+	    Location location = breakpointEvent.location();
+	    StackFrame frame;
 
-		// ===== Поля объекта this =====
-		Map<Field, Value> fields = Collections.emptyMap();
-		ObjectReference thisObject;
-		try {
-			thisObject = frame.thisObject();
-		} catch (com.sun.jdi.InvalidStackFrameException e) {
-			System.err.println("Cannot read thisObject: " + e.getMessage());
-			thisObject = null;
-		}
+	    try {
+	        frame = threadReference.frame(0);
+	    } catch (IncompatibleThreadStateException | IndexOutOfBoundsException e) {
+	        System.err.println("Cannot read stack frame: " + e.getMessage());
+	        return false;
+	    } catch (com.sun.jdi.InvalidStackFrameException e) {
+	        System.err.println("Invalid stack frame: " + e.getMessage());
+	        return false;
+	    }
 
-		if (thisObject != null) {
-			try {
-				fields = thisObject.getValues(thisObject.referenceType().fields());
-			} catch (com.sun.jdi.InvalidStackFrameException e) {
-				System.err.println("Cannot read fields: " + e.getMessage());
-			}
-		}
+	    if (frame == null) return false;
 
-		// ===== Прочая информация =====
-		String className = location.declaringType().name();
-		String methodName = location.method().name();
-		int lineNumber = location.lineNumber();
-		String stackDescription = compileStackInfo(threadReference);
-		SimpleDebugEvent debugEvent = new SimpleDebugEvent(SimpleDebugEventType.REFRESH_DATA, className, methodName,
-				lineNumber, fields, localVariables, stackDescription);
-		simpleDebugEventCollector.collectDebugEvent(debugEvent);
-		return true;
+	    System.out.println("Breakpoint hit at " + location.declaringType().name() + "."
+	            + frame.location().method().name() + " line " + location.lineNumber());
+
+	    // ===== Локальные переменные =====
+	    Map<LocalVariable, Value> localVariables = Collections.emptyMap();
+	    try {
+	        localVariables = frame.getValues(frame.visibleVariables())
+	                              .entrySet()
+	                              .stream()
+	                              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+	    } catch (AbsentInformationException e) {
+	        System.err.println("No debug info: " + e.getMessage());
+	    } catch (com.sun.jdi.InvalidStackFrameException e) {
+	        System.err.println("Cannot read variables: " + e.getMessage());
+	        return false;
+	    }
+
+	    // ===== Поля объекта this =====
+	    Map<Field, Value> fields = Collections.emptyMap();
+	    ObjectReference thisObject = null;
+	    try {
+	        thisObject = frame.thisObject();
+	    } catch (com.sun.jdi.InvalidStackFrameException e) {
+	        System.err.println("Cannot read thisObject: " + e.getMessage());
+	    }
+
+	    if (thisObject != null) {
+	        try {
+	            fields = thisObject.getValues(thisObject.referenceType().fields());
+	        } catch (com.sun.jdi.InvalidStackFrameException e) {
+	            System.err.println("Cannot read fields: " + e.getMessage());
+	        }
+	    }
+
+	    // ===== Преобразуем в UI-friendly DTO =====
+	    SimpleDebugEventDTO dto = new SimpleDebugEventDTO(
+	            SimpleDebugEventType.REFRESH_DATA,
+	            location.declaringType().name(),
+	            location.method().name(),
+	            location.lineNumber(),
+	            DebugUtils.mapFields(fields),
+	            DebugUtils.mapLocals(localVariables),
+	            compileStackInfo(threadReference)
+	    );
+
+	    // ===== Отправляем событие в UI =====
+	    simpleDebugEventCollector.collectDebugEvent(dto);
+
+	    return true;
 	}
+
 
 	private String compileStackInfo(ThreadReference threadReference) {
 		String classAndMethod = "Unknown";

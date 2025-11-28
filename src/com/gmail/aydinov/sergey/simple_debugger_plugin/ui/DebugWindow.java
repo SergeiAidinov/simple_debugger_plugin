@@ -16,6 +16,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
@@ -87,7 +88,7 @@ public class DebugWindow {
 		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		// Таб-страницы
-		variablesTab = new VariablesTabContent(tabFolder);
+		variablesTab = new VariablesTabContent(tabFolder, uiEventCollector);
 		CTabItem varItem = new CTabItem(tabFolder, SWT.NONE);
 		varItem.setText("Variables");
 		varItem.setControl(variablesTab.getControl());
@@ -174,12 +175,12 @@ public class DebugWindow {
 		return shell;
 	}
 
-	public void handleDebugEvent(SimpleDebugEvent debugEvent) {
+	public void handleDebugEvent(SimpleDebugEventDTO debugEvent) {
 		Display.getDefault().asyncExec(() -> {
 			try {
 				if (shell.isDisposed())
 					return;
-				if (debugEvent.getSimpleDebugEventType().equals(SimpleDebugEventType.REFRESH_DATA))
+				//if (debugEvent.getSimpleDebugEventType().equals(SimpleDebugEventType.REFRESH_DATA))
 					refreshData(debugEvent);
 
 			} catch (Exception e) {
@@ -189,7 +190,7 @@ public class DebugWindow {
 
 	}
 
-	private void refreshData(SimpleDebugEvent debugEvent) {
+	private void refreshData(SimpleDebugEventDTO debugEvent) {
 	    // -----------------------------
 	    // 0. Проверка наличия debugEvent
 	    // -----------------------------
@@ -208,18 +209,11 @@ public class DebugWindow {
 	    resumeButton.setEnabled(true);
 
 	    // -----------------------------
-	    // 2. Используем сохранённые локальные переменные
+	    // 2. Обновляем вкладки
 	    // -----------------------------
-	    Map<LocalVariable, Value> vars = debugEvent.getLocalVariables();
-	    if (vars == null) {
-	        vars = Collections.emptyMap();
-	    }
-
-	    // -----------------------------
-	    // 3. Обновляем вкладки
-	    // -----------------------------
-	    variablesTab.updateVariables(vars);
-	    fieldsTab.updateFields(debugEvent.getFields() != null ? debugEvent.getFields() : Collections.emptyMap());
-	    stackTab.updateStack(debugEvent.getStackDescription() != null ? debugEvent.getStackDescription() : "Unknown");
+	    variablesTab.updateVariables(debugEvent.getLocals()); // List<VariableDTO>
+	    //fieldsTab.updateFields(debugEvent.getFields());               // List<VariableDTO>
+	    stackTab.updateStack(debugEvent.getStackTrace() != null ? debugEvent.getStackTrace() : "Unknown");
 	}
+
 }
