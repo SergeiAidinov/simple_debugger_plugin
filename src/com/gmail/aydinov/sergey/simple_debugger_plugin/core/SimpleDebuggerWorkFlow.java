@@ -36,6 +36,7 @@ import com.sun.jdi.Bootstrap;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.InvalidTypeException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.ObjectReference;
@@ -206,36 +207,34 @@ public class SimpleDebuggerWorkFlow {
 
 	private void updateField(UserChangedField userChangedField, StackFrame frame) {
 		FieldEntry fieldEntry = userChangedField.getFieldEntry();
-		 String fieldName = fieldEntry.getField().name();
+		String fieldName = fieldEntry.getField().name();
 		String value = (String) fieldEntry.getNewValue();
 		Type type = null;
 		Field field = fieldEntry.getField();
 		try {
-			
+
 			type = field.type();
 		} catch (ClassNotLoadedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		Value jdiValue = DebugUtils.createJdiObjectFromString(targetVirtualMachineRepresentation.getVirtualMachine(), type, value, frame.thread());
-				
+		Value jdiValue = DebugUtils.createJdiObjectFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
+				type, value, frame.thread());
+
+		ObjectReference thisObject = frame.thisObject();
+		ReferenceType refType = thisObject.referenceType(); // или clazz для статических полей
+		Field field1 = refType.fieldByName(userChangedField.getFieldEntry().getField().name());
+		if (field1 == null) {
+			throw new RuntimeException("Field not found: fieldName");
+		}
 		try {
-			 List<Value> qq = frame.getArgumentValues();
-			ObjectReference thisObject = frame.thisObject();
-			ReferenceType refType = thisObject.referenceType(); // или clazz для статических полей
-			Field field1 = refType.fieldByName(userChangedField.getFieldEntry().getField().name());
-			if (field1 == null) {
-			    throw new RuntimeException("Field not found: fieldName");
-			}
 			thisObject.setValue(field, jdiValue);
-			//frame.setValue(field, jdiValue);
-			//frame.set
-			System.out.println(jdiValue);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		System.out.println(jdiValue);
 		System.out.println("FIELD CHANGED: " + userChangedField);
-		
+
 	}
 
 	private boolean refreshUserInterface(BreakpointEvent breakpointEvent) {

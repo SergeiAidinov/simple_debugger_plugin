@@ -13,7 +13,6 @@ import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.ThreadReference;
 
-
 /**
  * Вспомогательный класс-заглушка для локальных переменных
  */
@@ -44,7 +43,6 @@ public class DebugUtils {
 			throw new IllegalArgumentException("Unsupported type: " + type);
 		}
 	}
-	
 
 	/**
 	 * Создаёт JDI Value из строки для установки в локальную переменную или поле.
@@ -54,120 +52,144 @@ public class DebugUtils {
 	 * @param textValue строковое значение из UI
 	 * @param thread    поток, на котором создаём boxed объекты
 	 */
-	public static Value createJdiObjectFromString(VirtualMachine vm, Type varType, String textValue, ThreadReference thread) {
+	public static Value createJdiObjectFromString(VirtualMachine vm, Type varType, String textValue,
+			ThreadReference thread) {
 
-	    if (textValue == null) {
-	        return nullJdiValue(vm, varType);
-	    }
+		if (textValue == null) {
+			return nullJdiValue(vm, varType);
+		}
 
-	    String trimmed = textValue.trim();
+		String trimmed = textValue.trim();
 
-	    // ------------------------
-	    // 1. null
-	    // ------------------------
-	    if (trimmed.equals("null"))
-	        return nullJdiValue(vm, varType);
+		// ------------------------
+		// 1. null
+		// ------------------------
+		if (trimmed.equals("null"))
+			return nullJdiValue(vm, varType);
 
-	    String typeName = varType.name();
+		String typeName = varType.name();
 
-	    // ------------------------
-	    // 2. Примитивы
-	    // ------------------------
-	    try {
-	        if (typeName.equals("int"))
-	            return vm.mirrorOf(Integer.parseInt(trimmed));
+		// ------------------------
+		// 2. Примитивы
+		// ------------------------
+		try {
+			if (typeName.equals("int"))
+				return vm.mirrorOf(Integer.parseInt(trimmed));
 
-	        if (typeName.equals("long"))
-	            return vm.mirrorOf(Long.parseLong(trimmed));
+			if (typeName.equals("long"))
+				return vm.mirrorOf(Long.parseLong(trimmed));
 
-	        if (typeName.equals("float"))
-	            return vm.mirrorOf(Float.parseFloat(trimmed));
+			if (typeName.equals("float"))
+				return vm.mirrorOf(Float.parseFloat(trimmed));
 
-	        if (typeName.equals("double"))
-	            return vm.mirrorOf(Double.parseDouble(trimmed));
+			if (typeName.equals("double"))
+				return vm.mirrorOf(Double.parseDouble(trimmed));
 
-	        if (typeName.equals("boolean"))
-	            return vm.mirrorOf(Boolean.parseBoolean(trimmed));
+			if (typeName.equals("boolean"))
+				return vm.mirrorOf(Boolean.parseBoolean(trimmed));
 
-	        if (typeName.equals("char")) {
-	            if (trimmed.length() == 1) {
-	                return vm.mirrorOf(trimmed.charAt(0));
-	            } else if (trimmed.startsWith("'") && trimmed.endsWith("'") && trimmed.length() == 3) {
-	                return vm.mirrorOf(trimmed.charAt(1));
-	            }
-	        }
+			if (typeName.equals("char")) {
+				if (trimmed.length() == 1) {
+					return vm.mirrorOf(trimmed.charAt(0));
+				} else if (trimmed.startsWith("'") && trimmed.endsWith("'") && trimmed.length() == 3) {
+					return vm.mirrorOf(trimmed.charAt(1));
+				}
+			}
 
-	        if (typeName.equals("byte"))
-	            return vm.mirrorOf(Byte.parseByte(trimmed));
+			if (typeName.equals("byte"))
+				return vm.mirrorOf(Byte.parseByte(trimmed));
 
-	        if (typeName.equals("short"))
-	            return vm.mirrorOf(Short.parseShort(trimmed));
-	    }
-	    catch (Exception e) {
-	        throw new RuntimeException("Cannot parse primitive for type: " + typeName + " value: " + trimmed, e);
-	    }
+			if (typeName.equals("short"))
+				return vm.mirrorOf(Short.parseShort(trimmed));
+		} catch (Exception e) {
+			throw new RuntimeException("Cannot parse primitive for type: " + typeName + " value: " + trimmed, e);
+		}
 
-	    // ------------------------
-	    // 3. String
-	    // ------------------------
-	    if (typeName.equals("java.lang.String")) {
-	        if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() >= 2)
-	            trimmed = trimmed.substring(1, trimmed.length() - 1);
-	        return vm.mirrorOf(trimmed);
-	    }
-	    
-	    return null;
+		// ------------------------
+		// 3. String
+		// ------------------------
+		if (typeName.equals("java.lang.String")) {
+			if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() >= 2)
+				trimmed = trimmed.substring(1, trimmed.length() - 1);
+			return vm.mirrorOf(trimmed);
+		}
+		
+		// ------------------------
+		// 4. Boxing-types
+		// ------------------------
+		if (typeName.equals("java.lang.Integer")) {
+		    Value prim = vm.mirrorOf(Integer.parseInt(trimmed));
+		    return newBoxed(vm, (ClassType) varType, prim, thread);
+		}
+
+		if (typeName.equals("java.lang.Long")) {
+		    Value prim = vm.mirrorOf(Long.parseLong(trimmed));
+		    return newBoxed(vm, (ClassType) varType, prim, thread);
+		}
+
+		if (typeName.equals("java.lang.Boolean")) {
+		    Value prim = vm.mirrorOf(Boolean.parseBoolean(trimmed));
+		    return newBoxed(vm, (ClassType) varType, prim, thread);
+		}
+
+		if (typeName.equals("java.lang.Double")) {
+		    Value prim = vm.mirrorOf(Double.parseDouble(trimmed));
+		    return newBoxed(vm, (ClassType) varType, prim, thread);
+		}
+
+		if (typeName.equals("java.lang.Float")) {
+		    Value prim = vm.mirrorOf(Float.parseFloat(trimmed));
+		    return newBoxed(vm, (ClassType) varType, prim, thread);
+		}
+
+		if (typeName.equals("java.lang.Character")) {
+		    char c = trimmed.length() == 1 ? trimmed.charAt(0) : trimmed.charAt(1);
+		    Value prim = vm.mirrorOf(c);
+		    return newBoxed(vm, (ClassType) varType, prim, thread);
+		}
+		
+		return null;
 	}
 
-	    // ------------------------
-	    // 4.
-    
-	
-	    // ====================================================
-	    // Вспомогательные методы
-	    // ====================================================
+	// ====================================================
+	// Вспомогательные методы
+	// ====================================================
 
-	    private static Value nullJdiValue(VirtualMachine vm, Type type) {
-	        if (type instanceof PrimitiveType)
-	            throw new RuntimeException("Cannot assign null to primitive " + type.name());
+	private static Value nullJdiValue(VirtualMachine vm, Type type) {
+		if (type instanceof PrimitiveType)
+			throw new RuntimeException("Cannot assign null to primitive " + type.name());
 
-	        return vm.mirrorOf(null);
-	    }
+		return vm.mirrorOf(null);
+	}
 
-	    /**
-	     * Создаёт boxed значение через ClassType.newInstance(...).
-	     * Например: new Integer(intValue)
-	     */
-	    private static ObjectReference newBoxed(VirtualMachine vm, ClassType clazz, Value primitive, ThreadReference thread) {
-	        // ищем конструктор с одним аргументом
-	        List<Method> methods = clazz.methods();
-	        for (Method m : methods) {
-	            if (m.isConstructor()) {
-	                List<Type> args = null;
+	/**
+	 * Создаёт boxed значение через ClassType.newInstance(...). Например: new
+	 * Integer(intValue)
+	 */
+	private static ObjectReference newBoxed(VirtualMachine vm, ClassType clazz, Value primitive,
+			ThreadReference thread) {
+		// ищем конструктор с одним аргументом
+		List<Method> methods = clazz.methods();
+		for (Method m : methods) {
+			if (m.isConstructor()) {
+				List<Type> args = null;
+				try {
+					args = m.argumentTypes();
+				} catch (ClassNotLoadedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				if (args != null && args.size() == 1) {
 					try {
-						args = m.argumentTypes();
-					} catch (ClassNotLoadedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						// Вызываем конструктор через newInstance
+						return clazz.newInstance(thread, m, List.of(primitive), ObjectReference.INVOKE_SINGLE_THREADED);
+					} catch (Exception e) {
+						throw new RuntimeException("Error creating boxed " + clazz.name(), e);
 					}
-	                if (args != null && args.size() == 1) {
-	                    try {
-	                        // Вызываем конструктор через newInstance
-	                        return clazz.newInstance(thread, m, List.of(primitive), ObjectReference.INVOKE_SINGLE_THREADED);
-	                    } catch (Exception e) {
-	                        throw new RuntimeException("Error creating boxed " + clazz.name(), e);
-	                    }
-	                }
-	            }
-	        }
+				}
+			}
+		}
 
-	        throw new RuntimeException("No suitable constructor found for boxed type: " + clazz.name());
-	    }
-
-
-
+		throw new RuntimeException("No suitable constructor found for boxed type: " + clazz.name());
 	}
-
-	
-	
-
+}
