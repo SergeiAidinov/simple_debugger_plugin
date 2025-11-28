@@ -144,14 +144,14 @@ public class SimpleDebuggerWorkFlow {
 				if (event instanceof BreakpointEvent breakpointEvent) {
 					Location location = breakpointEvent.location();
 					int lineNumber = location.lineNumber() - 1; // JDI → 0-based for Eclipse
-					AtomicReference<ITextEditor> editorReference = new AtomicReference<ITextEditor>();
+					//AtomicReference<ITextEditor> editorReference = new AtomicReference<ITextEditor>();
 					Display.getDefault().asyncExec(() -> {
 					    try {
 					        ITextEditor editor1 = openEditorForLocation(location);
 					        if (editor1 != null) {
 					            int line = location.lineNumber() - 1;
 					            new CurrentLineHighlighter().highlight(editor1, line);
-					            editorReference.set(editor1);
+					            //editorReference.set(editor1);
 					        }
 					    } catch (Exception e) {
 					        e.printStackTrace();
@@ -159,8 +159,8 @@ public class SimpleDebuggerWorkFlow {
 					});
 
 
-					CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
-					highlighter.highlight(editorReference.get(), lineNumber);
+//					CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
+//					highlighter.highlight(editorReference.get(), lineNumber);
 
 					refreshUserInterface(breakpointEvent);
 					StackFrame frame = null;
@@ -183,12 +183,12 @@ public class SimpleDebuggerWorkFlow {
 						if (uiEvent instanceof UserPressedResumeUiEvent) {
 							break outer;
 						}
-						if (uiEvent instanceof UserChangedVariable) {
-
-							applyPendingChanges((UserChangedVariable) uiEvent, frame);
-							refreshUserInterface(breakpointEvent);
-							continue;
-						}
+//						if (uiEvent instanceof UserChangedVariable) {
+//
+//							applyPendingChanges((UserChangedVariable) uiEvent, frame);
+//							refreshUserInterface(breakpointEvent);
+//							continue;
+//						}
 						StackFrame farme = null;
 						try {
 							farme = breakpointEvent.thread().frame(0);
@@ -197,6 +197,7 @@ public class SimpleDebuggerWorkFlow {
 							e.printStackTrace();
 						}
 						handleEvent(uiEvent, farme);
+						refreshUserInterface(breakpointEvent);
 					}
 				} else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
 					System.out.println("Target VM stopped");
@@ -292,19 +293,19 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 
-	private void applyPendingChanges(UserChangedVariable event, StackFrame frame) {
-		VarEntry varEntry = event.getVarEntry();
-		LocalVariable localVar = varEntry.getLocalVar();
-		String strValue = (String) varEntry.getNewValue();
-		Value jdiValue = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-				localVar, strValue);
-		try {
-			frame.setValue(localVar, jdiValue);
-			System.out.println("Variable updated: " + localVar.name() + " = " + jdiValue);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+//	private void applyPendingChanges(UserChangedVariable event, StackFrame frame) {
+//		VarEntry varEntry = event.getVarEntry();
+//		LocalVariable localVar = varEntry.getLocalVar();
+//		String strValue = (String) varEntry.getNewValue();
+//		Value jdiValue = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
+//				localVar, strValue);
+//		try {
+//			frame.setValue(localVar, jdiValue);
+//			System.out.println("Variable updated: " + localVar.name() + " = " + jdiValue);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
 
 	private void handleEvent(UIEvent uIevent, StackFrame farme) {
 
@@ -317,7 +318,6 @@ public class SimpleDebuggerWorkFlow {
 
 		if (uIevent instanceof UserChangedField) {
 			UserChangedField userChangedField = (UserChangedField) uIevent;
-			;
 			updateField(userChangedField, farme);
 			System.out.println("PROCESS: " + uIevent);
 			return;
