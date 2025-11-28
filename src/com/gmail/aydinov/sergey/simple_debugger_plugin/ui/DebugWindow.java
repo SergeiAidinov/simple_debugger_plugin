@@ -26,6 +26,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollecto
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldsTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.VariablesTabContent;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Value;

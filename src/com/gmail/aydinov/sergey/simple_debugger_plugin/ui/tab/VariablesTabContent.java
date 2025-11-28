@@ -1,18 +1,10 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
-
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jface.viewers.CellEditor;
-import org.eclipse.jface.viewers.ICellModifier;
-import org.eclipse.jface.viewers.IStructuredContentProvider;
-import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jface.viewers.TableViewerColumn;
-import org.eclipse.jface.viewers.TextCellEditor;
-import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
@@ -20,6 +12,7 @@ import org.eclipse.swt.widgets.Table;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserChangedVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.VarEntry;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Value;
 
@@ -39,13 +32,18 @@ public class VariablesTabContent {
         viewer = new TableViewer(table);
         viewer.setColumnProperties(new String[]{"name", "type", "value"});
 
-        createColumn("Name", 200, 0);
-        createColumn("Type", 200, 1);
-        createColumn("Value", 200, 2);
+        createColumn("Name", 200);
+        createColumn("Type", 200);
+        createColumn("Value", 200);
 
-        viewer.setCellEditors(new CellEditor[]{null, null, new TextCellEditor(table)});
+        viewer.setCellEditors(new CellEditor[]{
+            null,
+            null,
+            new TextCellEditor(table)
+        });
 
         viewer.setCellModifier(new ICellModifier() {
+
             @Override
             public boolean canModify(Object element, String property) {
                 return "value".equals(property);
@@ -58,37 +56,35 @@ public class VariablesTabContent {
 
             @Override
             public void modify(Object element, String property, Object newValue) {
-                VarEntry varEntry;
-                if (element instanceof org.eclipse.swt.widgets.TableItem) {
-                    varEntry = (VarEntry) ((org.eclipse.swt.widgets.TableItem) element).getData();
-                } else {
-                    varEntry = (VarEntry) element;
-                }
-                varEntry.setNewValue(newValue);
-                System.out.println("ENTER: " + varEntry.getNewValue());
-                uiEventCollector.collectUiEvent(new UserChangedVariable(varEntry));
-                viewer.update(varEntry, null);
+
+                if (!(element instanceof org.eclipse.swt.widgets.TableItem))
+                    return;
+
+                VarEntry entry = (VarEntry) ((org.eclipse.swt.widgets.TableItem) element).getData();
+
+                entry.setNewValue(newValue);
+
+                System.out.println("ENTER: " + entry.getNewValue());
+
+                uiEventCollector.collectUiEvent(new UserChangedVariable(entry));
+
+                viewer.update(entry, null);
             }
         });
 
-        // ContentProvider
         viewer.setContentProvider(new IStructuredContentProvider() {
             @Override
             public Object[] getElements(Object inputElement) {
-                if (inputElement instanceof List) {
-                    return ((List<?>) inputElement).toArray();
-                }
-                return new Object[0];
+                return entries.toArray();
             }
 
             @Override
             public void dispose() {}
 
             @Override
-            public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {}
+            public void inputChanged(Viewer viewer, Object a, Object b) {}
         });
 
-        // LabelProvider
         viewer.setLabelProvider(new ITableLabelProvider() {
             @Override
             public String getColumnText(Object element, int columnIndex) {
@@ -96,28 +92,20 @@ public class VariablesTabContent {
                 switch (columnIndex) {
                     case 0: return var.getLocalVar().name();
                     case 1: return var.getType();
-                    case 2: return (String) var.getValue();
+                    case 2: return var.getValue();
                 }
                 return "";
             }
 
-            @Override
-            public org.eclipse.swt.graphics.Image getColumnImage(Object element, int columnIndex) {
-                return null;
-            }
-
-            @Override
-            public void addListener(org.eclipse.jface.viewers.ILabelProviderListener listener) {}
-            @Override
-            public void dispose() {}
-            @Override
-            public boolean isLabelProperty(Object element, String property) { return false; }
-            @Override
-            public void removeListener(org.eclipse.jface.viewers.ILabelProviderListener listener) {}
+            @Override public org.eclipse.swt.graphics.Image getColumnImage(Object e, int c) { return null; }
+            @Override public void addListener(ILabelProviderListener listener) {}
+            @Override public void dispose() {}
+            @Override public boolean isLabelProperty(Object e, String p) { return false; }
+            @Override public void removeListener(ILabelProviderListener l) {}
         });
     }
 
-    private void createColumn(String title, int width, int index) {
+    private void createColumn(String title, int width) {
         TableViewerColumn col = new TableViewerColumn(viewer, SWT.LEFT);
         col.getColumn().setText(title);
         col.getColumn().setWidth(width);
@@ -131,13 +119,15 @@ public class VariablesTabContent {
 
     public void updateVariables(Map<LocalVariable, Value> vars) {
 
+        if (table.isDisposed()) return;
+
         entries.clear();
-        for (Map.Entry<LocalVariable, Value> entry : vars.entrySet()) {
-            entries.add(new VarEntry(entry.getKey(), entry.getValue()));
+
+        for (Map.Entry<LocalVariable, Value> e : vars.entrySet()) {
+            entries.add(new VarEntry(e.getKey(), e.getValue()));
         }
 
         viewer.setInput(entries);
+        viewer.refresh();
     }
-
-    
 }

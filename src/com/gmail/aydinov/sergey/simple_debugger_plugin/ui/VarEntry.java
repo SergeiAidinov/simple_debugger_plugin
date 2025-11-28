@@ -10,7 +10,7 @@ public class VarEntry {
     private final String value;
     private Object newValue;
     
-    VarEntry(LocalVariable localVar, Value val) {
+    public VarEntry(LocalVariable localVar, Value val) {
         this.localVar = localVar;
         this.type = localVar.typeName();
         this.value = valueToString(val);
@@ -32,7 +32,7 @@ public class VarEntry {
 		return type;
 	}
 
-	public Object getValue() {
+	public String getValue() {
 		return value;
 	}
 

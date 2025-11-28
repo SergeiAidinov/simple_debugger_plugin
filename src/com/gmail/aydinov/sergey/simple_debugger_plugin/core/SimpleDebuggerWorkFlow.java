@@ -21,6 +21,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflo
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserChangedField;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserChangedVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventCollector;
@@ -28,9 +29,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerE
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.VarEntry;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldEntry;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
+import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.LocalVariable;
@@ -39,6 +42,7 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
+import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.VirtualMachineManager;
@@ -56,7 +60,6 @@ public class SimpleDebuggerWorkFlow {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
-	private DebugEventListener debugEventListener;
 	private boolean running = true;
 	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
@@ -84,15 +87,11 @@ public class SimpleDebuggerWorkFlow {
 		}
 	}
 
-	public void setDebugEventListener(DebugEventListener debugEventListener) {
-		this.debugEventListener = debugEventListener;
-	}
-
 	public List<ReferenceType> getClassesOfTargetApplication() {
 		return targetVirtualMachineRepresentation.getVirtualMachine().allClasses();
 	}
 
-	public void debug(){
+	public void debug() {
 		System.out.println("DEBUG");
 		// Открываем окно отладчика в UI thread
 		Display.getDefault().asyncExec(() -> {
@@ -131,7 +130,7 @@ public class SimpleDebuggerWorkFlow {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					
+
 					while (running) {
 						UIEvent uiEvent = null;
 						try {
@@ -145,7 +144,7 @@ public class SimpleDebuggerWorkFlow {
 							break outer;
 						}
 						if (uiEvent instanceof UserChangedVariable) {
-							 
+
 							applyPendingChanges((UserChangedVariable) uiEvent, frame);
 							refreshUserInterface(breakpointEvent);
 							continue;
@@ -168,8 +167,8 @@ public class SimpleDebuggerWorkFlow {
 			eventSet.resume();
 
 			// И обновляем интерфейс после выхода из breakpoint
-			//refreshUserInterface();
-			System.out.println("End iteration. DebugEventListener: " + debugEventListener + "\n");
+			// refreshUserInterface();
+			System.out.println("End iteration. \n");
 		}
 	}
 
@@ -188,12 +187,55 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private void handleEvent(UIEvent uIevent, StackFrame farme) {
+
 		if (uIevent instanceof UserChangedVariable) {
 			UserChangedVariable userChangedVariable = (UserChangedVariable) uIevent;
 			updateVariables(userChangedVariable, farme);
 			System.out.println("PROCESS: " + uIevent);
 			return;
 		}
+
+		if (uIevent instanceof UserChangedField) {
+			UserChangedField userChangedField = (UserChangedField) uIevent;
+			;
+			updateField(userChangedField, farme);
+			System.out.println("PROCESS: " + uIevent);
+			return;
+		}
+	}
+
+	private void updateField(UserChangedField userChangedField, StackFrame frame) {
+		FieldEntry fieldEntry = userChangedField.getFieldEntry();
+		 String fieldName = fieldEntry.getField().name();
+		String value = (String) fieldEntry.getNewValue();
+		Type type = null;
+		Field field = fieldEntry.getField();
+		try {
+			
+			type = field.type();
+		} catch (ClassNotLoadedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Value jdiValue = DebugUtils.createJdiObjectFromString(targetVirtualMachineRepresentation.getVirtualMachine(), type, value, frame.thread());
+				
+		try {
+			 List<Value> qq = frame.getArgumentValues();
+			ObjectReference thisObject = frame.thisObject();
+			ReferenceType refType = thisObject.referenceType(); // или clazz для статических полей
+			Field field1 = refType.fieldByName(userChangedField.getFieldEntry().getField().name());
+			if (field1 == null) {
+			    throw new RuntimeException("Field not found: fieldName");
+			}
+			thisObject.setValue(field, jdiValue);
+			//frame.setValue(field, jdiValue);
+			//frame.set
+			System.out.println(jdiValue);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		System.out.println("FIELD CHANGED: " + userChangedField);
+		
 	}
 
 	private boolean refreshUserInterface(BreakpointEvent breakpointEvent) {
