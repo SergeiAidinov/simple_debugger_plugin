@@ -14,12 +14,14 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
@@ -186,10 +188,7 @@ public class SimpleDebuggerWorkFlow {
 					return;
 				}
 			}
-			// Продолжаем выполнение target VM
 			eventSet.resume();
-
-			// И обновляем интерфейс после выхода из breakpoint
 			System.out.println("End iteration. \n");
 		}
 	}
@@ -228,7 +227,6 @@ public class SimpleDebuggerWorkFlow {
 
 	
 	public IFile findIFileForLocation(Location location) {
-	    try {
 	        ReferenceType refType = location.declaringType();
 	        if (refType == null) return null;
 
@@ -248,29 +246,40 @@ public class SimpleDebuggerWorkFlow {
 
 	        // Перебираем все Java-проекты
 	        for (IProject project : root.getProjects()) {
-	            if (!project.isOpen() || !project.hasNature(JavaCore.NATURE_ID))
-	                continue;
+	            try {
+					if (!project.isOpen() || !project.hasNature(JavaCore.NATURE_ID))
+					    continue;
+				} catch (CoreException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 
 	            IJavaProject javaProject = JavaCore.create(project);
-	            IType type = javaProject.findType(className);
+	            IType type = null;
+				try {
+					type = javaProject.findType(className);
+				} catch (JavaModelException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 
 	            if (type != null) {
 	                ICompilationUnit unit = type.getCompilationUnit();
 	                if (unit != null) {
-	                    IResource resource = unit.getUnderlyingResource();
+	                    IResource resource = null;
+						try {
+							resource = unit.getUnderlyingResource();
+						} catch (JavaModelException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 	                    if (resource instanceof IFile) {
 	                        return (IFile) resource;
 	                    }
 	                }
 	            }
 	        }
-
 	        return null;
-
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return null;
-	    }
 	}
 
 	private void handleEvent(UIEvent uIevent, StackFrame farme) {
@@ -292,34 +301,28 @@ public class SimpleDebuggerWorkFlow {
 
 	private void updateField(UserChangedField userChangedField, StackFrame frame) {
 		FieldEntry fieldEntry = userChangedField.getFieldEntry();
-		String fieldName = fieldEntry.getField().name();
 		String value = (String) fieldEntry.getNewValue();
 		Type type = null;
-		Field field = fieldEntry.getField();
+		Field fieldFromUi = fieldEntry.getField();
 		try {
-
-			type = field.type();
+			type = fieldFromUi.type();
 		} catch (ClassNotLoadedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		Value jdiValue = DebugUtils.createJdiObjectFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
 				type, value, frame.thread());
-
 		ObjectReference thisObject = frame.thisObject();
 		ReferenceType refType = thisObject.referenceType(); // или clazz для статических полей
-		Field field1 = refType.fieldByName(userChangedField.getFieldEntry().getField().name());
-		if (field1 == null) {
+		if (Objects.isNull(refType.fieldByName(userChangedField.getFieldEntry().getField().name()))) {
 			throw new RuntimeException("Field not found: fieldName");
 		}
 		try {
-			thisObject.setValue(field, jdiValue);
+			thisObject.setValue(fieldFromUi, jdiValue);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		System.out.println(jdiValue);
 		System.out.println("FIELD CHANGED: " + userChangedField);
-
 	}
 
 	private boolean refreshUserInterface(BreakpointEvent breakpointEvent) {
