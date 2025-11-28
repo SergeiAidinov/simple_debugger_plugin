@@ -318,7 +318,7 @@ public class SimpleDebuggerWorkFlow {
 
 	private void handleEvent(UIEvent uIevent, StackFrame farme) {
 
-		if (uIevent instanceof UserChangedVariable) {
+		if (uIevent instanceof UserChangedVariableDTO) {
 			UserChangedVariableDTO userChangedVariableDto = (UserChangedVariableDTO) uIevent;
 			updateVariables(userChangedVariableDto, farme);
 			System.out.println("PROCESS: " + uIevent);

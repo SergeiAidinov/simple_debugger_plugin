@@ -9,6 +9,9 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.jface.viewers.TextCellEditor;
+import org.eclipse.jface.viewers.CellEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
@@ -41,6 +44,7 @@ public class VariablesTabContent {
     }
 
     private void setupColumns() {
+        // Name
         TableViewerColumn nameColumn = new TableViewerColumn(viewer, SWT.NONE);
         nameColumn.getColumn().setText("Name");
         nameColumn.getColumn().setWidth(150);
@@ -54,6 +58,7 @@ public class VariablesTabContent {
             }
         });
 
+        // Type
         TableViewerColumn typeColumn = new TableViewerColumn(viewer, SWT.NONE);
         typeColumn.getColumn().setText("Type");
         typeColumn.getColumn().setWidth(100);
@@ -67,6 +72,7 @@ public class VariablesTabContent {
             }
         });
 
+        // Value
         TableViewerColumn valueColumn = new TableViewerColumn(viewer, SWT.NONE);
         valueColumn.getColumn().setText("Value");
         valueColumn.getColumn().setWidth(200);
@@ -81,6 +87,7 @@ public class VariablesTabContent {
         });
 
         viewer.setColumnProperties(new String[]{"name", "type", "value"});
+        viewer.setCellEditors(new CellEditor[]{null, null, new TextCellEditor(table)});
     }
 
     private void setupCellModifier() {
@@ -100,42 +107,44 @@ public class VariablesTabContent {
 
             @Override
             public void modify(Object element, String property, Object newValue) {
-                if (!(element instanceof org.eclipse.swt.widgets.TableItem)) return;
+                if (!(element instanceof TableItem)) return;
 
-                VariableDTO entry = (VariableDTO) ((org.eclipse.swt.widgets.TableItem) element).getData();
-                // Создаём DTO для передачи в обработчик
+                TableItem item = (TableItem) element;
+                VariableDTO oldEntry = (VariableDTO) item.getData();
+                if (oldEntry == null || newValue == null) return;
+
+                String newValStr = newValue.toString();
+
+                // Создаем DTO для передачи в обработчик
                 UserChangedVariableDTO dto = new UserChangedVariableDTO(
-                        entry.getName(),
-                        entry.getType(),
-                        newValue
+                        oldEntry.getName(),
+                        oldEntry.getType(),
+                        newValStr
                 );
-
                 uiEventCollector.collectUiEvent(dto);
 
-                // Обновляем значение в списке и viewer
-                int index = entries.indexOf(entry);
+                // Обновляем локальный список и viewer
+                int index = entries.indexOf(oldEntry);
                 if (index >= 0) {
-                    entries.set(index, new VariableDTO(entry.getName(), entry.getType(), (String) newValue));
-                    viewer.update(entries.get(index), null);
+                    VariableDTO updated = new VariableDTO(oldEntry.getName(), oldEntry.getType(), newValStr);
+                    entries.set(index, updated);
+                    viewer.update(updated, null);
                 }
             }
         });
     }
 
-    public Composite getControl() {
-        return root;
-    }
-
-    /**
-     * Обновление списка переменных
-     */
     public void updateVariables(List<VariableDTO> vars) {
-        if (table.isDisposed()) return;
+        if (table.isDisposed() || vars == null) return;
 
         entries.clear();
         entries.addAll(vars);
 
         viewer.setInput(entries);
         viewer.refresh();
+    }
+
+    public Composite getControl() {
+        return root;
     }
 }
