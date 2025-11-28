@@ -36,6 +36,7 @@ public class CurrentLineHighlighter {
             );
 
             model.addAnnotation(annotation, position);
+            editor.selectAndReveal(offset, length);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -63,4 +64,3 @@ public class CurrentLineHighlighter {
         }
     }
 }
-

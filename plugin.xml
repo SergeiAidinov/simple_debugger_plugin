@@ -1,79 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<plugin id = "com.gmail.aydinov.sergey.simple_debugger_plugin">
-<extension point="org.eclipse.ui.startup">
-   <startup class="com.gmail.aydinov.sergey.simple_debugger_plugin.PluginStarter"/>
-</extension>
-<!--<extension-->
-<!--      point="org.eclipse.ui.views">-->
-<!--   <view-->
-<!--         name="Breakpoints"-->
-<!--         icon="icons/breakpoints.png"  -->
-<!--         category="com.gmail.aydinov.sergey.simple_debugger_plugin"-->
-<!--         class="com.gmail.aydinov.sergey.simple_debugger_plugin.view.BreakpointsView"-->
-<!--         id="com.gmail.aydinov.sergey.simple_debugger_plugin.view.breakpointsView">-->
-<!--   </view>-->
-<!--</extension>-->
-<extension point="org.eclipse.ui.commands">
-    <command
-        id="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.commands.openDebugWindow"
-        name="Open Debug Window"/>
-</extension>
+<plugin id="com.gmail.aydinov.sergey.simple_debugger_plugin">
 
-<extension point="org.eclipse.ui.handlers">
-    <handler
-        commandId="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.commands.openDebugWindow"
-        class="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.handlers.OpenDebugWindowHandler">
-    </handler>
-</extension>
+    <!-- Старт плагина -->
+    <extension point="org.eclipse.ui.startup">
+        <startup class="com.gmail.aydinov.sergey.simple_debugger_plugin.PluginStarter"/>
+    </extension>
 
-<extension point="org.eclipse.ui.menus">
-    <menuContribution
-        locationURI="menu:window?after=additions">
+    <!-- Команда открытия окна -->
+    <extension point="org.eclipse.ui.commands">
         <command
+            id="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.commands.openDebugWindow"
+            name="Open Debug Window"/>
+    </extension>
+
+    <!-- Хэндлер команды -->
+    <extension point="org.eclipse.ui.handlers">
+        <handler
             commandId="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.commands.openDebugWindow"
-            label="Simple Debug Window"
-            style="push"/>
-    </menuContribution>
-</extension>
-<extension
-     point="org.eclipse.ui.views">
-  <view
-        name="Debug Window"
-        icon="/icons/Sample.png"
-        category="com.gmail.aydinov.sergey.simple_debugger_plugin"
-        class="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow"
-        id="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.debugWindow">
-  </view>
-</extension>
-<extension
-      point="org.eclipse.ui.editors.annotationTypes">
-   <type
-         name="Current Execution Line"
-         type="com.gmail.aydinov.sergey.simple_debugger_plugin.currentLine"
-         super="org.eclipse.ui.workbench.texteditor.error"
-         markerType=""
-         symbolicIcon=""
-         highlight="true"
-         textPreferenceKey="currentExecutionLineAnnotation"
-         overviewRulerPreferenceKey="currentExecutionLineOverview"
-         verticalRulerPreferenceKey="currentExecutionLineRuler">
-   </type>
-</extension>
-<extension
-      point="org.eclipse.ui.editors.markerAnnotationSpecification">
-   <specification
-         annotationType="com.gmail.aydinov.sergey.simple_debugger_plugin.currentLine"
-         colorPreferenceKey="currentExecutionLineColor"
-         colorPreferenceValue="255,165,0"
-         overviewRulerPreferenceKey="currentExecutionLineOverview"
-         presentationLayer="5"
-         showInNextPrevDropdown="true"
-         textPreferenceKey="currentExecutionLineAnnotation"
-         textPreferenceValue="true"
-         verticalRulerPreferenceKey="currentExecutionLineRuler"
-         verticalRulerPreferenceValue="true"
-         highlightPreferenceKey="currentExecutionLineHighlight"
-         highlightPreferenceValue="true">
-   </specification>
-</extension>
+            class="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.handlers.OpenDebugWindowHandler">
+        </handler>
+    </extension>
+
+    <!-- Меню -->
+    <extension point="org.eclipse.ui.menus">
+        <menuContribution locationURI="menu:window?after=additions">
+            <command
+                commandId="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.commands.openDebugWindow"
+                label="Simple Debug Window"
+                style="push"/>
+        </menuContribution>
+    </extension>
+
+    <!-- View -->
+    <extension point="org.eclipse.ui.views">
+        <view
+            name="Debug Window"
+            icon="/icons/Sample.png"
+            category="com.gmail.aydinov.sergey.simple_debugger_plugin"
+            class="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow"
+            id="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.debugWindow">
+        </view>
+    </extension>
+
+    <!-- ===== Аннотация для текущей строки ===== -->
+    <extension point="org.eclipse.ui.editors.annotationTypes">
+        <type
+            name="Current Execution Line"
+            type="com.gmail.aydinov.sergey.simple_debugger_plugin.currentLine"
+            highlight="true"
+            textPreferenceKey="currentExecutionLineAnnotation"
+            overviewRulerPreferenceKey="currentExecutionLineOverview"
+            verticalRulerPreferenceKey="currentExecutionLineRuler">
+        </type>
+    </extension>
+
+    <extension point="org.eclipse.ui.editors.markerAnnotationSpecification">
+        <specification
+            annotationType="com.gmail.aydinov.sergey.simple_debugger_plugin.currentLine"
+            colorPreferenceValue="255,165,0"   
+            highlightPreferenceValue="true"
+            overviewRulerPreferenceValue="true"
+            verticalRulerPreferenceValue="true"
+            textPreferenceValue="true">
+        </specification>
+    </extension>
+
 </plugin>
