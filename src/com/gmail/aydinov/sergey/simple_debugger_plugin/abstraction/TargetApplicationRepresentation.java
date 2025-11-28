@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -15,6 +16,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.Breakpoin
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
+import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.InterfaceType;
 import com.sun.jdi.ReferenceType;
@@ -71,10 +74,26 @@ public class TargetApplicationRepresentation {
 				targetApplicationElementTypeOptional = Optional.of(TargetApplicationElementType.CLASS);
 			} else if (referenceType instanceof InterfaceType) {
 				targetApplicationElementTypeOptional = Optional.of(TargetApplicationElementType.INTERFACE);
-			}
+			}			
+			
+			Set<TargetApplicationMethodDTO> targetApplicationMethodDTOs = referenceType.allMethods().stream()
+			        .map(m -> {
+						try {
+							return new TargetApplicationMethodDTO(
+							        m.name(),
+							        m.returnType().toString()
+							);
+						} catch (ClassNotLoadedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						return null;
+					})
+			        .collect(Collectors.toCollection(TreeSet::new)); // сразу сортируем по compareTo
+
 			targetApplicationElementTypeOptional.ifPresent(type -> referencesAtClassesAndInterfaces.put(referenceType,
 					new TargetApplicationClassOrInterfaceRepresentation(referenceType.name(), type,
-							referenceType.allMethods().stream().collect(Collectors.toSet()),
+							targetApplicationMethodDTOs,
 							referenceType.allFields().stream().collect(Collectors.toSet()))));
 		}
 		System.out.println("referencesAtClasses: " + referencesAtClassesAndInterfaces.size());

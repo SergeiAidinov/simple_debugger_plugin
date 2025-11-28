@@ -1,9 +1,10 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 import java.util.List;
 import java.util.Map;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Value;
 

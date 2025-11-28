@@ -1,6 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 
 public interface SimpleDebugEventCollector {
 	
