@@ -1,51 +1,93 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
-import org.eclipse.jface.viewers.CellEditor;
-import org.eclipse.jface.viewers.ICellModifier;
-import org.eclipse.jface.viewers.IStructuredContentProvider;
-import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jface.viewers.TableViewerColumn;
-import org.eclipse.jface.viewers.TextCellEditor;
-import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserChangedField;
-
-import com.sun.jdi.Field;
-import com.sun.jdi.Value;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 
 public class FieldsTabContent {
 
+    private final Composite root;
     private final Table table;
     private final TableViewer viewer;
-    private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
-    private final List<FieldEntry> entries = new ArrayList<>();
+    private final List<VariableDTO> entries = new ArrayList<>();
+    private final UiEventCollector uiEventCollector;
 
     public FieldsTabContent(Composite parent) {
+        this.uiEventCollector = SimpleDebuggerEventQueue.instance();
 
-        table = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION);
+        root = new Composite(parent, SWT.NONE);
+        root.setLayout(new GridLayout(1, false));
+
+        table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION);
         table.setHeaderVisible(true);
         table.setLinesVisible(true);
+        table.setLayoutData(new GridData(GridData.FILL_BOTH));
 
         viewer = new TableViewer(table);
-        viewer.setColumnProperties(new String[]{"name", "value"});
+        viewer.setContentProvider(ArrayContentProvider.getInstance());
 
-        createColumn("Field", 200, 0);
-        createColumn("Value", 300, 1);
+        setupColumns();
+        setupCellModifier();
+    }
 
-        viewer.setCellEditors(new CellEditor[]{null, new TextCellEditor(table)});
+    private void setupColumns() {
+        TableViewerColumn nameColumn = new TableViewerColumn(viewer, SWT.NONE);
+        nameColumn.getColumn().setText("Field");
+        nameColumn.getColumn().setWidth(200);
+        nameColumn.setLabelProvider(new ColumnLabelProvider() {
+            @Override
+            public String getText(Object element) {
+                if (element instanceof VariableDTO) {
+                    return ((VariableDTO) element).getName();
+                }
+                return super.getText(element);
+            }
+        });
 
+        TableViewerColumn typeColumn = new TableViewerColumn(viewer, SWT.NONE);
+        typeColumn.getColumn().setText("Type");
+        typeColumn.getColumn().setWidth(100);
+        typeColumn.setLabelProvider(new ColumnLabelProvider() {
+            @Override
+            public String getText(Object element) {
+                if (element instanceof VariableDTO) {
+                    return ((VariableDTO) element).getType();
+                }
+                return super.getText(element);
+            }
+        });
+
+        TableViewerColumn valueColumn = new TableViewerColumn(viewer, SWT.NONE);
+        valueColumn.getColumn().setText("Value");
+        valueColumn.getColumn().setWidth(200);
+        valueColumn.setLabelProvider(new ColumnLabelProvider() {
+            @Override
+            public String getText(Object element) {
+                if (element instanceof VariableDTO) {
+                    return ((VariableDTO) element).getValue();
+                }
+                return super.getText(element);
+            }
+        });
+
+        viewer.setColumnProperties(new String[]{"name", "type", "value"});
+        viewer.setCellEditors(new CellEditor[]{null, null, new TextCellEditor(table)});
+    }
+
+    private void setupCellModifier() {
         viewer.setCellModifier(new ICellModifier() {
-
             @Override
             public boolean canModify(Object element, String property) {
                 return "value".equals(property);
@@ -53,85 +95,42 @@ public class FieldsTabContent {
 
             @Override
             public Object getValue(Object element, String property) {
-                return ((FieldEntry) element).getValue();
+                if (element instanceof VariableDTO) {
+                    return ((VariableDTO) element).getValue();
+                }
+                return null;
             }
 
             @Override
             public void modify(Object element, String property, Object newValue) {
-                FieldEntry fieldEntry;
+                if (!(element instanceof org.eclipse.swt.widgets.TableItem)) return;
 
-                if (element instanceof org.eclipse.swt.widgets.TableItem) {
-                    fieldEntry = (FieldEntry) ((org.eclipse.swt.widgets.TableItem) element).getData();
-                } else {
-                    fieldEntry = (FieldEntry) element;
-                }
+                VariableDTO entry = (VariableDTO) ((org.eclipse.swt.widgets.TableItem) element).getData();
+                String valueStr = newValue != null ? newValue.toString() : null;
 
-                fieldEntry.setNewValue(newValue.toString());
+                // Отправляем DTO в обработчик событий
+                UserChangedFieldDTO dto = new UserChangedFieldDTO(entry.getName(), entry.getType(), valueStr);
+                uiEventCollector.collectUiEvent(dto);
 
-                System.out.println("ENTER FIELD: " + fieldEntry.getField().name() + " = " + newValue);
-
-                uiEventCollector.collectUiEvent(new UserChangedField(fieldEntry));
-
-                viewer.update(fieldEntry, null);
+                // Обновляем таблицу
+                viewer.update(entry, null);
             }
-        });
-
-        // Content provider
-        viewer.setContentProvider(new IStructuredContentProvider() {
-            @Override
-            public Object[] getElements(Object inputElement) {
-                if (inputElement instanceof List<?> list) {
-                    return list.toArray();
-                }
-                return new Object[0];
-            }
-            @Override public void dispose() {}
-            @Override public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {}
-        });
-
-        viewer.setLabelProvider(new ITableLabelProvider() {
-            @Override
-            public String getColumnText(Object element, int columnIndex) {
-                FieldEntry entry = (FieldEntry) element;
-                return switch (columnIndex) {
-                    case 0 -> entry.getField().name();
-                    case 1 -> entry.getValue();
-                    default -> "";
-                };
-            }
-
-            @Override
-            public org.eclipse.swt.graphics.Image getColumnImage(Object e, int i) { return null; }
-            @Override public void addListener(org.eclipse.jface.viewers.ILabelProviderListener listener) {}
-            @Override public void dispose() {}
-            @Override public boolean isLabelProperty(Object arg0, String arg1) { return false; }
-            @Override public void removeListener(org.eclipse.jface.viewers.ILabelProviderListener listener) {}
         });
     }
 
-
-    private void createColumn(String title, int width, int index) {
-        TableViewerColumn col = new TableViewerColumn(viewer, SWT.LEFT);
-        col.getColumn().setText(title);
-        col.getColumn().setWidth(width);
-        col.getColumn().setResizable(true);
-        col.getColumn().setMoveable(true);
-    }
-
-
-    public Table getControl() {
-        return table;
-    }
-
-
-    public void updateFields(Map<Field, Value> fields) {
+    public void updateFields(List<VariableDTO> vars) {
+        if (table.isDisposed()) return;
 
         entries.clear();
-
-        for (Map.Entry<Field, Value> e : fields.entrySet()) {
-            entries.add(new FieldEntry(e.getKey(), e.getValue()));
+        if (vars != null) {
+            entries.addAll(vars);
         }
 
         viewer.setInput(entries);
+        viewer.refresh();
+    }
+
+    public Composite getControl() {
+        return root;
     }
 }

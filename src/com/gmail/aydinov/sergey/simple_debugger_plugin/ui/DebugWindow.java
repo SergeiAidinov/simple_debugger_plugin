@@ -212,7 +212,7 @@ public class DebugWindow {
 	    // 2. Обновляем вкладки
 	    // -----------------------------
 	    variablesTab.updateVariables(debugEvent.getLocals()); // List<VariableDTO>
-	    //fieldsTab.updateFields(debugEvent.getFields());               // List<VariableDTO>
+	    fieldsTab.updateFields(debugEvent.getFields());               // List<VariableDTO>
 	    stackTab.updateStack(debugEvent.getStackTrace() != null ? debugEvent.getStackTrace() : "Unknown");
 	}
 

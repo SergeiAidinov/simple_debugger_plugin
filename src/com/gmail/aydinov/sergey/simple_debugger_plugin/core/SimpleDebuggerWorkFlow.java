@@ -38,6 +38,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtual
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.SimpleDebugEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
@@ -55,6 +56,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.ClassNotLoadedException;
+import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.LocalVariable;
@@ -76,6 +78,7 @@ import com.sun.jdi.event.EventSet;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.request.EventRequestManager;
+import java.lang.reflect.Modifier;
 
 public class SimpleDebuggerWorkFlow {
 
@@ -325,39 +328,51 @@ public class SimpleDebuggerWorkFlow {
 			return;
 		}
 
-		if (uIevent instanceof UserChangedField) {
-			UserChangedField userChangedField = (UserChangedField) uIevent;
-			updateField(userChangedField, farme);
+		if (uIevent instanceof UserChangedFieldDTO) {
+			UserChangedFieldDTO userChangedFieldDto = (UserChangedFieldDTO) uIevent;
+			updateField(userChangedFieldDto, farme);
 			System.out.println("PROCESS: " + uIevent);
 			return;
 		}
 	}
 
-	private void updateField(UserChangedField userChangedField, StackFrame frame) {
-		FieldEntry fieldEntry = userChangedField.getFieldEntry();
-		String value = (String) fieldEntry.getNewValue();
-		Type type = null;
-		Field fieldFromUi = fieldEntry.getField();
-		try {
-			type = fieldFromUi.type();
-		} catch (ClassNotLoadedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		Value jdiValue = DebugUtils.createJdiObjectFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-				type, value, frame.thread());
-		ObjectReference thisObject = frame.thisObject();
-		ReferenceType refType = thisObject.referenceType(); // или clazz для статических полей
-		if (Objects.isNull(refType.fieldByName(userChangedField.getFieldEntry().getField().name()))) {
-			throw new RuntimeException("Field not found: fieldName");
-		}
-		try {
-			thisObject.setValue(fieldFromUi, jdiValue);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		System.out.println("FIELD CHANGED: " + userChangedField);
+	private void updateField(UserChangedFieldDTO dto, StackFrame frame) {
+	    try {
+	        ReferenceType refType = frame.thisObject() != null
+	                                ? frame.thisObject().referenceType()
+	                                : frame.location().declaringType();
+
+	        Field field = refType.fieldByName(dto.getFieldName());
+	        if (field == null) {
+	            throw new RuntimeException("Field not found: " + dto.getFieldName());
+	        }
+
+	        Value jdiValue = DebugUtils.createJdiObjectFromString(
+	                targetVirtualMachineRepresentation.getVirtualMachine(),
+	                field.type(),
+	                dto.getNewValue(),
+	                frame.thread()
+	        );
+
+	        if (Modifier.isStatic(field.modifiers()) && refType instanceof ClassType) {
+	            ((ClassType) refType).setValue(field, jdiValue);
+	        } else {
+	            ObjectReference obj = frame.thisObject();
+	            if (obj != null) {
+	                obj.setValue(field, jdiValue);
+	            } else {
+	                System.err.println("Cannot set value: instance object is null");
+	            }
+	        }
+
+	        System.out.println("FIELD CHANGED: " + dto);
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
 	}
+
+
 
 	private boolean refreshUserInterface(BreakpointEvent breakpointEvent) {
 	    if (breakpointEvent == null) return false;
