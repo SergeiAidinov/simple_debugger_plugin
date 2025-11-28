@@ -41,28 +41,4 @@
             id="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.debugWindow">
         </view>
     </extension>
-
-    <!-- ===== Аннотация для текущей строки ===== -->
-    <extension point="org.eclipse.ui.editors.annotationTypes">
-        <type
-            name="Current Execution Line"
-            type="com.gmail.aydinov.sergey.simple_debugger_plugin.currentLine"
-            highlight="true"
-            textPreferenceKey="currentExecutionLineAnnotation"
-            overviewRulerPreferenceKey="currentExecutionLineOverview"
-            verticalRulerPreferenceKey="currentExecutionLineRuler">
-        </type>
-    </extension>
-
-    <extension point="org.eclipse.ui.editors.markerAnnotationSpecification">
-        <specification
-            annotationType="com.gmail.aydinov.sergey.simple_debugger_plugin.currentLine"
-            colorPreferenceValue="255,165,0"   
-            highlightPreferenceValue="true"
-            overviewRulerPreferenceValue="true"
-            verticalRulerPreferenceValue="true"
-            textPreferenceValue="true">
-        </specification>
-    </extension>
-
 </plugin>
