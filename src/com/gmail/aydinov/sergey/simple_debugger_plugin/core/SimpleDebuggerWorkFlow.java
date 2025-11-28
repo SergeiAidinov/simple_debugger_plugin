@@ -61,6 +61,7 @@ import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
+import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
@@ -83,16 +84,20 @@ import java.lang.reflect.Modifier;
 public class SimpleDebuggerWorkFlow {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
-	private final TargetApplicationRepresentation targetApplicationRepresentation;
+	private TargetApplicationRepresentation targetApplicationRepresentation;
 	private boolean running = true;
 	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
+	private final IBreakpointManager iBreakpointManager;
+	private final BreakpointSubscriberRegistrar breakpointListener;
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
 		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
+		this.iBreakpointManager = iBreakpointManager;
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
 				.eventRequestManager();
+		this.breakpointListener = breakpointListener;
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 
@@ -177,6 +182,10 @@ public class SimpleDebuggerWorkFlow {
 			System.out.println("eventSet.size() " + eventSet.size());
 			outer: for (Event event : eventSet) {
 				if (event instanceof BreakpointEvent breakpointEvent) {
+//					EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
+//							.eventRequestManager();
+//					this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
+//							eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 					Location location = breakpointEvent.location();
 					Display.getDefault().asyncExec(() -> {
 					    try {
@@ -339,27 +348,41 @@ public class SimpleDebuggerWorkFlow {
 	private void updateField(UserChangedFieldDTO dto, StackFrame frame) {
 	    try {
 	        ReferenceType refType = frame.thisObject() != null
-	                                ? frame.thisObject().referenceType()
-	                                : frame.location().declaringType();
+	                ? frame.thisObject().referenceType()
+	                : frame.location().declaringType();
 
 	        Field field = refType.fieldByName(dto.getFieldName());
 	        if (field == null) {
 	            throw new RuntimeException("Field not found: " + dto.getFieldName());
 	        }
 
+	        VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
+	        ThreadReference thread = frame.thread();
+
 	        Value jdiValue = DebugUtils.createJdiObjectFromString(
-	                targetVirtualMachineRepresentation.getVirtualMachine(),
+	                vm,
 	                field.type(),
 	                dto.getNewValue(),
-	                frame.thread()
+	                thread
 	        );
 
+	        // Статические поля меняем напрямую
 	        if (Modifier.isStatic(field.modifiers()) && refType instanceof ClassType) {
 	            ((ClassType) refType).setValue(field, jdiValue);
 	        } else {
+	            // Нестатические поля меняем через invokeMethod (вызываем сеттер)
 	            ObjectReference obj = frame.thisObject();
 	            if (obj != null) {
-	                obj.setValue(field, jdiValue);
+	                String setterName = "set" + Character.toUpperCase(dto.getFieldName().charAt(0))
+	                        + dto.getFieldName().substring(1);
+	                List<Method> methods = obj.referenceType().methodsByName(setterName);
+	                if (!methods.isEmpty()) {
+	                    Method setter = methods.get(0);
+	                    obj.invokeMethod(thread, setter, List.of(jdiValue), ObjectReference.INVOKE_SINGLE_THREADED);
+	                } else {
+	                    // Если сеттера нет, меняем напрямую (снимок JDI, работает только на паузе)
+	                    obj.setValue(field, jdiValue);
+	                }
 	            } else {
 	                System.err.println("Cannot set value: instance object is null");
 	            }
@@ -371,6 +394,7 @@ public class SimpleDebuggerWorkFlow {
 	        e.printStackTrace();
 	    }
 	}
+
 
 
 
