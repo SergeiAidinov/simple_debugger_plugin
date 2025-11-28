@@ -45,26 +45,35 @@
         id="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.debugWindow">
   </view>
 </extension>
-
-<extension point="org.eclipse.ui.editors.annotationTypes">
-    <type
-        id="com.gmail.aydinov.sergey.simple_debugger_plugin.annotation.lineHighlight"
-        name="Line Highlight"
-        textPreferenceKey="com.gmail.aydinov.sergey.simple_debugger_plugin.lineHighlight.text"
-        highlightPreferenceKey="com.gmail.aydinov.sergey.simple_debugger_plugin.lineHighlight.highlight"
-        colorPreferenceKey="com.gmail.aydinov.sergey.simple_debugger_plugin.lineHighlight.color"/>
+<extension
+      point="org.eclipse.ui.editors.annotationTypes">
+   <type
+         name="Current Execution Line"
+         type="com.gmail.aydinov.sergey.simple_debugger_plugin.currentLine"
+         super="org.eclipse.ui.workbench.texteditor.error"
+         markerType=""
+         symbolicIcon=""
+         highlight="true"
+         textPreferenceKey="currentExecutionLineAnnotation"
+         overviewRulerPreferenceKey="currentExecutionLineOverview"
+         verticalRulerPreferenceKey="currentExecutionLineRuler">
+   </type>
 </extension>
-
-<extension point="org.eclipse.ui.editors.markerAnnotationSpecification">
-    <specification
-        annotationType="com.gmail.aydinov.sergey.simple_debugger_plugin.annotation.lineHighlight"
-        label="Line Highlight"
-        colorPreferenceKey="com.gmail.aydinov.sergey.simple_debugger_plugin.lineHighlight.color"
-        highlightPreferenceKey="com.gmail.aydinov.sergey.simple_debugger_plugin.lineHighlight.highlight"
-        presentationLayer="4"/>
+<extension
+      point="org.eclipse.ui.editors.markerAnnotationSpecification">
+   <specification
+         annotationType="com.gmail.aydinov.sergey.simple_debugger_plugin.currentLine"
+         colorPreferenceKey="currentExecutionLineColor"
+         colorPreferenceValue="255,255,150"
+         overviewRulerPreferenceKey="currentExecutionLineOverview"
+         presentationLayer="5"
+         showInNextPrevDropdown="true"
+         textPreferenceKey="currentExecutionLineAnnotation"
+         textPreferenceValue="true"
+         verticalRulerPreferenceKey="currentExecutionLineRuler"
+         verticalRulerPreferenceValue="true"
+         highlightPreferenceKey="currentExecutionLineHighlight"
+         highlightPreferenceValue="true">
+   </specification>
 </extension>
-
-
-
-
 </plugin>

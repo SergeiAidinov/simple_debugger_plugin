@@ -7,10 +7,29 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.part.FileEditorInput;
+import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationStatus;
@@ -123,6 +142,26 @@ public class SimpleDebuggerWorkFlow {
 			System.out.println("eventSet.size() " + eventSet.size());
 			outer: for (Event event : eventSet) {
 				if (event instanceof BreakpointEvent breakpointEvent) {
+					Location location = breakpointEvent.location();
+					int lineNumber = location.lineNumber() - 1; // JDI → 0-based for Eclipse
+					AtomicReference<ITextEditor> editorReference = new AtomicReference<ITextEditor>();
+					Display.getDefault().asyncExec(() -> {
+					    try {
+					        ITextEditor editor1 = openEditorForLocation(location);
+					        if (editor1 != null) {
+					            int line = location.lineNumber() - 1;
+					            new CurrentLineHighlighter().highlight(editor1, line);
+					            editorReference.set(editor1);
+					        }
+					    } catch (Exception e) {
+					        e.printStackTrace();
+					    }
+					});
+
+
+					CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
+					highlighter.highlight(editorReference.get(), lineNumber);
+
 					refreshUserInterface(breakpointEvent);
 					StackFrame frame = null;
 					try {
@@ -172,6 +211,86 @@ public class SimpleDebuggerWorkFlow {
 			System.out.println("End iteration. \n");
 		}
 	}
+
+	public ITextEditor openEditorForLocation(Location location) {
+	    IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+	    if (window == null)
+	        throw new IllegalStateException("Workbench window not ready");
+
+	    IWorkbenchPage page = window.getActivePage();
+	    if (page == null)
+	        throw new IllegalStateException("No active workbench page");
+
+	    IFile file = null;
+		try {
+			file = findIFileForLocation(location);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    if (file == null || !file.exists())
+	        throw new IllegalArgumentException("IFile not found for location: " + location);
+
+	    IEditorPart part = null;
+		try {
+			part = IDE.openEditor(page, file, true);
+		} catch (PartInitException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    if (!(part instanceof ITextEditor))
+	        throw new IllegalStateException("The editor is not a text editor: " + part);
+
+	    return (ITextEditor) part;
+	}
+
+	
+	public IFile findIFileForLocation(Location location) {
+	    try {
+	        ReferenceType refType = location.declaringType();
+	        if (refType == null) return null;
+
+	        // Имя типа в формате JVM => преобразуем в Java вид
+	        // было: Lcom/example/MyClass;  =>  com.example.MyClass
+	        String jvmName = refType.name();
+	        String className = jvmName.replace('/', '.');
+
+	        // Удаляем ведущую 'L' и ';', если они есть
+	        if (className.startsWith("L") && className.endsWith(";")) {
+	            className = className.substring(1, className.length() - 1);
+	        }
+
+	        // Теперь это нормальное имя класса, ищем по нему IType
+	        IWorkspace ws = ResourcesPlugin.getWorkspace();
+	        IWorkspaceRoot root = ws.getRoot();
+
+	        // Перебираем все Java-проекты
+	        for (IProject project : root.getProjects()) {
+	            if (!project.isOpen() || !project.hasNature(JavaCore.NATURE_ID))
+	                continue;
+
+	            IJavaProject javaProject = JavaCore.create(project);
+	            IType type = javaProject.findType(className);
+
+	            if (type != null) {
+	                ICompilationUnit unit = type.getCompilationUnit();
+	                if (unit != null) {
+	                    IResource resource = unit.getUnderlyingResource();
+	                    if (resource instanceof IFile) {
+	                        return (IFile) resource;
+	                    }
+	                }
+	            }
+	        }
+
+	        return null;
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return null;
+	    }
+	}
+
 
 	private void applyPendingChanges(UserChangedVariable event, StackFrame frame) {
 		VarEntry varEntry = event.getVarEntry();
