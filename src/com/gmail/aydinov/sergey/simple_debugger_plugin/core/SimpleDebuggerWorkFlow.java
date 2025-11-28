@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -28,14 +27,12 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
@@ -55,7 +52,6 @@ import com.sun.jdi.Bootstrap;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
-import com.sun.jdi.InvalidTypeException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.ObjectReference;
@@ -143,25 +139,17 @@ public class SimpleDebuggerWorkFlow {
 			outer: for (Event event : eventSet) {
 				if (event instanceof BreakpointEvent breakpointEvent) {
 					Location location = breakpointEvent.location();
-					int lineNumber = location.lineNumber() - 1; // JDI → 0-based for Eclipse
-					//AtomicReference<ITextEditor> editorReference = new AtomicReference<ITextEditor>();
 					Display.getDefault().asyncExec(() -> {
 					    try {
 					        ITextEditor editor1 = openEditorForLocation(location);
 					        if (editor1 != null) {
 					            int line = location.lineNumber() - 1;
 					            new CurrentLineHighlighter().highlight(editor1, line);
-					            //editorReference.set(editor1);
 					        }
 					    } catch (Exception e) {
 					        e.printStackTrace();
 					    }
 					});
-
-
-//					CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
-//					highlighter.highlight(editorReference.get(), lineNumber);
-
 					refreshUserInterface(breakpointEvent);
 					StackFrame frame = null;
 					try {
@@ -183,12 +171,6 @@ public class SimpleDebuggerWorkFlow {
 						if (uiEvent instanceof UserPressedResumeUiEvent) {
 							break outer;
 						}
-//						if (uiEvent instanceof UserChangedVariable) {
-//
-//							applyPendingChanges((UserChangedVariable) uiEvent, frame);
-//							refreshUserInterface(breakpointEvent);
-//							continue;
-//						}
 						StackFrame farme = null;
 						try {
 							farme = breakpointEvent.thread().frame(0);
@@ -208,7 +190,6 @@ public class SimpleDebuggerWorkFlow {
 			eventSet.resume();
 
 			// И обновляем интерфейс после выхода из breakpoint
-			// refreshUserInterface();
 			System.out.println("End iteration. \n");
 		}
 	}
@@ -292,21 +273,6 @@ public class SimpleDebuggerWorkFlow {
 	    }
 	}
 
-
-//	private void applyPendingChanges(UserChangedVariable event, StackFrame frame) {
-//		VarEntry varEntry = event.getVarEntry();
-//		LocalVariable localVar = varEntry.getLocalVar();
-//		String strValue = (String) varEntry.getNewValue();
-//		Value jdiValue = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-//				localVar, strValue);
-//		try {
-//			frame.setValue(localVar, jdiValue);
-//			System.out.println("Variable updated: " + localVar.name() + " = " + jdiValue);
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//	}
-
 	private void handleEvent(UIEvent uIevent, StackFrame farme) {
 
 		if (uIevent instanceof UserChangedVariable) {
@@ -380,7 +346,6 @@ public class SimpleDebuggerWorkFlow {
 		// ===== Локальные переменные =====
 		Map<LocalVariable, Value> localVariables = new HashMap<>();
 		try {
-			// frame.visibleVariables() может бросать InvalidStackFrameException
 			for (LocalVariable localVariable : frame.visibleVariables()) {
 				try {
 					Value value = frame.getValue(localVariable);
