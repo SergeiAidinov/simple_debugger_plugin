@@ -39,6 +39,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.Breakpoin
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
@@ -342,6 +343,12 @@ public class SimpleDebuggerWorkFlow {
 			UserChangedFieldDTO userChangedFieldDto = (UserChangedFieldDTO) uIevent;
 			updateField(userChangedFieldDto, farme);
 			System.out.println("PROCESS: " + uIevent);
+			return;
+		}
+		
+		if (uIevent instanceof InvokeMethodEvent) {
+			InvokeMethodEvent invokeMethodEvent =  (InvokeMethodEvent) uIevent;
+			System.out.println("PROCESS: " + invokeMethodEvent.toString());
 			return;
 		}
 	}

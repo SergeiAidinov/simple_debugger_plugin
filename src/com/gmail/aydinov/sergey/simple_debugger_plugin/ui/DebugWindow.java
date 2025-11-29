@@ -102,7 +102,7 @@ public class DebugWindow {
 		stackItem.setText("Stack");
 		stackItem.setControl(stackTab.getControl());
 
-		evalTab = new EvaluateTabController(tabFolder);
+		evalTab = new EvaluateTabController(tabFolder, uiEventCollector);
 		CTabItem evalItem = new CTabItem(tabFolder, SWT.NONE);
 		evalItem.setText("Evaluate");
 		evalItem.setControl(evalTab.getControl());
