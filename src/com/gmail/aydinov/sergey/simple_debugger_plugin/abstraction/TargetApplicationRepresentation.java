@@ -45,7 +45,7 @@ public class TargetApplicationRepresentation {
 		return referencesAtClassesAndInterfaces;
 	}
 
-	public List<TargetApplicationElementRepresentation> getTargetApplicationStatus() {
+	public List<TargetApplicationElementRepresentation> getTargetApplicationElements() {
 		return referencesAtClassesAndInterfaces.values().stream().collect(Collectors.toList());
 	}
 
@@ -55,6 +55,7 @@ public class TargetApplicationRepresentation {
 		List<ReferenceType> loadedClassesAndInterfaces = new ArrayList<ReferenceType>();
 		while (loadedClassesAndInterfaces.isEmpty()) {
 			loadedClassesAndInterfaces.addAll(virtualMachine.allClasses());
+			if (!loadedClassesAndInterfaces.isEmpty()) break;
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
@@ -76,7 +77,10 @@ public class TargetApplicationRepresentation {
 				targetApplicationElementTypeOptional = Optional.of(TargetApplicationElementType.INTERFACE);
 			}			
 			
+			
 			Set<TargetApplicationMethodDTO> targetApplicationMethodDTOs = referenceType.allMethods().stream()
+					.filter(m -> !m.isNative())
+					//.filter(Objects::nonNull)
 			        .map(m -> {
 						try {
 							return new TargetApplicationMethodDTO(
@@ -96,7 +100,8 @@ public class TargetApplicationRepresentation {
 							targetApplicationMethodDTOs,
 							referenceType.allFields().stream().collect(Collectors.toSet()))));
 		}
-		System.out.println("referencesAtClasses: " + referencesAtClassesAndInterfaces.size());
+		System.out.println("LOADED CLASSES: " + referencesAtClassesAndInterfaces.size());
+		referencesAtClassesAndInterfaces.values().stream().forEach(ci -> System.out.println(ci.prettyPrint()));
 	}
 
 }

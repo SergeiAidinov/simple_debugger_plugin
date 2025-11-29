@@ -23,7 +23,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUi
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabController;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldsTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.VariablesTabContent;
@@ -40,7 +40,7 @@ public class DebugWindow {
 	private VariablesTabContent variablesTab;
 	private FieldsTabContent fieldsTab;
 	private StackTabContent stackTab;
-	private EvaluateTabContent evalTab;
+	private EvaluateTabController evalTab;
 	private Button resumeButton;
 	private Label locationLabel;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
@@ -102,7 +102,7 @@ public class DebugWindow {
 		stackItem.setText("Stack");
 		stackItem.setControl(stackTab.getControl());
 
-		evalTab = new EvaluateTabContent(tabFolder);
+		evalTab = new EvaluateTabController(tabFolder);
 		CTabItem evalItem = new CTabItem(tabFolder, SWT.NONE);
 		evalItem.setText("Evaluate");
 		evalItem.setControl(evalTab.getControl());
@@ -213,6 +213,8 @@ public class DebugWindow {
 	    variablesTab.updateVariables(debugEvent.getLocals()); // List<VariableDTO>
 	    fieldsTab.updateFields(debugEvent.getFields());               // List<VariableDTO>
 	    stackTab.updateStack(debugEvent.getStackTrace() != null ? debugEvent.getStackTrace() : "Unknown");
+	    evalTab.updateFromEvent(debugEvent);
+
 	}
 
 }

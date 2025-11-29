@@ -448,7 +448,7 @@ public class SimpleDebuggerWorkFlow {
 		SimpleDebugEventDTO dto = new SimpleDebugEventDTO(SimpleDebugEventType.REFRESH_DATA,
 				location.declaringType().name(), location.method().name(), location.lineNumber(),
 				DebugUtils.mapFields(fields), DebugUtils.mapLocals(localVariables), compileStackInfo(threadReference),
-				targetApplicationRepresentation.getTargetApplicationStatus());
+				targetApplicationRepresentation.getTargetApplicationElements());
 
 		// ===== Отправляем событие в UI =====
 		simpleDebugEventCollector.collectDebugEvent(dto);
