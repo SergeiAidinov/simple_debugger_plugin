@@ -90,6 +90,7 @@ public class SimpleDebuggerWorkFlow {
 	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
 	private final IBreakpointManager iBreakpointManager;
 	private final BreakpointSubscriberRegistrar breakpointListener;
+	private String resultOfMethodInvocation = "";
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
@@ -348,9 +349,15 @@ public class SimpleDebuggerWorkFlow {
 		
 		if (uIevent instanceof InvokeMethodEvent) {
 			InvokeMethodEvent invokeMethodEvent =  (InvokeMethodEvent) uIevent;
+			invokeMethod(invokeMethodEvent);
 			System.out.println("PROCESS: " + invokeMethodEvent.toString());
 			return;
 		}
+	}
+
+	private void invokeMethod(InvokeMethodEvent invokeMethodEvent) {
+		resultOfMethodInvocation = invokeMethodEvent.toString();
+		
 	}
 
 	private void updateField(UserChangedFieldDTO dto, StackFrame frame) {
@@ -455,7 +462,7 @@ public class SimpleDebuggerWorkFlow {
 		SimpleDebugEventDTO dto = new SimpleDebugEventDTO(SimpleDebugEventType.REFRESH_DATA,
 				location.declaringType().name(), location.method().name(), location.lineNumber(),
 				DebugUtils.mapFields(fields), DebugUtils.mapLocals(localVariables), compileStackInfo(threadReference),
-				targetApplicationRepresentation.getTargetApplicationElements());
+				targetApplicationRepresentation.getTargetApplicationElements(), resultOfMethodInvocation);
 
 		// ===== Отправляем событие в UI =====
 		simpleDebugEventCollector.collectDebugEvent(dto);

@@ -86,21 +86,28 @@ public class EvaluateTabController {
 	}
 
 	public void updateFromEvent(SimpleDebugEventDTO dto) {
-		classCombo.removeAll();
+	    classCombo.removeAll();
 
-		for (TargetApplicationElementRepresentation el : dto.getTargetApplicationElementRepresentationList()) {
-			if (el instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
-				String nameAndType = clazz.getTargetApplicationElementName() + " ("
-						+ el.getTargetApplicationElementType() + ")";
-				classCombo.add(nameAndType);
-				classCombo.setData(nameAndType, clazz);
-			}
-		}
+	    for (TargetApplicationElementRepresentation el : dto.getTargetApplicationElementRepresentationList()) {
+	        if (el instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
+	            String nameAndType = clazz.getTargetApplicationElementName() + " ("
+	                    + el.getTargetApplicationElementType() + ")";
+	            classCombo.add(nameAndType);
+	            classCombo.setData(nameAndType, clazz);
+	        }
+	    }
 
-		if (classCombo.getItemCount() > 0) {
-			classCombo.select(0);
-			updateMethods();
-		}
+	    if (classCombo.getItemCount() > 0) {
+	        classCombo.select(0);
+	        updateMethods();
+	    }
+
+	    // ====== отображаем результат метода, если есть ======
+	    if (dto.getResultOfMethodInvocation() != null) {
+	        resultField.setText(dto.getResultOfMethodInvocation());
+	    } else {
+	        resultField.setText(""); // очищаем поле, если результата нет
+	    }
 	}
 
 	private void updateMethods() {
