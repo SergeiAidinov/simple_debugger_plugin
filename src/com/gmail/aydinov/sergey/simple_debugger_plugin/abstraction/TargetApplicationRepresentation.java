@@ -80,7 +80,7 @@ public class TargetApplicationRepresentation {
 			
 			Set<TargetApplicationMethodDTO> targetApplicationMethodDTOs = referenceType.allMethods().stream()
 					.filter(m -> !m.isNative())
-					//.filter(Objects::nonNull)
+					.filter(m -> !Objects.equals("<init>", m.name()))
 			        .map(m -> {
 						try {
 							return new TargetApplicationMethodDTO(

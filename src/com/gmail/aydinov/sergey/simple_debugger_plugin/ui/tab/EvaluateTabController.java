@@ -22,13 +22,22 @@ public class EvaluateTabController {
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(2, false));
 
-        new Label(root, SWT.NONE).setText("Class:");
+        // ====== Type label with tooltip ======
+        Label typeLabel = new Label(root, SWT.NONE);
+        typeLabel.setText("Type:");
+        typeLabel.setToolTipText("Class or Interface");
+
         classCombo = new Combo(root, SWT.DROP_DOWN | SWT.READ_ONLY);
         classCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        classCombo.setToolTipText("Select a Class or Interface to invoke methods on");
 
-        new Label(root, SWT.NONE).setText("Method:");
+        Label methodLabel = new Label(root, SWT.NONE);
+        methodLabel.setText("Method:");
+        methodLabel.setToolTipText("Select a method to invoke");
+
         methodCombo = new Combo(root, SWT.DROP_DOWN | SWT.READ_ONLY);
         methodCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        methodCombo.setToolTipText("Select a method to invoke");
 
         invokeBtn = new Button(root, SWT.PUSH);
         invokeBtn.setText("Invoke");
@@ -41,6 +50,7 @@ public class EvaluateTabController {
         GridData gd = new GridData(GridData.FILL_BOTH);
         gd.horizontalSpan = 2;
         resultField.setLayoutData(gd);
+        resultField.setToolTipText("Result of method invocation");
 
         classCombo.addListener(SWT.Selection, e -> updateMethods());
     }
