@@ -12,116 +12,151 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO
 
 public class EvaluateTabController {
 
-	private final Composite root;
-	private final Combo classCombo;
-	private final Combo methodCombo;
-	private final Button selectBtn;
-	private final Text resultField;
+    private final Composite root;
+    private final Combo classCombo;
+    private final Combo methodCombo;
+    private final Button selectBtn;
+    private final Button invokeBtn;
+    private final Text methodInput;
+    private final Text resultField;
 
-	public EvaluateTabController(Composite parent) {
-		root = new Composite(parent, SWT.NONE);
-		root.setLayout(new GridLayout(2, false));
+    public EvaluateTabController(Composite parent) {
+        root = new Composite(parent, SWT.NONE);
+        root.setLayout(new GridLayout(2, false));
 
-		// ====== Type label with tooltip ======
-		Label typeLabel = new Label(root, SWT.NONE);
-		typeLabel.setText("Type:");
-		typeLabel.setToolTipText("Class or Interface");
+        // ====== Type label ======
+        Label typeLabel = new Label(root, SWT.NONE);
+        typeLabel.setText("Type:");
+        typeLabel.setToolTipText("Class or Interface");
 
-		classCombo = new Combo(root, SWT.DROP_DOWN | SWT.READ_ONLY);
-		classCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-		classCombo.setToolTipText("Select a Class or Interface to invoke methods on");
+        classCombo = new Combo(root, SWT.DROP_DOWN | SWT.READ_ONLY);
+        classCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        classCombo.setToolTipText("Select a Class or Interface to invoke methods on");
 
-		Label methodLabel = new Label(root, SWT.NONE);
-		methodLabel.setText("Method:");
-		methodLabel.setToolTipText("Select a method to select");
+        Label methodLabel = new Label(root, SWT.NONE);
+        methodLabel.setText("Method:");
+        methodLabel.setToolTipText("Select a method to move to Arguments field");
 
-		methodCombo = new Combo(root, SWT.DROP_DOWN | SWT.READ_ONLY);
-		methodCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-		methodCombo.setToolTipText("Select a method");
+        methodCombo = new Combo(root, SWT.DROP_DOWN | SWT.READ_ONLY);
+        methodCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        methodCombo.setToolTipText("Select a method");
 
-		selectBtn = new Button(root, SWT.PUSH);
-		selectBtn.setText("Select");
-		GridData btnGD = new GridData();
-		btnGD.horizontalSpan = 2;
-		btnGD.horizontalAlignment = SWT.CENTER;
-		selectBtn.setLayoutData(btnGD);
+        // ====== Button Select above Arguments ======
+        selectBtn = new Button(root, SWT.PUSH);
+        selectBtn.setText("Select");
+        GridData selectGD = new GridData();
+        selectGD.horizontalSpan = 2;
+        selectGD.horizontalAlignment = SWT.CENTER;
+        selectBtn.setLayoutData(selectGD);
 
-		resultField = new Text(root, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.WRAP | SWT.READ_ONLY);
-		GridData gd = new GridData(GridData.FILL_BOTH);
-		gd.horizontalSpan = 2;
-		resultField.setLayoutData(gd);
-		resultField.setToolTipText("Selected method will appear here");
+        // ====== Arguments field ======
+        methodInput = new Text(root, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
+        GridData inputGD = new GridData(GridData.FILL_HORIZONTAL);
+        inputGD.horizontalSpan = 2;
+        inputGD.heightHint = 3 * 20; // примерно 3 строки
+        methodInput.setLayoutData(inputGD);
+        methodInput.setToolTipText("Edit method arguments here");
 
-		classCombo.addListener(SWT.Selection, e -> updateMethods());
+        // ====== Invoke button under Arguments ======
+        invokeBtn = new Button(root, SWT.PUSH);
+        invokeBtn.setText("Invoke");
+        GridData invokeGD = new GridData();
+        invokeGD.horizontalSpan = 2;
+        invokeGD.horizontalAlignment = SWT.CENTER;
+        invokeBtn.setLayoutData(invokeGD);
 
-		// ====== Button listener ======
-		selectBtn.addListener(SWT.Selection, e -> onSelectMethod());
-	}
+        // ====== Result field ======
+        resultField = new Text(root, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.WRAP | SWT.READ_ONLY);
+        GridData gd = new GridData(GridData.FILL_BOTH);
+        gd.horizontalSpan = 2;
+        resultField.setLayoutData(gd);
+        resultField.setToolTipText("Method invocation result");
 
-	public Composite getControl() {
-		return root;
-	}
+        classCombo.addListener(SWT.Selection, e -> updateMethods());
+        selectBtn.addListener(SWT.Selection, e -> onSelectMethod());
+        invokeBtn.addListener(SWT.Selection, e -> onInvokeMethod());
+    }
 
-	public void updateFromEvent(SimpleDebugEventDTO dto) {
-		classCombo.removeAll();
+    public Composite getControl() {
+        return root;
+    }
 
-		for (TargetApplicationElementRepresentation el : dto.getTargetApplicationElementRepresentationList()) {
-			if (el instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
-				String nameAndType = clazz.getTargetApplicationElementName() + " ("
-						+ el.getTargetApplicationElementType() + ")";
-				classCombo.add(nameAndType);
-				classCombo.setData(nameAndType, clazz);
-			}
-		}
+    public void updateFromEvent(SimpleDebugEventDTO dto) {
+        classCombo.removeAll();
 
-		if (classCombo.getItemCount() > 0) {
-			classCombo.select(0);
-			updateMethods();
-		}
-	}
+        for (TargetApplicationElementRepresentation el : dto.getTargetApplicationElementRepresentationList()) {
+            if (el instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
+                String nameAndType = clazz.getTargetApplicationElementName() + " ("
+                        + el.getTargetApplicationElementType() + ")";
+                classCombo.add(nameAndType);
+                classCombo.setData(nameAndType, clazz);
+            }
+        }
 
-	private void updateMethods() {
-		methodCombo.removeAll();
+        if (classCombo.getItemCount() > 0) {
+            classCombo.select(0);
+            updateMethods();
+        }
+    }
 
-		String className = classCombo.getText();
-		if (className == null)
-			return;
+    private void updateMethods() {
+        methodCombo.removeAll();
 
-		TargetApplicationClassOrInterfaceRepresentation clazz = (TargetApplicationClassOrInterfaceRepresentation) classCombo
-				.getData(className);
-		if (clazz == null)
-			return;
+        String className = classCombo.getText();
+        if (className == null) return;
 
-		for (TargetApplicationMethodDTO m : clazz.getMethods()) {
-			String display = m.getMethodName() + " : " + m.getReturnType();
-			methodCombo.add(display);
-			methodCombo.setData(display, m);
-		}
+        TargetApplicationClassOrInterfaceRepresentation clazz =
+                (TargetApplicationClassOrInterfaceRepresentation) classCombo.getData(className);
+        if (clazz == null) return;
 
-		if (methodCombo.getItemCount() > 0)
-			methodCombo.select(0);
-	}
+        for (TargetApplicationMethodDTO m : clazz.getMethods()) {
+            String display = m.getMethodName() + " : " + m.getReturnType();
+            methodCombo.add(display);
+            methodCombo.setData(display, m);
+        }
 
-	private void onSelectMethod() {
-		TargetApplicationMethodDTO selectedMethod = getSelectedMethod();
-		if (selectedMethod != null) {
-			resultField.setText(selectedMethod.getMethodName() + " : " + selectedMethod.getReturnType());
-		}
-	}
+        if (methodCombo.getItemCount() > 0)
+            methodCombo.select(0);
+    }
 
-	public TargetApplicationClassOrInterfaceRepresentation getSelectedClass() {
-		return (TargetApplicationClassOrInterfaceRepresentation) classCombo.getData(classCombo.getText());
-	}
+    private void onSelectMethod() {
+        TargetApplicationMethodDTO selectedMethod = getSelectedMethod();
+        if (selectedMethod == null) return;
 
-	public TargetApplicationMethodDTO getSelectedMethod() {
-		return (TargetApplicationMethodDTO) methodCombo.getData(methodCombo.getText());
-	}
+        // Перенос метода в поле Arguments в виде: methodName()
+        String template = selectedMethod.getMethodName() + "()";
+        methodInput.setText(template);
+        methodInput.setSelection(selectedMethod.getMethodName().length() + 1); // курсор внутри скобок
+        methodInput.setFocus();
+    }
 
-	public Button getSelectButton() {
-		return selectBtn;
-	}
+    private void onInvokeMethod() {
+        String input = methodInput.getText();
+        // TODO: распарсить метод и аргументы, вызвать через JDI
+        resultField.setText("Invoked: " + input);
+    }
 
-	public Text getResultField() {
-		return resultField;
-	}
+    public TargetApplicationClassOrInterfaceRepresentation getSelectedClass() {
+        return (TargetApplicationClassOrInterfaceRepresentation) classCombo.getData(classCombo.getText());
+    }
+
+    public TargetApplicationMethodDTO getSelectedMethod() {
+        return (TargetApplicationMethodDTO) methodCombo.getData(methodCombo.getText());
+    }
+
+    public Button getSelectButton() {
+        return selectBtn;
+    }
+
+    public Button getInvokeButton() {
+        return invokeBtn;
+    }
+
+    public Text getMethodInput() {
+        return methodInput;
+    }
+
+    public Text getResultField() {
+        return resultField;
+    }
 }
