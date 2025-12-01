@@ -40,6 +40,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
@@ -195,7 +196,7 @@ public class SimpleDebuggerWorkFlow {
 					});
 					targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
 							targetVirtualMachineRepresentation.getVirtualMachine());
-					//stackDescription = compileStackInfo(breakpointEvent.thread());
+					// stackDescription = compileStackInfo(breakpointEvent.thread());
 					refreshUserInterface(breakpointEvent);
 					StackFrame frame = null;
 					try {
@@ -511,7 +512,8 @@ public class SimpleDebuggerWorkFlow {
 		// ===== Преобразуем в UI-friendly DTO =====
 		SimpleDebugEventDTO dto = new SimpleDebugEventDTO(SimpleDebugEventType.REFRESH_DATA,
 				location.declaringType().name(), location.method().name(), location.lineNumber(),
-				DebugUtils.mapFields(fields), DebugUtils.mapLocals(localVariables), compileStackInfo(breakpointEvent.thread()),
+				DebugUtils.mapFields(fields), DebugUtils.mapLocals(localVariables),
+				compileStackInfo(breakpointEvent.thread()),
 				targetApplicationRepresentation.getTargetApplicationElements(), resultOfMethodInvocation);
 
 		// ===== Отправляем событие в UI =====
@@ -521,50 +523,56 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private String compileStackInfo(ThreadReference threadReference) {
-	    List<StackFrame> frames = Collections.emptyList();
-	    StringBuilder sb = new StringBuilder();
+		List<StackFrame> frames = Collections.emptyList();
+		List<MethodCallInStack> calls = new ArrayList<>();
 
-	    try {
-	        frames = threadReference.frames();
-	    } catch (IncompatibleThreadStateException e) {
-	        e.printStackTrace();
-	        return "Cannot get frames: " + e.getMessage();
-	    }
+		try {
+			frames = threadReference.frames();
+		} catch (IncompatibleThreadStateException e) {
+			e.printStackTrace();
+			return "Cannot get frames: " + e.getMessage();
+		}
 
-	    for (int i = 0; i < frames.size(); i++) {
-	        StackFrame frame = frames.get(i);
-	        if (frame == null) continue;
+		for (int i = 0; i < frames.size(); i++) {
+			StackFrame frame = frames.get(i);
+			if (frame == null)
+				continue;
 
-	        try {
-	            Location loc = frame.location();
-	            if (loc != null) {
-	                String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
-	                String methodName = loc.method() != null ? loc.method().name() : "unknown";
-	                int line = loc.lineNumber();
+			try {
+				Location loc = frame.location();
+				if (loc != null) {
+					String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
+					String methodName = loc.method() != null ? loc.method().name() : "unknown";
+					int line = loc.lineNumber();
 
-	                String sourceInfo;
-	                try {
-	                    String src = loc.sourceName();
-	                    sourceInfo = src + ":" + line;
-	                } catch (AbsentInformationException aie) {
-	                    sourceInfo = "Unknown:" + line;
-	                }
+					String sourceInfo;
+					try {
+						String src = loc.sourceName();
+						sourceInfo = src + ":" + line;
+					} catch (AbsentInformationException aie) {
+						sourceInfo = "Unknown:" + line;
+					}
 
-	                sb.append(String.format("#%d %s.%s()  at %s%n", i, className, methodName, sourceInfo));
-	            }
-	        } catch (Exception e) {
-	            // защищаемся от возможных исключений JDI
-	            e.printStackTrace();
-	            sb.append(String.format("#%d <error retrieving frame>%n", i));
-	        }
-	    }
-
-	    return sb.toString();
+					// calls.add(String.format("#%d %s.%s() at %s%n", i, className, methodName,
+					// sourceInfo));
+					calls.add(new MethodCallInStack(className, methodName, sourceInfo));
+				}
+			} catch (Exception e) {
+				// защищаемся от возможных исключений JDI
+				e.printStackTrace();
+				// calls.add(String.format("#%d <error retrieving frame>%n", i));
+				calls.add(new MethodCallInStack("<error retrieving frame>", "", ""));
+			}
+		}
+		Collections.reverse(calls);
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < calls.size(); i++) {
+			MethodCallInStack methodCallInStack = calls.get(i);
+			sb.append(String.format("#%d %s.%s()  at %s%n", i, methodCallInStack.getClassName(),
+					methodCallInStack.getMethodName(), methodCallInStack.getSourceInfo()));
+		}
+		return sb.toString();
 	}
-
-
-
-
 
 	public static class Factory {
 
