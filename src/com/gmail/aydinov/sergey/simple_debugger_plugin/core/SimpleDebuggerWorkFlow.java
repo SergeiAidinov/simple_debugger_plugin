@@ -95,7 +95,7 @@ public class SimpleDebuggerWorkFlow {
 	private final BreakpointSubscriberRegistrar breakpointListener;
 	private String resultOfMethodInvocation = "";
 	private String stackDescription = "";
-	private static SimpleDebuggerStatus simpleDebuggerStatus = SimpleDebuggerStatus.STARTING;
+	
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
@@ -107,10 +107,6 @@ public class SimpleDebuggerWorkFlow {
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 
-	}
-
-	public static SimpleDebuggerStatus getSimpleDebuggerStatus() {
-		return simpleDebuggerStatus;
 	}
 
 	public void updateVariables(UserChangedVariableDTO userChangedVariableDTO, StackFrame frame) {
@@ -590,9 +586,14 @@ public class SimpleDebuggerWorkFlow {
 	public static class Factory {
 
 		private static SimpleDebuggerWorkFlow instance = null;
+		private static SimpleDebuggerStatus simpleDebuggerStatus = SimpleDebuggerStatus.STARTING;
 
 		public static SimpleDebuggerWorkFlow getSimpleDebuggerWorkFlow() {
 			return instance;
+		}
+		
+		public static SimpleDebuggerStatus getSimpleDebuggerStatus() {
+			return simpleDebuggerStatus;
 		}
 
 		public static void create(String host, int port, OnWorkflowReadyListener listener) {
@@ -660,9 +661,11 @@ public class SimpleDebuggerWorkFlow {
 				try {
 					System.out.println("Connecting to " + host + ":" + port + "...");
 					VirtualMachine vm = connector.attach(args);
+					simpleDebuggerStatus = SimpleDebuggerStatus.VM_CONNECTED;
 					System.out.println("Successfully connected to VM.");
 					return vm;
 				} catch (Exception ignored) {
+					simpleDebuggerStatus = SimpleDebuggerStatus.VM_AWAITING_CONNECTION;
 					try {
 						TimeUnit.SECONDS.sleep(1);
 					} catch (InterruptedException ignored2) {

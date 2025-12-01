@@ -9,7 +9,9 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.debug.internal.core.LaunchConfigurationWorkingCopy;
 import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.window.Window;
@@ -28,12 +30,6 @@ public class SimpleDebugHandler extends AbstractHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Shell shell = HandlerUtil.getActiveShell(event);
-
-		// Открываем окно DebugWindow
-//        DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-//        if (!window.isOpen()) {
-//            window.open();
-//        }
 
 		try {
 			// Получаем все Java конфигурации запуска
@@ -67,6 +63,12 @@ public class SimpleDebugHandler extends AbstractHandler {
 			Integer port = getPortFromConfiguration(vmArgs);
 			if (port == null) {
 				port = 5005; // дефолтный порт
+				ILaunchConfigurationWorkingCopy wc = selectedConfig.getWorkingCopy();
+				if (!vmArgs.isEmpty())
+					vmArgs += " ";
+				vmArgs += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005";
+				wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, vmArgs);
+				ILaunchConfiguration newConfig = wc.doSave();
 			}
 
 			// Запускаем workflow
@@ -78,15 +80,14 @@ public class SimpleDebugHandler extends AbstractHandler {
 				}
 			});
 
-//			boolean ready = false;
-//			while (!ready) {
-//				ready = (Objects.nonNull(SimpleDebuggerWorkFlow.Factory.getSimpleDebuggerWorkFlow())
-//						&& SimpleDebuggerWorkFlow.Factory.getSimpleDebuggerWorkFlow().targetApplicationStatus
-//								.equals(SimpleDebuggerStatus.VM_CONFIGURED));
-//				if (!ready) {
-//					Thread.currentThread().sleep(1000);
-//				}
-//			}
+			boolean ready = false;
+			while (!ready) {
+				ready = (SimpleDebuggerWorkFlow.Factory.getSimpleDebuggerStatus()
+						.equals(SimpleDebuggerStatus.VM_AWAITING_CONNECTION));
+				if (!ready) {
+					Thread.currentThread().sleep(200);
+				}
+			}
 
 			ILaunch launch = selectedConfig.launch(ILaunchManager.RUN_MODE, null);
 			System.out.println("Application launched: " + selectedConfig.getName());
@@ -99,18 +100,19 @@ public class SimpleDebugHandler extends AbstractHandler {
 	}
 
 	private Integer getPortFromConfiguration(String vmArgs) {
-		if (vmArgs == null || vmArgs.isEmpty()) return null;
-	    String[] parts = vmArgs.split(",");
-	    for (String part : parts) {
-	        part = part.trim();
-	        if (part.startsWith("address=")) {
-	            try {
-	                return Integer.parseInt(part.substring("address=".length()));
-	            } catch (NumberFormatException e) {
-	                return null;
-	            }
-	        }
-	    }
-	    return null;
+		if (vmArgs == null || vmArgs.isEmpty())
+			return null;
+		String[] parts = vmArgs.split(",");
+		for (String part : parts) {
+			part = part.trim();
+			if (part.startsWith("address=")) {
+				try {
+					return Integer.parseInt(part.substring("address=".length()));
+				} catch (NumberFormatException e) {
+					return null;
+				}
+			}
+		}
+		return null;
 	}
 }
