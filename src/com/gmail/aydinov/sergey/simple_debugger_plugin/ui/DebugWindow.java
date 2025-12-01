@@ -179,7 +179,7 @@ public class DebugWindow {
 			try {
 				if (shell.isDisposed())
 					return;
-				//if (debugEvent.getSimpleDebugEventType().equals(SimpleDebugEventType.REFRESH_DATA))
+				if (debugEvent.getType().equals(SimpleDebugEventType.REFRESH_DATA))
 					refreshData(debugEvent);
 
 			} catch (Exception e) {

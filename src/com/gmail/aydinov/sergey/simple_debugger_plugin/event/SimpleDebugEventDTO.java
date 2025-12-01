@@ -54,10 +54,6 @@ public class SimpleDebugEventDTO {
     public List<TargetApplicationElementRepresentation> getTargetApplicationElementRepresentationList(){return targetApplicationElementRepresentationList;}
     public List<MethodCallInStack>  getMethodCallInStacks() { return methodCallInStacks;}
     public String  getResultOfMethodInvocation() { return resultOfMethodInvocation;}
-	public Map<LocalVariable, Value> getLocalVariablesDTO() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 	
 	
 }
