@@ -1,11 +1,13 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -38,25 +40,23 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserChangedField;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserChangedVariable;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.VarEntry;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldEntry;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
-import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
@@ -67,7 +67,6 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
-import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.VirtualMachineManager;
@@ -80,7 +79,6 @@ import com.sun.jdi.event.EventSet;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.request.EventRequestManager;
-import java.lang.reflect.Modifier;
 
 public class SimpleDebuggerWorkFlow {
 
@@ -347,9 +345,9 @@ public class SimpleDebuggerWorkFlow {
 			System.out.println("PROCESS: " + uIevent);
 			return;
 		}
-		
+
 		if (uIevent instanceof InvokeMethodEvent) {
-			InvokeMethodEvent invokeMethodEvent =  (InvokeMethodEvent) uIevent;
+			InvokeMethodEvent invokeMethodEvent = (InvokeMethodEvent) uIevent;
 			invokeMethod(invokeMethodEvent);
 			System.out.println("PROCESS: " + invokeMethodEvent.toString());
 			return;
@@ -357,33 +355,62 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private void invokeMethod(InvokeMethodEvent invokeMethodEvent) {
-		resultOfMethodInvocation = invokeMethodEvent.toString();
-		// List<Value> values = parseArguments(invokeMethodEvent.getArgumentsText(), null, null);
-		
+		try {
+			List<Value> values = DebugUtils.parseArguments(targetVirtualMachineRepresentation.getVirtualMachine(),
+					invokeMethodEvent);
+
+			TargetApplicationClassOrInterfaceRepresentation clazz = invokeMethodEvent.getClazz();
+			TargetApplicationMethodDTO methodDTO = invokeMethodEvent.getMethod();
+
+			// Находим ReferenceType в таргет-приложении
+			Optional<Entry<ReferenceType, TargetApplicationElementRepresentation>> entryOptional = targetApplicationRepresentation
+					.getReferencesAtClassesAndInterfaces().entrySet().stream().filter(entry -> entry.getValue()
+							.getTargetApplicationElementName().equals(clazz.getTargetApplicationElementName()))
+					.findAny();
+			ReferenceType refType = null;
+			if (entryOptional.isPresent())
+				refType = entryOptional.get().getKey();
+			if (refType == null) {
+				resultOfMethodInvocation = "Class not found in target VM";
+				return;
+			}
+
+			// Если метод статический
+			Method method = refType.methodsByName(methodDTO.getMethodName()).get(0);
+
+			List<Value> resultHolder = new ArrayList<>();
+			if (refType instanceof ClassType classType) {
+				ObjectReference instance = null; // Для нестатических методов нужен объект
+				if (!method.isStatic()) {
+					// Можно создать новый объект или использовать уже существующий
+					Method constructor = classType.concreteMethodByName("<init>", "()V");
+					instance = classType.newInstance(
+							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), constructor,
+							List.of(), ClassType.INVOKE_SINGLE_THREADED);
+				}
+				Value result = null;
+				if (instance != null) {
+					result = instance.invokeMethod(
+							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), method, values,
+							ObjectReference.INVOKE_SINGLE_THREADED);
+					System.out.println(result);
+				} else {
+					result = classType.invokeMethod(
+							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), method, values,
+							ClassType.INVOKE_SINGLE_THREADED);
+					System.out.println(result);
+				}
+				resultOfMethodInvocation = result != null ? result.toString() : "null";
+			}
+
+			// Выводим результат
+			System.out.println(resultOfMethodInvocation);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultOfMethodInvocation = e.getMessage();
+		}
 	}
-	
-	private List<Value> parseArguments(String argsText, List<Type> paramTypes, VirtualMachine vm) throws Exception {
-	    List<Value> args = new ArrayList<>();
-	    if (argsText == null || argsText.isBlank()) return args;
-
-	    String[] splitArgs = argsText.split(","); // простая разбивка, можно усложнить для строк с запятыми
-	    if (splitArgs.length != paramTypes.size())
-	        throw new IllegalArgumentException("Количество аргументов не совпадает с параметрами метода");
-
-	    for (int i = 0; i < paramTypes.size(); i++) {
-	        Type type = paramTypes.get(i);
-	        String argStr = splitArgs[i].trim();
-
-	        if (type.name().equals("int")) {
-	            args.add(vm.mirrorOf(Integer.parseInt(argStr)));
-	        } else if (type.name().equals("java.lang.String")) {
-	            args.add(vm.mirrorOf(argStr.substring(1, argStr.length() - 1))); // убираем кавычки
-	        } 
-	        // добавить другие типы по необходимости
-	    }
-	    return args;
-	}
-
 
 	private void updateField(UserChangedFieldDTO dto, StackFrame frame) {
 		try {

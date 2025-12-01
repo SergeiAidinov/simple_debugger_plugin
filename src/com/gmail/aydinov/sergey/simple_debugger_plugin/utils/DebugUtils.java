@@ -1,10 +1,14 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.utils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -13,6 +17,7 @@ import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.PrimitiveType;
+import com.sun.jdi.ReferenceType;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
@@ -280,5 +285,79 @@ public class DebugUtils {
         if (value == null) return "null";
         return value.toString();
     }
-	
+    
+    /**
+     * Преобразует argumentsText в список JDI-значений для вызова метода.
+     */
+    public static List<Value> parseArguments(VirtualMachine vm, InvokeMethodEvent invokeMethodEvent) {
+        List<Value> values = new ArrayList<>();
+        String argsText = invokeMethodEvent.getArgumentsText().trim();
+        if (argsText.isEmpty()) return values;
+
+        // Обрезаем имя метода и скобки
+        int start = argsText.indexOf('(');
+        int end = argsText.lastIndexOf(')');
+        if (start < 0 || end < 0 || end <= start) {
+            throw new IllegalArgumentException("Неверный формат строки аргументов: " + argsText);
+        }
+        String onlyArgs = argsText.substring(start + 1, end).trim();
+        if (onlyArgs.isEmpty()) return values;
+
+        String[] argStrings = onlyArgs.split("\\s*,\\s*");
+        List<TargetApplicationMethodParameterDTO> params = invokeMethodEvent.getMethod().getParameters();
+
+        if (argStrings.length != params.size()) {
+            throw new IllegalArgumentException("Количество аргументов не совпадает с количеством параметров метода");
+        }
+
+        for (int i = 0; i < params.size(); i++) {
+            TargetApplicationMethodParameterDTO param = params.get(i);
+            String argStr = argStrings[i];
+            String typeName = param.getType().name();
+
+            Value value = null;
+			try {
+				value = convertStringToValue(argStr, typeName, vm);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+           if (Objects.nonNull(value)) values.add(value);
+        }
+
+        return values;
+    }
+
+    
+    private static Value convertStringToValue(String arg, String typeName, VirtualMachine vm) throws Exception {
+        switch (typeName) {
+            case "int": return vm.mirrorOf(Integer.parseInt(arg));
+            case "boolean": return vm.mirrorOf(Boolean.parseBoolean(arg));
+            case "long": return vm.mirrorOf(Long.parseLong(arg));
+            case "double": return vm.mirrorOf(Double.parseDouble(arg));
+            case "float": return vm.mirrorOf(Float.parseFloat(arg));
+            case "short": return vm.mirrorOf(Short.parseShort(arg));
+            case "byte": return vm.mirrorOf(Byte.parseByte(arg));
+            case "char":
+                if (arg.length() != 1) throw new IllegalArgumentException("Неверный char аргумент: " + arg);
+                return vm.mirrorOf(arg.charAt(0));
+            case "java.lang.String": return vm.mirrorOf(arg);
+            default:
+                // Для объектов пытаемся создать экземпляр через конструктор без аргументов
+                List<ReferenceType> classes = vm.classesByName(typeName);
+                if (classes.isEmpty()) throw new ClassNotLoadedException(typeName, "Класс не найден в таргет-приложении");
+
+                ReferenceType refType = classes.get(0);
+                if (!(refType instanceof ClassType)) throw new IllegalArgumentException("Тип не является классом: " + typeName);
+
+                ClassType classType = (ClassType) refType;
+                Method constructor = classType.concreteMethodByName("<init>", "()V");
+                if (constructor == null) throw new IllegalArgumentException("Нет конструктора без аргументов для " + typeName);
+
+                ObjectReference obj = classType.newInstance(vm.allThreads().get(0), constructor, List.of(), ClassType.INVOKE_SINGLE_THREADED);
+                return obj;
+        }
+    }
 }
+    
+
