@@ -22,6 +22,7 @@ import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.InterfaceType;
 import com.sun.jdi.ReferenceType;
+import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.EventRequestManager;
 
@@ -29,6 +30,7 @@ public class TargetApplicationRepresentation {
 
 	private final Map<ReferenceType, TargetApplicationElementRepresentation> referencesAtClassesAndInterfaces = new ConcurrentHashMap<ReferenceType, TargetApplicationElementRepresentation>();
 	private final TargetApplicationBreakepointRepresentation targetApplicationBreakepointRepresentation;
+	private final VirtualMachine virtualMachine;
 
 	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
 			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
@@ -36,6 +38,7 @@ public class TargetApplicationRepresentation {
 		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakepointRepresentation(
 				iBreakpointManager, eventRequestManager, virtualMachine);
 		breakpointHitListener.register(targetApplicationBreakepointRepresentation);
+		this.virtualMachine = virtualMachine;
 	}
 
 	public TargetApplicationBreakepointRepresentation getTargetApplicationBreakepointRepresentation() {
@@ -134,5 +137,31 @@ public class TargetApplicationRepresentation {
 		System.out.println("LOADED CLASSES: " + referencesAtClassesAndInterfaces.size());
 		referencesAtClassesAndInterfaces.values().stream().forEach(ci -> System.out.println(ci.prettyPrint()));
 	}
+	
+	public void detachDebugger() {
+        if (virtualMachine == null) return;
+
+        try {
+            // Отключаем все брейкпоинты
+            virtualMachine.eventRequestManager().deleteAllBreakpoints();
+
+            // Продолжаем все приостановленные потоки
+            virtualMachine.allThreads().forEach(thread -> {
+                try {
+                    if (thread.suspendCount() > 0) {
+                        thread.resume();
+                    }
+                } catch (Exception ignored) {}
+            });
+
+            // Отсоединяемся от VM, оставляя процесс работать
+           virtualMachine.dispose();
+
+        } catch (VMDisconnectedException e) {
+            // VM уже отключена — игнорируем
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 }

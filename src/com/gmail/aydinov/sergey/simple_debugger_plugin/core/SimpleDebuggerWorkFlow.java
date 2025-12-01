@@ -50,6 +50,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
@@ -330,6 +331,11 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private void handleEvent(UIEvent uIevent, StackFrame farme) {
+		
+		if (uIevent instanceof UserClosedWindowUiEvent) {
+			System.out.println("EXIT!!!");
+			targetApplicationRepresentation.detachDebugger();
+		}
 
 		if (uIevent instanceof UserChangedVariableDTO) {
 			UserChangedVariableDTO userChangedVariableDto = (UserChangedVariableDTO) uIevent;
