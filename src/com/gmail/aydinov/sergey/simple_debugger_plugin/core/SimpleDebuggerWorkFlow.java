@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.ThisExpression;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
@@ -35,6 +36,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
@@ -93,6 +95,7 @@ public class SimpleDebuggerWorkFlow {
 	private final BreakpointSubscriberRegistrar breakpointListener;
 	private String resultOfMethodInvocation = "";
 	private String stackDescription = "";
+	private static SimpleDebuggerStatus simpleDebuggerStatus = SimpleDebuggerStatus.STARTING;
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
@@ -104,6 +107,10 @@ public class SimpleDebuggerWorkFlow {
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 
+	}
+
+	public static SimpleDebuggerStatus getSimpleDebuggerStatus() {
+		return simpleDebuggerStatus;
 	}
 
 	public void updateVariables(UserChangedVariableDTO userChangedVariableDTO, StackFrame frame) {
@@ -161,7 +168,7 @@ public class SimpleDebuggerWorkFlow {
 				window.open();
 			}
 		});
-
+		
 		// Обновляем breakpoints
 		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
 		System.out.println("Waiting for events...");
@@ -331,7 +338,7 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private void handleEvent(UIEvent uIevent, StackFrame farme) {
-		
+
 		if (uIevent instanceof UserClosedWindowUiEvent) {
 			System.out.println("EXIT!!!");
 			targetApplicationRepresentation.detachDebugger();
@@ -518,9 +525,9 @@ public class SimpleDebuggerWorkFlow {
 		// ===== Преобразуем в UI-friendly DTO =====
 		SimpleDebugEventDTO dto = new SimpleDebugEventDTO(SimpleDebugEventType.REFRESH_DATA,
 				location.declaringType().name(), location.method().name(), location.lineNumber(),
-				DebugUtils.mapFields(fields), DebugUtils.mapLocals(localVariables),
-				resultOfMethodInvocation,
-				targetApplicationRepresentation.getTargetApplicationElements(), compileStackInfo(breakpointEvent.thread()), resultOfMethodInvocation);
+				DebugUtils.mapFields(fields), DebugUtils.mapLocals(localVariables), resultOfMethodInvocation,
+				targetApplicationRepresentation.getTargetApplicationElements(),
+				compileStackInfo(breakpointEvent.thread()), resultOfMethodInvocation);
 
 		// ===== Отправляем событие в UI =====
 		simpleDebugEventCollector.collectDebugEvent(dto);
@@ -582,6 +589,12 @@ public class SimpleDebuggerWorkFlow {
 
 	public static class Factory {
 
+		private static SimpleDebuggerWorkFlow instance = null;
+
+		public static SimpleDebuggerWorkFlow getSimpleDebuggerWorkFlow() {
+			return instance;
+		}
+
 		public static void create(String host, int port, OnWorkflowReadyListener listener) {
 
 			// 1️⃣ Подключение к JVM асинхронно
@@ -601,9 +614,11 @@ public class SimpleDebuggerWorkFlow {
 				bpManager.setEnabled(true);
 				bpManager.addBreakpointListener(breakpointListener);
 				System.out.println("[Factory] Breakpoint listener registered!");
-				return new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
+
+				instance = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
 						bpManager /* , */
 				/* plugin, */ , breakpointListener);
+				return instance;
 
 			}).thenAccept(workflow -> {
 				if (Objects.nonNull(listener))
