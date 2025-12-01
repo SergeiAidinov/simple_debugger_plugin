@@ -21,6 +21,18 @@ public class TargetApplicationMethodParameterDTO {
 
     @Override
     public String toString() {
-        return name + ": " + type.name();
+        String typeName;
+        try {
+            typeName = type.name();
+        } catch (Exception e) {
+            typeName = e.getMessage();
+        }
+
+        // УБИРАЕМ только "no class loader"
+        if (typeName != null && typeName.contains("no class loader")) {
+            typeName = "";
+        }
+
+        return typeName.isEmpty() ? name : name + ": " + typeName;
     }
 }

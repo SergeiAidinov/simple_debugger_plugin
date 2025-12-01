@@ -113,6 +113,12 @@ public class EvaluateTabController {
 	    }
 	}
 
+	private String sanitizeTypeName(String typeName) {
+	    if (typeName == null) return "";
+	    if (typeName.contains("no class loader")) return "?";
+	    return typeName;
+	}
+
 	private void updateMethods() {
 	    methodCombo.removeAll();
 
@@ -126,24 +132,29 @@ public class EvaluateTabController {
 	        return;
 
 	    for (TargetApplicationMethodDTO m : clazz.getMethods()) {
+	        StringBuilder display = new StringBuilder();
+	        display.append(m.getMethodName()).append("(");
 
-	        // Формируем строку вида:
-	        // methodName(type1 name1, type2 name2) : returnType
+	        List<TargetApplicationMethodParameterDTO> params = m.getParameters();
+	        for (int i = 0; i < params.size(); i++) {
+	            TargetApplicationMethodParameterDTO p = params.get(i);
+	            display.append(p.getName())
+	                   .append(": ")
+	                   .append(sanitizeTypeName(p.getType().name()));
+	            if (i < params.size() - 1) display.append(", ");
+	        }
+	        display.append(") : ").append(sanitizeTypeName(m.getReturnType()));
 
-	        String params = m.getParameters().stream()
-	                .map(p -> p.getType().name() + " " + p.getName())
-	                .reduce((a, b) -> a + ", " + b)
-	                .orElse("");
-
-	        String display = m.getMethodName() + "(" + params + ") : " + m.getReturnType();
-
-	        methodCombo.add(display);
-	        methodCombo.setData(display, m);
+	        String displayStr = display.toString();
+	        methodCombo.add(displayStr);
+	        methodCombo.setData(displayStr, m);
 	    }
 
 	    if (methodCombo.getItemCount() > 0)
 	        methodCombo.select(0);
 	}
+
+
 
 
 	private void onSelectMethod() {

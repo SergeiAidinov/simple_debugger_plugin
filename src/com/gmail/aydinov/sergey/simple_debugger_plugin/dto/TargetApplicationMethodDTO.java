@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class TargetApplicationMethodDTO implements Comparable<TargetApplicationMethodDTO> {
 
@@ -34,11 +35,28 @@ public class TargetApplicationMethodDTO implements Comparable<TargetApplicationM
     @Override
     public String toString() {
         String params = parameters.stream()
-                .map(TargetApplicationMethodParameterDTO::toString)
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("");
-        return methodName + "(" + params + ") : " + returnType;
+            .map(p -> {
+                String typeName;
+                try {
+                    typeName = p.getType().name();
+                } catch (Exception e) {
+                    typeName = e.getMessage();
+                }
+
+                // Убираем только фразу no class loader
+                if (typeName != null && typeName.contains("no class loader")) {
+                    typeName = "";
+                }
+
+                return typeName.isEmpty()
+                        ? p.getName()
+                        : p.getName() + ": " + typeName;
+            })
+            .collect(Collectors.joining(", "));
+
+        return methodName + "(" + params + ")";
     }
+
 
     @Override
     public int compareTo(TargetApplicationMethodDTO o) {
