@@ -189,11 +189,11 @@ public class DebugWindow {
 
 	}
 
-	private void refreshData(SimpleDebugEventDTO debugEvent) {
+	private void refreshData(SimpleDebugEventDTO simpleDebugEventDTO) {
 	    // -----------------------------
 	    // 0. Проверка наличия debugEvent
 	    // -----------------------------
-	    if (debugEvent == null) {
+	    if (simpleDebugEventDTO == null) {
 	        System.out.println("refreshData: debugEvent = null -> skip");
 	        return;
 	    }
@@ -202,18 +202,18 @@ public class DebugWindow {
 	    // 1. Обновляем UI (безопасно)
 	    // -----------------------------
 	    locationLabel.setText(
-	            STOP_INFO + debugEvent.getClassName() + "." +
-	            debugEvent.getMethodName() + " line:" + debugEvent.getLineNumber()
+	            STOP_INFO + simpleDebugEventDTO.getClassName() + "." +
+	            simpleDebugEventDTO.getMethodName() + " line:" + simpleDebugEventDTO.getLineNumber()
 	    );
 	    resumeButton.setEnabled(true);
 
 	    // -----------------------------
 	    // 2. Обновляем вкладки
 	    // -----------------------------
-	    variablesTab.updateVariables(debugEvent.getLocals()); // List<VariableDTO>
-	    fieldsTab.updateFields(debugEvent.getFields());               // List<VariableDTO>
-	    stackTab.updateStack(debugEvent.getStackTrace() != null ? debugEvent.getStackTrace() : "Unknown");
-	    evalTab.updateFromEvent(debugEvent);
+	    variablesTab.updateVariables(simpleDebugEventDTO.getLocals()); // List<VariableDTO>
+	    fieldsTab.updateFields(simpleDebugEventDTO.getFields());               // List<VariableDTO>
+	    stackTab.updateStack(simpleDebugEventDTO.getMethodCallInStacks());
+	    evalTab.updateFromEvent(simpleDebugEventDTO);
 
 	}
 

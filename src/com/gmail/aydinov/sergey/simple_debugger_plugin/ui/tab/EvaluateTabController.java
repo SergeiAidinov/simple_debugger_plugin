@@ -1,10 +1,17 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.ILabelProviderListener;
+import org.eclipse.jface.viewers.ITableLabelProvider;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
@@ -25,6 +32,7 @@ public class EvaluateTabController {
 	private final Text methodInput;
 	private final Text resultField;
 	private final UiEventCollector uiEventCollector;
+	private TableViewer stackTableViewer;
 
 	public EvaluateTabController(Composite parent, UiEventCollector uiEventCollector) {
 		this.uiEventCollector = uiEventCollector;
@@ -87,6 +95,44 @@ public class EvaluateTabController {
 	public Composite getControl() {
 		return root;
 	}
+	
+	private void createStackViewer(Composite parent) {
+	    stackTableViewer = new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+	    Table table = stackTableViewer.getTable();
+	    table.setHeaderVisible(true);
+	    table.setLinesVisible(true);
+	    table.setLayoutData(new GridData(GridData.FILL_BOTH));
+
+	    // Создаем колонки
+	    String[] titles = { "Class", "Method", "Source" };
+	    int[] bounds = { 200, 150, 150 };
+
+	    for (int i = 0; i < titles.length; i++) {
+	        TableViewerColumn col = new TableViewerColumn(stackTableViewer, SWT.NONE);
+	        col.getColumn().setText(titles[i]);
+	        col.getColumn().setWidth(bounds[i]);
+	        col.getColumn().setResizable(true);
+	    }
+
+	    // Устанавливаем контент и лейбл провайдеры
+	    stackTableViewer.setContentProvider(ArrayContentProvider.getInstance());
+	    stackTableViewer.setLabelProvider(new ITableLabelProvider() {
+	        public String getColumnText(Object element, int columnIndex) {
+	            if (!(element instanceof MethodCallInStack call)) return "";
+	            return switch (columnIndex) {
+	                case 0 -> call.getClassName();
+	                case 1 -> call.getMethodName();
+	                case 2 -> call.getSourceInfo();
+	                default -> "";
+	            };
+	        }
+	        public Image getColumnImage(Object element, int columnIndex) { return null; }
+	        public void addListener(ILabelProviderListener listener) {}
+	        public void dispose() {}
+	        public boolean isLabelProperty(Object element, String property) { return false; }
+	        public void removeListener(ILabelProviderListener listener) {}
+	    });
+	}
 
 	public void updateFromEvent(SimpleDebugEventDTO dto) {
 	    classCombo.removeAll();
@@ -110,6 +156,12 @@ public class EvaluateTabController {
 	        resultField.setText(dto.getResultOfMethodInvocation());
 	    } else {
 	        resultField.setText(""); // очищаем поле, если результата нет
+	    }
+	}
+	
+	public void updateStack(List<MethodCallInStack> stack) {
+	    if (stackTableViewer != null && !stackTableViewer.getTable().isDisposed()) {
+	        stackTableViewer.setInput(stack);
 	    }
 	}
 

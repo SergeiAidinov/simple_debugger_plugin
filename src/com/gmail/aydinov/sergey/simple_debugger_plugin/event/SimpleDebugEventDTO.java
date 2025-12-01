@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 import java.util.List;
 import java.util.Map;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
 import com.sun.jdi.LocalVariable;
@@ -19,6 +20,7 @@ public class SimpleDebugEventDTO {
     private final String stackTrace;
     private final List<TargetApplicationElementRepresentation> targetApplicationElementRepresentationList;
     private final String resultOfMethodInvocation;
+    private final List<MethodCallInStack> methodCallInStacks;
 
     public SimpleDebugEventDTO(SimpleDebugEventType type,
                                String className,
@@ -28,7 +30,8 @@ public class SimpleDebugEventDTO {
                                List<VariableDTO> locals,
                                String stackTrace,
                                List<TargetApplicationElementRepresentation> list,
-                               String lastInvokeMetodResult) {
+                               List<MethodCallInStack> methodCallInStacks,
+                               String resultOfMethodInvocation) {
         this.type = type;
         this.className = className;
         this.methodName = methodName;
@@ -37,7 +40,8 @@ public class SimpleDebugEventDTO {
         this.locals = locals;
         this.stackTrace = stackTrace;
         this.targetApplicationElementRepresentationList = list;
-        this.resultOfMethodInvocation = lastInvokeMetodResult;
+        this.methodCallInStacks = methodCallInStacks;
+        this.resultOfMethodInvocation = resultOfMethodInvocation;
     }
 
     public SimpleDebugEventType getType() { return type; }
@@ -48,8 +52,8 @@ public class SimpleDebugEventDTO {
     public List<VariableDTO> getFields() { return fields; }
     public String getStackTrace() { return stackTrace; }
     public List<TargetApplicationElementRepresentation> getTargetApplicationElementRepresentationList(){return targetApplicationElementRepresentationList;}
+    public List<MethodCallInStack>  getMethodCallInStacks() { return methodCallInStacks;}
     public String  getResultOfMethodInvocation() { return resultOfMethodInvocation;}
-    
 	public Map<LocalVariable, Value> getLocalVariablesDTO() {
 		// TODO Auto-generated method stub
 		return null;

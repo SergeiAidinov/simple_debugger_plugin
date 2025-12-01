@@ -513,8 +513,8 @@ public class SimpleDebuggerWorkFlow {
 		SimpleDebugEventDTO dto = new SimpleDebugEventDTO(SimpleDebugEventType.REFRESH_DATA,
 				location.declaringType().name(), location.method().name(), location.lineNumber(),
 				DebugUtils.mapFields(fields), DebugUtils.mapLocals(localVariables),
-				compileStackInfo(breakpointEvent.thread()),
-				targetApplicationRepresentation.getTargetApplicationElements(), resultOfMethodInvocation);
+				resultOfMethodInvocation,
+				targetApplicationRepresentation.getTargetApplicationElements(), compileStackInfo(breakpointEvent.thread()), resultOfMethodInvocation);
 
 		// ===== Отправляем событие в UI =====
 		simpleDebugEventCollector.collectDebugEvent(dto);
@@ -522,7 +522,7 @@ public class SimpleDebuggerWorkFlow {
 		return true;
 	}
 
-	private String compileStackInfo(ThreadReference threadReference) {
+	private List<MethodCallInStack> compileStackInfo(ThreadReference threadReference) {
 		List<StackFrame> frames = Collections.emptyList();
 		List<MethodCallInStack> calls = new ArrayList<>();
 
@@ -530,7 +530,7 @@ public class SimpleDebuggerWorkFlow {
 			frames = threadReference.frames();
 		} catch (IncompatibleThreadStateException e) {
 			e.printStackTrace();
-			return "Cannot get frames: " + e.getMessage();
+			return List.of(new MethodCallInStack("Cannot get frames: " + e.getMessage(), "", ""));
 		}
 
 		for (int i = 0; i < frames.size(); i++) {
@@ -565,13 +565,13 @@ public class SimpleDebuggerWorkFlow {
 			}
 		}
 		Collections.reverse(calls);
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < calls.size(); i++) {
-			MethodCallInStack methodCallInStack = calls.get(i);
-			sb.append(String.format("#%d %s.%s()  at %s%n", i, methodCallInStack.getClassName(),
-					methodCallInStack.getMethodName(), methodCallInStack.getSourceInfo()));
-		}
-		return sb.toString();
+		// StringBuilder sb = new StringBuilder();
+//		for (int i = 0; i < calls.size(); i++) {
+//			MethodCallInStack methodCallInStack = calls.get(i);
+//			sb.append(String.format("#%d %s.%s()  at %s%n", i, methodCallInStack.getClassName(),
+//					methodCallInStack.getMethodName(), methodCallInStack.getSourceInfo()));
+//		}
+		return calls;
 	}
 
 	public static class Factory {
