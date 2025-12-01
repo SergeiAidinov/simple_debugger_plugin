@@ -114,26 +114,37 @@ public class EvaluateTabController {
 	}
 
 	private void updateMethods() {
-		methodCombo.removeAll();
+	    methodCombo.removeAll();
 
-		String className = classCombo.getText();
-		if (className == null)
-			return;
+	    String className = classCombo.getText();
+	    if (className == null)
+	        return;
 
-		TargetApplicationClassOrInterfaceRepresentation clazz = (TargetApplicationClassOrInterfaceRepresentation) classCombo
-				.getData(className);
-		if (clazz == null)
-			return;
+	    TargetApplicationClassOrInterfaceRepresentation clazz =
+	            (TargetApplicationClassOrInterfaceRepresentation) classCombo.getData(className);
+	    if (clazz == null)
+	        return;
 
-		for (TargetApplicationMethodDTO m : clazz.getMethods()) {
-			String display = m.getMethodName() + " : " + m.getReturnType();
-			methodCombo.add(display);
-			methodCombo.setData(display, m);
-		}
+	    for (TargetApplicationMethodDTO m : clazz.getMethods()) {
 
-		if (methodCombo.getItemCount() > 0)
-			methodCombo.select(0);
+	        // Формируем строку вида:
+	        // methodName(type1 name1, type2 name2) : returnType
+
+	        String params = m.getParameters().stream()
+	                .map(p -> p.getType().name() + " " + p.getName())
+	                .reduce((a, b) -> a + ", " + b)
+	                .orElse("");
+
+	        String display = m.getMethodName() + "(" + params + ") : " + m.getReturnType();
+
+	        methodCombo.add(display);
+	        methodCombo.setData(display, m);
+	    }
+
+	    if (methodCombo.getItemCount() > 0)
+	        methodCombo.select(0);
 	}
+
 
 	private void onSelectMethod() {
 	    TargetApplicationMethodDTO selectedMethod = getSelectedMethod();
