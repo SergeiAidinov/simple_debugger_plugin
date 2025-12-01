@@ -17,6 +17,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClas
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.InterfaceType;
@@ -78,22 +79,52 @@ public class TargetApplicationRepresentation {
 			}			
 			
 			
-			Set<TargetApplicationMethodDTO> targetApplicationMethodDTOs = referenceType.allMethods().stream()
-					.filter(m -> !m.isNative())
-					.filter(m -> !Objects.equals("<init>", m.name()))
-			        .map(m -> {
-						try {
-							return new TargetApplicationMethodDTO(
-							        m.name(),
-							        m.returnType().toString()
-							);
-						} catch (ClassNotLoadedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						return null;
-					})
-			        .collect(Collectors.toCollection(TreeSet::new)); // сразу сортируем по compareTo
+			Set<TargetApplicationMethodDTO> targetApplicationMethodDTOs =
+			        referenceType.allMethods().stream()
+			                .filter(m -> !m.isNative())
+			                .filter(m -> !Objects.equals("<init>", m.name()))
+			                .map(m -> {
+			                    try {
+			                        // типы аргументов
+			                        List<com.sun.jdi.Type> argTypes = m.argumentTypes();
+
+			                        // имена аргументов (может быть пустым списком!)
+			                        List<com.sun.jdi.LocalVariable> argVars;
+			                        try {
+			                            argVars = m.arguments();
+			                        } catch (Exception e) {
+			                            argVars = List.of(); // если дебаг-инфы нет
+			                        }
+
+			                        List<TargetApplicationMethodParameterDTO> params = new ArrayList<>();
+
+			                        for (int i = 0; i < argTypes.size(); i++) {
+			                            com.sun.jdi.Type t = argTypes.get(i);
+
+			                            String name;
+			                            if (i < argVars.size()) {
+			                                name = argVars.get(i).name();
+			                            } else {
+			                                name = "arg" + i; // fallback
+			                            }
+
+			                            params.add(new TargetApplicationMethodParameterDTO(name, t));
+			                        }
+
+			                        return new TargetApplicationMethodDTO(
+			                                m.name(),
+			                                m.returnType().toString(),
+			                                params
+			                        );
+
+			                    } catch (ClassNotLoadedException e) {
+			                        e.printStackTrace();
+			                        return null;
+			                    }
+			                })
+			                .filter(Objects::nonNull)
+			                .collect(Collectors.toCollection(TreeSet::new));
+
 
 			targetApplicationElementTypeOptional.ifPresent(type -> referencesAtClassesAndInterfaces.put(referenceType,
 					new TargetApplicationClassOrInterfaceRepresentation(referenceType.name(), type,

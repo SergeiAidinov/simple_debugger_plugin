@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -357,8 +358,32 @@ public class SimpleDebuggerWorkFlow {
 
 	private void invokeMethod(InvokeMethodEvent invokeMethodEvent) {
 		resultOfMethodInvocation = invokeMethodEvent.toString();
+		// List<Value> values = parseArguments(invokeMethodEvent.getArgumentsText(), null, null);
 		
 	}
+	
+	private List<Value> parseArguments(String argsText, List<Type> paramTypes, VirtualMachine vm) throws Exception {
+	    List<Value> args = new ArrayList<>();
+	    if (argsText == null || argsText.isBlank()) return args;
+
+	    String[] splitArgs = argsText.split(","); // простая разбивка, можно усложнить для строк с запятыми
+	    if (splitArgs.length != paramTypes.size())
+	        throw new IllegalArgumentException("Количество аргументов не совпадает с параметрами метода");
+
+	    for (int i = 0; i < paramTypes.size(); i++) {
+	        Type type = paramTypes.get(i);
+	        String argStr = splitArgs[i].trim();
+
+	        if (type.name().equals("int")) {
+	            args.add(vm.mirrorOf(Integer.parseInt(argStr)));
+	        } else if (type.name().equals("java.lang.String")) {
+	            args.add(vm.mirrorOf(argStr.substring(1, argStr.length() - 1))); // убираем кавычки
+	        } 
+	        // добавить другие типы по необходимости
+	    }
+	    return args;
+	}
+
 
 	private void updateField(UserChangedFieldDTO dto, StackFrame frame) {
 		try {

@@ -8,9 +8,12 @@ import org.eclipse.swt.widgets.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
+import com.sun.jdi.Type;
+import java.util.List;
 
 public class EvaluateTabController {
 
@@ -133,15 +136,27 @@ public class EvaluateTabController {
 	}
 
 	private void onSelectMethod() {
-		TargetApplicationMethodDTO selectedMethod = getSelectedMethod();
-		if (selectedMethod == null)
-			return;
+	    TargetApplicationMethodDTO selectedMethod = getSelectedMethod();
+	    if (selectedMethod == null) return;
 
-		// Перенос метода в поле Arguments в виде: methodName()
-		String template = selectedMethod.getMethodName() + "()";
-		methodInput.setText(template);
-		methodInput.setSelection(selectedMethod.getMethodName().length() + 1); // курсор внутри скобок
-		methodInput.setFocus();
+	    StringBuilder sb = new StringBuilder();
+	    sb.append(selectedMethod.getMethodName()).append("(");
+
+	    List<TargetApplicationMethodParameterDTO> params = selectedMethod.getParameters();
+	    for (int i = 0; i < params.size(); i++) {
+	        TargetApplicationMethodParameterDTO p = params.get(i);
+	        sb.append(p.getName()).append(": ").append(p.getType().name());
+	        if (i < params.size() - 1) sb.append(", ");
+	    }
+
+	    sb.append(")");
+
+	    methodInput.setText(sb.toString());
+
+	    // курсор ставим в первый аргумент
+	    int cursorPos = selectedMethod.getMethodName().length() + 1;
+	    methodInput.setSelection(cursorPos);
+	    methodInput.setFocus();
 	}
 
 	private void onInvokeMethod() {
