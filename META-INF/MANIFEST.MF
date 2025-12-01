@@ -10,5 +10,7 @@ Require-Bundle:
  org.eclipse.debug.core,
  org.eclipse.debug.ui,
  org.eclipse.jface.text,
- org.eclipse.jdt.core
+ org.eclipse.jdt.core,
+ org.eclipse.jface,
+ org.eclipse.jdt.launching;bundle-version="3.20.0"
 Bundle-Version: 1.0.0
