@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.utils;
 
 import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -18,10 +19,25 @@ import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.PrimitiveType;
 import com.sun.jdi.ReferenceType;
+import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
+import java.util.Collections;
+import java.util.List;
+
+import org.eclipse.swt.widgets.Text;
+
+import com.sun.jdi.AbsentInformationException;
+import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.Location;
+import com.sun.jdi.StackFrame;
+import com.sun.jdi.ThreadReference;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeItem;
+
+
 
 /**
  * Вспомогательный класс-заглушка для локальных переменных
@@ -366,6 +382,59 @@ public class DebugUtils {
                 return obj;
         }
     }
+    
+    public static void displayStackInText(ThreadReference threadReference, Text stackText) {
+        List<StackFrame> frames;
+
+        try {
+            frames = threadReference.frames();
+        } catch (IncompatibleThreadStateException e) {
+            e.printStackTrace();
+            stackText.setText("Cannot get stack frames: " + e.getMessage());
+            return;
+        }
+
+        // Переворачиваем стек, чтобы main был внизу
+        Collections.reverse(frames);
+
+        StringBuilder sb = new StringBuilder();
+        int depth = 0;
+        for (StackFrame frame : frames) {
+            if (frame == null) continue;
+            try {
+                Location loc = frame.location();
+                if (loc != null) {
+                    String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
+                    String methodName = loc.method() != null ? loc.method().name() : "unknown";
+                    int lineNumber = loc.lineNumber();
+                    String source;
+                    try {
+                        source = loc.sourceName();
+                    } catch (AbsentInformationException aie) {
+                        source = "Unknown";
+                    }
+
+                    // Добавляем отступы для визуального представления вызова
+                    for (int i = 0; i < depth; i++) sb.append("    ");
+                    sb.append(className)
+                      .append(".")
+                      .append(methodName)
+                      .append("() ")
+                      .append(source)
+                      .append(":")
+                      .append(lineNumber)
+                      .append("\n");
+
+                    depth++;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        stackText.setText(sb.toString());
+    }
+
 }
     
 

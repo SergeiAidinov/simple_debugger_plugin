@@ -90,6 +90,7 @@ public class SimpleDebuggerWorkFlow {
 	private final IBreakpointManager iBreakpointManager;
 	private final BreakpointSubscriberRegistrar breakpointListener;
 	private String resultOfMethodInvocation = "";
+	private String stackDescription = "";
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
@@ -180,10 +181,6 @@ public class SimpleDebuggerWorkFlow {
 			System.out.println("eventSet.size() " + eventSet.size());
 			outer: for (Event event : eventSet) {
 				if (event instanceof BreakpointEvent breakpointEvent) {
-//					EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
-//							.eventRequestManager();
-//					this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
-//							eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 					Location location = breakpointEvent.location();
 					Display.getDefault().asyncExec(() -> {
 						try {
@@ -198,6 +195,7 @@ public class SimpleDebuggerWorkFlow {
 					});
 					targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
 							targetVirtualMachineRepresentation.getVirtualMachine());
+					//stackDescription = compileStackInfo(breakpointEvent.thread());
 					refreshUserInterface(breakpointEvent);
 					StackFrame frame = null;
 					try {
@@ -513,7 +511,7 @@ public class SimpleDebuggerWorkFlow {
 		// ===== Преобразуем в UI-friendly DTO =====
 		SimpleDebugEventDTO dto = new SimpleDebugEventDTO(SimpleDebugEventType.REFRESH_DATA,
 				location.declaringType().name(), location.method().name(), location.lineNumber(),
-				DebugUtils.mapFields(fields), DebugUtils.mapLocals(localVariables), compileStackInfo(threadReference),
+				DebugUtils.mapFields(fields), DebugUtils.mapLocals(localVariables), compileStackInfo(breakpointEvent.thread()),
 				targetApplicationRepresentation.getTargetApplicationElements(), resultOfMethodInvocation);
 
 		// ===== Отправляем событие в UI =====
@@ -523,40 +521,50 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private String compileStackInfo(ThreadReference threadReference) {
-		String classAndMethod = "Unknown";
-		String sourceAndLine = "Unknown";
-		List<StackFrame> frames = Collections.EMPTY_LIST;
-		try {
-			frames = threadReference.frames();
-		} catch (IncompatibleThreadStateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		for (StackFrame frame : frames) {
-			if (frame == null)
-				continue;
-			try {
-				Location loc = frame.location();
-				if (loc != null) {
-					String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
-					String method = loc.method() != null ? loc.method().name() : "unknown";
-					int line = loc.lineNumber();
-					classAndMethod = className + "." + method + "()";
-					try {
-						String src = loc.sourceName();
-						sourceAndLine = src + ":" + line;
-					} catch (AbsentInformationException aie) {
-						sourceAndLine = "Unknown:" + line;
-					}
-				}
-			} catch (Exception e) {
-				// защищаемся от возможных исключений JDI
-				e.printStackTrace();
-			}
+	    List<StackFrame> frames = Collections.emptyList();
+	    StringBuilder sb = new StringBuilder();
 
-		}
-		return classAndMethod + " " + sourceAndLine;
+	    try {
+	        frames = threadReference.frames();
+	    } catch (IncompatibleThreadStateException e) {
+	        e.printStackTrace();
+	        return "Cannot get frames: " + e.getMessage();
+	    }
+
+	    for (int i = 0; i < frames.size(); i++) {
+	        StackFrame frame = frames.get(i);
+	        if (frame == null) continue;
+
+	        try {
+	            Location loc = frame.location();
+	            if (loc != null) {
+	                String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
+	                String methodName = loc.method() != null ? loc.method().name() : "unknown";
+	                int line = loc.lineNumber();
+
+	                String sourceInfo;
+	                try {
+	                    String src = loc.sourceName();
+	                    sourceInfo = src + ":" + line;
+	                } catch (AbsentInformationException aie) {
+	                    sourceInfo = "Unknown:" + line;
+	                }
+
+	                sb.append(String.format("#%d %s.%s()  at %s%n", i, className, methodName, sourceInfo));
+	            }
+	        } catch (Exception e) {
+	            // защищаемся от возможных исключений JDI
+	            e.printStackTrace();
+	            sb.append(String.format("#%d <error retrieving frame>%n", i));
+	        }
+	    }
+
+	    return sb.toString();
 	}
+
+
+
+
 
 	public static class Factory {
 
