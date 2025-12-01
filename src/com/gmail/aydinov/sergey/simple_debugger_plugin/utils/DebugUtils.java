@@ -291,19 +291,19 @@ public class DebugUtils {
      */
     public static List<Value> parseArguments(VirtualMachine vm, InvokeMethodEvent invokeMethodEvent) {
         List<Value> values = new ArrayList<>();
-        String argsText = invokeMethodEvent.getArgumentsText().trim();
-        if (argsText.isEmpty()) return values;
 
-        // Обрезаем имя метода и скобки
+        String argsText = invokeMethodEvent.getArgumentsText().trim();
+
+        // Очищаем скобки, если метод указан как method(arg1, arg2)
         int start = argsText.indexOf('(');
         int end = argsText.lastIndexOf(')');
-        if (start < 0 || end < 0 || end <= start) {
-            throw new IllegalArgumentException("Неверный формат строки аргументов: " + argsText);
+        if (start >= 0 && end > start) {
+            argsText = argsText.substring(start + 1, end).trim();
         }
-        String onlyArgs = argsText.substring(start + 1, end).trim();
-        if (onlyArgs.isEmpty()) return values;
 
-        String[] argStrings = onlyArgs.split("\\s*,\\s*");
+        if (argsText.isEmpty()) return values;
+
+        String[] argStrings = argsText.split("\\s*,\\s*");
         List<TargetApplicationMethodParameterDTO> params = invokeMethodEvent.getMethod().getParameters();
 
         if (argStrings.length != params.size()) {
@@ -312,21 +312,29 @@ public class DebugUtils {
 
         for (int i = 0; i < params.size(); i++) {
             TargetApplicationMethodParameterDTO param = params.get(i);
-            String argStr = argStrings[i];
+            String argStr = argStrings[i].trim();
             String typeName = param.getType().name();
 
+            // Убираем кавычки у строк
+            if ((argStr.startsWith("\"") && argStr.endsWith("\"")) ||
+                (argStr.startsWith("'") && argStr.endsWith("'"))) {
+                argStr = argStr.substring(1, argStr.length() - 1);
+            }
+
             Value value = null;
-			try {
-				value = convertStringToValue(argStr, typeName, vm);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-           if (Objects.nonNull(value)) values.add(value);
+            try {
+                value = convertStringToValue(argStr, typeName, vm);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new IllegalArgumentException("Ошибка конвертации аргумента '" + argStr + "' в тип " + typeName, e);
+            }
+
+            values.add(value);
         }
 
         return values;
     }
+
 
     
     private static Value convertStringToValue(String arg, String typeName, VirtualMachine vm) throws Exception {
