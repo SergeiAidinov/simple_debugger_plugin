@@ -1,37 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin id="com.gmail.aydinov.sergey.simple_debugger_plugin">
 
-    <!-- Старт плагина -->
-    <extension point="org.eclipse.ui.startup">
-        <startup class="com.gmail.aydinov.sergey.simple_debugger_plugin.PluginStarter"/>
-    </extension>
-
-    <!-- Команда открытия окна -->
+    <!-- Команда открытия Simple Debugger -->
     <extension point="org.eclipse.ui.commands">
         <command
-            id="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.commands.openDebugWindow"
-            name="Open Debug Window"/>
+            id="com.gmail.aydinov.sergey.simple_debugger_plugin.commands.simpleDebug"
+            name="Simple Debugger"
+            description="Запуск Simple Debugger"
+            categoryId="org.eclipse.ui.category.debug">
+        </command>
     </extension>
 
     <!-- Хэндлер команды -->
     <extension point="org.eclipse.ui.handlers">
         <handler
-            commandId="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.commands.openDebugWindow"
-            class="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.handlers.OpenDebugWindowHandler">
+            class="com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebugHandler"
+            commandId="com.gmail.aydinov.sergey.simple_debugger_plugin.commands.simpleDebug">
         </handler>
     </extension>
 
-    <!-- Меню -->
+    <!-- Меню: правая кнопка по проекту -->
     <extension point="org.eclipse.ui.menus">
-        <menuContribution locationURI="menu:window?after=additions">
+        <menuContribution locationURI="popup:org.eclipse.jdt.ui.PackageExplorer?after=additions">
             <command
-                commandId="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.commands.openDebugWindow"
-                label="Simple Debug Window"
-                style="push"/>
+                commandId="com.gmail.aydinov.sergey.simple_debugger_plugin.commands.simpleDebug"
+                label="Simple Debugger"
+                style="push">
+            </command>
         </menuContribution>
     </extension>
 
-    <!-- View -->
+    <!-- View окна дебаггера -->
     <extension point="org.eclipse.ui.views">
         <view
             name="Debug Window"
@@ -41,4 +40,5 @@
             id="com.gmail.aydinov.sergey.simple_debugger_plugin.ui.debugWindow">
         </view>
     </extension>
+
 </plugin>

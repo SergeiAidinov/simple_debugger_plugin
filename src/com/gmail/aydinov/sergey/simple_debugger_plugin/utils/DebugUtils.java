@@ -219,26 +219,6 @@ public class DebugUtils {
 		throw new RuntimeException("No suitable constructor found for boxed type: " + clazz.name());
 	}
 	
-//	public static SimpleDebugEventDTO toDTO(SimpleDebugEvent e) {
-//
-//        List<VariableDTO> fields = e.getFields().entrySet().stream()
-//                .map(DebugUtils::mapField)
-//                .collect(Collectors.toList());
-//
-//        List<VariableDTO> locals = e.getLocalVariables().entrySet().stream()
-//                .map(DebugUtils::mapLocal)
-//                .collect(Collectors.toList());
-//
-//        return new SimpleDebugEventDTO(
-//                e.getSimpleDebugEventType(),
-//                e.getClassName(),
-//                e.getMethodName(),
-//                e.getLineNumber(),
-//                fields,
-//                locals,
-//                e.getStackDescription()
-//        );
-//    }
 
     private static VariableDTO mapField(Map.Entry<Field, Value> entry) {
         Field f = entry.getKey();
@@ -252,10 +232,6 @@ public class DebugUtils {
         return new VariableDTO(v.name(), v.typeName(), valueToString(val));
     }
 
-//    private static String valueToString(Value v) {
-//        return v == null ? "null" : v.toString();
-//    }
-    
     /**
      * Преобразует Map<Field, Value> в List<VariableDTO>
      */
@@ -381,58 +357,6 @@ public class DebugUtils {
                 ObjectReference obj = classType.newInstance(vm.allThreads().get(0), constructor, List.of(), ClassType.INVOKE_SINGLE_THREADED);
                 return obj;
         }
-    }
-    
-    public static void displayStackInText(ThreadReference threadReference, Text stackText) {
-        List<StackFrame> frames;
-
-        try {
-            frames = threadReference.frames();
-        } catch (IncompatibleThreadStateException e) {
-            e.printStackTrace();
-            stackText.setText("Cannot get stack frames: " + e.getMessage());
-            return;
-        }
-
-        // Переворачиваем стек, чтобы main был внизу
-        Collections.reverse(frames);
-
-        StringBuilder sb = new StringBuilder();
-        int depth = 0;
-        for (StackFrame frame : frames) {
-            if (frame == null) continue;
-            try {
-                Location loc = frame.location();
-                if (loc != null) {
-                    String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
-                    String methodName = loc.method() != null ? loc.method().name() : "unknown";
-                    int lineNumber = loc.lineNumber();
-                    String source;
-                    try {
-                        source = loc.sourceName();
-                    } catch (AbsentInformationException aie) {
-                        source = "Unknown";
-                    }
-
-                    // Добавляем отступы для визуального представления вызова
-                    for (int i = 0; i < depth; i++) sb.append("    ");
-                    sb.append(className)
-                      .append(".")
-                      .append(methodName)
-                      .append("() ")
-                      .append(source)
-                      .append(":")
-                      .append(lineNumber)
-                      .append("\n");
-
-                    depth++;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        stackText.setText(sb.toString());
     }
 
 }
