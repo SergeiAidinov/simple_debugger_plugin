@@ -140,10 +140,12 @@ public class EvaluateTabController {
 	            TargetApplicationMethodParameterDTO p = params.get(i);
 	            display.append(p.getName())
 	                   .append(": ")
-	                   .append(sanitizeTypeName(p.getType().name()));
+	                   .append(cleanTypeName(p.getType().name()));
 	            if (i < params.size() - 1) display.append(", ");
 	        }
-	        display.append(") : ").append(sanitizeTypeName(m.getReturnType()));
+
+	        display.append(") : ")
+	               .append(cleanTypeName(m.getReturnType()));
 
 	        String displayStr = display.toString();
 	        methodCombo.add(displayStr);
@@ -153,6 +155,12 @@ public class EvaluateTabController {
 	    if (methodCombo.getItemCount() > 0)
 	        methodCombo.select(0);
 	}
+
+	private String cleanTypeName(String typeName) {
+	    if (typeName == null) return "";
+	    return typeName.replace(" (no class loader)", "");
+	}
+
 
 
 
