@@ -273,9 +273,10 @@ public class SimpleDebuggerWorkFlow {
 
 	private void handleUiLoop(BreakpointEvent breakpointEvent, StackFrame initialFrame) {
 	    while (running) {
+	        if (!running) break; // дополнительная страховка
+
 	        UIEvent uiEvent = null;
 	        try {
-	            // Ждём событие максимум 500 миллисекунд
 	            uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent(500, TimeUnit.MILLISECONDS);
 	        } catch (InterruptedException e) {
 	            Thread.currentThread().interrupt();
@@ -283,15 +284,11 @@ public class SimpleDebuggerWorkFlow {
 	            return;
 	        }
 
-	        if (uiEvent == null) {
-	            // События нет, проверяем состояние running и продолжаем цикл
-	            continue;
-	        }
+	        if (uiEvent == null) continue; // таймаут, идём на следующую итерацию
 
 	        System.out.println("Handling UI event: " + uiEvent);
 
 	        if (uiEvent instanceof UserPressedResumeUiEvent) {
-	            // Пользователь нажал Resume, выходим из цикла
 	            break;
 	        }
 
@@ -310,7 +307,6 @@ public class SimpleDebuggerWorkFlow {
 	        refreshUserInterface(breakpointEvent);
 	    }
 	}
-
 	
 	private void detachDebuggerSafe() {
 	    try {

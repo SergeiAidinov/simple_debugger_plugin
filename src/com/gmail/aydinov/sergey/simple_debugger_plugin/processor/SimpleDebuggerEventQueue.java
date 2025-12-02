@@ -30,12 +30,6 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
 		uIEventQueue.offer(event); 
 	}
 
-	// Получить событие для обработки (Worker поток)
-	@Override
-	public UIEvent takeUiEvent() throws InterruptedException {
-		return uIEventQueue.take(); 
-	}
-
 	@Override
 	public void collectDebugEvent(SimpleDebugEventDTO event) {
 		debugEventQueue.offer(event); // offer не блокирует
