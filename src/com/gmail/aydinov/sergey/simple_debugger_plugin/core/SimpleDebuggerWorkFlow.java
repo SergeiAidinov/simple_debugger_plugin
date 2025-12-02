@@ -91,10 +91,10 @@ public class SimpleDebuggerWorkFlow {
 	private boolean running = true;
 	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
-	private final IBreakpointManager iBreakpointManager;
-	private final BreakpointSubscriberRegistrar breakpointListener;
+	private final IBreakpointManager iBreakpointManager; // do NOT remove!!!
+	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove!!!
 	private String resultOfMethodInvocation = "";
-	private String stackDescription = "";
+	//private String stackDescription = "";
 	
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
@@ -156,92 +156,145 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	public void debug() {
-		System.out.println("DEBUG");
-		// Открываем окно отладчика в UI thread
-		Display.getDefault().asyncExec(() -> {
-			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-			if (window == null || !window.isOpen()) {
-				window.open();
-			}
-		});
-		
-		// Обновляем breakpoints
+	    System.out.println("DEBUG");
+
+	    openDebugWindow();
+	    refreshBreakpoints();
+
+	    System.out.println("Waiting for events...");
+
+	    while (running) {
+	        System.out.println("Start iteration...");
+
+	        EventSet eventSet = waitForEventSet();
+	        if (eventSet == null) {
+	            continue;
+	        }
+
+	        processEventSet(eventSet);
+
+	        eventSet.resume();
+	        System.out.println("End iteration.\n");
+	    }
+	}
+
+	private void openDebugWindow() {
+	    Display.getDefault().asyncExec(() -> {
+	        DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
+	        if (window == null || !window.isOpen()) {
+	            window.open();
+	        }
+	    });
+	}
+
+	private void refreshBreakpoints() {
 		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
-		System.out.println("Waiting for events...");
+	}
 
-		EventQueue queue;
+	private EventSet waitForEventSet() {
+	    EventQueue queue = targetVirtualMachineRepresentation
+	            .getVirtualMachine()
+	            .eventQueue();
 
-		while (running) {
-			System.out.println("Start iteration...");
-			queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
-			EventSet eventSet = null;
-			try {
-				eventSet = queue.remove(); // блокирующий вызов
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+	    try {
+	        return queue.remove(); // блокирующий вызов
+	    } catch (Exception e) {
+	        return null;
+	    }
+	}
+
+	private void processEventSet(EventSet eventSet) {
+	    System.out.println("eventSet.size() " + eventSet.size());
+
+	    for (Event event : eventSet) {
+
+	        if (event instanceof BreakpointEvent breakpointEvent) {
+	            processBreakpointEvent(breakpointEvent);
+	            continue;
+	        }
+
+	        if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
+	            System.out.println("Target VM stopped");
+	            return;
+	        }
+	    }
+	}
+
+	private void processBreakpointEvent(BreakpointEvent breakpointEvent) {
+	    highlightCurrentLine(breakpointEvent.location());
+
+	    targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+	            targetVirtualMachineRepresentation.getVirtualMachine()
+	    );
+
+	    refreshUserInterface(breakpointEvent);
+
+	    StackFrame frame = getTopFrame(breakpointEvent.thread());
+
+	    handleUiLoop(breakpointEvent, frame);
+	}
+
+	private void highlightCurrentLine(Location location) {
+	    Display.getDefault().asyncExec(() -> {
+	        try {
+	            ITextEditor editor = openEditorForLocation(location);
+	            if (editor != null) {
+	                int line = location.lineNumber() - 1;
+	                new CurrentLineHighlighter().highlight(editor, line);
+	            }
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+	    });
+	}
+
+	private StackFrame getTopFrame(ThreadReference thread) {
+	    try {
+	        return thread.frame(0);
+	    } catch (IncompatibleThreadStateException e) {
+	        e.printStackTrace();
+	        return null;
+	    }
+	}
+
+	private void handleUiLoop(BreakpointEvent breakpointEvent, StackFrame initialFrame) {
+
+	    while (running) {
+
+	        UIEvent uiEvent = takeUiEvent();
+	        if (uiEvent == null) {
+	            continue;
+	        }
+
+	        System.out.println("handling: " + uiEvent);
+
+	        if (uiEvent instanceof UserPressedResumeUiEvent) {
+	            break;
+	        }
+
+	        StackFrame frame = getTopFrame(breakpointEvent.thread());
+
+	        handleSingleUiEvent(uiEvent, frame);
+	        try {
+	        targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+	                targetVirtualMachineRepresentation.getVirtualMachine()
+	        );
+	        } catch (Exception e) {
+				System.out.println("Target Virtual Machine is unavailable");
+				return;
 			}
 
-			if (eventSet == null)
-				continue;
-			System.out.println("eventSet.size() " + eventSet.size());
-			outer: for (Event event : eventSet) {
-				if (event instanceof BreakpointEvent breakpointEvent) {
-					Location location = breakpointEvent.location();
-					Display.getDefault().asyncExec(() -> {
-						try {
-							ITextEditor editor1 = openEditorForLocation(location);
-							if (editor1 != null) {
-								int line = location.lineNumber() - 1;
-								new CurrentLineHighlighter().highlight(editor1, line);
-							}
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					});
-					targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
-							targetVirtualMachineRepresentation.getVirtualMachine());
-					// stackDescription = compileStackInfo(breakpointEvent.thread());
-					refreshUserInterface(breakpointEvent);
-					StackFrame frame = null;
-					try {
-						frame = breakpointEvent.thread().frame(0);
-					} catch (IncompatibleThreadStateException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+	        refreshUserInterface(breakpointEvent);
+	    }
+	}
 
-					while (running) {
-						UIEvent uiEvent = null;
-						try {
-							uiEvent = SimpleDebuggerEventQueue.instance().takeUiEvent();
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-						System.out.println("handling: " + uiEvent);
-
-						if (uiEvent instanceof UserPressedResumeUiEvent) {
-							break outer;
-						}
-						StackFrame farme = null;
-						try {
-							farme = breakpointEvent.thread().frame(0);
-						} catch (IncompatibleThreadStateException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						handleEvent(uiEvent, farme);
-						targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
-								targetVirtualMachineRepresentation.getVirtualMachine());
-						refreshUserInterface(breakpointEvent);
-					}
-				} else if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
-					System.out.println("Target VM stopped");
-					return;
-				}
-			}
-			eventSet.resume();
-			System.out.println("End iteration. \n");
-		}
+	private UIEvent takeUiEvent() {
+	    try {
+	        return SimpleDebuggerEventQueue.instance().takeUiEvent();
+	    } catch (InterruptedException e) {
+	        e.printStackTrace();
+	        return null;
+	    }
 	}
 
 	public ITextEditor openEditorForLocation(Location location) {
@@ -333,7 +386,7 @@ public class SimpleDebuggerWorkFlow {
 		return null;
 	}
 
-	private void handleEvent(UIEvent uIevent, StackFrame farme) {
+	private void handleSingleUiEvent(UIEvent uIevent, StackFrame farme) {
 
 		if (uIevent instanceof UserClosedWindowUiEvent) {
 			System.out.println("EXIT!!!");
@@ -574,12 +627,6 @@ public class SimpleDebuggerWorkFlow {
 			}
 		}
 		Collections.reverse(calls);
-		// StringBuilder sb = new StringBuilder();
-//		for (int i = 0; i < calls.size(); i++) {
-//			MethodCallInStack methodCallInStack = calls.get(i);
-//			sb.append(String.format("#%d %s.%s()  at %s%n", i, methodCallInStack.getClassName(),
-//					methodCallInStack.getMethodName(), methodCallInStack.getSourceInfo()));
-//		}
 		return calls;
 	}
 
