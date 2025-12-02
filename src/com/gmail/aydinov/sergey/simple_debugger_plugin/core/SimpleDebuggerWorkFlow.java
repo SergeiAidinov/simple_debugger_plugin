@@ -87,12 +87,12 @@ public class SimpleDebuggerWorkFlow {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private TargetApplicationRepresentation targetApplicationRepresentation;
-	private boolean running = true;
 	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
 	private final IBreakpointManager iBreakpointManager; // do NOT remove!!!
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove!!!
-	private String resultOfMethodInvocation = "";
+	private volatile boolean running = true;
+	private final java.util.concurrent.atomic.AtomicReference<String> resultOfMethodInvocation = new java.util.concurrent.atomic.AtomicReference<>("");
 	
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
@@ -165,10 +165,10 @@ public class SimpleDebuggerWorkFlow {
 	            continue;
 	        }
 	        processEventSet(eventSet);
-	        eventSet.resume();
 	        System.out.println("End iteration.\n");
 	    }
 	}
+
 
 	private void openDebugWindow() {
 	    Display.getDefault().asyncExec(() -> {
@@ -184,26 +184,42 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private EventSet waitForEventSet() {
-	    EventQueue queue = targetVirtualMachineRepresentation
-	            .getVirtualMachine()
-	            .eventQueue();
+	    EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
 	    try {
-	        return queue.remove(); // блокирующий вызов
+	        return queue.remove(); // blocking
+	    } catch (InterruptedException ie) {
+	        // восстановим флаг прерывания и вернём null
+	        Thread.currentThread().interrupt();
+	        System.err.println("Event waiting interrupted");
+	        return null;
 	    } catch (Exception e) {
+	        // неожиданные исключения стоит логировать
+	        e.printStackTrace();
 	        return null;
 	    }
 	}
 
 	private void processEventSet(EventSet eventSet) {
 	    System.out.println("eventSet.size() " + eventSet.size());
-	    for (Event event : eventSet) {
-	        if (event instanceof BreakpointEvent breakpointEvent) {
-	            processBreakpointEvent(breakpointEvent);
-	            continue;
+	    try {
+	        for (Event event : eventSet) {
+	            if (event instanceof BreakpointEvent breakpointEvent) {
+	                processBreakpointEvent(breakpointEvent);
+	                continue;
+	            }
+	            if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
+	                System.out.println("Target VM stopped");
+	                // здесь можно установить running = false и/или завершить поток
+	                running = false;
+	                return;
+	            }
 	        }
-	        if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
-	            System.out.println("Target VM stopped");
-	            return;
+	    } finally {
+	        try {
+	            eventSet.resume();
+	        } catch (Exception e) {
+	            // логируем, но не кидаем
+	            e.printStackTrace();
 	        }
 	    }
 	}
@@ -403,7 +419,7 @@ public class SimpleDebuggerWorkFlow {
 			if (entryOptional.isPresent())
 				refType = entryOptional.get().getKey();
 			if (refType == null) {
-				resultOfMethodInvocation = "Class not found in target VM";
+				resultOfMethodInvocation.set("Class not found in target VM");
 				return;
 			}
 
@@ -432,7 +448,8 @@ public class SimpleDebuggerWorkFlow {
 							ClassType.INVOKE_SINGLE_THREADED);
 					System.out.println(result);
 				}
-				resultOfMethodInvocation = result != null ? result.toString() : "null";
+				resultOfMethodInvocation.set(String.valueOf(result));
+
 			}
 
 			// Выводим результат
@@ -440,7 +457,7 @@ public class SimpleDebuggerWorkFlow {
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			resultOfMethodInvocation = e.getMessage();
+			resultOfMethodInvocation.set(e.getMessage());
 		}
 	}
 
@@ -543,11 +560,18 @@ public class SimpleDebuggerWorkFlow {
 		}
 
 		// ===== Преобразуем в UI-friendly DTO =====
-		SimpleDebugEventDTO dto = new SimpleDebugEventDTO(SimpleDebugEventType.REFRESH_DATA,
-				location.declaringType().name(), location.method().name(), location.lineNumber(),
-				DebugUtils.mapFields(fields), DebugUtils.mapLocals(localVariables), resultOfMethodInvocation,
-				targetApplicationRepresentation.getTargetApplicationElements(),
-				compileStackInfo(breakpointEvent.thread()), resultOfMethodInvocation);
+		SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder()
+		        .type(SimpleDebugEventType.REFRESH_DATA)
+		        .className(location.declaringType().name())
+		        .methodName(location.method().name())
+		        .lineNumber(location.lineNumber())
+		        .fields(DebugUtils.mapFields(fields))
+		        .locals(DebugUtils.mapLocals(localVariables))
+		        .stackTrace( resultOfMethodInvocation.get())
+		        .targetApplicationElementRepresentationList(targetApplicationRepresentation.getTargetApplicationElements())
+		        .methodCallInStacks(compileStackInfo(breakpointEvent.thread()))
+		        .resultOfMethodInvocation(resultOfMethodInvocation.get().toString())
+		        .build();
 
 		// ===== Отправляем событие в UI =====
 		simpleDebugEventCollector.collectDebugEvent(dto);
