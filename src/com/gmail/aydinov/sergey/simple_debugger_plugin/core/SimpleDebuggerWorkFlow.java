@@ -158,15 +158,29 @@ public class SimpleDebuggerWorkFlow {
 	    openDebugWindow();
 	    refreshBreakpoints();
 	    System.out.println("Waiting for events...");
+
+	    EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
+
 	    while (running) {
-	        System.out.println("Start iteration...");
-	        EventSet eventSet = waitForEventSet();
-	        if (eventSet == null) {
-	            continue;
+	        EventSet eventSet = null;
+	        try {
+	            // ждем событие максимум 500 мс
+	            eventSet = queue.remove(500);
+	        } catch (InterruptedException ie) {
+	            Thread.currentThread().interrupt();
+	            System.err.println("Event waiting interrupted");
+	        } catch (Exception e) {
+	            e.printStackTrace();
 	        }
-	        processEventSet(eventSet);
-	        System.out.println("End iteration.\n");
+
+	        if (!running) break; // проверка флага после таймаута или прерывания
+	        if (eventSet != null) {
+	            processEventSet(eventSet);
+	        }
 	    }
+
+	    // поток завершается, отсоединяемся
+	    detachDebuggerSafe();
 	}
 
 
@@ -259,34 +273,50 @@ public class SimpleDebuggerWorkFlow {
 
 	private void handleUiLoop(BreakpointEvent breakpointEvent, StackFrame initialFrame) {
 	    while (running) {
-	        UIEvent uiEvent = takeUiEvent();
+	        UIEvent uiEvent = null;
+	        try {
+	            // Ждём событие максимум 500 миллисекунд
+	            uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent(500, TimeUnit.MILLISECONDS);
+	        } catch (InterruptedException e) {
+	            Thread.currentThread().interrupt();
+	            System.err.println("UI event polling interrupted");
+	            return;
+	        }
+
 	        if (uiEvent == null) {
+	            // События нет, проверяем состояние running и продолжаем цикл
 	            continue;
 	        }
-	        System.out.println("handling: " + uiEvent);
+
+	        System.out.println("Handling UI event: " + uiEvent);
+
 	        if (uiEvent instanceof UserPressedResumeUiEvent) {
+	            // Пользователь нажал Resume, выходим из цикла
 	            break;
 	        }
+
 	        StackFrame frame = getTopFrame(breakpointEvent.thread());
 	        handleSingleUiEvent(uiEvent, frame);
+
 	        try {
-	        targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
-	                targetVirtualMachineRepresentation.getVirtualMachine()
-	        );
+	            targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+	                    targetVirtualMachineRepresentation.getVirtualMachine()
+	            );
 	        } catch (Exception e) {
-				System.out.println("Target Virtual Machine is unavailable");
-				return;
-			}
+	            System.out.println("Target Virtual Machine is unavailable");
+	            return;
+	        }
+
 	        refreshUserInterface(breakpointEvent);
 	    }
 	}
 
-	private UIEvent takeUiEvent() {
+	
+	private void detachDebuggerSafe() {
 	    try {
-	        return SimpleDebuggerEventQueue.instance().takeUiEvent();
-	    } catch (InterruptedException e) {
-	        e.printStackTrace();
-	        return null;
+	        targetApplicationRepresentation.detachDebugger();
+	    } catch (Exception e) {
+	        System.err.println("Error detaching debugger: " + e.getMessage());
 	    }
 	}
 

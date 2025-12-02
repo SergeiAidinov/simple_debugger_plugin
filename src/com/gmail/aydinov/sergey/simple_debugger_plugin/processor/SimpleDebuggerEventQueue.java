@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
@@ -45,4 +46,8 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
 	public SimpleDebugEventDTO takeDebugEvent() throws InterruptedException {
 		return debugEventQueue.take(); // блокируется, пока нет событий
 	}
+	
+	public UIEvent pollUiEvent(long timeout, TimeUnit unit) throws InterruptedException {
+        return uIEventQueue.poll(timeout, unit);
+    }
 }
