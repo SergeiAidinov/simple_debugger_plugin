@@ -180,7 +180,7 @@ public class SimpleDebuggerWorkFlow {
 	    }
 
 	    // поток завершается, отсоединяемся
-	    detachDebuggerSafe();
+	    detachDebuggerIfAttached();
 	}
 
 
@@ -195,22 +195,6 @@ public class SimpleDebuggerWorkFlow {
 
 	private void refreshBreakpoints() {
 		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
-	}
-
-	private EventSet waitForEventSet() {
-	    EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
-	    try {
-	        return queue.remove(); // blocking
-	    } catch (InterruptedException ie) {
-	        // восстановим флаг прерывания и вернём null
-	        Thread.currentThread().interrupt();
-	        System.err.println("Event waiting interrupted");
-	        return null;
-	    } catch (Exception e) {
-	        // неожиданные исключения стоит логировать
-	        e.printStackTrace();
-	        return null;
-	    }
 	}
 
 	private void processEventSet(EventSet eventSet) {
@@ -273,25 +257,32 @@ public class SimpleDebuggerWorkFlow {
 
 	private void handleUiLoop(BreakpointEvent breakpointEvent, StackFrame initialFrame) {
 	    while (running) {
-	        if (!running) break; // дополнительная страховка
-
 	        UIEvent uiEvent = null;
 	        try {
+	            // Ожидаем событие от UI, максимум 500 мс
 	            uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent(500, TimeUnit.MILLISECONDS);
 	        } catch (InterruptedException e) {
 	            Thread.currentThread().interrupt();
 	            System.err.println("UI event polling interrupted");
-	            return;
+	            break; // выходим из цикла
 	        }
 
-	        if (uiEvent == null) continue; // таймаут, идём на следующую итерацию
+	        if (uiEvent == null) {
+	            continue; // таймаут, проверяем флаг running на следующей итерации
+	        }
 
 	        System.out.println("Handling UI event: " + uiEvent);
 
 	        if (uiEvent instanceof UserPressedResumeUiEvent) {
-	            break;
+	            break; // продолжаем выполнение таргет-приложения
 	        }
 
+	        if (uiEvent instanceof UserClosedWindowUiEvent) {
+	            handleUserClosedWindowEvent();
+	            break; // завершаем цикл
+	        }
+
+	        // Для остальных событий обновляем переменные/поля/методы
 	        StackFrame frame = getTopFrame(breakpointEvent.thread());
 	        handleSingleUiEvent(uiEvent, frame);
 
@@ -301,20 +292,37 @@ public class SimpleDebuggerWorkFlow {
 	            );
 	        } catch (Exception e) {
 	            System.out.println("Target Virtual Machine is unavailable");
-	            return;
+	            break;
 	        }
 
 	        refreshUserInterface(breakpointEvent);
 	    }
 	}
-	
-	private void detachDebuggerSafe() {
+
+	private void handleUserClosedWindowEvent() {
+	    System.out.println("User closed debug window. Exiting debug loop.");
+	    running = false;
 	    try {
 	        targetApplicationRepresentation.detachDebugger();
 	    } catch (Exception e) {
-	        System.err.println("Error detaching debugger: " + e.getMessage());
+	        System.err.println("Error detaching debugger on window close: " + e.getMessage());
 	    }
 	}
+
+	
+	private void detachDebuggerIfAttached() {
+	    if (targetApplicationRepresentation != null) {
+	        try {
+	            targetApplicationRepresentation.detachDebugger();
+	            System.out.println("Debugger detached successfully.");
+	        } catch (Exception e) {
+	            System.err.println("Error detaching debugger: " + e.getMessage());
+	        }
+	    } else {
+	        System.out.println("No debugger attached to detach.");
+	    }
+	}
+
 
 	public ITextEditor openEditorForLocation(Location location) {
 		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
@@ -402,9 +410,11 @@ public class SimpleDebuggerWorkFlow {
 	private void handleSingleUiEvent(UIEvent uIevent, StackFrame farme) {
 
 		if (uIevent instanceof UserClosedWindowUiEvent) {
-			System.out.println("EXIT!!!");
-			targetApplicationRepresentation.detachDebugger();
+		    System.out.println("EXIT!!!");
+		    targetApplicationRepresentation.detachDebugger();
+		    running = false; // прерываем главный цикл
 		}
+
 
 		if (uIevent instanceof UserChangedVariableDTO) {
 			UserChangedVariableDTO userChangedVariableDto = (UserChangedVariableDTO) uIevent;
