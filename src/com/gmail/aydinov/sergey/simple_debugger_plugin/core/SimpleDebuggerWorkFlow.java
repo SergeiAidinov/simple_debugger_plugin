@@ -26,7 +26,6 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.jdt.core.dom.ThisExpression;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
@@ -94,7 +93,6 @@ public class SimpleDebuggerWorkFlow {
 	private final IBreakpointManager iBreakpointManager; // do NOT remove!!!
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove!!!
 	private String resultOfMethodInvocation = "";
-	//private String stackDescription = "";
 	
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
@@ -157,22 +155,16 @@ public class SimpleDebuggerWorkFlow {
 
 	public void debug() {
 	    System.out.println("DEBUG");
-
 	    openDebugWindow();
 	    refreshBreakpoints();
-
 	    System.out.println("Waiting for events...");
-
 	    while (running) {
 	        System.out.println("Start iteration...");
-
 	        EventSet eventSet = waitForEventSet();
 	        if (eventSet == null) {
 	            continue;
 	        }
-
 	        processEventSet(eventSet);
-
 	        eventSet.resume();
 	        System.out.println("End iteration.\n");
 	    }
@@ -195,7 +187,6 @@ public class SimpleDebuggerWorkFlow {
 	    EventQueue queue = targetVirtualMachineRepresentation
 	            .getVirtualMachine()
 	            .eventQueue();
-
 	    try {
 	        return queue.remove(); // блокирующий вызов
 	    } catch (Exception e) {
@@ -205,14 +196,11 @@ public class SimpleDebuggerWorkFlow {
 
 	private void processEventSet(EventSet eventSet) {
 	    System.out.println("eventSet.size() " + eventSet.size());
-
 	    for (Event event : eventSet) {
-
 	        if (event instanceof BreakpointEvent breakpointEvent) {
 	            processBreakpointEvent(breakpointEvent);
 	            continue;
 	        }
-
 	        if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
 	            System.out.println("Target VM stopped");
 	            return;
@@ -222,15 +210,11 @@ public class SimpleDebuggerWorkFlow {
 
 	private void processBreakpointEvent(BreakpointEvent breakpointEvent) {
 	    highlightCurrentLine(breakpointEvent.location());
-
 	    targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
 	            targetVirtualMachineRepresentation.getVirtualMachine()
 	    );
-
 	    refreshUserInterface(breakpointEvent);
-
 	    StackFrame frame = getTopFrame(breakpointEvent.thread());
-
 	    handleUiLoop(breakpointEvent, frame);
 	}
 
@@ -258,22 +242,16 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private void handleUiLoop(BreakpointEvent breakpointEvent, StackFrame initialFrame) {
-
 	    while (running) {
-
 	        UIEvent uiEvent = takeUiEvent();
 	        if (uiEvent == null) {
 	            continue;
 	        }
-
 	        System.out.println("handling: " + uiEvent);
-
 	        if (uiEvent instanceof UserPressedResumeUiEvent) {
 	            break;
 	        }
-
 	        StackFrame frame = getTopFrame(breakpointEvent.thread());
-
 	        handleSingleUiEvent(uiEvent, frame);
 	        try {
 	        targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
@@ -283,7 +261,6 @@ public class SimpleDebuggerWorkFlow {
 				System.out.println("Target Virtual Machine is unavailable");
 				return;
 			}
-
 	        refreshUserInterface(breakpointEvent);
 	    }
 	}
@@ -301,11 +278,9 @@ public class SimpleDebuggerWorkFlow {
 		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		if (window == null)
 			throw new IllegalStateException("Workbench window not ready");
-
 		IWorkbenchPage page = window.getActivePage();
 		if (page == null)
 			throw new IllegalStateException("No active workbench page");
-
 		IFile file = null;
 		try {
 			file = findIFileForLocation(location);
@@ -315,7 +290,6 @@ public class SimpleDebuggerWorkFlow {
 		}
 		if (file == null || !file.exists())
 			throw new IllegalArgumentException("IFile not found for location: " + location);
-
 		IEditorPart part = null;
 		try {
 			part = IDE.openEditor(page, file, true);
@@ -325,7 +299,6 @@ public class SimpleDebuggerWorkFlow {
 		}
 		if (!(part instanceof ITextEditor))
 			throw new IllegalStateException("The editor is not a text editor: " + part);
-
 		return (ITextEditor) part;
 	}
 
@@ -357,7 +330,6 @@ public class SimpleDebuggerWorkFlow {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-
 			IJavaProject javaProject = JavaCore.create(project);
 			IType type = null;
 			try {
@@ -366,7 +338,6 @@ public class SimpleDebuggerWorkFlow {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-
 			if (type != null) {
 				ICompilationUnit unit = type.getCompilationUnit();
 				if (unit != null) {
