@@ -40,6 +40,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.EventLoop;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
@@ -93,7 +94,8 @@ public class SimpleDebuggerWorkFlow {
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove!!!
 	private volatile boolean running = true;
 	private final java.util.concurrent.atomic.AtomicReference<String> resultOfMethodInvocation = new java.util.concurrent.atomic.AtomicReference<>("");
-	
+	private final EventLoop eventLoop;
+
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
@@ -104,8 +106,64 @@ public class SimpleDebuggerWorkFlow {
 		this.breakpointListener = breakpointListener;
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
-
+		this.eventLoop = new JdiEventLoop(
+		        targetVirtualMachineRepresentation.getVirtualMachine(),
+		        this::onBreakpointEvent,
+		        this::onVmStopped
+		);
 	}
+	
+	private void onVmStopped() {
+	    System.out.println("[EventLoop] Target VM stopped.");
+
+	    running = false;
+	    detachDebuggerIfAttached();
+
+	    Display.getDefault().asyncExec(() -> {
+	        DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
+	        if (window != null) {
+	            window.showVmStoppedMessage();
+	        }
+	    });
+	}
+
+	
+	// Вызывается EventLoop при возникновении BreakpointEvent
+	private void onBreakpointEvent(BreakpointEvent event) {
+	    System.out.println("[EventLoop] Breakpoint hit: " + event);
+
+	    // Обновляем UI — в UI-потоке
+	    Display.getDefault().asyncExec(() -> {
+	        try {
+	            ITextEditor editor = openEditorForLocation(event.location());
+	            if (editor != null) {
+	                int line = event.location().lineNumber() - 1;
+	                new CurrentLineHighlighter().highlight(editor, line);
+	            }
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+	    });
+
+	    // Перегружаем модели данных приложения
+	    targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+	            targetVirtualMachineRepresentation.getVirtualMachine()
+	    );
+
+	    // Обновляем UI окно
+	    refreshUserInterface(event);
+
+	    // Заходим в UI-loop (ожидание Step/Resume)
+	    StackFrame frame = null;
+	    try {
+	        frame = event.thread().frame(0);
+	    } catch (IncompatibleThreadStateException e) {
+	        e.printStackTrace();
+	    }
+
+	    handleUiLoop(event, frame);
+	}
+
 
 	public void updateVariables(UserChangedVariableDTO userChangedVariableDTO, StackFrame frame) {
 		if (userChangedVariableDTO == null || frame == null)
@@ -302,14 +360,9 @@ public class SimpleDebuggerWorkFlow {
 	private void handleUserClosedWindowEvent() {
 	    System.out.println("User closed debug window. Exiting debug loop.");
 	    running = false;
-	    try {
-	        targetApplicationRepresentation.detachDebugger();
-	    } catch (Exception e) {
-	        System.err.println("Error detaching debugger on window close: " + e.getMessage());
-	    }
+	    detachDebuggerIfAttached(); // используем общий метод
 	}
 
-	
 	private void detachDebuggerIfAttached() {
 	    if (targetApplicationRepresentation != null) {
 	        try {
@@ -411,7 +464,7 @@ public class SimpleDebuggerWorkFlow {
 
 		if (uIevent instanceof UserClosedWindowUiEvent) {
 		    System.out.println("EXIT!!!");
-		    targetApplicationRepresentation.detachDebugger();
+		    handleUserClosedWindowEvent();
 		    running = false; // прерываем главный цикл
 		}
 

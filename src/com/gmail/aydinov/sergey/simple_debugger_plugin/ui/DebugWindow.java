@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
@@ -216,5 +217,11 @@ public class DebugWindow {
 	    evalTab.updateFromEvent(simpleDebugEventDTO);
 
 	}
+
+	public void showVmStoppedMessage() {
+	    // Например:
+	    MessageDialog.openInformation(shell, "Debugger", "Target VM stopped.");
+	}
+
 
 }
