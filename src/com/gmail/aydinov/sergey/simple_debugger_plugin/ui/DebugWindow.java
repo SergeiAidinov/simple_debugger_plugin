@@ -1,8 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
-import java.util.Collections;
-import java.util.Map;
-
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
@@ -28,9 +25,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabControl
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldsTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.VariablesTabContent;
-import com.sun.jdi.LocalVariable;
-import com.sun.jdi.ThreadReference;
-import com.sun.jdi.Value;
 
 public class DebugWindow {
 

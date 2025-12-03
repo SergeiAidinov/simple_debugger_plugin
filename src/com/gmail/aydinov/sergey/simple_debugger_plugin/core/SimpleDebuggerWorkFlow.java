@@ -57,7 +57,6 @@ public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	private final IBreakpointManager iBreakpointManager; // do NOT remove!!!
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove!!!
-	// private final EventLoop eventLoop;
 	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 	private volatile boolean running = true;
 	private final AtomicReference<String> resultOfMethodInvocation = new AtomicReference<>("");
@@ -93,11 +92,6 @@ public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 	private void onVmStopped() {
 		running = false;
 		detachDebugger();
-//		Display.getDefault().asyncExec(() -> {
-//			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-//			if (window != null)
-//				window.showVmStoppedMessage();
-//		});
 		targetApplicationStatus = TargetApplicationStatus.STOPPING;
 	}
 
@@ -149,7 +143,7 @@ public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 		EventLoop eventLoop = new JdiEventLoop(targetVirtualMachineRepresentation.getVirtualMachine(), // VirtualMachine
 				this::onBreakpointEvent, // BreakpointEventHandler
 				this::onVmStopped, // VmLifeCycleHandler
-				targetApplicationRepresentation, this);
+				targetApplicationRepresentation);
 		eventLoop.runLoop();
 		refreshBreakpoints();
 	}
