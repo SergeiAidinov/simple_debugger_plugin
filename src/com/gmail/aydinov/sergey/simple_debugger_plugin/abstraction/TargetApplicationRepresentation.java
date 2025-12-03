@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
@@ -24,7 +25,9 @@ import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.InterfaceType;
+import com.sun.jdi.Location;
 import com.sun.jdi.Method;
+import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VirtualMachine;
@@ -252,5 +255,74 @@ public class TargetApplicationRepresentation {
             e.printStackTrace();
         }
     }
+	
+	public IFile findIFileForLocation(Location location) {
+	    if (location == null) return null;
+
+	    ReferenceType refType = location.declaringType();
+	    if (refType == null) return null;
+
+	    try {
+	        // Имя исходного файла, например "MyClass.java"
+	        String sourceName = refType.sourceName();
+
+	        // Пакетный путь, например "com/example/MyClass.java"
+	        String fullPath = refType.name().replace('.', '/') + ".java";
+
+	        // Перебираем все проекты в рабочей области
+	        for (IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
+	            if (!project.isOpen()) continue;
+
+	            // Сначала пробуем найти через полный путь по пакету
+	            IFile file = project.getFile(fullPath);
+	            if (file.exists()) {
+	                return file;
+	            }
+
+	            // Если не нашли, пробуем через просто имя файла
+	            file = project.getFile(sourceName);
+	            if (file.exists()) {
+	                return file;
+	            }
+	        }
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+
+	    return null;
+	}
+	
+
+	public ReferenceType findReferenceTypeForClass(TargetApplicationClassOrInterfaceRepresentation clazz) {
+	    if (clazz == null) return null;
+
+	    String className = clazz.getTargetApplicationElementName();
+
+	    for (Map.Entry<ReferenceType, TargetApplicationElementRepresentation> entry : referencesAtClassesAndInterfaces.entrySet()) {
+	        ReferenceType ref = entry.getKey();
+	        if (ref != null && className.equals(ref.name())) {
+	            return ref;
+	        }
+	    }
+
+	    return null; // не найден
+	}
+	
+	public ObjectReference createObjectInstance(ClassType classType) {
+	    try {
+	        Method constructor = classType.concreteMethodByName("<init>", "()V");
+	        if (constructor == null) 
+	            throw new RuntimeException("No default constructor for " + classType.name());
+	        return classType.newInstance(
+	                virtualMachine.allThreads().get(0),
+	                constructor,
+	                List.of(),
+	                ClassType.INVOKE_SINGLE_THREADED
+	        );
+	    } catch (Exception e) {
+	        throw new RuntimeException("Cannot create instance of " + classType.name(), e);
+	    }
+	}
 
 }

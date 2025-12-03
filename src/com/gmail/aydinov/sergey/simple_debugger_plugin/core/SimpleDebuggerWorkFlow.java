@@ -1,51 +1,29 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
-import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IType;
-import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.EventLoop;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
@@ -63,7 +41,6 @@ import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
-import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -77,27 +54,20 @@ import com.sun.jdi.VirtualMachineManager;
 import com.sun.jdi.connect.AttachingConnector;
 import com.sun.jdi.connect.Connector;
 import com.sun.jdi.event.BreakpointEvent;
-import com.sun.jdi.event.Event;
-import com.sun.jdi.event.EventQueue;
-import com.sun.jdi.event.EventSet;
-import com.sun.jdi.event.VMDeathEvent;
-import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.request.EventRequestManager;
 
 public class SimpleDebuggerWorkFlow {
 
-	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
-	private TargetApplicationRepresentation targetApplicationRepresentation;
-	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
-	public TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.RUNNING;
-	private final IBreakpointManager iBreakpointManager; // do NOT remove!!!
+    private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
+    private final TargetApplicationRepresentation targetApplicationRepresentation;
+    private final IBreakpointManager iBreakpointManager; // do NOT remove!!!
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove!!!
-	private volatile boolean running = true;
-	private final java.util.concurrent.atomic.AtomicReference<String> resultOfMethodInvocation = new java.util.concurrent.atomic.AtomicReference<>("");
-	private final EventLoop eventLoop;
+    private final EventLoop eventLoop;
+    private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
+    private volatile boolean running = true;
+    private final AtomicReference<String> resultOfMethodInvocation = new AtomicReference<>("");
 
-
-	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
+    public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
 		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
 		this.iBreakpointManager = iBreakpointManager;
@@ -112,809 +82,257 @@ public class SimpleDebuggerWorkFlow {
 		        this::onVmStopped
 		);
 	}
-	
-	/** Запускает EventLoop и UI */
+
+    /** Запуск дебага */
     public void debug() {
-        System.out.println("DEBUG");
+    	refreshBreakpoints();
         openDebugWindow();
-        refreshBreakpoints();
-        System.out.println("Starting EventLoop...");
-
-        eventLoop.runLoop();  // весь цикл событий теперь здесь
-
-        detachDebuggerIfAttached(); // после завершения EventLoop
+        targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+        eventLoop.runLoop();
+        detachDebugger();
     }
 
     /** Обработчик остановки VM */
     private void onVmStopped() {
-        System.out.println("[EventLoop] Target VM stopped.");
         running = false;
-        detachDebuggerIfAttached();
-
+        detachDebugger();
         Display.getDefault().asyncExec(() -> {
             DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-            if (window != null) {
-                window.showVmStoppedMessage();
-            }
+            if (window != null) window.showVmStoppedMessage();
         });
     }
 
     /** Обработчик брейкпоинта */
     private void onBreakpointEvent(BreakpointEvent event) {
-        System.out.println("[EventLoop] Breakpoint hit: " + event);
+        highlightLine(event.location());
+        targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+        refreshUI(event);
 
-        // Подсветка строки в UI
-        Display.getDefault().asyncExec(() -> {
-            try {
-                ITextEditor editor = openEditorForLocation(event.location());
-                if (editor != null) {
-                    int line = event.location().lineNumber() - 1;
-                    new CurrentLineHighlighter().highlight(editor, line);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-
-        // Обновляем модели классов
-        targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
-                targetVirtualMachineRepresentation.getVirtualMachine()
-        );
-
-        // Обновляем UI окно
-        refreshUserInterface(event);
-
-        // Запускаем UI-loop ожидания действий пользователя
-        StackFrame frame = null;
-        try {
-            frame = event.thread().frame(0);
-        } catch (IncompatibleThreadStateException e) {
-            e.printStackTrace();
-        }
-
+        StackFrame frame = getTopFrame(event.thread());
         handleUiLoop(event, frame);
     }
 
-    /** UI-loop для событий пользователя на брейкпоинте */
-    private void handleUiLoop(BreakpointEvent breakpointEvent, StackFrame initialFrame) {
+    /** UI-loop на брейкпоинте */
+    private void handleUiLoop(BreakpointEvent event, StackFrame frame) {
         while (running) {
-            UIEvent uiEvent = null;
+            UIEvent uiEvent;
             try {
                 uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent(500, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                System.err.println("UI event polling interrupted");
                 break;
             }
-
             if (uiEvent == null) continue;
 
-            if (uiEvent instanceof UserPressedResumeUiEvent) {
-                break; // продолжаем выполнение приложения
-            }
+            if (uiEvent instanceof UserPressedResumeUiEvent) break;
+            if (uiEvent instanceof UserClosedWindowUiEvent) { handleUserClosedWindow(); break; }
 
-            if (uiEvent instanceof UserClosedWindowUiEvent) {
-                handleUserClosedWindowEvent();
-                break;
-            }
-
-            StackFrame frame = getTopFrame(breakpointEvent.thread());
             handleSingleUiEvent(uiEvent, frame);
-
-            try {
-                targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
-                        targetVirtualMachineRepresentation.getVirtualMachine()
-                );
-            } catch (Exception e) {
-                System.out.println("Target Virtual Machine is unavailable");
-                break;
-            }
-
-            refreshUserInterface(breakpointEvent);
+            targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+            refreshUI(event);
         }
     }
-
-    private void handleUserClosedWindowEvent() {
-        System.out.println("User closed debug window. Exiting debug loop.");
-        running = false;
-        detachDebuggerIfAttached();
-    }
-
-    private void detachDebuggerIfAttached() {
-        if (targetApplicationRepresentation != null) {
-            try {
-                targetApplicationRepresentation.detachDebugger();
-                System.out.println("Debugger detached successfully.");
-            } catch (Exception e) {
-                System.err.println("Error detaching debugger: " + e.getMessage());
-            }
-        }
-    }
-
-    private StackFrame getTopFrame(ThreadReference thread) {
-        try {
-            return thread.frame(0);
-        } catch (IncompatibleThreadStateException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-	
-//	private void onVmStopped() {
-//	    System.out.println("[EventLoop] Target VM stopped.");
-//
-//	    running = false;
-//	    detachDebuggerIfAttached();
-//
-//	    Display.getDefault().asyncExec(() -> {
-//	        DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-//	        if (window != null) {
-//	            window.showVmStoppedMessage();
-//	        }
-//	    });
-//	}
-
-	
-	// Вызывается EventLoop при возникновении BreakpointEvent
-//	private void onBreakpointEvent(BreakpointEvent event) {
-//	    System.out.println("[EventLoop] Breakpoint hit: " + event);
-//
-//	    // Обновляем UI — в UI-потоке
-//	    Display.getDefault().asyncExec(() -> {
-//	        try {
-//	            ITextEditor editor = openEditorForLocation(event.location());
-//	            if (editor != null) {
-//	                int line = event.location().lineNumber() - 1;
-//	                new CurrentLineHighlighter().highlight(editor, line);
-//	            }
-//	        } catch (Exception e) {
-//	            e.printStackTrace();
-//	        }
-//	    });
-//
-//	    // Перегружаем модели данных приложения
-//	    targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
-//	            targetVirtualMachineRepresentation.getVirtualMachine()
-//	    );
-//
-//	    // Обновляем UI окно
-//	    refreshUserInterface(event);
-//
-//	    // Заходим в UI-loop (ожидание Step/Resume)
-//	    StackFrame frame = null;
-//	    try {
-//	        frame = event.thread().frame(0);
-//	    } catch (IncompatibleThreadStateException e) {
-//	        e.printStackTrace();
-//	    }
-//
-//	    handleUiLoop(event, frame);
-//	}
-
-
-	public void updateVariables(UserChangedVariableDTO userChangedVariableDTO, StackFrame frame) {
-		if (userChangedVariableDTO == null || frame == null)
-			return;
-
-		String varName = userChangedVariableDTO.getName();
-		Object newValueObj = userChangedVariableDTO.getNewValue();
-		if (newValueObj == null)
-			return;
-
-		String newValueStr = newValueObj.toString();
-
-		// Находим локальную переменную по имени
-		LocalVariable localVariable = null;
-		try {
-			for (LocalVariable lv : frame.visibleVariables()) {
-				if (lv.name().equals(varName)) {
-					localVariable = lv;
-					break;
-				}
-			}
-		} catch (AbsentInformationException e) {
-			System.err.println("Cannot read local variables info: " + e.getMessage());
-			return;
-		}
-
-		if (localVariable == null) {
-			System.err.println("Local variable not found: " + varName);
-			return;
-		}
-
-		// Создаем JDI Value из строки
-		Value jdiValue = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-				localVariable, newValueStr);
-
-		// Устанавливаем новое значение
-		try {
-			frame.setValue(localVariable, jdiValue);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public List<ReferenceType> getClassesOfTargetApplication() {
-		return targetVirtualMachineRepresentation.getVirtualMachine().allClasses();
-	}
-
-//	public void debug() {
-//	    System.out.println("DEBUG");
-//	    openDebugWindow();
-//	    refreshBreakpoints();
-//	    System.out.println("Starting EventLoop...");
-//
-//	    // Запускаем EventLoop в текущем потоке
-//	    eventLoop.runLoop();
-//
-//	    // После завершения EventLoop
-//	    detachDebuggerIfAttached();
-//	}
-
-
-
-	private void openDebugWindow() {
-	    Display.getDefault().asyncExec(() -> {
-	        DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-	        if (window == null || !window.isOpen()) {
-	            window.open();
-	        }
-	    });
-	}
-
-	private void refreshBreakpoints() {
+    
+    private void refreshBreakpoints() {
 		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
 	}
 
-	private void processEventSet(EventSet eventSet) {
-	    System.out.println("eventSet.size() " + eventSet.size());
-	    try {
-	        for (Event event : eventSet) {
-	            if (event instanceof BreakpointEvent breakpointEvent) {
-	                processBreakpointEvent(breakpointEvent);
-	                continue;
-	            }
-	            if (event instanceof VMDisconnectEvent || event instanceof VMDeathEvent) {
-	                System.out.println("Target VM stopped");
-	                // здесь можно установить running = false и/или завершить поток
-	                running = false;
-	                return;
-	            }
-	        }
-	    } finally {
-	        try {
-	            eventSet.resume();
-	        } catch (Exception e) {
-	            // логируем, но не кидаем
-	            e.printStackTrace();
-	        }
-	    }
-	}
+    private void handleSingleUiEvent(UIEvent event, StackFrame frame) {
+        try {
+            if (event instanceof UserChangedVariableDTO dto) updateVariables(dto, frame);
+            if (event instanceof UserChangedFieldDTO dto) updateField(dto, frame);
+            if (event instanceof InvokeMethodEvent evt) invokeMethod(evt);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-	private void processBreakpointEvent(BreakpointEvent breakpointEvent) {
-	    highlightCurrentLine(breakpointEvent.location());
-	    targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
-	            targetVirtualMachineRepresentation.getVirtualMachine()
-	    );
-	    refreshUserInterface(breakpointEvent);
-	    StackFrame frame = getTopFrame(breakpointEvent.thread());
-	    handleUiLoop(breakpointEvent, frame);
-	}
-
-	private void highlightCurrentLine(Location location) {
-	    Display.getDefault().asyncExec(() -> {
-	        try {
-	            ITextEditor editor = openEditorForLocation(location);
-	            if (editor != null) {
-	                int line = location.lineNumber() - 1;
-	                new CurrentLineHighlighter().highlight(editor, line);
-	            }
-	        } catch (Exception e) {
-	            e.printStackTrace();
-	        }
-	    });
-	}
-
-//	private StackFrame getTopFrame(ThreadReference thread) {
-//	    try {
-//	        return thread.frame(0);
-//	    } catch (IncompatibleThreadStateException e) {
-//	        e.printStackTrace();
-//	        return null;
-//	    }
-//	}
-
-//	private void handleUiLoop(BreakpointEvent breakpointEvent, StackFrame initialFrame) {
-//	    while (running) {
-//	        UIEvent uiEvent = null;
-//	        try {
-//	            // Ожидаем событие от UI, максимум 500 мс
-//	            uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent(500, TimeUnit.MILLISECONDS);
-//	        } catch (InterruptedException e) {
-//	            Thread.currentThread().interrupt();
-//	            System.err.println("UI event polling interrupted");
-//	            break; // выходим из цикла
-//	        }
-//
-//	        if (uiEvent == null) {
-//	            continue; // таймаут, проверяем флаг running на следующей итерации
-//	        }
-//
-//	        System.out.println("Handling UI event: " + uiEvent);
-//
-//	        if (uiEvent instanceof UserPressedResumeUiEvent) {
-//	            break; // продолжаем выполнение таргет-приложения
-//	        }
-//
-//	        if (uiEvent instanceof UserClosedWindowUiEvent) {
-//	            handleUserClosedWindowEvent();
-//	            break; // завершаем цикл
-//	        }
-//
-//	        // Для остальных событий обновляем переменные/поля/методы
-//	        StackFrame frame = getTopFrame(breakpointEvent.thread());
-//	        handleSingleUiEvent(uiEvent, frame);
-//
-//	        try {
-//	            targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
-//	                    targetVirtualMachineRepresentation.getVirtualMachine()
-//	            );
-//	        } catch (Exception e) {
-//	            System.out.println("Target Virtual Machine is unavailable");
-//	            break;
-//	        }
-//
-//	        refreshUserInterface(breakpointEvent);
-//	    }
-//	}
-
-//	private void handleUserClosedWindowEvent() {
-//	    System.out.println("User closed debug window. Exiting debug loop.");
-//	    running = false;
-//	    detachDebuggerIfAttached(); // используем общий метод
-//	}
-
-//	private void detachDebuggerIfAttached() {
-//	    if (targetApplicationRepresentation != null) {
-//	        try {
-//	            targetApplicationRepresentation.detachDebugger();
-//	            System.out.println("Debugger detached successfully.");
-//	        } catch (Exception e) {
-//	            System.err.println("Error detaching debugger: " + e.getMessage());
-//	        }
-//	    } else {
-//	        System.out.println("No debugger attached to detach.");
-//	    }
-//	}
-
-
-	public ITextEditor openEditorForLocation(Location location) {
-		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		if (window == null)
-			throw new IllegalStateException("Workbench window not ready");
-		IWorkbenchPage page = window.getActivePage();
-		if (page == null)
-			throw new IllegalStateException("No active workbench page");
-		IFile file = null;
+    public void updateVariables(UserChangedVariableDTO dto, StackFrame frame) {
+        LocalVariable var = null;
 		try {
-			file = findIFileForLocation(location);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		if (file == null || !file.exists())
-			throw new IllegalArgumentException("IFile not found for location: " + location);
-		IEditorPart part = null;
-		try {
-			part = IDE.openEditor(page, file, true);
-		} catch (PartInitException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		if (!(part instanceof ITextEditor))
-			throw new IllegalStateException("The editor is not a text editor: " + part);
-		return (ITextEditor) part;
-	}
-
-	public IFile findIFileForLocation(Location location) {
-		ReferenceType refType = location.declaringType();
-		if (refType == null)
-			return null;
-
-		// Имя типа в формате JVM => преобразуем в Java вид
-		// было: Lcom/example/MyClass; => com.example.MyClass
-		String jvmName = refType.name();
-		String className = jvmName.replace('/', '.');
-
-		// Удаляем ведущую 'L' и ';', если они есть
-		if (className.startsWith("L") && className.endsWith(";")) {
-			className = className.substring(1, className.length() - 1);
-		}
-
-		// Теперь это нормальное имя класса, ищем по нему IType
-		IWorkspace ws = ResourcesPlugin.getWorkspace();
-		IWorkspaceRoot root = ws.getRoot();
-
-		// Перебираем все Java-проекты
-		for (IProject project : root.getProjects()) {
-			try {
-				if (!project.isOpen() || !project.hasNature(JavaCore.NATURE_ID))
-					continue;
-			} catch (CoreException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			IJavaProject javaProject = JavaCore.create(project);
-			IType type = null;
-			try {
-				type = javaProject.findType(className);
-			} catch (JavaModelException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			if (type != null) {
-				ICompilationUnit unit = type.getCompilationUnit();
-				if (unit != null) {
-					IResource resource = null;
-					try {
-						resource = unit.getUnderlyingResource();
-					} catch (JavaModelException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					if (resource instanceof IFile) {
-						return (IFile) resource;
-					}
-				}
-			}
-		}
-		return null;
-	}
-
-	private void handleSingleUiEvent(UIEvent uIevent, StackFrame farme) {
-
-		if (uIevent instanceof UserClosedWindowUiEvent) {
-		    System.out.println("EXIT!!!");
-		    handleUserClosedWindowEvent();
-		    running = false; // прерываем главный цикл
-		}
-
-
-		if (uIevent instanceof UserChangedVariableDTO) {
-			UserChangedVariableDTO userChangedVariableDto = (UserChangedVariableDTO) uIevent;
-			updateVariables(userChangedVariableDto, farme);
-			System.out.println("PROCESS: " + uIevent);
-			return;
-		}
-
-		if (uIevent instanceof UserChangedFieldDTO) {
-			UserChangedFieldDTO userChangedFieldDto = (UserChangedFieldDTO) uIevent;
-			updateField(userChangedFieldDto, farme);
-			System.out.println("PROCESS: " + uIevent);
-			return;
-		}
-
-		if (uIevent instanceof InvokeMethodEvent) {
-			InvokeMethodEvent invokeMethodEvent = (InvokeMethodEvent) uIevent;
-			invokeMethod(invokeMethodEvent);
-			System.out.println("PROCESS: " + invokeMethodEvent.toString());
-			return;
-		}
-	}
-
-	private void invokeMethod(InvokeMethodEvent invokeMethodEvent) {
-		try {
-			List<Value> values = DebugUtils.parseArguments(targetVirtualMachineRepresentation.getVirtualMachine(),
-					invokeMethodEvent);
-
-			TargetApplicationClassOrInterfaceRepresentation clazz = invokeMethodEvent.getClazz();
-			TargetApplicationMethodDTO methodDTO = invokeMethodEvent.getMethod();
-
-			// Находим ReferenceType в таргет-приложении
-			Optional<Entry<ReferenceType, TargetApplicationElementRepresentation>> entryOptional = targetApplicationRepresentation
-					.getReferencesAtClassesAndInterfaces().entrySet().stream().filter(entry -> entry.getValue()
-							.getTargetApplicationElementName().equals(clazz.getTargetApplicationElementName()))
-					.findAny();
-			ReferenceType refType = null;
-			if (entryOptional.isPresent())
-				refType = entryOptional.get().getKey();
-			if (refType == null) {
-				resultOfMethodInvocation.set("Class not found in target VM");
-				return;
-			}
-
-			// Если метод статический
-			Method method = refType.methodsByName(methodDTO.getMethodName()).get(0);
-
-			List<Value> resultHolder = new ArrayList<>();
-			if (refType instanceof ClassType classType) {
-				ObjectReference instance = null; // Для нестатических методов нужен объект
-				if (!method.isStatic()) {
-					// Можно создать новый объект или использовать уже существующий
-					Method constructor = classType.concreteMethodByName("<init>", "()V");
-					instance = classType.newInstance(
-							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), constructor,
-							List.of(), ClassType.INVOKE_SINGLE_THREADED);
-				}
-				Value result = null;
-				if (instance != null) {
-					result = instance.invokeMethod(
-							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), method, values,
-							ObjectReference.INVOKE_SINGLE_THREADED);
-					System.out.println(result);
-				} else {
-					result = classType.invokeMethod(
-							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), method, values,
-							ClassType.INVOKE_SINGLE_THREADED);
-					System.out.println(result);
-				}
-				resultOfMethodInvocation.set(String.valueOf(result));
-
-			}
-
-			// Выводим результат
-			System.out.println(resultOfMethodInvocation);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultOfMethodInvocation.set(e.getMessage());
-		}
-	}
-
-	private void updateField(UserChangedFieldDTO dto, StackFrame frame) {
-		try {
-			ReferenceType refType = frame.thisObject() != null ? frame.thisObject().referenceType()
-					: frame.location().declaringType();
-
-			Field field = refType.fieldByName(dto.getFieldName());
-			if (field == null) {
-				throw new RuntimeException("Field not found: " + dto.getFieldName());
-			}
-
-			VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
-			ThreadReference thread = frame.thread();
-
-			Value jdiValue = DebugUtils.createJdiObjectFromString(vm, field.type(), dto.getNewValue(), thread);
-
-			// Статические поля меняем напрямую
-			if (Modifier.isStatic(field.modifiers()) && refType instanceof ClassType) {
-				((ClassType) refType).setValue(field, jdiValue);
-			} else {
-				// Нестатические поля меняем через invokeMethod (вызываем сеттер)
-				ObjectReference obj = frame.thisObject();
-				if (obj != null) {
-					String setterName = "set" + Character.toUpperCase(dto.getFieldName().charAt(0))
-							+ dto.getFieldName().substring(1);
-					List<Method> methods = obj.referenceType().methodsByName(setterName);
-					if (!methods.isEmpty()) {
-						Method setter = methods.get(0);
-						obj.invokeMethod(thread, setter, List.of(jdiValue), ObjectReference.INVOKE_SINGLE_THREADED);
-					} else {
-						// Если сеттера нет, меняем напрямую (снимок JDI, работает только на паузе)
-						obj.setValue(field, jdiValue);
-					}
-				} else {
-					System.err.println("Cannot set value: instance object is null");
-				}
-			}
-
-			System.out.println("FIELD CHANGED: " + dto);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	private boolean refreshUserInterface(BreakpointEvent breakpointEvent) {
-		if (breakpointEvent == null)
-			return false;
-		targetApplicationRepresentation
-				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-		ThreadReference threadReference = breakpointEvent.thread();
-		Location location = breakpointEvent.location();
-		StackFrame frame;
-
-		try {
-			frame = threadReference.frame(0);
-		} catch (IncompatibleThreadStateException | IndexOutOfBoundsException e) {
-			System.err.println("Cannot read stack frame: " + e.getMessage());
-			return false;
-		} catch (com.sun.jdi.InvalidStackFrameException e) {
-			System.err.println("Invalid stack frame: " + e.getMessage());
-			return false;
-		}
-
-		if (frame == null)
-			return false;
-
-		System.out.println("Breakpoint hit at " + location.declaringType().name() + "."
-				+ frame.location().method().name() + " line " + location.lineNumber());
-
-		// ===== Локальные переменные =====
-		Map<LocalVariable, Value> localVariables = Collections.emptyMap();
-		try {
-			localVariables = frame.getValues(frame.visibleVariables()).entrySet().stream()
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+			var = frame.visibleVariables().stream()
+			        .filter(v -> v.name().equals(dto.getName()))
+			        .findFirst().orElse(null);
 		} catch (AbsentInformationException e) {
-			System.err.println("No debug info: " + e.getMessage());
-		} catch (com.sun.jdi.InvalidStackFrameException e) {
-			System.err.println("Cannot read variables: " + e.getMessage());
-			return false;
-		}
-
-		// ===== Поля объекта this =====
-		Map<Field, Value> fields = Collections.emptyMap();
-		ObjectReference thisObject = null;
-		try {
-			thisObject = frame.thisObject();
-		} catch (com.sun.jdi.InvalidStackFrameException e) {
-			System.err.println("Cannot read thisObject: " + e.getMessage());
-		}
-
-		if (thisObject != null) {
-			try {
-				fields = thisObject.getValues(thisObject.referenceType().fields());
-			} catch (com.sun.jdi.InvalidStackFrameException e) {
-				System.err.println("Cannot read fields: " + e.getMessage());
-			}
-		}
-
-		// ===== Преобразуем в UI-friendly DTO =====
-		SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder()
-		        .type(SimpleDebugEventType.REFRESH_DATA)
-		        .className(location.declaringType().name())
-		        .methodName(location.method().name())
-		        .lineNumber(location.lineNumber())
-		        .fields(DebugUtils.mapFields(fields))
-		        .locals(DebugUtils.mapLocals(localVariables))
-		        .stackTrace( resultOfMethodInvocation.get())
-		        .targetApplicationElementRepresentationList(targetApplicationRepresentation.getTargetApplicationElements())
-		        .methodCallInStacks(compileStackInfo(breakpointEvent.thread()))
-		        .resultOfMethodInvocation(resultOfMethodInvocation.get().toString())
-		        .build();
-
-		// ===== Отправляем событие в UI =====
-		simpleDebugEventCollector.collectDebugEvent(dto);
-
-		return true;
-	}
-
-	private List<MethodCallInStack> compileStackInfo(ThreadReference threadReference) {
-		List<StackFrame> frames = Collections.emptyList();
-		List<MethodCallInStack> calls = new ArrayList<>();
-
-		try {
-			frames = threadReference.frames();
-		} catch (IncompatibleThreadStateException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return List.of(new MethodCallInStack("Cannot get frames: " + e.getMessage(), "", ""));
 		}
+        if (var == null) return;
+        try {
+            Value val = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(), var, dto.getNewValue().toString());
+            frame.setValue(var, val);
+        } catch (Exception e) { e.printStackTrace(); }
+    }
 
-		for (int i = 0; i < frames.size(); i++) {
-			StackFrame frame = frames.get(i);
-			if (frame == null)
-				continue;
+    private void updateField(UserChangedFieldDTO dto, StackFrame frame) throws Exception {
+        ReferenceType refType = frame.thisObject() != null ? frame.thisObject().referenceType() : frame.location().declaringType();
+        Field field = refType.fieldByName(dto.getFieldName());
+        if (field == null) return;
 
-			try {
-				Location loc = frame.location();
-				if (loc != null) {
-					String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
-					String methodName = loc.method() != null ? loc.method().name() : "unknown";
-					int line = loc.lineNumber();
+        Value val = DebugUtils.createJdiObjectFromString(targetVirtualMachineRepresentation.getVirtualMachine(), field.type(), dto.getNewValue(), frame.thread());
 
-					String sourceInfo;
-					try {
-						String src = loc.sourceName();
-						sourceInfo = src + ":" + line;
-					} catch (AbsentInformationException aie) {
-						sourceInfo = "Unknown:" + line;
-					}
+        if (Modifier.isStatic(field.modifiers()) && refType instanceof ClassType ct) {
+            ct.setValue(field, val);
+        } else if (frame.thisObject() != null) {
+            frame.thisObject().setValue(field, val);
+        }
+    }
 
-					// calls.add(String.format("#%d %s.%s() at %s%n", i, className, methodName,
-					// sourceInfo));
-					calls.add(new MethodCallInStack(className, methodName, sourceInfo));
-				}
-			} catch (Exception e) {
-				// защищаемся от возможных исключений JDI
-				e.printStackTrace();
-				// calls.add(String.format("#%d <error retrieving frame>%n", i));
-				calls.add(new MethodCallInStack("<error retrieving frame>", "", ""));
-			}
-		}
-		Collections.reverse(calls);
-		return calls;
-	}
+    private void invokeMethod(InvokeMethodEvent event) {
+        try {
+            List<Value> args = DebugUtils.parseArguments(targetVirtualMachineRepresentation.getVirtualMachine(), event);
+            ReferenceType refType = targetApplicationRepresentation.findReferenceTypeForClass(event.getClazz());
+            Method method = refType.methodsByName(event.getMethod().getMethodName()).get(0);
+            ObjectReference instance = !method.isStatic() ? targetApplicationRepresentation.createObjectInstance((ClassType) refType) : null;
+            Value result = instance != null
+                    ? instance.invokeMethod(targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), method, args, ObjectReference.INVOKE_SINGLE_THREADED)
+                    : ((ClassType) refType).invokeMethod(targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), method, args, ClassType.INVOKE_SINGLE_THREADED);
 
-	public static class Factory {
+            resultOfMethodInvocation.set(String.valueOf(result));
+        } catch (Exception e) { e.printStackTrace(); }
+    }
 
-		private static SimpleDebuggerWorkFlow instance = null;
-		private static SimpleDebuggerStatus simpleDebuggerStatus = SimpleDebuggerStatus.STARTING;
+    private void detachDebugger() {
+        try { targetApplicationRepresentation.detachDebugger(); } catch (Exception ignored) {}
+    }
 
-		public static SimpleDebuggerWorkFlow getSimpleDebuggerWorkFlow() {
-			return instance;
-		}
-		
-		public static SimpleDebuggerStatus getSimpleDebuggerStatus() {
-			return simpleDebuggerStatus;
-		}
+    private void handleUserClosedWindow() { running = false; detachDebugger(); }
 
-		public static void create(String host, int port, OnWorkflowReadyListener listener) {
+    private StackFrame getTopFrame(ThreadReference thread) {
+        try { return thread.frame(0); } catch (Exception e) { return null; }
+    }
 
-			// 1️⃣ Подключение к JVM асинхронно
-			CompletableFuture<VirtualMachine> vmFuture = CompletableFuture
-					.supplyAsync(() -> configureVirtualMachine(host, port));
+    private void openDebugWindow() {
+        Display.getDefault().asyncExec(() -> {
+            DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
+            if (window != null && !window.isOpen()) window.open();
+        });
+    }
 
-			// 2️⃣ Асинхронное ожидание DebugPlugin и BreakpointManager
-			CompletableFuture<IBreakpointManager> bpmFuture = getDebugPluginAndBreakpointManager();
+    private void highlightLine(Location loc) {
+        Display.getDefault().asyncExec(() -> {
+            try {
+                ITextEditor editor = openEditorForLocation(loc);
+                if (editor != null) new CurrentLineHighlighter().highlight(editor, loc.lineNumber() - 1);
+            } catch (Exception ignored) {}
+        });
+    }
 
-			// 3️⃣ Когда оба готовы — создаём workflow с listener
-			vmFuture.thenCombine(bpmFuture, (vm, bpManager) -> {
+    private boolean refreshUI(BreakpointEvent event) {
+        if (event == null) return false;
+        StackFrame frame = getTopFrame(event.thread());
+        if (frame == null) return false;
 
-				// DebugPlugin plugin = DebugPlugin.getDefault();
+        Map<LocalVariable, Value> locals = Map.of();
+        try { locals = frame.getValues(frame.visibleVariables()); } catch (Exception ignored) {}
+        Map<Field, Value> fields = Map.of();
+        try { if (frame.thisObject() != null) fields = frame.thisObject().getValues(frame.thisObject().referenceType().fields()); } catch (Exception ignored) {}
 
-				// 🔹 создаём и регистрируем listener
-				BreakePointListener breakpointListener = new BreakePointListener();
-				bpManager.setEnabled(true);
-				bpManager.addBreakpointListener(breakpointListener);
-				System.out.println("[Factory] Breakpoint listener registered!");
+        SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder()
+                .type(SimpleDebugEventType.REFRESH_DATA)
+                .className(event.location().declaringType().name())
+                .methodName(event.location().method().name())
+                .lineNumber(event.location().lineNumber())
+                .fields(DebugUtils.mapFields(fields))
+                .locals(DebugUtils.mapLocals(locals))
+                .stackTrace(resultOfMethodInvocation.get())
+                .resultOfMethodInvocation(resultOfMethodInvocation.get())
+                .build();
 
-				instance = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm),
-						bpManager /* , */
-				/* plugin, */ , breakpointListener);
-				return instance;
+        simpleDebugEventCollector.collectDebugEvent(dto);
+        return true;
+    }
 
-			}).thenAccept(workflow -> {
-				if (Objects.nonNull(listener))
-					listener.onReady(workflow);
-			});
-		}
+    private ITextEditor openEditorForLocation(Location location) throws Exception {
+        IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+        IWorkbenchPage page = window.getActivePage();
+        IFile file = targetApplicationRepresentation.findIFileForLocation(location);
+        IEditorPart part = IDE.openEditor(page, file, true);
+        if (!(part instanceof ITextEditor editor)) throw new IllegalStateException("Not a text editor");
+        return editor;
+    }
 
-		// -------------------
-		private static CompletableFuture<IBreakpointManager> getDebugPluginAndBreakpointManager() {
-			CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();
 
-			Runnable check = new Runnable() {
-				@Override
-				public void run() {
-					DebugPlugin plugin = DebugPlugin.getDefault();
-					if (Objects.nonNull(plugin) && Objects.nonNull(plugin.getBreakpointManager())) {
-						future.complete(plugin.getBreakpointManager());
-					} else {
-						Display.getDefault().timerExec(500, this);
-					}
-				}
-			};
 
-			Display.getDefault().asyncExec(check);
-			return future;
-		}
+    public static class Factory {
 
-		// -------------------
-		private static VirtualMachine configureVirtualMachine(String host, int port) {
-			VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
-			AttachingConnector connector = vmm.attachingConnectors().stream()
-					.filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
+        private static SimpleDebuggerWorkFlow instance = null;
+        private static SimpleDebuggerStatus simpleDebuggerStatus = SimpleDebuggerStatus.STARTING;
 
-			Map<String, Connector.Argument> args = connector.defaultArguments();
-			args.get("hostname").setValue(host);
-			args.get("port").setValue(String.valueOf(port));
+        public static SimpleDebuggerWorkFlow getSimpleDebuggerWorkFlow() {
+            return instance;
+        }
 
-			while (true) {
-				try {
-					System.out.println("Connecting to " + host + ":" + port + "...");
-					VirtualMachine vm = connector.attach(args);
-					simpleDebuggerStatus = SimpleDebuggerStatus.VM_CONNECTED;
-					System.out.println("Successfully connected to VM.");
-					return vm;
-				} catch (Exception ignored) {
-					simpleDebuggerStatus = SimpleDebuggerStatus.VM_AWAITING_CONNECTION;
-					try {
-						TimeUnit.SECONDS.sleep(1);
-					} catch (InterruptedException ignored2) {
-					}
-				}
-			}
-		}
-	}
+        public static SimpleDebuggerStatus getSimpleDebuggerStatus() {
+            return simpleDebuggerStatus;
+        }
+
+        public static void create(String host, int port, OnWorkflowReadyListener listener) {
+            CompletableFuture.runAsync(() -> {
+                VirtualMachine vm = attachToVm(host, port);
+                IBreakpointManager bpm = waitForBreakpointManager();
+
+                BreakePointListener breakpointListener = new BreakePointListener();
+                bpm.setEnabled(true);
+                bpm.addBreakpointListener(breakpointListener);
+
+                instance = new SimpleDebuggerWorkFlow(
+                        new TargetVirtualMachineRepresentation(host, port, vm),
+                        bpm,
+                        breakpointListener
+                );
+
+                if (listener != null) {
+                    Display.getDefault().asyncExec(() -> listener.onReady(instance));
+                }
+            });
+        }
+
+        // -------------------
+        private static VirtualMachine attachToVm(String host, int port) {
+            VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
+            AttachingConnector connector = vmm.attachingConnectors().stream()
+                    .filter(c -> c.name().equals("com.sun.jdi.SocketAttach"))
+                    .findAny()
+                    .orElseThrow();
+
+            Map<String, Connector.Argument> args = connector.defaultArguments();
+            args.get("hostname").setValue(host);
+            args.get("port").setValue(String.valueOf(port));
+
+            while (true) {
+                try {
+                    System.out.println("Connecting to " + host + ":" + port + "...");
+                    VirtualMachine vm = connector.attach(args);
+                    simpleDebuggerStatus = SimpleDebuggerStatus.VM_CONNECTED;
+                    System.out.println("Successfully connected to VM.");
+                    return vm;
+                } catch (Exception ignored) {
+                    simpleDebuggerStatus = SimpleDebuggerStatus.VM_AWAITING_CONNECTION;
+                    try { Thread.sleep(1000); } catch (InterruptedException ignored2) {}
+                }
+            }
+        }
+
+        // -------------------
+        private static IBreakpointManager waitForBreakpointManager() {
+            CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();
+
+            Runnable check = new Runnable() {
+                @Override
+                public void run() {
+                    DebugPlugin plugin = DebugPlugin.getDefault();
+                    if (plugin != null && plugin.getBreakpointManager() != null) {
+                        future.complete(plugin.getBreakpointManager());
+                    } else {
+                        Display.getDefault().timerExec(500, this);
+                    }
+                }
+            };
+
+            Display.getDefault().asyncExec(check);
+            return future.join();
+        }
+    }
 
 }
