@@ -77,10 +77,12 @@ public class SimpleDebuggerWorkFlow {
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 		this.eventLoop = new JdiEventLoop(
-		        targetVirtualMachineRepresentation.getVirtualMachine(),
-		        this::onBreakpointEvent,
-		        this::onVmStopped
+		        targetVirtualMachineRepresentation.getVirtualMachine(), // VirtualMachine
+		        this::onBreakpointEvent,                                 // BreakpointEventHandler
+		        this::onVmStopped, // VmLifeCycleHandler
+		        targetApplicationRepresentation 
 		);
+
 	}
 
     /** Запуск дебага */
@@ -89,7 +91,7 @@ public class SimpleDebuggerWorkFlow {
         openDebugWindow();
         targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
         eventLoop.runLoop();
-        detachDebugger();
+       // detachDebugger();
     }
 
     /** Обработчик остановки VM */
@@ -104,7 +106,7 @@ public class SimpleDebuggerWorkFlow {
 
     /** Обработчик брейкпоинта */
     private void onBreakpointEvent(BreakpointEvent event) {
-        highlightLine(event.location());
+        //highlightLine(event.location());
         targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
         refreshUI(event);
 
@@ -209,14 +211,14 @@ public class SimpleDebuggerWorkFlow {
         });
     }
 
-    private void highlightLine(Location loc) {
-        Display.getDefault().asyncExec(() -> {
-            try {
-                ITextEditor editor = openEditorForLocation(loc);
-                if (editor != null) new CurrentLineHighlighter().highlight(editor, loc.lineNumber() - 1);
-            } catch (Exception ignored) {}
-        });
-    }
+//    private void highlightLine(Location loc) {
+//        Display.getDefault().asyncExec(() -> {
+//            try {
+//                ITextEditor editor = openEditorForLocation(loc);
+//                if (editor != null) new CurrentLineHighlighter().highlight(editor, loc.lineNumber() - 1);
+//            } catch (Exception ignored) {}
+//        });
+//    }
 
     private boolean refreshUI(BreakpointEvent event) {
         if (event == null) return false;

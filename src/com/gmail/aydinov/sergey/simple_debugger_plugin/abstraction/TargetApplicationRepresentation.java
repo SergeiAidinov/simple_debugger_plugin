@@ -11,8 +11,17 @@ import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.IBreakpointManager;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
@@ -257,40 +266,58 @@ public class TargetApplicationRepresentation {
     }
 	
 	public IFile findIFileForLocation(Location location) {
-	    if (location == null) return null;
+		ReferenceType refType = location.declaringType();
+		if (refType == null)
+			return null;
 
-	    ReferenceType refType = location.declaringType();
-	    if (refType == null) return null;
+		// Имя типа в формате JVM => преобразуем в Java вид
+		// было: Lcom/example/MyClass; => com.example.MyClass
+		String jvmName = refType.name();
+		String className = jvmName.replace('/', '.');
 
-	    try {
-	        // Имя исходного файла, например "MyClass.java"
-	        String sourceName = refType.sourceName();
+		// Удаляем ведущую 'L' и ';', если они есть
+		if (className.startsWith("L") && className.endsWith(";")) {
+			className = className.substring(1, className.length() - 1);
+		}
 
-	        // Пакетный путь, например "com/example/MyClass.java"
-	        String fullPath = refType.name().replace('.', '/') + ".java";
+		// Теперь это нормальное имя класса, ищем по нему IType
+		IWorkspace ws = ResourcesPlugin.getWorkspace();
+		IWorkspaceRoot root = ws.getRoot();
 
-	        // Перебираем все проекты в рабочей области
-	        for (IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
-	            if (!project.isOpen()) continue;
-
-	            // Сначала пробуем найти через полный путь по пакету
-	            IFile file = project.getFile(fullPath);
-	            if (file.exists()) {
-	                return file;
-	            }
-
-	            // Если не нашли, пробуем через просто имя файла
-	            file = project.getFile(sourceName);
-	            if (file.exists()) {
-	                return file;
-	            }
-	        }
-
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
-
-	    return null;
+		// Перебираем все Java-проекты
+		for (IProject project : root.getProjects()) {
+			try {
+				if (!project.isOpen() || !project.hasNature(JavaCore.NATURE_ID))
+					continue;
+			} catch (CoreException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			IJavaProject javaProject = JavaCore.create(project);
+			IType type = null;
+			try {
+				type = javaProject.findType(className);
+			} catch (JavaModelException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (type != null) {
+				ICompilationUnit unit = type.getCompilationUnit();
+				if (unit != null) {
+					IResource resource = null;
+					try {
+						resource = unit.getUnderlyingResource();
+					} catch (JavaModelException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					if (resource instanceof IFile) {
+						return (IFile) resource;
+					}
+				}
+			}
+		}
+		return null;
 	}
 	
 

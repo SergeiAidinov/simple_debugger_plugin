@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
@@ -27,6 +28,7 @@ import com.sun.jdi.VirtualMachine;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.swt.widgets.Text;
 
 import com.sun.jdi.AbsentInformationException;
@@ -36,6 +38,7 @@ import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
+import org.eclipse.ui.texteditor.ITextEditor;
 
 
 
@@ -358,7 +361,7 @@ public class DebugUtils {
                 return obj;
         }
     }
-
+    
 }
     
 
