@@ -220,7 +220,7 @@ public class DebugWindow {
 
 	public void showVmStoppedMessage() {
 	    // Например:
-	    MessageDialog.openInformation(shell, "Debugger", "Target VM stopped.");
+	    MessageDialog.openInformation(shell, "Debugger", "Debugger detached. Target VM continues running");
 	}
 
 

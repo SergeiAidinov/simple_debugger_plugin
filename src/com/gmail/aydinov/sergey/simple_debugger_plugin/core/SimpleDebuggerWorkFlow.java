@@ -13,10 +13,12 @@ import org.eclipse.swt.widgets.Display;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.EventLoop;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.TargetApplicationStatusProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
@@ -49,16 +51,17 @@ import com.sun.jdi.connect.Connector;
 import com.sun.jdi.event.BreakpointEvent;
 import com.sun.jdi.request.EventRequestManager;
 
-public class SimpleDebuggerWorkFlow {
+public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	private final IBreakpointManager iBreakpointManager; // do NOT remove!!!
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove!!!
-	private final EventLoop eventLoop;
+	// private final EventLoop eventLoop;
 	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 	private volatile boolean running = true;
 	private final AtomicReference<String> resultOfMethodInvocation = new AtomicReference<>("");
+	private TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.STARTING;
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
@@ -69,25 +72,27 @@ public class SimpleDebuggerWorkFlow {
 		this.breakpointListener = breakpointListener;
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
-		this.eventLoop = new JdiEventLoop(targetVirtualMachineRepresentation.getVirtualMachine(), // VirtualMachine
-				this::onBreakpointEvent, // BreakpointEventHandler
-				this::onVmStopped, // VmLifeCycleHandler
-				targetApplicationRepresentation);
-
+		DebugWindowManager.instance().setTargetApplicationStatusProvider(this);
 	}
-	
+
+	public TargetApplicationStatus getTargetApplicationStatus() {
+		return targetApplicationStatus;
+	}
+
 	/** Обработчик брейкпоинта */
 	private void onBreakpointEvent(BreakpointEvent event) {
+		targetApplicationStatus = TargetApplicationStatus.STOPPED_AT_BREAKPOINT;
 		targetApplicationRepresentation
 				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
 		refreshUI(event);
 		StackFrame frame = getTopFrame(event.thread());
 		handleUiLoop(event, frame);
 	}
-	
+
 	/** Обработчик остановки VM */
 	private void onVmStopped() {
 		running = false;
+		targetApplicationStatus = TargetApplicationStatus.STOPPING;
 		detachDebugger();
 		Display.getDefault().asyncExec(() -> {
 			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
@@ -95,7 +100,7 @@ public class SimpleDebuggerWorkFlow {
 				window.showVmStoppedMessage();
 		});
 	}
-	
+
 	/** UI-loop на брейкпоинте */
 	private void handleUiLoop(BreakpointEvent event, StackFrame frame) {
 		while (running) {
@@ -122,7 +127,7 @@ public class SimpleDebuggerWorkFlow {
 			refreshUI(event);
 		}
 	}
-	
+
 	private void handleSingleUiEvent(UIEvent event, StackFrame frame) {
 		try {
 			if (event instanceof UserChangedVariableDTO dto)
@@ -141,6 +146,10 @@ public class SimpleDebuggerWorkFlow {
 		openDebugWindow();
 		targetApplicationRepresentation
 				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+		EventLoop eventLoop = new JdiEventLoop(targetVirtualMachineRepresentation.getVirtualMachine(), // VirtualMachine
+				this::onBreakpointEvent, // BreakpointEventHandler
+				this::onVmStopped, // VmLifeCycleHandler
+				targetApplicationRepresentation, this);
 		eventLoop.runLoop();
 		refreshBreakpoints();
 	}
@@ -161,8 +170,8 @@ public class SimpleDebuggerWorkFlow {
 		if (localVariable == null)
 			return;
 		try {
-			Value val = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(), localVariable,
-					dto.getNewValue().toString());
+			Value val = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
+					localVariable, dto.getNewValue().toString());
 			frame.setValue(localVariable, val);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -215,6 +224,7 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private void handleUserClosedWindow() {
+		targetApplicationStatus = TargetApplicationStatus.STOPPING;
 		running = false;
 		detachDebugger();
 	}
@@ -242,19 +252,15 @@ public class SimpleDebuggerWorkFlow {
 		if (frame == null)
 			return false;
 		Location location = breakpointEvent.location();
-		SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder()
-				.type(SimpleDebugEventType.REFRESH_DATA)
-				.className(location.declaringType().name())
-				.methodName(location.method().name())
-				.lineNumber(location.lineNumber())
-				.fields(DebugUtils.mapFields(DebugUtils.compileFields(frame)))
+		SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder().type(SimpleDebugEventType.REFRESH_DATA)
+				.className(location.declaringType().name()).methodName(location.method().name())
+				.lineNumber(location.lineNumber()).fields(DebugUtils.mapFields(DebugUtils.compileFields(frame)))
 				.locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(frame)))
 				.stackTrace(resultOfMethodInvocation.get())
 				.targetApplicationElementRepresentationList(
 						targetApplicationRepresentation.getTargetApplicationElements())
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
-				.resultOfMethodInvocation(resultOfMethodInvocation.get().toString())
-				.build();
+				.resultOfMethodInvocation(resultOfMethodInvocation.get().toString()).build();
 		simpleDebugEventCollector.collectDebugEvent(dto);
 		return true;
 	}

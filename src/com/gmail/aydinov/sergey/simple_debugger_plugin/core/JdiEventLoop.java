@@ -7,6 +7,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.EventLoop;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.TargetApplicationStatusProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.VmLifeCycleHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.sun.jdi.Location;
@@ -28,6 +29,7 @@ public class JdiEventLoop implements Runnable, EventLoop {
     private final BreakpointEventHandler breakpointHandler;
     private final VmLifeCycleHandler vmLifeCycleHandler;
     private final TargetApplicationRepresentation targetApplication;
+    private final TargetApplicationStatusProvider targetApplicationStatusProvider;
     private final CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
 
     private volatile boolean running = true;
@@ -36,11 +38,13 @@ public class JdiEventLoop implements Runnable, EventLoop {
     public JdiEventLoop(VirtualMachine vm,
                         BreakpointEventHandler breakpointHandler,
                         VmLifeCycleHandler vmLifeCycleHandler,
-                        TargetApplicationRepresentation targetApplication) {
+                        TargetApplicationRepresentation targetApplication,
+                        TargetApplicationStatusProvider targetApplicationStatusProvider) {
         this.vm = vm;
         this.breakpointHandler = breakpointHandler;
         this.vmLifeCycleHandler = vmLifeCycleHandler;
         this.targetApplication = targetApplication;
+        this.targetApplicationStatusProvider = targetApplicationStatusProvider;
     }
 
     @Override
