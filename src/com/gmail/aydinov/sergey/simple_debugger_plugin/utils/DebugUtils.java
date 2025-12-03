@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
@@ -361,6 +362,51 @@ public class DebugUtils {
                 return obj;
         }
     }
+    public static List<MethodCallInStack> compileStackInfo(ThreadReference threadReference) {
+		List<StackFrame> frames = Collections.emptyList();
+		List<MethodCallInStack> calls = new ArrayList<>();
+
+		try {
+			frames = threadReference.frames();
+		} catch (IncompatibleThreadStateException e) {
+			e.printStackTrace();
+			return List.of(new MethodCallInStack("Cannot get frames: " + e.getMessage(), "", ""));
+		}
+
+		for (int i = 0; i < frames.size(); i++) {
+			StackFrame frame = frames.get(i);
+			if (frame == null)
+				continue;
+
+			try {
+				Location loc = frame.location();
+				if (loc != null) {
+					String className = loc.declaringType() != null ? loc.declaringType().name() : "Unknown";
+					String methodName = loc.method() != null ? loc.method().name() : "unknown";
+					int line = loc.lineNumber();
+
+					String sourceInfo;
+					try {
+						String src = loc.sourceName();
+						sourceInfo = src + ":" + line;
+					} catch (AbsentInformationException aie) {
+						sourceInfo = "Unknown:" + line;
+					}
+
+					// calls.add(String.format("#%d %s.%s() at %s%n", i, className, methodName,
+					// sourceInfo));
+					calls.add(new MethodCallInStack(className, methodName, sourceInfo));
+				}
+			} catch (Exception e) {
+				// защищаемся от возможных исключений JDI
+				e.printStackTrace();
+				// calls.add(String.format("#%d <error retrieving frame>%n", i));
+				calls.add(new MethodCallInStack("<error retrieving frame>", "", ""));
+			}
+		}
+		Collections.reverse(calls);
+		return calls;
+	}
     
 }
     

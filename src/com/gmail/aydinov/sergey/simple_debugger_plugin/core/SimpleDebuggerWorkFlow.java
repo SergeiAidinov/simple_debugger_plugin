@@ -1,11 +1,13 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.lang.reflect.Modifier;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.debug.core.DebugPlugin;
@@ -48,6 +50,7 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
+import com.sun.jdi.TypeComponent;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.VirtualMachineManager;
@@ -220,9 +223,9 @@ public class SimpleDebuggerWorkFlow {
 //        });
 //    }
 
-    private boolean refreshUI(BreakpointEvent event) {
-        if (event == null) return false;
-        StackFrame frame = getTopFrame(event.thread());
+    private boolean refreshUI(BreakpointEvent breakpointEvent) {
+        if (breakpointEvent == null) return false;
+        StackFrame frame = getTopFrame(breakpointEvent.thread());
         if (frame == null) return false;
 
         Map<LocalVariable, Value> locals = Map.of();
@@ -230,16 +233,30 @@ public class SimpleDebuggerWorkFlow {
         Map<Field, Value> fields = Map.of();
         try { if (frame.thisObject() != null) fields = frame.thisObject().getValues(frame.thisObject().referenceType().fields()); } catch (Exception ignored) {}
 
-        SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder()
-                .type(SimpleDebugEventType.REFRESH_DATA)
-                .className(event.location().declaringType().name())
-                .methodName(event.location().method().name())
-                .lineNumber(event.location().lineNumber())
-                .fields(DebugUtils.mapFields(fields))
-                .locals(DebugUtils.mapLocals(locals))
-                .stackTrace(resultOfMethodInvocation.get())
-                .resultOfMethodInvocation(resultOfMethodInvocation.get())
-                .build();
+         Location location = breakpointEvent.location();
+         Map<LocalVariable, Value> localVariables = Collections.emptyMap();
+		try {
+			localVariables = frame.getValues(frame.visibleVariables()).entrySet().stream()
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		} catch (AbsentInformationException e) {
+			System.err.println("No debug info: " + e.getMessage());
+		} catch (com.sun.jdi.InvalidStackFrameException e) {
+			System.err.println("Cannot read variables: " + e.getMessage());
+			return false;
+		}
+					
+		SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder()
+		        .type(SimpleDebugEventType.REFRESH_DATA)
+		        .className(location .declaringType().name())
+		        .methodName(location.method().name())
+		        .lineNumber(location.lineNumber())
+		        .fields(DebugUtils.mapFields(fields))
+		        .locals(DebugUtils.mapLocals(localVariables))
+		        .stackTrace( resultOfMethodInvocation.get())
+		        .targetApplicationElementRepresentationList(targetApplicationRepresentation.getTargetApplicationElements())
+		        .methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
+		        .resultOfMethodInvocation(resultOfMethodInvocation.get().toString())
+		        .build();
 
         simpleDebugEventCollector.collectDebugEvent(dto);
         return true;
