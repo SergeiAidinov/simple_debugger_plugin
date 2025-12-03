@@ -26,6 +26,7 @@ import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -40,8 +41,6 @@ import com.sun.jdi.ThreadReference;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.texteditor.ITextEditor;
-
-
 
 /**
  * Вспомогательный класс-заглушка для локальных переменных
@@ -143,41 +142,41 @@ public class DebugUtils {
 				trimmed = trimmed.substring(1, trimmed.length() - 1);
 			return vm.mirrorOf(trimmed);
 		}
-		
+
 		// ------------------------
 		// 4. Boxing-types
 		// ------------------------
 		if (typeName.equals("java.lang.Integer")) {
-		    Value prim = vm.mirrorOf(Integer.parseInt(trimmed));
-		    return newBoxed(vm, (ClassType) varType, prim, thread);
+			Value prim = vm.mirrorOf(Integer.parseInt(trimmed));
+			return newBoxed(vm, (ClassType) varType, prim, thread);
 		}
 
 		if (typeName.equals("java.lang.Long")) {
-		    Value prim = vm.mirrorOf(Long.parseLong(trimmed));
-		    return newBoxed(vm, (ClassType) varType, prim, thread);
+			Value prim = vm.mirrorOf(Long.parseLong(trimmed));
+			return newBoxed(vm, (ClassType) varType, prim, thread);
 		}
 
 		if (typeName.equals("java.lang.Boolean")) {
-		    Value prim = vm.mirrorOf(Boolean.parseBoolean(trimmed));
-		    return newBoxed(vm, (ClassType) varType, prim, thread);
+			Value prim = vm.mirrorOf(Boolean.parseBoolean(trimmed));
+			return newBoxed(vm, (ClassType) varType, prim, thread);
 		}
 
 		if (typeName.equals("java.lang.Double")) {
-		    Value prim = vm.mirrorOf(Double.parseDouble(trimmed));
-		    return newBoxed(vm, (ClassType) varType, prim, thread);
+			Value prim = vm.mirrorOf(Double.parseDouble(trimmed));
+			return newBoxed(vm, (ClassType) varType, prim, thread);
 		}
 
 		if (typeName.equals("java.lang.Float")) {
-		    Value prim = vm.mirrorOf(Float.parseFloat(trimmed));
-		    return newBoxed(vm, (ClassType) varType, prim, thread);
+			Value prim = vm.mirrorOf(Float.parseFloat(trimmed));
+			return newBoxed(vm, (ClassType) varType, prim, thread);
 		}
 
 		if (typeName.equals("java.lang.Character")) {
-		    char c = trimmed.length() == 1 ? trimmed.charAt(0) : trimmed.charAt(1);
-		    Value prim = vm.mirrorOf(c);
-		    return newBoxed(vm, (ClassType) varType, prim, thread);
+			char c = trimmed.length() == 1 ? trimmed.charAt(0) : trimmed.charAt(1);
+			Value prim = vm.mirrorOf(c);
+			return newBoxed(vm, (ClassType) varType, prim, thread);
 		}
-		
+
 		return null;
 	}
 
@@ -222,147 +221,151 @@ public class DebugUtils {
 
 		throw new RuntimeException("No suitable constructor found for boxed type: " + clazz.name());
 	}
-	
 
-    private static VariableDTO mapField(Map.Entry<Field, Value> entry) {
-        Field f = entry.getKey();
-        Value v = entry.getValue();
-        return new VariableDTO(f.name(), f.typeName(), valueToString(v));
-    }
+	private static VariableDTO mapField(Map.Entry<Field, Value> entry) {
+		Field f = entry.getKey();
+		Value v = entry.getValue();
+		return new VariableDTO(f.name(), f.typeName(), valueToString(v));
+	}
 
-    private static VariableDTO mapLocal(Map.Entry<LocalVariable, Value> entry) {
-        LocalVariable v = entry.getKey();
-        Value val = entry.getValue();
-        return new VariableDTO(v.name(), v.typeName(), valueToString(val));
-    }
+	private static VariableDTO mapLocal(Map.Entry<LocalVariable, Value> entry) {
+		LocalVariable v = entry.getKey();
+		Value val = entry.getValue();
+		return new VariableDTO(v.name(), v.typeName(), valueToString(val));
+	}
 
-    /**
-     * Преобразует Map<Field, Value> в List<VariableDTO>
-     */
-    public static List<VariableDTO> mapFields(Map<Field, Value> fields) {
-        if (fields == null) return List.of();
+	/**
+	 * Преобразует Map<Field, Value> в List<VariableDTO>
+	 */
+	public static List<VariableDTO> mapFields(Map<Field, Value> fields) {
+		if (fields == null)
+			return List.of();
 
-        return fields.entrySet().stream()
-                .map(entry -> {
-                    Field field = entry.getKey();
-                    Value value = entry.getValue();
-                    return new VariableDTO(
-                            field.name(),
-                            field.typeName(),
-                            valueToString(value)
-                    );
-                })
-                .collect(Collectors.toList());
-    }
+		return fields.entrySet().stream().map(entry -> {
+			Field field = entry.getKey();
+			Value value = entry.getValue();
+			return new VariableDTO(field.name(), field.typeName(), valueToString(value));
+		}).collect(Collectors.toList());
+	}
 
-    /**
-     * Преобразует Map<LocalVariable, Value> в List<VariableDTO>
-     */
-    public static List<VariableDTO> mapLocals(Map<LocalVariable, Value> locals) {
-        if (locals == null) return List.of();
+	/**
+	 * Преобразует Map<LocalVariable, Value> в List<VariableDTO>
+	 */
+	public static List<VariableDTO> mapLocals(Map<LocalVariable, Value> locals) {
+		if (locals == null)
+			return List.of();
 
-        return locals.entrySet().stream()
-                .map(entry -> {
-                    LocalVariable local = entry.getKey();
-                    Value value = entry.getValue();
-                    return new VariableDTO(
-                            local.name(),
-                            local.typeName(),
-                            valueToString(value)
-                    );
-                })
-                .collect(Collectors.toList());
-    }
+		return locals.entrySet().stream().map(entry -> {
+			LocalVariable local = entry.getKey();
+			Value value = entry.getValue();
+			return new VariableDTO(local.name(), local.typeName(), valueToString(value));
+		}).collect(Collectors.toList());
+	}
 
-    /**
-     * Преобразует Value в строку, безопасно обрабатывая null
-     */
-    private static String valueToString(Value value) {
-        if (value == null) return "null";
-        return value.toString();
-    }
-    
-    /**
-     * Преобразует argumentsText в список JDI-значений для вызова метода.
-     */
-    public static List<Value> parseArguments(VirtualMachine vm, InvokeMethodEvent invokeMethodEvent) {
-        List<Value> values = new ArrayList<>();
+	/**
+	 * Преобразует Value в строку, безопасно обрабатывая null
+	 */
+	private static String valueToString(Value value) {
+		if (value == null)
+			return "null";
+		return value.toString();
+	}
 
-        String argsText = invokeMethodEvent.getArgumentsText().trim();
+	/**
+	 * Преобразует argumentsText в список JDI-значений для вызова метода.
+	 */
+	public static List<Value> parseArguments(VirtualMachine vm, InvokeMethodEvent invokeMethodEvent) {
+		List<Value> values = new ArrayList<>();
 
-        // Очищаем скобки, если метод указан как method(arg1, arg2)
-        int start = argsText.indexOf('(');
-        int end = argsText.lastIndexOf(')');
-        if (start >= 0 && end > start) {
-            argsText = argsText.substring(start + 1, end).trim();
-        }
+		String argsText = invokeMethodEvent.getArgumentsText().trim();
 
-        if (argsText.isEmpty()) return values;
+		// Очищаем скобки, если метод указан как method(arg1, arg2)
+		int start = argsText.indexOf('(');
+		int end = argsText.lastIndexOf(')');
+		if (start >= 0 && end > start) {
+			argsText = argsText.substring(start + 1, end).trim();
+		}
 
-        String[] argStrings = argsText.split("\\s*,\\s*");
-        List<TargetApplicationMethodParameterDTO> params = invokeMethodEvent.getMethod().getParameters();
+		if (argsText.isEmpty())
+			return values;
 
-        if (argStrings.length != params.size()) {
-            throw new IllegalArgumentException("Количество аргументов не совпадает с количеством параметров метода");
-        }
+		String[] argStrings = argsText.split("\\s*,\\s*");
+		List<TargetApplicationMethodParameterDTO> params = invokeMethodEvent.getMethod().getParameters();
 
-        for (int i = 0; i < params.size(); i++) {
-            TargetApplicationMethodParameterDTO param = params.get(i);
-            String argStr = argStrings[i].trim();
-            String typeName = param.getType().name();
+		if (argStrings.length != params.size()) {
+			throw new IllegalArgumentException("Количество аргументов не совпадает с количеством параметров метода");
+		}
 
-            // Убираем кавычки у строк
-            if ((argStr.startsWith("\"") && argStr.endsWith("\"")) ||
-                (argStr.startsWith("'") && argStr.endsWith("'"))) {
-                argStr = argStr.substring(1, argStr.length() - 1);
-            }
+		for (int i = 0; i < params.size(); i++) {
+			TargetApplicationMethodParameterDTO param = params.get(i);
+			String argStr = argStrings[i].trim();
+			String typeName = param.getType().name();
 
-            Value value = null;
-            try {
-                value = convertStringToValue(argStr, typeName, vm);
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new IllegalArgumentException("Ошибка конвертации аргумента '" + argStr + "' в тип " + typeName, e);
-            }
+			// Убираем кавычки у строк
+			if ((argStr.startsWith("\"") && argStr.endsWith("\""))
+					|| (argStr.startsWith("'") && argStr.endsWith("'"))) {
+				argStr = argStr.substring(1, argStr.length() - 1);
+			}
 
-            values.add(value);
-        }
+			Value value = null;
+			try {
+				value = convertStringToValue(argStr, typeName, vm);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new IllegalArgumentException("Ошибка конвертации аргумента '" + argStr + "' в тип " + typeName,
+						e);
+			}
 
-        return values;
-    }
+			values.add(value);
+		}
 
+		return values;
+	}
 
-    
-    private static Value convertStringToValue(String arg, String typeName, VirtualMachine vm) throws Exception {
-        switch (typeName) {
-            case "int": return vm.mirrorOf(Integer.parseInt(arg));
-            case "boolean": return vm.mirrorOf(Boolean.parseBoolean(arg));
-            case "long": return vm.mirrorOf(Long.parseLong(arg));
-            case "double": return vm.mirrorOf(Double.parseDouble(arg));
-            case "float": return vm.mirrorOf(Float.parseFloat(arg));
-            case "short": return vm.mirrorOf(Short.parseShort(arg));
-            case "byte": return vm.mirrorOf(Byte.parseByte(arg));
-            case "char":
-                if (arg.length() != 1) throw new IllegalArgumentException("Неверный char аргумент: " + arg);
-                return vm.mirrorOf(arg.charAt(0));
-            case "java.lang.String": return vm.mirrorOf(arg);
-            default:
-                // Для объектов пытаемся создать экземпляр через конструктор без аргументов
-                List<ReferenceType> classes = vm.classesByName(typeName);
-                if (classes.isEmpty()) throw new ClassNotLoadedException(typeName, "Класс не найден в таргет-приложении");
+	private static Value convertStringToValue(String arg, String typeName, VirtualMachine vm) throws Exception {
+		switch (typeName) {
+		case "int":
+			return vm.mirrorOf(Integer.parseInt(arg));
+		case "boolean":
+			return vm.mirrorOf(Boolean.parseBoolean(arg));
+		case "long":
+			return vm.mirrorOf(Long.parseLong(arg));
+		case "double":
+			return vm.mirrorOf(Double.parseDouble(arg));
+		case "float":
+			return vm.mirrorOf(Float.parseFloat(arg));
+		case "short":
+			return vm.mirrorOf(Short.parseShort(arg));
+		case "byte":
+			return vm.mirrorOf(Byte.parseByte(arg));
+		case "char":
+			if (arg.length() != 1)
+				throw new IllegalArgumentException("Неверный char аргумент: " + arg);
+			return vm.mirrorOf(arg.charAt(0));
+		case "java.lang.String":
+			return vm.mirrorOf(arg);
+		default:
+			// Для объектов пытаемся создать экземпляр через конструктор без аргументов
+			List<ReferenceType> classes = vm.classesByName(typeName);
+			if (classes.isEmpty())
+				throw new ClassNotLoadedException(typeName, "Класс не найден в таргет-приложении");
 
-                ReferenceType refType = classes.get(0);
-                if (!(refType instanceof ClassType)) throw new IllegalArgumentException("Тип не является классом: " + typeName);
+			ReferenceType refType = classes.get(0);
+			if (!(refType instanceof ClassType))
+				throw new IllegalArgumentException("Тип не является классом: " + typeName);
 
-                ClassType classType = (ClassType) refType;
-                Method constructor = classType.concreteMethodByName("<init>", "()V");
-                if (constructor == null) throw new IllegalArgumentException("Нет конструктора без аргументов для " + typeName);
+			ClassType classType = (ClassType) refType;
+			Method constructor = classType.concreteMethodByName("<init>", "()V");
+			if (constructor == null)
+				throw new IllegalArgumentException("Нет конструктора без аргументов для " + typeName);
 
-                ObjectReference obj = classType.newInstance(vm.allThreads().get(0), constructor, List.of(), ClassType.INVOKE_SINGLE_THREADED);
-                return obj;
-        }
-    }
-    public static List<MethodCallInStack> compileStackInfo(ThreadReference threadReference) {
+			ObjectReference obj = classType.newInstance(vm.allThreads().get(0), constructor, List.of(),
+					ClassType.INVOKE_SINGLE_THREADED);
+			return obj;
+		}
+	}
+
+	public static List<MethodCallInStack> compileStackInfo(ThreadReference threadReference) {
 		List<StackFrame> frames = Collections.emptyList();
 		List<MethodCallInStack> calls = new ArrayList<>();
 
@@ -407,7 +410,29 @@ public class DebugUtils {
 		Collections.reverse(calls);
 		return calls;
 	}
-    
-}
-    
 
+	public static Map<Field, Value> compileFields(StackFrame frame) {
+		Map<Field, Value> fields = Collections.EMPTY_MAP;
+		try {
+			if (frame.thisObject() != null) {
+				fields = frame.thisObject().getValues(frame.thisObject().referenceType().fields());
+			}
+		} catch (Exception ignored) {
+		}
+		return fields;
+	}
+
+	public static Map<LocalVariable, Value> compileLocalVariables(StackFrame frame) {
+		Map<LocalVariable, Value> localVariables = Collections.emptyMap();
+		try {
+			localVariables = frame.getValues(frame.visibleVariables()).entrySet().stream()
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		} catch (AbsentInformationException e) {
+			System.err.println("No debug info: " + e.getMessage());
+		} catch (com.sun.jdi.InvalidStackFrameException e) {
+			System.err.println("Cannot read variables: " + e.getMessage());
+		}
+		return localVariables;
+	}
+
+}
