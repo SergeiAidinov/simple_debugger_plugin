@@ -140,6 +140,7 @@ public class DebugWindow {
 
 		// закрываем
 		System.out.println("Debug window closed");
+		showVmStoppedMessage();
 		// sendUiEvent(new UserClosedWindowUiEvent());
 		shell.dispose();
 		uiEventCollector.collectUiEvent(new UserClosedWindowUiEvent());
@@ -218,7 +219,7 @@ public class DebugWindow {
 
 	}
 
-	public void showVmStoppedMessage() {
+	private void showVmStoppedMessage() {
 	    // Например:
 	    MessageDialog.openInformation(shell, "Debugger", "Debugger detached. Target VM continues running");
 	}

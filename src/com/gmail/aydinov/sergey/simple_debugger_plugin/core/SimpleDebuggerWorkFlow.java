@@ -92,13 +92,13 @@ public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 	/** Обработчик остановки VM */
 	private void onVmStopped() {
 		running = false;
-		targetApplicationStatus = TargetApplicationStatus.STOPPING;
 		detachDebugger();
-		Display.getDefault().asyncExec(() -> {
-			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-			if (window != null)
-				window.showVmStoppedMessage();
-		});
+//		Display.getDefault().asyncExec(() -> {
+//			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
+//			if (window != null)
+//				window.showVmStoppedMessage();
+//		});
+		targetApplicationStatus = TargetApplicationStatus.STOPPING;
 	}
 
 	/** UI-loop на брейкпоинте */
