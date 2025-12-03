@@ -113,56 +113,183 @@ public class SimpleDebuggerWorkFlow {
 		);
 	}
 	
-	private void onVmStopped() {
-	    System.out.println("[EventLoop] Target VM stopped.");
+	/** Запускает EventLoop и UI */
+    public void debug() {
+        System.out.println("DEBUG");
+        openDebugWindow();
+        refreshBreakpoints();
+        System.out.println("Starting EventLoop...");
 
-	    running = false;
-	    detachDebuggerIfAttached();
+        eventLoop.runLoop();  // весь цикл событий теперь здесь
 
-	    Display.getDefault().asyncExec(() -> {
-	        DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-	        if (window != null) {
-	            window.showVmStoppedMessage();
-	        }
-	    });
-	}
+        detachDebuggerIfAttached(); // после завершения EventLoop
+    }
+
+    /** Обработчик остановки VM */
+    private void onVmStopped() {
+        System.out.println("[EventLoop] Target VM stopped.");
+        running = false;
+        detachDebuggerIfAttached();
+
+        Display.getDefault().asyncExec(() -> {
+            DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
+            if (window != null) {
+                window.showVmStoppedMessage();
+            }
+        });
+    }
+
+    /** Обработчик брейкпоинта */
+    private void onBreakpointEvent(BreakpointEvent event) {
+        System.out.println("[EventLoop] Breakpoint hit: " + event);
+
+        // Подсветка строки в UI
+        Display.getDefault().asyncExec(() -> {
+            try {
+                ITextEditor editor = openEditorForLocation(event.location());
+                if (editor != null) {
+                    int line = event.location().lineNumber() - 1;
+                    new CurrentLineHighlighter().highlight(editor, line);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        // Обновляем модели классов
+        targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+                targetVirtualMachineRepresentation.getVirtualMachine()
+        );
+
+        // Обновляем UI окно
+        refreshUserInterface(event);
+
+        // Запускаем UI-loop ожидания действий пользователя
+        StackFrame frame = null;
+        try {
+            frame = event.thread().frame(0);
+        } catch (IncompatibleThreadStateException e) {
+            e.printStackTrace();
+        }
+
+        handleUiLoop(event, frame);
+    }
+
+    /** UI-loop для событий пользователя на брейкпоинте */
+    private void handleUiLoop(BreakpointEvent breakpointEvent, StackFrame initialFrame) {
+        while (running) {
+            UIEvent uiEvent = null;
+            try {
+                uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent(500, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                System.err.println("UI event polling interrupted");
+                break;
+            }
+
+            if (uiEvent == null) continue;
+
+            if (uiEvent instanceof UserPressedResumeUiEvent) {
+                break; // продолжаем выполнение приложения
+            }
+
+            if (uiEvent instanceof UserClosedWindowUiEvent) {
+                handleUserClosedWindowEvent();
+                break;
+            }
+
+            StackFrame frame = getTopFrame(breakpointEvent.thread());
+            handleSingleUiEvent(uiEvent, frame);
+
+            try {
+                targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+                        targetVirtualMachineRepresentation.getVirtualMachine()
+                );
+            } catch (Exception e) {
+                System.out.println("Target Virtual Machine is unavailable");
+                break;
+            }
+
+            refreshUserInterface(breakpointEvent);
+        }
+    }
+
+    private void handleUserClosedWindowEvent() {
+        System.out.println("User closed debug window. Exiting debug loop.");
+        running = false;
+        detachDebuggerIfAttached();
+    }
+
+    private void detachDebuggerIfAttached() {
+        if (targetApplicationRepresentation != null) {
+            try {
+                targetApplicationRepresentation.detachDebugger();
+                System.out.println("Debugger detached successfully.");
+            } catch (Exception e) {
+                System.err.println("Error detaching debugger: " + e.getMessage());
+            }
+        }
+    }
+
+    private StackFrame getTopFrame(ThreadReference thread) {
+        try {
+            return thread.frame(0);
+        } catch (IncompatibleThreadStateException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+	
+//	private void onVmStopped() {
+//	    System.out.println("[EventLoop] Target VM stopped.");
+//
+//	    running = false;
+//	    detachDebuggerIfAttached();
+//
+//	    Display.getDefault().asyncExec(() -> {
+//	        DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
+//	        if (window != null) {
+//	            window.showVmStoppedMessage();
+//	        }
+//	    });
+//	}
 
 	
 	// Вызывается EventLoop при возникновении BreakpointEvent
-	private void onBreakpointEvent(BreakpointEvent event) {
-	    System.out.println("[EventLoop] Breakpoint hit: " + event);
-
-	    // Обновляем UI — в UI-потоке
-	    Display.getDefault().asyncExec(() -> {
-	        try {
-	            ITextEditor editor = openEditorForLocation(event.location());
-	            if (editor != null) {
-	                int line = event.location().lineNumber() - 1;
-	                new CurrentLineHighlighter().highlight(editor, line);
-	            }
-	        } catch (Exception e) {
-	            e.printStackTrace();
-	        }
-	    });
-
-	    // Перегружаем модели данных приложения
-	    targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
-	            targetVirtualMachineRepresentation.getVirtualMachine()
-	    );
-
-	    // Обновляем UI окно
-	    refreshUserInterface(event);
-
-	    // Заходим в UI-loop (ожидание Step/Resume)
-	    StackFrame frame = null;
-	    try {
-	        frame = event.thread().frame(0);
-	    } catch (IncompatibleThreadStateException e) {
-	        e.printStackTrace();
-	    }
-
-	    handleUiLoop(event, frame);
-	}
+//	private void onBreakpointEvent(BreakpointEvent event) {
+//	    System.out.println("[EventLoop] Breakpoint hit: " + event);
+//
+//	    // Обновляем UI — в UI-потоке
+//	    Display.getDefault().asyncExec(() -> {
+//	        try {
+//	            ITextEditor editor = openEditorForLocation(event.location());
+//	            if (editor != null) {
+//	                int line = event.location().lineNumber() - 1;
+//	                new CurrentLineHighlighter().highlight(editor, line);
+//	            }
+//	        } catch (Exception e) {
+//	            e.printStackTrace();
+//	        }
+//	    });
+//
+//	    // Перегружаем модели данных приложения
+//	    targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+//	            targetVirtualMachineRepresentation.getVirtualMachine()
+//	    );
+//
+//	    // Обновляем UI окно
+//	    refreshUserInterface(event);
+//
+//	    // Заходим в UI-loop (ожидание Step/Resume)
+//	    StackFrame frame = null;
+//	    try {
+//	        frame = event.thread().frame(0);
+//	    } catch (IncompatibleThreadStateException e) {
+//	        e.printStackTrace();
+//	    }
+//
+//	    handleUiLoop(event, frame);
+//	}
 
 
 	public void updateVariables(UserChangedVariableDTO userChangedVariableDTO, StackFrame frame) {
@@ -211,35 +338,19 @@ public class SimpleDebuggerWorkFlow {
 		return targetVirtualMachineRepresentation.getVirtualMachine().allClasses();
 	}
 
-	public void debug() {
-	    System.out.println("DEBUG");
-	    openDebugWindow();
-	    refreshBreakpoints();
-	    System.out.println("Waiting for events...");
+//	public void debug() {
+//	    System.out.println("DEBUG");
+//	    openDebugWindow();
+//	    refreshBreakpoints();
+//	    System.out.println("Starting EventLoop...");
+//
+//	    // Запускаем EventLoop в текущем потоке
+//	    eventLoop.runLoop();
+//
+//	    // После завершения EventLoop
+//	    detachDebuggerIfAttached();
+//	}
 
-	    EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
-
-	    while (running) {
-	        EventSet eventSet = null;
-	        try {
-	            // ждем событие максимум 500 мс
-	            eventSet = queue.remove(500);
-	        } catch (InterruptedException ie) {
-	            Thread.currentThread().interrupt();
-	            System.err.println("Event waiting interrupted");
-	        } catch (Exception e) {
-	            e.printStackTrace();
-	        }
-
-	        if (!running) break; // проверка флага после таймаута или прерывания
-	        if (eventSet != null) {
-	            processEventSet(eventSet);
-	        }
-	    }
-
-	    // поток завершается, отсоединяемся
-	    detachDebuggerIfAttached();
-	}
 
 
 	private void openDebugWindow() {
@@ -304,77 +415,77 @@ public class SimpleDebuggerWorkFlow {
 	    });
 	}
 
-	private StackFrame getTopFrame(ThreadReference thread) {
-	    try {
-	        return thread.frame(0);
-	    } catch (IncompatibleThreadStateException e) {
-	        e.printStackTrace();
-	        return null;
-	    }
-	}
+//	private StackFrame getTopFrame(ThreadReference thread) {
+//	    try {
+//	        return thread.frame(0);
+//	    } catch (IncompatibleThreadStateException e) {
+//	        e.printStackTrace();
+//	        return null;
+//	    }
+//	}
 
-	private void handleUiLoop(BreakpointEvent breakpointEvent, StackFrame initialFrame) {
-	    while (running) {
-	        UIEvent uiEvent = null;
-	        try {
-	            // Ожидаем событие от UI, максимум 500 мс
-	            uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent(500, TimeUnit.MILLISECONDS);
-	        } catch (InterruptedException e) {
-	            Thread.currentThread().interrupt();
-	            System.err.println("UI event polling interrupted");
-	            break; // выходим из цикла
-	        }
+//	private void handleUiLoop(BreakpointEvent breakpointEvent, StackFrame initialFrame) {
+//	    while (running) {
+//	        UIEvent uiEvent = null;
+//	        try {
+//	            // Ожидаем событие от UI, максимум 500 мс
+//	            uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent(500, TimeUnit.MILLISECONDS);
+//	        } catch (InterruptedException e) {
+//	            Thread.currentThread().interrupt();
+//	            System.err.println("UI event polling interrupted");
+//	            break; // выходим из цикла
+//	        }
+//
+//	        if (uiEvent == null) {
+//	            continue; // таймаут, проверяем флаг running на следующей итерации
+//	        }
+//
+//	        System.out.println("Handling UI event: " + uiEvent);
+//
+//	        if (uiEvent instanceof UserPressedResumeUiEvent) {
+//	            break; // продолжаем выполнение таргет-приложения
+//	        }
+//
+//	        if (uiEvent instanceof UserClosedWindowUiEvent) {
+//	            handleUserClosedWindowEvent();
+//	            break; // завершаем цикл
+//	        }
+//
+//	        // Для остальных событий обновляем переменные/поля/методы
+//	        StackFrame frame = getTopFrame(breakpointEvent.thread());
+//	        handleSingleUiEvent(uiEvent, frame);
+//
+//	        try {
+//	            targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+//	                    targetVirtualMachineRepresentation.getVirtualMachine()
+//	            );
+//	        } catch (Exception e) {
+//	            System.out.println("Target Virtual Machine is unavailable");
+//	            break;
+//	        }
+//
+//	        refreshUserInterface(breakpointEvent);
+//	    }
+//	}
 
-	        if (uiEvent == null) {
-	            continue; // таймаут, проверяем флаг running на следующей итерации
-	        }
+//	private void handleUserClosedWindowEvent() {
+//	    System.out.println("User closed debug window. Exiting debug loop.");
+//	    running = false;
+//	    detachDebuggerIfAttached(); // используем общий метод
+//	}
 
-	        System.out.println("Handling UI event: " + uiEvent);
-
-	        if (uiEvent instanceof UserPressedResumeUiEvent) {
-	            break; // продолжаем выполнение таргет-приложения
-	        }
-
-	        if (uiEvent instanceof UserClosedWindowUiEvent) {
-	            handleUserClosedWindowEvent();
-	            break; // завершаем цикл
-	        }
-
-	        // Для остальных событий обновляем переменные/поля/методы
-	        StackFrame frame = getTopFrame(breakpointEvent.thread());
-	        handleSingleUiEvent(uiEvent, frame);
-
-	        try {
-	            targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
-	                    targetVirtualMachineRepresentation.getVirtualMachine()
-	            );
-	        } catch (Exception e) {
-	            System.out.println("Target Virtual Machine is unavailable");
-	            break;
-	        }
-
-	        refreshUserInterface(breakpointEvent);
-	    }
-	}
-
-	private void handleUserClosedWindowEvent() {
-	    System.out.println("User closed debug window. Exiting debug loop.");
-	    running = false;
-	    detachDebuggerIfAttached(); // используем общий метод
-	}
-
-	private void detachDebuggerIfAttached() {
-	    if (targetApplicationRepresentation != null) {
-	        try {
-	            targetApplicationRepresentation.detachDebugger();
-	            System.out.println("Debugger detached successfully.");
-	        } catch (Exception e) {
-	            System.err.println("Error detaching debugger: " + e.getMessage());
-	        }
-	    } else {
-	        System.out.println("No debugger attached to detach.");
-	    }
-	}
+//	private void detachDebuggerIfAttached() {
+//	    if (targetApplicationRepresentation != null) {
+//	        try {
+//	            targetApplicationRepresentation.detachDebugger();
+//	            System.out.println("Debugger detached successfully.");
+//	        } catch (Exception e) {
+//	            System.err.println("Error detaching debugger: " + e.getMessage());
+//	        }
+//	    } else {
+//	        System.out.println("No debugger attached to detach.");
+//	    }
+//	}
 
 
 	public ITextEditor openEditorForLocation(Location location) {

@@ -5,7 +5,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO
 /**
 Слушатель событий от дебаггера → UI
 */
-
+@FunctionalInterface
 public interface DebugEventListener {
 
    void handleDebugEvent(SimpleDebugEventDTO debugEvent);
