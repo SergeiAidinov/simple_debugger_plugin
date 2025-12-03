@@ -1,6 +1,5 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.VarEntry;
 
 public class UserChangedVariable extends UIEvent {

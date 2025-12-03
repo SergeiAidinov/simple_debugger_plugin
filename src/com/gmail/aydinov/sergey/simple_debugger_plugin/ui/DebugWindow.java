@@ -1,8 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
-import java.util.Collections;
-import java.util.Map;
-
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
@@ -16,19 +14,17 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserClosedWindowUiEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.event.UserPressedResumeUiEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabController;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldsTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
-import com.sun.jdi.LocalVariable;
-import com.sun.jdi.ThreadReference;
-import com.sun.jdi.Value;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.VariablesTabContent;
 
 public class DebugWindow {
 
@@ -39,7 +35,7 @@ public class DebugWindow {
 	private VariablesTabContent variablesTab;
 	private FieldsTabContent fieldsTab;
 	private StackTabContent stackTab;
-	private EvaluateTabContent evalTab;
+	private EvaluateTabController evalTab;
 	private Button resumeButton;
 	private Label locationLabel;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
@@ -86,7 +82,7 @@ public class DebugWindow {
 		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		// Таб-страницы
-		variablesTab = new VariablesTabContent(tabFolder);
+		variablesTab = new VariablesTabContent(tabFolder, uiEventCollector);
 		CTabItem varItem = new CTabItem(tabFolder, SWT.NONE);
 		varItem.setText("Variables");
 		varItem.setControl(variablesTab.getControl());
@@ -101,7 +97,7 @@ public class DebugWindow {
 		stackItem.setText("Stack");
 		stackItem.setControl(stackTab.getControl());
 
-		evalTab = new EvaluateTabContent(tabFolder);
+		evalTab = new EvaluateTabController(tabFolder, uiEventCollector);
 		CTabItem evalItem = new CTabItem(tabFolder, SWT.NONE);
 		evalItem.setText("Evaluate");
 		evalItem.setControl(evalTab.getControl());
@@ -138,6 +134,7 @@ public class DebugWindow {
 
 		// закрываем
 		System.out.println("Debug window closed");
+		showVmStoppedMessage();
 		// sendUiEvent(new UserClosedWindowUiEvent());
 		shell.dispose();
 		uiEventCollector.collectUiEvent(new UserClosedWindowUiEvent());
@@ -173,12 +170,12 @@ public class DebugWindow {
 		return shell;
 	}
 
-	public void handleDebugEvent(SimpleDebugEvent debugEvent) {
+	public void handleDebugEvent(SimpleDebugEventDTO debugEvent) {
 		Display.getDefault().asyncExec(() -> {
 			try {
 				if (shell.isDisposed())
 					return;
-				if (debugEvent.getSimpleDebugEventType().equals(SimpleDebugEventType.REFRESH_DATA))
+				if (debugEvent.getType().equals(SimpleDebugEventType.REFRESH_DATA))
 					refreshData(debugEvent);
 
 			} catch (Exception e) {
@@ -188,11 +185,11 @@ public class DebugWindow {
 
 	}
 
-	private void refreshData(SimpleDebugEvent debugEvent) {
+	private void refreshData(SimpleDebugEventDTO simpleDebugEventDTO) {
 	    // -----------------------------
 	    // 0. Проверка наличия debugEvent
 	    // -----------------------------
-	    if (debugEvent == null) {
+	    if (simpleDebugEventDTO == null) {
 	        System.out.println("refreshData: debugEvent = null -> skip");
 	        return;
 	    }
@@ -201,24 +198,25 @@ public class DebugWindow {
 	    // 1. Обновляем UI (безопасно)
 	    // -----------------------------
 	    locationLabel.setText(
-	            STOP_INFO + debugEvent.getClassName() + "." +
-	            debugEvent.getMethodName() + " line:" + debugEvent.getLineNumber()
+	            STOP_INFO + simpleDebugEventDTO.getClassName() + "." +
+	            simpleDebugEventDTO.getMethodName() + " line:" + simpleDebugEventDTO.getLineNumber()
 	    );
 	    resumeButton.setEnabled(true);
 
 	    // -----------------------------
-	    // 2. Используем сохранённые локальные переменные
+	    // 2. Обновляем вкладки
 	    // -----------------------------
-	    Map<LocalVariable, Value> vars = debugEvent.getLocalVariables();
-	    if (vars == null) {
-	        vars = Collections.emptyMap();
-	    }
+	    variablesTab.updateVariables(simpleDebugEventDTO.getLocals()); // List<VariableDTO>
+	    fieldsTab.updateFields(simpleDebugEventDTO.getFields());               // List<VariableDTO>
+	    stackTab.updateStack(simpleDebugEventDTO.getMethodCallInStacks());
+	    evalTab.updateFromEvent(simpleDebugEventDTO);
 
-	    // -----------------------------
-	    // 3. Обновляем вкладки
-	    // -----------------------------
-	    variablesTab.updateVariables(vars);
-	    fieldsTab.updateFields(debugEvent.getFields() != null ? debugEvent.getFields() : Collections.emptyMap());
-	    stackTab.updateStack(debugEvent.getStackDescription() != null ? debugEvent.getStackDescription() : "Unknown");
 	}
+
+	private void showVmStoppedMessage() {
+	    // Например:
+	    MessageDialog.openInformation(shell, "Debugger", "Debugger detached. Target VM continues running");
+	}
+
+
 }

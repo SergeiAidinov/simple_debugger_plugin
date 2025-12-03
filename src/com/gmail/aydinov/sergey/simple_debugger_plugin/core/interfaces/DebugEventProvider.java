@@ -1,9 +1,10 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 
+@FunctionalInterface
 public interface DebugEventProvider {
 	
-	void sendDebugEvent(SimpleDebugEvent debugEvent);
+	void sendDebugEvent(SimpleDebugEventDTO debugEvent);
 
 }

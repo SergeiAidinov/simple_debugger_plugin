@@ -1,7 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jface.viewers.*;
@@ -10,13 +9,15 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.jface.viewers.TextCellEditor;
+import org.eclipse.jface.viewers.CellEditor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 
-public class FieldsTabContent {
+public class VariablesTabContent {
 
     private final Composite root;
     private final Table table;
@@ -24,8 +25,8 @@ public class FieldsTabContent {
     private final List<VariableDTO> entries = new ArrayList<>();
     private final UiEventCollector uiEventCollector;
 
-    public FieldsTabContent(Composite parent) {
-        this.uiEventCollector = SimpleDebuggerEventQueue.instance();
+    public VariablesTabContent(Composite parent, UiEventCollector uiEventCollector) {
+        this.uiEventCollector = uiEventCollector;
 
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(1, false));
@@ -43,9 +44,10 @@ public class FieldsTabContent {
     }
 
     private void setupColumns() {
+        // Name
         TableViewerColumn nameColumn = new TableViewerColumn(viewer, SWT.NONE);
-        nameColumn.getColumn().setText("Field");
-        nameColumn.getColumn().setWidth(200);
+        nameColumn.getColumn().setText("Name");
+        nameColumn.getColumn().setWidth(150);
         nameColumn.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
@@ -56,6 +58,7 @@ public class FieldsTabContent {
             }
         });
 
+        // Type
         TableViewerColumn typeColumn = new TableViewerColumn(viewer, SWT.NONE);
         typeColumn.getColumn().setText("Type");
         typeColumn.getColumn().setWidth(100);
@@ -69,6 +72,7 @@ public class FieldsTabContent {
             }
         });
 
+        // Value
         TableViewerColumn valueColumn = new TableViewerColumn(viewer, SWT.NONE);
         valueColumn.getColumn().setText("Value");
         valueColumn.getColumn().setWidth(200);
@@ -103,28 +107,38 @@ public class FieldsTabContent {
 
             @Override
             public void modify(Object element, String property, Object newValue) {
-                if (!(element instanceof org.eclipse.swt.widgets.TableItem)) return;
+                if (!(element instanceof TableItem)) return;
 
-                VariableDTO entry = (VariableDTO) ((org.eclipse.swt.widgets.TableItem) element).getData();
-                String valueStr = newValue != null ? newValue.toString() : null;
+                TableItem item = (TableItem) element;
+                VariableDTO oldEntry = (VariableDTO) item.getData();
+                if (oldEntry == null || newValue == null) return;
 
-                // Отправляем DTO в обработчик событий
-                UserChangedFieldDTO dto = new UserChangedFieldDTO(entry.getName(), entry.getType(), valueStr);
+                String newValStr = newValue.toString();
+
+                // Создаем DTO для передачи в обработчик
+                UserChangedVariableDTO dto = new UserChangedVariableDTO(
+                        oldEntry.getName(),
+                        oldEntry.getType(),
+                        newValStr
+                );
                 uiEventCollector.collectUiEvent(dto);
 
-                // Обновляем таблицу
-                viewer.update(entry, null);
+                // Обновляем локальный список и viewer
+                int index = entries.indexOf(oldEntry);
+                if (index >= 0) {
+                    VariableDTO updated = new VariableDTO(oldEntry.getName(), oldEntry.getType(), newValStr);
+                    entries.set(index, updated);
+                    viewer.update(updated, null);
+                }
             }
         });
     }
 
-    public void updateFields(List<VariableDTO> vars) {
-        if (table.isDisposed()) return;
+    public void updateVariables(List<VariableDTO> vars) {
+        if (table.isDisposed() || vars == null) return;
 
         entries.clear();
-        if (vars != null) {
-            entries.addAll(vars);
-        }
+        entries.addAll(vars);
 
         viewer.setInput(entries);
         viewer.refresh();

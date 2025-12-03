@@ -1,11 +1,11 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 
 public interface SimpleDebugEventCollector {
 	
-	void collectDebugEvent(SimpleDebugEvent event);
+	void collectDebugEvent(SimpleDebugEventDTO event);
 
 	// Получить событие для обработки (Worker поток)
-	SimpleDebugEvent takeDebugEvent() throws InterruptedException;
+	SimpleDebugEventDTO takeDebugEvent() throws InterruptedException;
 }

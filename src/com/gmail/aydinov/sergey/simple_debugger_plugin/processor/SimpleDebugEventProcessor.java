@@ -1,6 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.events.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 
 public class SimpleDebugEventProcessor implements Runnable {
@@ -18,7 +18,7 @@ public class SimpleDebugEventProcessor implements Runnable {
 		System.out.println(Thread.currentThread() + " started.");
 		while (true) {
 			try {
-				SimpleDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
+				SimpleDebugEventDTO event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
 				System.out.println("SimpleDebugEvent: " + event);
 				debugWindow.handleDebugEvent(event);
 				// handleEvent(event);

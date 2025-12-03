@@ -11,18 +11,19 @@ public class TargetApplicationClassOrInterfaceRepresentation implements TargetAp
 
 	private final String targetApplicationElementName;
 	private final TargetApplicationElementType targetApplicationElementType;
-	private final Set<com.sun.jdi.Method> methods;
+	private final Set<TargetApplicationMethodDTO> methods;
 	private final Set<com.sun.jdi.Field> fields;
 
 	public TargetApplicationClassOrInterfaceRepresentation(String targetApplicationElementName,
-			TargetApplicationElementType targetApplicationElementType, Set<Method> methods, Set<Field> fields) {
+			TargetApplicationElementType targetApplicationElementType, Set<TargetApplicationMethodDTO> methods,
+			Set<Field> fields) {
 		this.targetApplicationElementName = targetApplicationElementName;
 		this.targetApplicationElementType = targetApplicationElementType;
 		this.methods = methods;
 		this.fields = fields;
 	}
 
-	public Set<com.sun.jdi.Method> getMethods() {
+	public Set<TargetApplicationMethodDTO> getMethods() {
 		return methods;
 	}
 
@@ -39,8 +40,8 @@ public class TargetApplicationClassOrInterfaceRepresentation implements TargetAp
 	}
 
 	public String prettyPrint() {
-		String methodsPretty = methods.stream().sorted(Comparator.comparing(Method::name))
-				.map(m -> "    " + String.format("%-30s", m.name()) + "  " + m.signature())
+		String methodsPretty = methods.stream().sorted()
+				.map(m -> "    " + String.format("%-30s", m.getMethodName()) + "  " + m.getReturnType())
 				.collect(Collectors.joining("\n"));
 
 		String fieldsPretty = fields.stream().sorted(Comparator.comparing(Field::name))
