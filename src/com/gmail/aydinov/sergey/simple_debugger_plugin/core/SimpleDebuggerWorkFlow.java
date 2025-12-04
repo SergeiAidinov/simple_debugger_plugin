@@ -3,8 +3,10 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.debug.core.DebugPlugin;
@@ -16,7 +18,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.EventLoop;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.TargetApplicationStatusProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
@@ -49,6 +51,8 @@ import com.sun.jdi.VirtualMachineManager;
 import com.sun.jdi.connect.AttachingConnector;
 import com.sun.jdi.connect.Connector;
 import com.sun.jdi.event.BreakpointEvent;
+import com.sun.jdi.event.EventQueue;
+import com.sun.jdi.event.EventSet;
 import com.sun.jdi.request.EventRequestManager;
 
 public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
@@ -58,9 +62,9 @@ public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 	private final IBreakpointManager iBreakpointManager; // do NOT remove!!!
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove!!!
 	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
-	private volatile boolean running = true;
 	private final AtomicReference<String> resultOfMethodInvocation = new AtomicReference<>("");
 	private TargetApplicationStatus targetApplicationStatus = TargetApplicationStatus.STARTING;
+	public final AtomicBoolean running = new AtomicBoolean();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
@@ -72,6 +76,7 @@ public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
 		DebugWindowManager.instance().setTargetApplicationStatusProvider(this);
+		running.set(true);
 	}
 
 	public TargetApplicationStatus getTargetApplicationStatus() {
@@ -90,14 +95,15 @@ public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 
 	/** Обработчик остановки VM */
 	private void onVmStopped() {
-		running = false;
+		running.set(false);
+		;
 		detachDebugger();
 		targetApplicationStatus = TargetApplicationStatus.STOPPING;
 	}
 
 	/** UI-loop на брейкпоинте */
 	private void handleUiLoop(BreakpointEvent event, StackFrame frame) {
-		while (running) {
+		while (running.get()) {
 			UIEvent uiEvent;
 			try {
 				uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent(500, TimeUnit.MILLISECONDS);
@@ -137,14 +143,40 @@ public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 
 	/** Запуск дебага */
 	public void debug() {
+		System.out.println("DEBUG");
 		openDebugWindow();
+		refreshBreakpoints();
 		targetApplicationRepresentation
 				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-		EventLoop eventLoop = new JdiEventLoop(targetVirtualMachineRepresentation.getVirtualMachine(), // VirtualMachine
-				this::onBreakpointEvent, // BreakpointEventHandler
-				this::onVmStopped, // VmLifeCycleHandler
-				targetApplicationRepresentation);
-		eventLoop.runLoop();
+		while (running.get()) {
+			EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
+			EventSet eventSet = null;
+			try {
+				eventSet = queue.remove(500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (Objects.isNull(eventSet))
+				continue;
+			DebugSession debugSession = new DebugSessionImpl(targetVirtualMachineRepresentation.getVirtualMachine(), // VirtualMachine
+					this::onBreakpointEvent, // BreakpointEventHandler
+					this::onVmStopped, // VmLifeCycleHandler
+					this::refreshUI,
+					targetApplicationRepresentation, eventSet);
+			Thread debugSessionThread = new Thread(debugSession);
+			debugSessionThread.setDaemon(true);
+			debugSessionThread.start();
+			try {
+				debugSessionThread.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			eventSet.resume();
+
+		}
+
 		refreshBreakpoints();
 	}
 
@@ -219,7 +251,7 @@ public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 
 	private void handleUserClosedWindow() {
 		targetApplicationStatus = TargetApplicationStatus.STOPPING;
-		running = false;
+		running.set(false);
 		detachDebugger();
 	}
 
@@ -239,7 +271,7 @@ public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 		});
 	}
 
-	private boolean refreshUI(BreakpointEvent breakpointEvent) {
+	public boolean refreshUI(BreakpointEvent breakpointEvent) {
 		if (breakpointEvent == null)
 			return false;
 		StackFrame frame = getTopFrame(breakpointEvent.thread());
@@ -337,5 +369,4 @@ public class SimpleDebuggerWorkFlow implements TargetApplicationStatusProvider {
 			return future.join();
 		}
 	}
-
 }
