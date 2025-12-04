@@ -157,9 +157,4 @@ public class DebugSessionImpl implements DebugSession {
         );
     }
 
-	@Override
-	public boolean refreshUI(BreakpointEvent breakpointEvent) {
-		// TODO Auto-generated method stub
-		return false;
-	}
 }

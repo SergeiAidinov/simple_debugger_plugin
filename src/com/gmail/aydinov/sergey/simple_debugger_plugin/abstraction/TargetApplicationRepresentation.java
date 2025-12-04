@@ -179,7 +179,7 @@ public class TargetApplicationRepresentation {
 	            continue;
 	        }
 
-	        TargetApplicationMethodDTO dto = buildMethodDTO(m);
+	        TargetApplicationMethodDTO dto = createMethodDTO(m);
 	        if (dto != null) {
 	            result.add(dto);
 	        }
@@ -188,13 +188,13 @@ public class TargetApplicationRepresentation {
 	    return result;
 	}
 
-	private TargetApplicationMethodDTO buildMethodDTO(Method m) {
+	private TargetApplicationMethodDTO createMethodDTO(Method m) {
 	    try {
 	        List<com.sun.jdi.Type> argTypes = m.argumentTypes();
 	        List<com.sun.jdi.LocalVariable> argVars = loadArgVars(m);
 
 	        List<TargetApplicationMethodParameterDTO> params =
-	                buildParameters(argTypes, argVars);
+	                compileParameters(argTypes, argVars);
 
 	        return new TargetApplicationMethodDTO(
 	                m.name(),
@@ -216,7 +216,7 @@ public class TargetApplicationRepresentation {
 	    }
 	}
 
-	private List<TargetApplicationMethodParameterDTO> buildParameters(
+	private List<TargetApplicationMethodParameterDTO> compileParameters(
 	        List<com.sun.jdi.Type> argTypes,
 	        List<com.sun.jdi.LocalVariable> argVars
 	) {
