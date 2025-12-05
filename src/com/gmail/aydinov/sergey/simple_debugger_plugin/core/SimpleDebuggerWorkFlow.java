@@ -3,32 +3,23 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.swt.widgets.Display;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.StatusesHolder;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.StatusesHolder.SimpleDebuggerStatus;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.StatusesHolder.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.sun.jdi.Bootstrap;
-import com.sun.jdi.StackFrame;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.VirtualMachineManager;
 import com.sun.jdi.connect.AttachingConnector;
 import com.sun.jdi.connect.Connector;
-import com.sun.jdi.event.BreakpointEvent;
 import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
 import com.sun.jdi.request.EventRequestManager;
@@ -40,7 +31,7 @@ public class SimpleDebuggerWorkFlow {
 	private final IBreakpointManager iBreakpointManager; // do NOT remove!!!
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove!!!
 	private final CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
-	public static final AtomicBoolean running = new AtomicBoolean();
+	//public static final AtomicBoolean running = new AtomicBoolean();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
@@ -51,7 +42,7 @@ public class SimpleDebuggerWorkFlow {
 		this.breakpointListener = breakpointListener;
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
-		running.set(true);
+		DebuggerContext.context().setRunning(true);
 	}
 
 /** Запуск дебага */
@@ -62,7 +53,7 @@ public class SimpleDebuggerWorkFlow {
 		targetApplicationRepresentation
 				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
 		
-		while (running.get()) {
+		while (DebuggerContext.context().isRunning()) {
 			EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
 			EventSet eventSet = null;
 			try {
@@ -70,8 +61,7 @@ public class SimpleDebuggerWorkFlow {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			if (Objects.isNull(eventSet))
-				continue;
+			if (Objects.isNull(eventSet)) continue;
 			DebugSession debugSession = new DebugSessionImpl(targetVirtualMachineRepresentation,
 					targetApplicationRepresentation, eventSet, highlighter);
 			Thread debugSessionThread = new Thread(debugSession);
@@ -140,11 +130,11 @@ public class SimpleDebuggerWorkFlow {
 					System.out.println("Connecting to " + host + ":" + port + "...");
 					VirtualMachine vm = connector.attach(args);
 					//simpleDebuggerStatus = SimpleDebuggerStatus.VM_CONNECTED;
-					StatusesHolder.simpleDebuggerStatus = SimpleDebuggerStatus.VM_CONNECTED;
+					DebuggerContext.context().setSimpleDebuggerStatus(DebuggerContext.SimpleDebuggerStatus.VM_CONNECTED);
 					System.out.println("Successfully connected to VM.");
 					return vm;
 				} catch (Exception ignored) {
-					StatusesHolder.simpleDebuggerStatus = SimpleDebuggerStatus.VM_AWAITING_CONNECTION;
+					DebuggerContext.context().setSimpleDebuggerStatus(DebuggerContext.SimpleDebuggerStatus.VM_AWAITING_CONNECTION);
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException ignored2) {

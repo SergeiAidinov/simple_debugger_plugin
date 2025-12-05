@@ -15,8 +15,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.StatusesHolder;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.StatusesHolder.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.Factory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
 
@@ -77,7 +75,7 @@ public class SimpleDebugHandler extends AbstractHandler {
 
 			boolean ready = false;
 			while (!ready) {
-				ready = (StatusesHolder.simpleDebuggerStatus.equals(StatusesHolder.SimpleDebuggerStatus.VM_AWAITING_CONNECTION));
+				ready = DebuggerContext.context().getSimpleDebuggerStatus() == DebuggerContext.SimpleDebuggerStatus.VM_AWAITING_CONNECTION;
 				
 				if (!ready) {
 					Thread.currentThread().sleep(200);

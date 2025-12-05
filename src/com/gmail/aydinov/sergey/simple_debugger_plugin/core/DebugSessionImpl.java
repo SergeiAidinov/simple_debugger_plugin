@@ -56,7 +56,7 @@ public class DebugSessionImpl implements DebugSession {
     private final EventSet eventSet;
     private final CurrentLineHighlighter highlighter;
 
-    private volatile boolean running = true;
+    private boolean debugSessionRunning = true;
 
     public DebugSessionImpl(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
                             TargetApplicationRepresentation targetApplicationRepresentation, EventSet eventSet,
@@ -81,6 +81,7 @@ public class DebugSessionImpl implements DebugSession {
 
     private void process() {
         for (Event event : eventSet) {
+        	if (!debugSessionRunning) return;
 
             if (event instanceof BreakpointEvent breakpointEvent) {
 
@@ -91,7 +92,7 @@ public class DebugSessionImpl implements DebugSession {
 
                 refreshUI(breakpointEvent);
 
-                while (running) {
+                while (debugSessionRunning) {
                     UIEvent uiEvent = null;
                     try {
                         uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent();
@@ -99,10 +100,9 @@ public class DebugSessionImpl implements DebugSession {
                         e.printStackTrace();
                     }
                     if (Objects.isNull(uiEvent)) continue;
-
                     targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
-
                     handleBreakpoint(breakpointEvent, uiEvent);
+                    refreshUI(breakpointEvent);
                 }
             }
         }
@@ -138,7 +138,7 @@ public class DebugSessionImpl implements DebugSession {
             logError("Breakpoint handler error", t);
         }
 
-        refreshUI(breakpointEvent);
+         if (debugSessionRunning) refreshUI(breakpointEvent);
     }
 
     private void handleSingleUiEvent(UIEvent uiEvent, StackFrame frame) {
@@ -150,32 +150,23 @@ public class DebugSessionImpl implements DebugSession {
             } else if (uiEvent instanceof InvokeMethodEvent evt) {
                 invokeMethod(evt);
             } else if (uiEvent instanceof UserPressedResumeUiEvent) {
-                running = false;
-                eventSet.resume();
+            	System.out.println("User pressed RESUME");
+                debugSessionRunning = false;
+                //eventSet.resume();
             } else if (uiEvent instanceof UserClosedWindowUiEvent) {
                 System.out.println("User closed debug window → stopping debug session only");
-                running = false; // останавливаем только debug-сессию
-                SimpleDebuggerWorkFlow.running.set(false);
+                debugSessionRunning = false;
+                DebuggerContext.context().setRunning(false);
                 targetVirtualMachineRepresentation.getVirtualMachine().dispose();
-               // eventSet.resume();
+            } else {
+                // Необработанное событие
+                // System.out.println("Unhandled UI event: " + uiEvent.getClass().getSimpleName());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void clearHighlights() {
-        Display display = Display.getDefault();
-        if (display != null && !display.isDisposed()) {
-            display.asyncExec(() -> {
-                IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-                if (window != null && window.getActivePage() != null) {
-                    // Можно пройтись по всем открытым редакторам и удалить аннотации текущей линии
-                    window.getActivePage().getEditorReferences(); 
-                }
-            });
-        }
-    }
 
     private void updateVariables(UserChangedVariableDTO dto, StackFrame frame) {
         try {
@@ -283,7 +274,7 @@ public class DebugSessionImpl implements DebugSession {
 
     @Override
     public void stop() {
-        running = false;
+    	DebuggerContext.context().setRunning(false);
     }
 
     private void logError(String message, Throwable t) {
