@@ -68,12 +68,10 @@ public class SimpleDebuggerWorkFlow {
 			try {
 				eventSet = queue.remove();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			if (Objects.isNull(eventSet))
 				continue;
-			
 			DebugSession debugSession = new DebugSessionImpl(targetVirtualMachineRepresentation,
 					targetApplicationRepresentation, eventSet, highlighter);
 			Thread debugSessionThread = new Thread(debugSession);
@@ -82,11 +80,9 @@ public class SimpleDebuggerWorkFlow {
 			try {
 				debugSessionThread.join();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			refreshBreakpoints();
-			// eventSet.resume();
+			eventSet.resume();
 		}
 	}
 
