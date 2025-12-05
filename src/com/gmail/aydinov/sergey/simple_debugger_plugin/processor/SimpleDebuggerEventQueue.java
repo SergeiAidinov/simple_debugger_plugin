@@ -44,4 +44,8 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
 	public UIEvent pollUiEvent(long timeout, TimeUnit unit) throws InterruptedException {
         return uIEventQueue.poll(timeout, unit);
     }
+	
+	public UIEvent pollUiEvent() throws InterruptedException {
+        return uIEventQueue.poll();
+    }
 }

@@ -1,8 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
-import java.util.Map;
-import java.util.Objects;
-
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -11,7 +8,6 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.core.ILaunchManager;
-import org.eclipse.debug.internal.core.LaunchConfigurationWorkingCopy;
 import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.window.Window;
@@ -19,11 +15,10 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.SimpleDebuggerStatus;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.StatusesHolder;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.StatusesHolder.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.Factory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 
 public class SimpleDebugHandler extends AbstractHandler {
 
@@ -82,8 +77,8 @@ public class SimpleDebugHandler extends AbstractHandler {
 
 			boolean ready = false;
 			while (!ready) {
-				ready = (SimpleDebuggerWorkFlow.Factory.getSimpleDebuggerStatus()
-						.equals(SimpleDebuggerStatus.VM_AWAITING_CONNECTION));
+				ready = (StatusesHolder.simpleDebuggerStatus.equals(StatusesHolder.SimpleDebuggerStatus.VM_AWAITING_CONNECTION));
+				
 				if (!ready) {
 					Thread.currentThread().sleep(200);
 				}

@@ -109,7 +109,7 @@ public class TargetApplicationRepresentation {
 
 	    System.out.println("LOADED CLASSES: " + referencesAtClassesAndInterfaces.size());
 	    for (var ci : referencesAtClassesAndInterfaces.values()) {
-	        System.out.println(ci.prettyPrint());
+	        //System.out.println(ci.prettyPrint());
 	    }
 	}
 
