@@ -251,6 +251,20 @@ public class DebugSessionImpl implements DebugSession {
                 .build();
 
         SimpleDebuggerEventQueue.instance().collectDebugEvent(dto);
+        Display display = Display.getDefault();
+        if (display != null && !display.isDisposed()) {
+            display.asyncExec(() -> {
+                try {
+                    ITextEditor editor = openEditorForLocation(breakpointEvent.location());
+                    if (editor != null) {
+                        int line = breakpointEvent.location().lineNumber() - 1;
+                        highlighter.highlight(editor, line);
+                    }
+                } catch (Throwable t) {
+                    logError("Cannot highlight breakpoint location", t);
+                }
+            });
+        }
         return true;
     }
 
