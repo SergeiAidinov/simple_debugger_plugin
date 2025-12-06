@@ -89,6 +89,7 @@ public class DebugSessionImpl implements DebugSession {
 					handleVmDisconnected();
 					return;
 				}
+				setLabel(breakpointEvent);
 				refreshUI(breakpointEvent);
 				while (debugSessionRunning) {
 					UIEvent uiEvent = null;
@@ -107,10 +108,45 @@ public class DebugSessionImpl implements DebugSession {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+					removeLabel(breakpointEvent);
 					if (debugSessionRunning)
 						refreshUI(breakpointEvent);
 				}
 			}
+		}
+	}
+
+	private void setLabel(BreakpointEvent breakpointEvent) {
+		Display display = Display.getDefault();
+		if (display != null && !display.isDisposed()) {
+			display.asyncExec(() -> {
+				try {
+					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
+					if (editor != null) {
+						int line = breakpointEvent.location().lineNumber() - 1;
+						highlighter.highlight(editor, line);
+					}
+				} catch (Throwable t) {
+					logError("Cannot highlight breakpoint location", t);
+				}
+			});
+		}
+	}
+	
+	private void removeLabel(BreakpointEvent breakpointEvent) {
+		Display display = Display.getDefault();
+		if (display != null && !display.isDisposed()) {
+			display.asyncExec(() -> {
+				try {
+					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
+					if (editor != null) {
+						int line = breakpointEvent.location().lineNumber() - 1;
+						highlighter.clearPreviousHighlight(editor);
+					}
+				} catch (Throwable t) {
+					logError("Cannot highlight breakpoint location", t);
+				}
+			});
 		}
 	}
 
@@ -222,20 +258,20 @@ public class DebugSessionImpl implements DebugSession {
 				.resultOfMethodInvocation(resultOfMethodInvocation.get().toString()).build();
 
 		SimpleDebuggerEventQueue.instance().collectDebugEvent(dto);
-		Display display = Display.getDefault();
-		if (display != null && !display.isDisposed()) {
-			display.asyncExec(() -> {
-				try {
-					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-					if (editor != null) {
-						int line = breakpointEvent.location().lineNumber() - 1;
-						highlighter.highlight(editor, line);
-					}
-				} catch (Throwable t) {
-					logError("Cannot highlight breakpoint location", t);
-				}
-			});
-		}
+//		Display display = Display.getDefault();
+//		if (display != null && !display.isDisposed()) {
+//			display.asyncExec(() -> {
+//				try {
+//					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
+//					if (editor != null) {
+//						int line = breakpointEvent.location().lineNumber() - 1;
+//						highlighter.highlight(editor, line);
+//					}
+//				} catch (Throwable t) {
+//					logError("Cannot highlight breakpoint location", t);
+//				}
+//			});
+//		}
 		return true;
 	}
 

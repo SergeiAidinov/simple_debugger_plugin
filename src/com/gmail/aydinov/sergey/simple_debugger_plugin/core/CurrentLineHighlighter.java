@@ -20,7 +20,7 @@ public class CurrentLineHighlighter {
 		IAnnotationModel model = getAnnotationModel(editor);
 		if (Objects.isNull(model))
 			return;
-		clearPreviousHighlight(model);
+		//clearPreviousHighlight(model);
 		IDocument document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
 		int offset = 0, length = 0;
 		Position position = null;
@@ -40,7 +40,10 @@ public class CurrentLineHighlighter {
 		return provider.getAnnotationModel(editor.getEditorInput());
 	}
 
-	private void clearPreviousHighlight(IAnnotationModel model) {
+	public void clearPreviousHighlight(ITextEditor editor) {
+		IAnnotationModel model = getAnnotationModel(editor);
+		if (Objects.isNull(model))
+			return;
 		List<Annotation> toRemove = new ArrayList<>();
 		Iterator<?> iterator = model.getAnnotationIterator();
 		while (iterator.hasNext()) {
