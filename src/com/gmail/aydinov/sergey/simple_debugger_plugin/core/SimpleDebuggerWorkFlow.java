@@ -48,6 +48,7 @@ public class SimpleDebuggerWorkFlow {
 	public void debug() {
 		System.out.println("DEBUG");
 		openDebugWindow();
+		targetVirtualMachineRepresentation.getVirtualMachine().resume();
 		refreshBreakpoints();
 		targetApplicationRepresentation
 				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
@@ -132,13 +133,14 @@ public class SimpleDebuggerWorkFlow {
 					System.out.println("Connecting to " + host + ":" + port + "...");
 					VirtualMachine vm = connector.attach(args);
 					DebuggerContext.context().setSimpleDebuggerStatus(DebuggerContext.SimpleDebuggerStatus.VM_CONNECTED);
+					vm.suspend();
 					System.out.println("Successfully connected to VM.");
 					return vm;
 				} catch (Exception ignored) {
 					DebuggerContext.context().setSimpleDebuggerStatus(
 							DebuggerContext.SimpleDebuggerStatus.VM_AWAITING_CONNECTION);
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(1);
 					} catch (InterruptedException ignored2) {
 					}
 				}
