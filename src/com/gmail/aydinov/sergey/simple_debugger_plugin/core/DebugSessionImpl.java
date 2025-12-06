@@ -117,20 +117,20 @@ public class DebugSessionImpl implements DebugSession {
     }
 
     private void handleBreakpoint(BreakpointEvent breakpointEvent, UIEvent uiEvent) {
-        Display display = Display.getDefault();
-        if (display != null && !display.isDisposed()) {
-            display.asyncExec(() -> {
-                try {
-                    ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-                    if (editor != null) {
-                        int line = breakpointEvent.location().lineNumber() - 1;
-                        highlighter.highlight(editor, line);
-                    }
-                } catch (Throwable t) {
-                    logError("Cannot highlight breakpoint location", t);
-                }
-            });
-        }
+//        Display display = Display.getDefault();
+//        if (display != null && !display.isDisposed()) {
+//            display.asyncExec(() -> {
+//                try {
+//                    ITextEditor editor = openEditorForLocation(breakpointEvent.location());
+//                    if (editor != null) {
+//                        int line = breakpointEvent.location().lineNumber() - 1;
+//                        highlighter.highlight(editor, line);
+//                    }
+//                } catch (Throwable t) {
+//                    logError("Cannot highlight breakpoint location", t);
+//                }
+//            });
+//        }
 
         try {
             handleSingleUiEvent(uiEvent, breakpointEvent.thread().frame(0));
