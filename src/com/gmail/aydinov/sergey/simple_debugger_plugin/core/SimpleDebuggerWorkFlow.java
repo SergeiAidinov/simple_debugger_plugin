@@ -92,77 +92,105 @@ public class SimpleDebuggerWorkFlow {
 
 	public static class Factory {
 
-		private static SimpleDebuggerWorkFlow instance = null;
+	    private static SimpleDebuggerWorkFlow instance = null;
 
-		public static SimpleDebuggerWorkFlow getSimpleDebuggerWorkFlow() {
-			return instance;
-		}
+	    public static SimpleDebuggerWorkFlow getSimpleDebuggerWorkFlow() {
+	        return instance;
+	    }
 
-		public static void create(String host, int port, OnWorkflowReadyListener listener) {
+	    /** Синхронное создание workflow */
+	    public static SimpleDebuggerWorkFlow createSync(String host, int port) {
+	        // 1. Подключаемся к VM
+	        VirtualMachine vm = attachToVm(host, port);
 
-			CompletableFuture.runAsync(() -> {
-				VirtualMachine vm = attachToVm(host, port);
-				IBreakpointManager bpm = waitForBreakpointManager();
+	        // 2. Получаем менеджер брейкпойнтов синхронно
+	        IBreakpointManager bpm = waitForBreakpointManagerSync();
 
-				BreakePointListener breakpointListener = new BreakePointListener();
-				bpm.setEnabled(true);
-				bpm.addBreakpointListener(breakpointListener);
+	        // 3. Создаём listener для брейкпойнтов
+	        BreakePointListener breakpointListener = new BreakePointListener();
+	        bpm.setEnabled(true);
+	        bpm.addBreakpointListener(breakpointListener);
 
-				instance = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpm,
-						breakpointListener);
+	        // 4. Создаём workflow
+	        instance = new SimpleDebuggerWorkFlow(
+	                new TargetVirtualMachineRepresentation(host, port, vm),
+	                bpm,
+	                breakpointListener
+	        );
 
-				if (Objects.nonNull(listener)) {
-					Display.getDefault().asyncExec(() -> listener.onReady(instance));
-				}
-			});
-		}
+	        // 5. Возвращаем workflow
+	        return instance;
+	    }
 
-		// -------------------
-		private static VirtualMachine attachToVm(String host, int port) {
-			VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
-			AttachingConnector connector = vmm.attachingConnectors().stream()
-					.filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
+	    // -------------------
+	    private static VirtualMachine attachToVm(String host, int port) {
+	        VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
+	        AttachingConnector connector = vmm.attachingConnectors().stream()
+	                .filter(c -> c.name().equals("com.sun.jdi.SocketAttach"))
+	                .findAny()
+	                .orElseThrow();
 
-			Map<String, Connector.Argument> args = connector.defaultArguments();
-			args.get("hostname").setValue(host);
-			args.get("port").setValue(String.valueOf(port));
+	        Map<String, Connector.Argument> args = connector.defaultArguments();
+	        args.get("hostname").setValue(host);
+	        args.get("port").setValue(String.valueOf(port));
 
-			while (true) {
-				try {
-					System.out.println("Connecting to " + host + ":" + port + "...");
-					VirtualMachine vm = connector.attach(args);
-					DebuggerContext.context().setSimpleDebuggerStatus(DebuggerContext.SimpleDebuggerStatus.VM_CONNECTED);
-					System.out.println("Successfully connected to VM.");
-					return vm;
-				} catch (Exception ignored) {
-					DebuggerContext.context().setSimpleDebuggerStatus(
-							DebuggerContext.SimpleDebuggerStatus.VM_AWAITING_CONNECTION);
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException ignored2) {
-					}
-				}
-			}
-		}
+	        while (true) {
+	            try {
+	                System.out.println("Connecting to " + host + ":" + port + "...");
+	                VirtualMachine vm = connector.attach(args);
+	                DebuggerContext.context().setSimpleDebuggerStatus(
+	                        DebuggerContext.SimpleDebuggerStatus.VM_CONNECTED
+	                );
+	                System.out.println("Successfully connected to VM.");
+	                return vm;
+	            } catch (Exception ignored) {
+	                DebuggerContext.context().setSimpleDebuggerStatus(
+	                        DebuggerContext.SimpleDebuggerStatus.VM_AWAITING_CONNECTION
+	                );
+	                try { Thread.sleep(1000); } catch (InterruptedException ignored2) {}
+	            }
+	        }
+	    }
 
-		// -------------------
-		private static IBreakpointManager waitForBreakpointManager() {
-			CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();
+	    // -------------------
+	    private static IBreakpointManager waitForBreakpointManagerSync() {
+	        while (true) {
+	            DebugPlugin plugin = DebugPlugin.getDefault();
+	            if (plugin != null && plugin.getBreakpointManager() != null) {
+	                return plugin.getBreakpointManager();
+	            }
+	            try { Thread.sleep(200); } catch (InterruptedException ignored) {}
+	        }
+	    }
+	
+	
+	public static SimpleDebuggerWorkFlow createSync(String host, int port, OnWorkflowReadyListener listener) {
+	    // 1. Подключаемся к VM
+	    VirtualMachine vm = attachToVm(host, port);
 
-			Runnable check = new Runnable() {
-				@Override
-				public void run() {
-					DebugPlugin plugin = DebugPlugin.getDefault();
-					if (Objects.nonNull(plugin) && Objects.nonNull(plugin.getBreakpointManager())) {
-						future.complete(plugin.getBreakpointManager());
-					} else {
-						Display.getDefault().timerExec(500, this);
-					}
-				}
-			};
+	    // 2. Получаем менеджер брейкпойнтов синхронно
+	    IBreakpointManager bpm = waitForBreakpointManagerSync();
 
-			Display.getDefault().asyncExec(check);
-			return future.join();
-		}
+	    // 3. Создаём listener для брейкпойнтов
+	    BreakePointListener breakpointListener = new BreakePointListener();
+	    bpm.setEnabled(true);
+	    bpm.addBreakpointListener(breakpointListener);
+
+	    // 4. Создаём workflow
+	    instance = new SimpleDebuggerWorkFlow(
+	            new TargetVirtualMachineRepresentation(host, port, vm),
+	            bpm,
+	            breakpointListener
+	    );
+
+	    // 5. Вызываем колбэк, если передан
+	    if (listener != null) {
+	        listener.onReady(instance);
+	    }
+
+	    // 6. Возвращаем workflow
+	    return instance;
+	}
+
 	}
 }
