@@ -28,10 +28,9 @@ public class SimpleDebuggerWorkFlow {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
-	private final IBreakpointManager iBreakpointManager; // do NOT remove!!!
-	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove!!!
+	private final IBreakpointManager iBreakpointManager;
+	private final BreakpointSubscriberRegistrar breakpointListener;
 	private final CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
-	//public static final AtomicBoolean running = new AtomicBoolean();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager iBreakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
@@ -45,14 +44,14 @@ public class SimpleDebuggerWorkFlow {
 		DebuggerContext.context().setRunning(true);
 	}
 
-/** Запуск дебага */
+	/** Запуск дебага */
 	public void debug() {
 		System.out.println("DEBUG");
 		openDebugWindow();
 		refreshBreakpoints();
 		targetApplicationRepresentation
 				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-		
+
 		while (DebuggerContext.context().isRunning()) {
 			EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
 			EventSet eventSet = null;
@@ -61,12 +60,15 @@ public class SimpleDebuggerWorkFlow {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			if (Objects.isNull(eventSet)) continue;
+			if (Objects.isNull(eventSet))
+				continue;
+
 			DebugSession debugSession = new DebugSessionImpl(targetVirtualMachineRepresentation,
 					targetApplicationRepresentation, eventSet, highlighter);
 			Thread debugSessionThread = new Thread(debugSession);
 			debugSessionThread.setDaemon(true);
 			debugSessionThread.start();
+
 			try {
 				debugSessionThread.join();
 			} catch (InterruptedException e) {
@@ -83,7 +85,7 @@ public class SimpleDebuggerWorkFlow {
 	private void openDebugWindow() {
 		Display.getDefault().asyncExec(() -> {
 			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-			if (window != null && !window.isOpen())
+			if (Objects.nonNull(window) && !window.isOpen())
 				window.open();
 		});
 	}
@@ -97,7 +99,6 @@ public class SimpleDebuggerWorkFlow {
 		}
 
 		public static void create(String host, int port, OnWorkflowReadyListener listener) {
-			//StatusesHolder.simpleDebuggerStatus = SimpleDebuggerStatus.STARTING;
 
 			CompletableFuture.runAsync(() -> {
 				VirtualMachine vm = attachToVm(host, port);
@@ -106,10 +107,11 @@ public class SimpleDebuggerWorkFlow {
 				BreakePointListener breakpointListener = new BreakePointListener();
 				bpm.setEnabled(true);
 				bpm.addBreakpointListener(breakpointListener);
-				//StatusesHolder.simpleDebuggerStatus = SimpleDebuggerStatus.STARTING;
+
 				instance = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpm,
 						breakpointListener);
-				if (listener != null) {
+
+				if (Objects.nonNull(listener)) {
 					Display.getDefault().asyncExec(() -> listener.onReady(instance));
 				}
 			});
@@ -129,12 +131,12 @@ public class SimpleDebuggerWorkFlow {
 				try {
 					System.out.println("Connecting to " + host + ":" + port + "...");
 					VirtualMachine vm = connector.attach(args);
-					//simpleDebuggerStatus = SimpleDebuggerStatus.VM_CONNECTED;
 					DebuggerContext.context().setSimpleDebuggerStatus(DebuggerContext.SimpleDebuggerStatus.VM_CONNECTED);
 					System.out.println("Successfully connected to VM.");
 					return vm;
 				} catch (Exception ignored) {
-					DebuggerContext.context().setSimpleDebuggerStatus(DebuggerContext.SimpleDebuggerStatus.VM_AWAITING_CONNECTION);
+					DebuggerContext.context().setSimpleDebuggerStatus(
+							DebuggerContext.SimpleDebuggerStatus.VM_AWAITING_CONNECTION);
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException ignored2) {
@@ -151,7 +153,7 @@ public class SimpleDebuggerWorkFlow {
 				@Override
 				public void run() {
 					DebugPlugin plugin = DebugPlugin.getDefault();
-					if (plugin != null && plugin.getBreakpointManager() != null) {
+					if (Objects.nonNull(plugin) && Objects.nonNull(plugin.getBreakpointManager())) {
 						future.complete(plugin.getBreakpointManager());
 					} else {
 						Display.getDefault().timerExec(500, this);

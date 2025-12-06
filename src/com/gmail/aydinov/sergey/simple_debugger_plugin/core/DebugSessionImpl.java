@@ -100,15 +100,18 @@ public class DebugSessionImpl implements DebugSession {
 					}
 					if (Objects.isNull(uiEvent))
 						continue;
+
 					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
 							.refreshBreakePoints();
+
 					try {
 						handleSingleUiEvent(uiEvent, breakpointEvent.thread().frame(0));
 					} catch (IncompatibleThreadStateException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+
 					removeLabel(breakpointEvent);
+
 					if (debugSessionRunning)
 						refreshUI(breakpointEvent);
 				}
@@ -118,11 +121,11 @@ public class DebugSessionImpl implements DebugSession {
 
 	private void setLabel(BreakpointEvent breakpointEvent) {
 		Display display = Display.getDefault();
-		if (display != null && !display.isDisposed()) {
+		if (Objects.nonNull(display) && !display.isDisposed()) {
 			display.asyncExec(() -> {
 				try {
 					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-					if (editor != null) {
+					if (Objects.nonNull(editor)) {
 						int line = breakpointEvent.location().lineNumber() - 1;
 						highlighter.highlight(editor, line);
 					}
@@ -135,12 +138,11 @@ public class DebugSessionImpl implements DebugSession {
 	
 	private void removeLabel(BreakpointEvent breakpointEvent) {
 		Display display = Display.getDefault();
-		if (display != null && !display.isDisposed()) {
+		if (Objects.nonNull(display) && !display.isDisposed()) {
 			display.asyncExec(() -> {
 				try {
 					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-					if (editor != null) {
-						int line = breakpointEvent.location().lineNumber() - 1;
+					if (Objects.nonNull(editor)) {
 						highlighter.clearPreviousHighlight(editor);
 					}
 				} catch (Throwable t) {
@@ -167,7 +169,6 @@ public class DebugSessionImpl implements DebugSession {
 				DebuggerContext.context().setRunning(false);
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
 			} else {
-				// Необработанное событие
 				System.out.println("Unhandled UI event: " + uiEvent.getClass().getSimpleName());
 			}
 		} catch (Exception e) {
@@ -177,13 +178,19 @@ public class DebugSessionImpl implements DebugSession {
 
 	private void updateVariables(UserChangedVariableDTO dto, StackFrame frame) {
 		try {
-			LocalVariable localVariable = frame.visibleVariables().stream().filter(v -> v.name().equals(dto.getName()))
-					.findFirst().orElse(null);
-			if (localVariable == null)
+			LocalVariable localVariable = frame.visibleVariables().stream()
+					.filter(v -> v.name().equals(dto.getName()))
+					.findFirst()
+					.orElse(null);
+
+			if (Objects.isNull(localVariable))
 				return;
 
-			Value val = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-					localVariable, dto.getNewValue().toString());
+			Value val = DebugUtils.createJdiValueFromString(
+					targetVirtualMachineRepresentation.getVirtualMachine(),
+					localVariable,
+					dto.getNewValue().toString()
+			);
 			frame.setValue(localVariable, val);
 		} catch (AbsentInformationException e) {
 			e.printStackTrace();
@@ -193,37 +200,54 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private void updateField(UserChangedFieldDTO dto, StackFrame frame) throws Exception {
-		ReferenceType refType = frame.thisObject() != null ? frame.thisObject().referenceType()
+		ReferenceType refType = Objects.nonNull(frame.thisObject())
+				? frame.thisObject().referenceType()
 				: frame.location().declaringType();
+
 		Field field = refType.fieldByName(dto.getFieldName());
-		if (field == null)
+		if (Objects.isNull(field))
 			return;
 
-		Value val = DebugUtils.createJdiObjectFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-				field.type(), dto.getNewValue(), frame.thread());
+		Value val = DebugUtils.createJdiObjectFromString(
+				targetVirtualMachineRepresentation.getVirtualMachine(),
+				field.type(),
+				dto.getNewValue(),
+				frame.thread()
+		);
 
 		if (Modifier.isStatic(field.modifiers()) && refType instanceof ClassType ct) {
 			ct.setValue(field, val);
-		} else if (frame.thisObject() != null) {
+		} else if (Objects.nonNull(frame.thisObject())) {
 			frame.thisObject().setValue(field, val);
 		}
 	}
 
 	private void invokeMethod(InvokeMethodEvent event) {
 		try {
-			List<Value> args = DebugUtils.parseArguments(targetVirtualMachineRepresentation.getVirtualMachine(), event);
+			List<Value> args = DebugUtils.parseArguments(
+					targetVirtualMachineRepresentation.getVirtualMachine(),
+					event
+			);
+
 			ReferenceType refType = targetApplicationRepresentation.findReferenceTypeForClass(event.getClazz());
 			Method method = refType.methodsByName(event.getMethod().getMethodName()).get(0);
+
 			ObjectReference instance = !method.isStatic()
 					? targetApplicationRepresentation.createObjectInstance((ClassType) refType)
 					: null;
 
-			Value result = instance != null
-					? instance.invokeMethod(targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0),
-							method, args, ObjectReference.INVOKE_SINGLE_THREADED)
+			Value result = Objects.nonNull(instance)
+					? instance.invokeMethod(
+							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0),
+							method,
+							args,
+							ObjectReference.INVOKE_SINGLE_THREADED)
 					: ((ClassType) refType).invokeMethod(
-							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), method, args,
-							ClassType.INVOKE_SINGLE_THREADED);
+							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0),
+							method,
+							args,
+							ClassType.INVOKE_SINGLE_THREADED
+					);
 
 			resultOfMethodInvocation.set(String.valueOf(result));
 		} catch (Exception e) {
@@ -240,59 +264,54 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private boolean refreshUI(BreakpointEvent breakpointEvent) {
-		if (breakpointEvent == null)
+		if (Objects.isNull(breakpointEvent))
 			return false;
+
 		StackFrame frame = getTopFrame(breakpointEvent.thread());
-		if (frame == null)
+		if (Objects.isNull(frame))
 			return false;
 
 		Location location = breakpointEvent.location();
-		SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder().type(SimpleDebugEventType.REFRESH_DATA)
-				.className(location.declaringType().name()).methodName(location.method().name())
-				.lineNumber(location.lineNumber()).fields(DebugUtils.mapFields(DebugUtils.compileFields(frame)))
+
+		SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder()
+				.type(SimpleDebugEventType.REFRESH_DATA)
+				.className(location.declaringType().name())
+				.methodName(location.method().name())
+				.lineNumber(location.lineNumber())
+				.fields(DebugUtils.mapFields(DebugUtils.compileFields(frame)))
 				.locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(frame)))
 				.stackTrace(resultOfMethodInvocation.get())
 				.targetApplicationElementRepresentationList(
 						targetApplicationRepresentation.getTargetApplicationElements())
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
-				.resultOfMethodInvocation(resultOfMethodInvocation.get().toString()).build();
+				.resultOfMethodInvocation(resultOfMethodInvocation.get().toString())
+				.build();
 
 		SimpleDebuggerEventQueue.instance().collectDebugEvent(dto);
-//		Display display = Display.getDefault();
-//		if (display != null && !display.isDisposed()) {
-//			display.asyncExec(() -> {
-//				try {
-//					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-//					if (editor != null) {
-//						int line = breakpointEvent.location().lineNumber() - 1;
-//						highlighter.highlight(editor, line);
-//					}
-//				} catch (Throwable t) {
-//					logError("Cannot highlight breakpoint location", t);
-//				}
-//			});
-//		}
 		return true;
 	}
 
 	private ITextEditor openEditorForLocation(Location location) throws Exception {
-		if (location == null)
+		if (Objects.isNull(location))
 			return null;
+
 		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		if (window == null)
+		if (Objects.isNull(window))
 			return null;
+
 		IWorkbenchPage page = window.getActivePage();
-		if (page == null)
+		if (Objects.isNull(page))
 			return null;
 
 		IFile file = targetApplicationRepresentation.findIFileForLocation(location);
-		if (file == null)
+		if (Objects.isNull(file))
 			throw new IllegalStateException("Cannot map location to IFile: " + location);
 
 		IEditorPart part = IDE.openEditor(page, file, true);
 		if (part instanceof ITextEditor editor) {
 			return editor;
 		}
+
 		throw new IllegalStateException("Opened editor is not a text editor");
 	}
 
@@ -310,7 +329,9 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private void logError(String message, Throwable t) {
-		StatusManager.getManager().handle(new Status(IStatus.ERROR, "simple_debugger_plugin", message, t),
-				StatusManager.LOG);
+		StatusManager.getManager().handle(
+				new Status(IStatus.ERROR, "simple_debugger_plugin", message, t),
+				StatusManager.LOG
+		);
 	}
 }
