@@ -34,6 +34,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
+import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -101,8 +102,14 @@ public class DebugSessionImpl implements DebugSession {
                     }
                     if (Objects.isNull(uiEvent)) continue;
                     targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
-                    handleBreakpoint(breakpointEvent, uiEvent);
-                    refreshUI(breakpointEvent);
+                    //handleBreakpoint(breakpointEvent, uiEvent);
+                    try {
+						handleSingleUiEvent(uiEvent, breakpointEvent.thread().frame(0));
+					} catch (IncompatibleThreadStateException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+                   if (debugSessionRunning) refreshUI(breakpointEvent);
                 }
             }
         }
@@ -116,7 +123,7 @@ public class DebugSessionImpl implements DebugSession {
         }
     }
 
-    private void handleBreakpoint(BreakpointEvent breakpointEvent, UIEvent uiEvent) {
+//    private void handleBreakpoint(BreakpointEvent breakpointEvent, UIEvent uiEvent) {
 //        Display display = Display.getDefault();
 //        if (display != null && !display.isDisposed()) {
 //            display.asyncExec(() -> {
@@ -132,14 +139,14 @@ public class DebugSessionImpl implements DebugSession {
 //            });
 //        }
 
-        try {
-            handleSingleUiEvent(uiEvent, breakpointEvent.thread().frame(0));
-        } catch (Throwable t) {
-            logError("Breakpoint handler error", t);
-        }
-
-         if (debugSessionRunning) refreshUI(breakpointEvent);
-    }
+//        try {
+//            handleSingleUiEvent(uiEvent, breakpointEvent.thread().frame(0));
+//        } catch (Throwable t) {
+//            logError("Breakpoint handler error", t);
+//        }
+//
+//         if (debugSessionRunning) refreshUI(breakpointEvent);
+//    }
 
     private void handleSingleUiEvent(UIEvent uiEvent, StackFrame frame) {
         try {
