@@ -97,7 +97,7 @@ public class TargetApplicationBreakepointRepresentation implements BreakpointSub
 		breakpointRequestWrappers.clear();
 		Arrays.asList(iBreakpointManager.getBreakpoints()).stream()
 				.forEach(bp -> addBreakepoint(new BreakpointWrapper(bp)));
-		breakpointRequestWrappers.stream().forEach(bpw -> System.out.println("===> " + bpw.getBreakpointRequest()));
+		//breakpointRequestWrappers.stream().forEach(bpw -> System.out.println("===> " + bpw.getBreakpointRequest()));
 	}
 
 	private Optional<Location> findLocation(Method method, int sourceLine) {
