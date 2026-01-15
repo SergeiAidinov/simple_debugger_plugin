@@ -7,6 +7,7 @@ import com.sun.jdi.connect.AttachingConnector;
 import com.sun.jdi.connect.Connector;
 import com.sun.jdi.connect.LaunchingConnector;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -38,18 +39,43 @@ public class VMLauncher {
         }
     }
 
-    public static VirtualMachine launch(String mainClass, List<String> options) {
+    public static VirtualMachine launch() {
         try {
-            LaunchingConnector connector = Bootstrap.virtualMachineManager()
-                    .defaultConnector(); // default: LaunchingConnector
+            // Получаем стандартный LaunchingConnector
+            LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
             Map<String, Connector.Argument> args = connector.defaultArguments();
-            args.get("main").setValue(mainClass);
-            if (options != null && !options.isEmpty()) {
-                args.get("options").setValue(String.join(" ", options));
-            }
+
+            // Полностью квалифицированное имя main-класса
+            args.get("main").setValue("target_debug.Main");
+
+            // Classpath к скомпилированным классам (не исходники)
+            args.get("options").setValue("-cp /home/sergei/eclipse-commiters-workspace/target_debug/bin"); 
+
+            // Не останавливать сразу JVM
+            args.get("suspend").setValue("false");
+
+            // Запускаем target JVM
             VirtualMachine vm = connector.launch(args);
-            vm.suspend(); // сразу при старте останавливаем все потоки
+
+            System.out.println("==> VM LAUNCHED: " + vm.description());
+
+            // Логируем stdout и stderr target-приложения
+            Process process = vm.process();
+
+            new Thread(() -> {
+                try (InputStream in = process.getInputStream()) {
+                    in.transferTo(System.out);
+                } catch (Exception ignored) {}
+            }).start();
+
+            new Thread(() -> {
+                try (InputStream err = process.getErrorStream()) {
+                    err.transferTo(System.err);
+                } catch (Exception ignored) {}
+            }).start();
+
             return vm;
+
         } catch (Exception e) {
             throw new RuntimeException("Cannot launch VM", e);
         }

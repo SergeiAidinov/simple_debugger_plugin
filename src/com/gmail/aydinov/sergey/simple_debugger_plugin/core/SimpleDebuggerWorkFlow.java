@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -11,6 +13,7 @@ import org.eclipse.swt.widgets.Display;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
@@ -48,28 +51,49 @@ public class SimpleDebuggerWorkFlow {
 	/** Запуск дебага */
 	public void debug() {
 	    System.out.println("DEBUG");
+	    
 	    openDebugWindow();
-
 	    VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
+	    vm.resume();
+	    Process process = vm.process();
+	    new Thread(() -> {
+	        try (InputStream in = process.getInputStream()) {
+	            in.transferTo(System.out);
+	        } catch (IOException ignored) {}
+	    }).start();
+
+	    // stderr
+	    new Thread(() -> {
+	        try (InputStream err = process.getErrorStream()) {
+	            err.transferTo(System.err);
+	        } catch (IOException ignored) {}
+	    }).start();
 	    try {
 	        // Подождём, пока VM реально запустится
 	        int attempts = 0;
-	        while (vm.allThreads().isEmpty() && attempts < 50) { // ждём до 5 секунд
-	            Thread.sleep(100);
+	        while (targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().size() == 0) { 
+	        	refreshBreakpoints();
+	            targetApplicationRepresentation
+	            .refreshReferencesToClassesOfTargetApplication(vm);
+	        	Thread.sleep(1000);
 	            attempts++;
+	            System.out.println("ATTEMPTS: " + attempts);
+	            
 	        }
 
-	       // vm.resume(); // запускаем VM
+	      //  vm.resume(); // запускаем VM
 	    } catch (Exception e) {
 	        e.printStackTrace();
 	    }
 
-	   // refreshBreakpoints();
+	   refreshBreakpoints();
 	    targetApplicationRepresentation
 	            .refreshReferencesToClassesOfTargetApplication(vm);
 
 	    boolean running = true;
 	    while (running) {
+	    	if (DebuggerContext.context().getTargetApplicationStatus()
+	    			.equals(TargetApplicationStatus.STARTING)) continue;
 	        EventQueue queue = vm.eventQueue();
 	        EventSet eventSet = null;
 	        try {
@@ -106,9 +130,9 @@ public class SimpleDebuggerWorkFlow {
 	    }
 	}
 
-//	private void refreshBreakpoints() {
-//		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
-//	}
+	private void refreshBreakpoints() {
+		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakpoints();
+	}
 
 	private void openDebugWindow() {
 		Display.getDefault().asyncExec(() -> {
@@ -127,40 +151,40 @@ public class SimpleDebuggerWorkFlow {
 	        return instance;
 	    }
 
-	    public static void createAttached(String host, int port, OnWorkflowReadyListener listener) {
-	        CompletableFuture.runAsync(() -> {
-	            var vm = VMLauncher.attach(host, port);
-	            IBreakpointManager bpm = waitForBreakpointManager();
-
-	            var listenerBp = new BreakePointListener();
-	            bpm.setEnabled(true);
-	            bpm.addBreakpointListener(listenerBp);
-
-	            instance = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpm, listenerBp);
-
-	            if (Objects.nonNull(listener)) {
-	                Display.getDefault().asyncExec(() -> listener.onReady(instance));
-	            }
-	        });
-	    }
+//	    public static void createAttached(String host, int port, OnWorkflowReadyListener listener) {
+//	        CompletableFuture.runAsync(() -> {
+//	            var vm = VMLauncher.attach(host, port);
+//	            IBreakpointManager bpm = waitForBreakpointManager();
+//
+//	            var listenerBp = new BreakePointListener();
+//	            bpm.setEnabled(true);
+//	            bpm.addBreakpointListener(listenerBp);
+//
+//	            instance = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpm, listenerBp);
+//
+//	            if (Objects.nonNull(listener)) {
+//	                Display.getDefault().asyncExec(() -> listener.onReady(instance));
+//	            }
+//	        });
+//	    }
 
 	    public static void createLaunched(String mainClass, List<String> options, OnWorkflowReadyListener listener) {
 	        CompletableFuture.runAsync(() -> {
-	            var vm = VMLauncher.launch(mainClass, options);
+	            var vm = VMLauncher.launch();
 	            IBreakpointManager bpm = waitForBreakpointManager();
 
 	            var listenerBp = new BreakePointListener();
 	            bpm.setEnabled(true);
 	            bpm.addBreakpointListener(listenerBp);
+	            TargetVirtualMachineRepresentation targetVirtualMachineRepresentation = new TargetVirtualMachineRepresentation("localhost", 5005, vm);
 
 	            instance = new SimpleDebuggerWorkFlow(
-	                new TargetVirtualMachineRepresentation("localhost", 0, vm),
+	                targetVirtualMachineRepresentation,
 	                bpm,
 	                listenerBp
 	            );
 
-	            // сразу запускаем debug() в отдельном потоке
-	           // new Thread(() -> instance.debug(), "Workflow-Thread").start();
+	         //  new Thread(new TargetLauncher(mainClass, options, targetVirtualMachineRepresentation)).start();
 
 	            if (Objects.nonNull(listener)) {
 	                Display.getDefault().asyncExec(() -> listener.onReady(instance));

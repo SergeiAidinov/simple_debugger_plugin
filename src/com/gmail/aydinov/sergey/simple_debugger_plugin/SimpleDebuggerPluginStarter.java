@@ -17,6 +17,7 @@ import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.SimpleDebuggerWorkFlowFactory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.TargetLauncher;
@@ -24,12 +25,16 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflo
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 
-public class SimpleDebugPluginStarter extends AbstractHandler {
+public class SimpleDebuggerPluginStarter extends AbstractHandler {
+	
+	String mainClass = "target_debug.Main";
+	List<String> options = List.of(
+		    "-Xmx512m"
+		);
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		TargetLauncher targetLauncher = new TargetLauncher(null, null);
-		new Thread(targetLauncher).start();
+		
 		Shell shell = HandlerUtil.getActiveShell(event);
 
 		try {
@@ -77,21 +82,9 @@ public class SimpleDebugPluginStarter extends AbstractHandler {
 			// -------------------------
 			// 3️⃣ Основная точка входа — создание workflow
 			// -------------------------
-			String mainClass = "com.example.TargetMain"; // TODO: заменить на свой main
-			List<String> options = List.of("-Xmx512m");
 
 			SimpleDebuggerWorkFlowFactory.createLaunched(mainClass, options, workflow -> {
-				// -------------------------
-				// Создаём окно DebugWindow в UI-потоке
-				// -------------------------
-//                Display.getDefault().asyncExec(() -> {
-//                    DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateWindow();
-//                    debugWindow.open();
-//                });
-
-				// -------------------------
-				// Сразу запускаем workflow.debug() в отдельном потоке
-				// -------------------------
+				DebuggerContext.context().setTargetApplicationStatus(TargetApplicationStatus.STARTING);
 				new Thread(() -> {
 					try {
 						System.out.println("Starting workflow...");
