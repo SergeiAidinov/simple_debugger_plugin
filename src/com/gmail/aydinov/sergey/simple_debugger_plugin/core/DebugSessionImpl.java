@@ -1,6 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
-import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -29,309 +28,241 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventTyp
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedStartUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
-import com.sun.jdi.AbsentInformationException;
-import com.sun.jdi.ClassType;
-import com.sun.jdi.Field;
-import com.sun.jdi.IncompatibleThreadStateException;
-import com.sun.jdi.LocalVariable;
-import com.sun.jdi.Location;
-import com.sun.jdi.Method;
-import com.sun.jdi.ObjectReference;
-import com.sun.jdi.ReferenceType;
-import com.sun.jdi.StackFrame;
-import com.sun.jdi.ThreadReference;
-import com.sun.jdi.Value;
-import com.sun.jdi.event.BreakpointEvent;
-import com.sun.jdi.event.Event;
-import com.sun.jdi.event.EventSet;
-import com.sun.jdi.event.VMDeathEvent;
-import com.sun.jdi.event.VMDisconnectEvent;
+import com.sun.jdi.*;
+import com.sun.jdi.event.*;
 
 public class DebugSessionImpl implements DebugSession {
 
-	private final static AtomicReference<String> resultOfMethodInvocation = new AtomicReference<>("");
-	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
-	private final TargetApplicationRepresentation targetApplicationRepresentation;
-	private final EventSet eventSet;
-	private final CurrentLineHighlighter highlighter;
+    private enum DebugState {
+        RUNNING,
+        SUSPENDED,
+        TERMINATED
+    }
 
-	private boolean debugSessionRunning = true;
+    private static final AtomicReference<String> resultOfMethodInvocation = new AtomicReference<>("");
 
-	public DebugSessionImpl(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
-			TargetApplicationRepresentation targetApplicationRepresentation, EventSet eventSet,
-			CurrentLineHighlighter highlighter) {
-		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
-		this.targetApplicationRepresentation = targetApplicationRepresentation;
-		this.eventSet = eventSet;
-		this.highlighter = highlighter;
-	}
+    private final TargetVirtualMachineRepresentation vmRep;
+    private final TargetApplicationRepresentation appRep;
+    private final EventSet eventSet;
+    private final CurrentLineHighlighter highlighter;
 
-	@Override
-	public void run() {
-		try {
-			System.out.println("DEBUG SESSION STARTED: " + LocalDateTime.now());
-			handleStopAtBreakpoint();
-		} catch (Throwable t) {
-			logError("Fatal error in JDI event loop", t);
-		} finally {
-			System.out.println("DEBUG SESSION FINISHED: " + LocalDateTime.now());
-		}
-	}
+    private volatile DebugState debugState = DebugState.RUNNING;
 
-	private void handleStopAtBreakpoint() {
-		for (Event event : eventSet) {
-			if (!debugSessionRunning)
-				return;
-			if (event instanceof BreakpointEvent breakpointEvent) {
-				if (event instanceof VMDeathEvent || event instanceof VMDisconnectEvent) {
-					handleVmDisconnected();
-					return;
-				}
-				setLabel(breakpointEvent);
-				refreshUI(breakpointEvent);
-				while (debugSessionRunning) {
-					UIEvent uiEvent = null;
-					try {
-						uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					if (Objects.isNull(uiEvent))
-						continue;
+    public DebugSessionImpl(
+            TargetVirtualMachineRepresentation vmRep,
+            TargetApplicationRepresentation appRep,
+            EventSet eventSet,
+            CurrentLineHighlighter highlighter
+    ) {
+        this.vmRep = vmRep;
+        this.appRep = appRep;
+        this.eventSet = eventSet;
+        this.highlighter = highlighter;
+    }
 
-					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
-							.refreshBreakePoints();
+    @Override
+    public void run() {
+        try {
+            System.out.println("DEBUG SESSION STARTED: " + LocalDateTime.now());
+            processEventSet();
+        } catch (Throwable t) {
+            logError("Fatal error in debug session", t);
+        } finally {
+            System.out.println("DEBUG SESSION FINISHED: " + LocalDateTime.now());
+        }
+    }
 
-					try {
-						handleSingleUiEvent(uiEvent, breakpointEvent.thread().frame(0));
-					} catch (IncompatibleThreadStateException e) {
-						e.printStackTrace();
-					}
+    private void processEventSet() {
+        for (Event event : eventSet) {
 
-					removeLabel(breakpointEvent);
+            if (event instanceof VMDeathEvent || event instanceof VMDisconnectEvent) {
+                handleVmDisconnected();
+                return;
+            }
 
-					if (debugSessionRunning)
-						refreshUI(breakpointEvent);
-				}
-			}
-		}
-	}
+            if (event instanceof BreakpointEvent bp) {
+                debugState = DebugState.SUSPENDED;
+                onBreakpoint(bp);
+            }
+        }
 
-	private void setLabel(BreakpointEvent breakpointEvent) {
-		Display display = Display.getDefault();
-		if (Objects.nonNull(display) && !display.isDisposed()) {
-			display.asyncExec(() -> {
-				try {
-					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-					if (Objects.nonNull(editor)) {
-						int line = breakpointEvent.location().lineNumber() - 1;
-						highlighter.highlight(editor, line);
-					}
-				} catch (Throwable t) {
-					logError("Cannot highlight breakpoint location", t);
-				}
-			});
-		}
-	}
-	
-	private void removeLabel(BreakpointEvent breakpointEvent) {
-		Display display = Display.getDefault();
-		if (Objects.nonNull(display) && !display.isDisposed()) {
-			display.asyncExec(() -> {
-				try {
-					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-					if (Objects.nonNull(editor)) {
-						highlighter.clearPreviousHighlight(editor);
-					}
-				} catch (Throwable t) {
-					logError("Cannot highlight breakpoint location", t);
-				}
-			});
-		}
-	}
+        if (debugState == DebugState.RUNNING) {
+            eventSet.resume();
+        }
+    }
 
-	private void handleSingleUiEvent(UIEvent uiEvent, StackFrame frame) {
-		try {
-			if (uiEvent instanceof UserChangedVariableDTO dto) {
-				updateVariables(dto, frame);
-			} else if (uiEvent instanceof UserChangedFieldDTO dto) {
-				updateField(dto, frame);
-			} else if (uiEvent instanceof InvokeMethodEvent evt) {
-				invokeMethod(evt);
-			} else if (uiEvent instanceof UserPressedResumeUiEvent) {
-				System.out.println("User pressed RESUME");
-				debugSessionRunning = false;
-			} else if (uiEvent instanceof UserClosedWindowUiEvent) {
-				System.out.println("User closed debug window → stopping debug session only");
-				debugSessionRunning = false;
-				DebuggerContext.context().setRunning(false);
-				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
-			} else {
-				System.out.println("Unhandled UI event: " + uiEvent.getClass().getSimpleName());
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+    private void onBreakpoint(BreakpointEvent bp) {
+        setHighlight(bp);
+        refreshUI(bp);
+    }
 
-	private void updateVariables(UserChangedVariableDTO dto, StackFrame frame) {
-		try {
-			LocalVariable localVariable = frame.visibleVariables().stream()
-					.filter(v -> v.name().equals(dto.getName()))
-					.findFirst()
-					.orElse(null);
+    /* ========================= UI EVENTS ========================= */
 
-			if (Objects.isNull(localVariable))
-				return;
+    public void handleUiEvent(UIEvent uiEvent) {
+        try {
+            if (uiEvent instanceof UserPressedResumeUiEvent) {
+                resume();
+            } else if (uiEvent instanceof UserPressedStartUiEvent) {
+                System.out.println("Start pressed (noop for now)");
+            } else if (uiEvent instanceof UserClosedWindowUiEvent) {
+                terminate();
+            } else if (uiEvent instanceof UserChangedVariableDTO dto) {
+                updateVariable(dto);
+            } else if (uiEvent instanceof UserChangedFieldDTO dto) {
+                updateField(dto);
+            } else if (uiEvent instanceof InvokeMethodEvent evt) {
+                invokeMethod(evt);
+            }
+        } catch (Exception e) {
+            logError("UI event handling failed", e);
+        }
+    }
 
-			Value val = DebugUtils.createJdiValueFromString(
-					targetVirtualMachineRepresentation.getVirtualMachine(),
-					localVariable,
-					dto.getNewValue().toString()
-			);
-			frame.setValue(localVariable, val);
-		} catch (AbsentInformationException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+    private void resume() {
+        debugState = DebugState.RUNNING;
+       // clearHighlight();
+        vmRep.getVirtualMachine().resume();
+    }
 
-	private void updateField(UserChangedFieldDTO dto, StackFrame frame) throws Exception {
-		ReferenceType refType = Objects.nonNull(frame.thisObject())
-				? frame.thisObject().referenceType()
-				: frame.location().declaringType();
+    private void terminate() {
+        debugState = DebugState.TERMINATED;
+        DebuggerContext.context().setRunning(false);
+        vmRep.getVirtualMachine().dispose();
+    }
 
-		Field field = refType.fieldByName(dto.getFieldName());
-		if (Objects.isNull(field))
-			return;
+    /* ========================= DATA OPS ========================= */
 
-		Value val = DebugUtils.createJdiObjectFromString(
-				targetVirtualMachineRepresentation.getVirtualMachine(),
-				field.type(),
-				dto.getNewValue(),
-				frame.thread()
-		);
+    private void updateVariable(UserChangedVariableDTO dto) throws Exception {
+        ThreadReference thread = vmRep.getVirtualMachine().allThreads().get(0);
+        StackFrame frame = thread.frame(0);
 
-		if (Modifier.isStatic(field.modifiers()) && refType instanceof ClassType ct) {
-			ct.setValue(field, val);
-		} else if (Objects.nonNull(frame.thisObject())) {
-			frame.thisObject().setValue(field, val);
-		}
-	}
+        LocalVariable var = frame.visibleVariables().stream()
+                .filter(v -> v.name().equals(dto.getName()))
+                .findFirst()
+                .orElse(null);
 
-	private void invokeMethod(InvokeMethodEvent event) {
-		try {
-			List<Value> args = DebugUtils.parseArguments(
-					targetVirtualMachineRepresentation.getVirtualMachine(),
-					event
-			);
+        if (var == null) return;
 
-			ReferenceType refType = targetApplicationRepresentation.findReferenceTypeForClass(event.getClazz());
-			Method method = refType.methodsByName(event.getMethod().getMethodName()).get(0);
+        Value value = DebugUtils.createJdiValueFromString(
+                vmRep.getVirtualMachine(), var, dto.getNewValue().toString()
+        );
+        frame.setValue(var, value);
+    }
 
-			ObjectReference instance = !method.isStatic()
-					? targetApplicationRepresentation.createObjectInstance((ClassType) refType)
-					: null;
+    private void updateField(UserChangedFieldDTO dto) throws Exception {
+        ThreadReference thread = vmRep.getVirtualMachine().allThreads().get(0);
+        StackFrame frame = thread.frame(0);
 
-			Value result = Objects.nonNull(instance)
-					? instance.invokeMethod(
-							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0),
-							method,
-							args,
-							ObjectReference.INVOKE_SINGLE_THREADED)
-					: ((ClassType) refType).invokeMethod(
-							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0),
-							method,
-							args,
-							ClassType.INVOKE_SINGLE_THREADED
-					);
+        ReferenceType refType = frame.thisObject() != null
+                ? frame.thisObject().referenceType()
+                : frame.location().declaringType();
 
-			resultOfMethodInvocation.set(String.valueOf(result));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+        Field field = refType.fieldByName(dto.getFieldName());
+        if (field == null) return;
 
-	private StackFrame getTopFrame(ThreadReference thread) {
-		try {
-			return thread.frame(0);
-		} catch (Exception e) {
-			return null;
-		}
-	}
+        Value val = DebugUtils.createJdiObjectFromString(
+                vmRep.getVirtualMachine(), field.type(), dto.getNewValue(), thread
+        );
 
-	private boolean refreshUI(BreakpointEvent breakpointEvent) {
-		if (Objects.isNull(breakpointEvent))
-			return false;
+        if (field.isStatic() && refType instanceof ClassType ct) {
+            ct.setValue(field, val);
+        } else if (frame.thisObject() != null) {
+            frame.thisObject().setValue(field, val);
+        }
+    }
 
-		StackFrame frame = getTopFrame(breakpointEvent.thread());
-		if (Objects.isNull(frame))
-			return false;
+    private void invokeMethod(InvokeMethodEvent event) throws Exception {
+        ReferenceType refType = appRep.findReferenceTypeForClass(event.getClazz());
+        Method method = refType.methodsByName(event.getMethod().getMethodName()).get(0);
 
-		Location location = breakpointEvent.location();
+        List<Value> args = DebugUtils.parseArguments(vmRep.getVirtualMachine(), event);
+        ThreadReference thread = vmRep.getVirtualMachine().allThreads().get(0);
 
-		SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder()
-				.type(SimpleDebugEventType.REFRESH_DATA)
-				.className(location.declaringType().name())
-				.methodName(location.method().name())
-				.lineNumber(location.lineNumber())
-				.fields(DebugUtils.mapFields(DebugUtils.compileFields(frame)))
-				.locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(frame)))
-				.stackTrace(resultOfMethodInvocation.get())
-				.targetApplicationElementRepresentationList(
-						targetApplicationRepresentation.getTargetApplicationElements())
-				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
-				.resultOfMethodInvocation(resultOfMethodInvocation.get().toString())
-				.build();
+        Value result = method.isStatic()
+                ? ((ClassType) refType).invokeMethod(thread, method, args, ClassType.INVOKE_SINGLE_THREADED)
+                : appRep.createObjectInstance((ClassType) refType)
+                        .invokeMethod(thread, method, args, ObjectReference.INVOKE_SINGLE_THREADED);
 
-		SimpleDebuggerEventQueue.instance().collectDebugEvent(dto);
-		return true;
-	}
+        resultOfMethodInvocation.set(String.valueOf(result));
+    }
 
-	private ITextEditor openEditorForLocation(Location location) throws Exception {
-		if (Objects.isNull(location))
-			return null;
+    /* ========================= UI ========================= */
 
-		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		if (Objects.isNull(window))
-			return null;
+    private void refreshUI(BreakpointEvent bp) {
+        StackFrame frame;
+        try {
+            frame = bp.thread().frame(0);
+        } catch (Exception e) {
+            return;
+        }
 
-		IWorkbenchPage page = window.getActivePage();
-		if (Objects.isNull(page))
-			return null;
+        Location loc = bp.location();
 
-		IFile file = targetApplicationRepresentation.findIFileForLocation(location);
-		if (Objects.isNull(file))
-			throw new IllegalStateException("Cannot map location to IFile: " + location);
+        SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder()
+                .type(SimpleDebugEventType.REFRESH_DATA)
+                .className(loc.declaringType().name())
+                .methodName(loc.method().name())
+                .lineNumber(loc.lineNumber())
+                .fields(DebugUtils.mapFields(DebugUtils.compileFields(frame)))
+                .locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(frame)))
+                .methodCallInStacks(DebugUtils.compileStackInfo(bp.thread()))
+                .resultOfMethodInvocation(resultOfMethodInvocation.get())
+                .targetApplicationElementRepresentationList(appRep.getTargetApplicationElements())
+                .build();
 
-		IEditorPart part = IDE.openEditor(page, file, true);
-		if (part instanceof ITextEditor editor) {
-			return editor;
-		}
+        SimpleDebuggerEventQueue.instance().collectDebugEvent(dto);
+    }
 
-		throw new IllegalStateException("Opened editor is not a text editor");
-	}
+    private void setHighlight(BreakpointEvent bp) {
+        Display.getDefault().asyncExec(() -> {
+            try {
+                ITextEditor editor = openEditor(bp.location());
+                if (editor != null) {
+                    highlighter.highlight(editor, bp.location().lineNumber() - 1);
+                }
+            } catch (Exception e) {
+                logError("Highlight failed", e);
+            }
+        });
+    }
 
-	private void handleVmDisconnected() {
-		try {
-			targetApplicationRepresentation.detachDebugger();
-			eventSet.resume();
-		} catch (Exception ignored) {
-		}
-	}
-	
-	@Override
-	public void stop() {
-		DebuggerContext.context().setRunning(false);
-	}
+//    private void clearHighlight() {
+//        Display.getDefault().asyncExec(highlighter::clearPreviousHighlight);
+//    }
 
-	private void logError(String message, Throwable t) {
-		StatusManager.getManager().handle(
-				new Status(IStatus.ERROR, "simple_debugger_plugin", message, t),
-				StatusManager.LOG
-		);
-	}
+    private ITextEditor openEditor(Location location) throws Exception {
+        IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+        if (window == null) return null;
+
+        IWorkbenchPage page = window.getActivePage();
+        if (page == null) return null;
+
+        IFile file = appRep.findIFileForLocation(location);
+        if (file == null) return null;
+
+        IEditorPart part = IDE.openEditor(page, file, true);
+        return part instanceof ITextEditor te ? te : null;
+    }
+
+    private void handleVmDisconnected() {
+        try {
+            appRep.detachDebugger();
+            eventSet.resume();
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void stop() {
+        terminate();
+    }
+
+    private void logError(String msg, Throwable t) {
+        StatusManager.getManager().handle(
+                new Status(IStatus.ERROR, "simple_debugger_plugin", msg, t),
+                StatusManager.LOG
+        );
+    }
 }

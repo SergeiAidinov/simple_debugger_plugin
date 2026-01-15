@@ -18,6 +18,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedStartUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
@@ -131,7 +132,9 @@ public class DebugWindow {
 	}
 
 	private void pressStartButton() {
-		System.out.println("pressed Start Button");
+		 Display.getDefault().asyncExec(() -> {
+		        uiEventCollector.collectUiEvent(new UserPressedStartUiEvent());
+		    });
 		
 	}
 

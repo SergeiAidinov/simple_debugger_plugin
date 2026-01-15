@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -46,42 +47,68 @@ public class SimpleDebuggerWorkFlow {
 
 	/** Запуск дебага */
 	public void debug() {
-		System.out.println("DEBUG");
-		openDebugWindow();
-		targetVirtualMachineRepresentation.getVirtualMachine().resume();
-		refreshBreakpoints();
-		targetApplicationRepresentation
-				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+	    System.out.println("DEBUG");
+	    openDebugWindow();
 
-		while (DebuggerContext.context().isRunning()) {
-			EventQueue queue = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue();
-			EventSet eventSet = null;
-			try {
-				eventSet = queue.remove();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			if (Objects.isNull(eventSet))
-				continue;
+	    VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
+	    try {
+	        // Подождём, пока VM реально запустится
+	        int attempts = 0;
+	        while (vm.allThreads().isEmpty() && attempts < 50) { // ждём до 5 секунд
+	            Thread.sleep(100);
+	            attempts++;
+	        }
 
-			DebugSession debugSession = new DebugSessionImpl(targetVirtualMachineRepresentation,
-					targetApplicationRepresentation, eventSet, highlighter);
-			Thread debugSessionThread = new Thread(debugSession);
-			debugSessionThread.setDaemon(true);
-			debugSessionThread.start();
+	       // vm.resume(); // запускаем VM
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
 
-			try {
-				debugSessionThread.join();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			eventSet.resume();
-		}
+	   // refreshBreakpoints();
+	    targetApplicationRepresentation
+	            .refreshReferencesToClassesOfTargetApplication(vm);
+
+	    boolean running = true;
+	    while (running) {
+	        EventQueue queue = vm.eventQueue();
+	        EventSet eventSet = null;
+	        try {
+	            eventSet = queue.remove();
+	        } catch (InterruptedException e) {
+	            e.printStackTrace();
+	        } catch (com.sun.jdi.VMDisconnectedException e) {
+	            System.out.println("VM disconnected, finishing debug loop.");
+	            break; // корректно выходим из цикла
+	        }
+
+	        if (eventSet == null)
+	            continue;
+
+	        DebugSession debugSession = new DebugSessionImpl(
+	                targetVirtualMachineRepresentation,
+	                targetApplicationRepresentation,
+	                eventSet,
+	                highlighter
+	        );
+	        Thread debugSessionThread = new Thread(debugSession);
+	        debugSessionThread.setDaemon(true);
+	        debugSessionThread.start();
+
+	        try {
+	            debugSessionThread.join();
+	        } catch (InterruptedException e) {
+	            e.printStackTrace();
+	        }
+
+	        eventSet.resume();
+
+	        running = DebuggerContext.context().isRunning();
+	    }
 	}
 
-	private void refreshBreakpoints() {
-		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
-	}
+//	private void refreshBreakpoints() {
+//		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakePoints();
+//	}
 
 	private void openDebugWindow() {
 		Display.getDefault().asyncExec(() -> {
@@ -91,80 +118,74 @@ public class SimpleDebuggerWorkFlow {
 		});
 	}
 
-	public static class Factory {
 
-		private static SimpleDebuggerWorkFlow instance = null;
+	public static class SimpleDebuggerWorkFlowFactory {
 
-		public static SimpleDebuggerWorkFlow getSimpleDebuggerWorkFlow() {
-			return instance;
-		}
+	    private static SimpleDebuggerWorkFlow instance = null;
 
-		public static void create(String host, int port, OnWorkflowReadyListener listener) {
+	    public static SimpleDebuggerWorkFlow getInstance() {
+	        return instance;
+	    }
 
-			CompletableFuture.runAsync(() -> {
-				VirtualMachine vm = attachToVm(host, port);
-				IBreakpointManager bpm = waitForBreakpointManager();
+	    public static void createAttached(String host, int port, OnWorkflowReadyListener listener) {
+	        CompletableFuture.runAsync(() -> {
+	            var vm = VMLauncher.attach(host, port);
+	            IBreakpointManager bpm = waitForBreakpointManager();
 
-				BreakePointListener breakpointListener = new BreakePointListener();
-				bpm.setEnabled(true);
-				bpm.addBreakpointListener(breakpointListener);
+	            var listenerBp = new BreakePointListener();
+	            bpm.setEnabled(true);
+	            bpm.addBreakpointListener(listenerBp);
 
-				instance = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpm,
-						breakpointListener);
+	            instance = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpm, listenerBp);
 
-				if (Objects.nonNull(listener)) {
-					Display.getDefault().asyncExec(() -> listener.onReady(instance));
-				}
-			});
-		}
+	            if (Objects.nonNull(listener)) {
+	                Display.getDefault().asyncExec(() -> listener.onReady(instance));
+	            }
+	        });
+	    }
 
-		// -------------------
-		private static VirtualMachine attachToVm(String host, int port) {
-			VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
-			AttachingConnector connector = vmm.attachingConnectors().stream()
-					.filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
+	    public static void createLaunched(String mainClass, List<String> options, OnWorkflowReadyListener listener) {
+	        CompletableFuture.runAsync(() -> {
+	            var vm = VMLauncher.launch(mainClass, options);
+	            IBreakpointManager bpm = waitForBreakpointManager();
 
-			Map<String, Connector.Argument> args = connector.defaultArguments();
-			args.get("hostname").setValue(host);
-			args.get("port").setValue(String.valueOf(port));
+	            var listenerBp = new BreakePointListener();
+	            bpm.setEnabled(true);
+	            bpm.addBreakpointListener(listenerBp);
 
-			while (true) {
-				try {
-					System.out.println("Connecting to " + host + ":" + port + "...");
-					VirtualMachine vm = connector.attach(args);
-					DebuggerContext.context().setSimpleDebuggerStatus(DebuggerContext.SimpleDebuggerStatus.VM_CONNECTED);
-					vm.suspend();
-					System.out.println("Successfully connected to VM.");
-					return vm;
-				} catch (Exception ignored) {
-					DebuggerContext.context().setSimpleDebuggerStatus(
-							DebuggerContext.SimpleDebuggerStatus.VM_AWAITING_CONNECTION);
-					try {
-						Thread.sleep(1);
-					} catch (InterruptedException ignored2) {
-					}
-				}
-			}
-		}
+	            instance = new SimpleDebuggerWorkFlow(
+	                new TargetVirtualMachineRepresentation("localhost", 0, vm),
+	                bpm,
+	                listenerBp
+	            );
 
-		// -------------------
-		private static IBreakpointManager waitForBreakpointManager() {
-			CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();
+	            // сразу запускаем debug() в отдельном потоке
+	           // new Thread(() -> instance.debug(), "Workflow-Thread").start();
 
-			Runnable check = new Runnable() {
-				@Override
-				public void run() {
-					DebugPlugin plugin = DebugPlugin.getDefault();
-					if (Objects.nonNull(plugin) && Objects.nonNull(plugin.getBreakpointManager())) {
-						future.complete(plugin.getBreakpointManager());
-					} else {
-						Display.getDefault().timerExec(500, this);
-					}
-				}
-			};
+	            if (Objects.nonNull(listener)) {
+	                Display.getDefault().asyncExec(() -> listener.onReady(instance));
+	            }
+	        });
+	    }
 
-			Display.getDefault().asyncExec(check);
-			return future.join();
-		}
-	}
+
+	    private static IBreakpointManager waitForBreakpointManager() {
+	        CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();
+	        Runnable check = new Runnable() {
+	            @Override
+	            public void run() {
+	                DebugPlugin plugin = DebugPlugin.getDefault();
+	                if (plugin != null && plugin.getBreakpointManager() != null) {
+	                    future.complete(plugin.getBreakpointManager());
+	                } else {
+	                    Display.getDefault().timerExec(500, this);
+	                }
+	            }
+	        };
+	        Display.getDefault().asyncExec(check);
+	        return future.join();
+	    }
+	
+
+}
 }

@@ -41,6 +41,10 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
 		return debugEventQueue.take(); // блокируется, пока нет событий
 	}
 	
+	public UIEvent takeUiEvent() throws InterruptedException {
+		return uIEventQueue.take(); // блокируется, пока нет событий
+	}
+	
 	public UIEvent pollUiEvent(long timeout, TimeUnit unit) throws InterruptedException {
         return uIEventQueue.poll(timeout, unit);
     }

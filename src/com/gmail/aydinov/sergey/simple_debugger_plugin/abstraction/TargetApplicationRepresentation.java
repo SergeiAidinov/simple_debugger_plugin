@@ -124,6 +124,7 @@ public class TargetApplicationRepresentation {
 	        try {
 	            Thread.sleep(1000);
 	        } catch (InterruptedException ignored) {
+	        	System.out.println(ignored);
 	        }
 	    }
 	    return list;

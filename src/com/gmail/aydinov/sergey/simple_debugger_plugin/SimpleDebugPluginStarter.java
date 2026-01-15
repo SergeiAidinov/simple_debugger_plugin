@@ -1,38 +1,43 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin;
 
-import java.util.Objects;
+import java.util.List;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.debug.core.DebugPlugin;
-import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
-import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.window.Window;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.Factory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.SimpleDebuggerWorkFlowFactory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.TargetLauncher;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 
 public class SimpleDebugPluginStarter extends AbstractHandler {
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
+		TargetLauncher targetLauncher = new TargetLauncher(null, null);
+		new Thread(targetLauncher).start();
 		Shell shell = HandlerUtil.getActiveShell(event);
 
 		try {
-			// Получаем все Java конфигурации запуска
+			// -------------------------
+			// 1️⃣ Выбор конфигурации
+			// -------------------------
 			ILaunchConfiguration[] configs = DebugPlugin.getDefault().getLaunchManager().getLaunchConfigurations();
 
-			// Создаём диалог для выбора конфигурации
 			ElementListSelectionDialog dialog = new ElementListSelectionDialog(shell, new LabelProvider() {
 				@Override
 				public String getText(Object element) {
@@ -49,51 +54,60 @@ public class SimpleDebugPluginStarter extends AbstractHandler {
 			dialog.setMultipleSelection(false);
 
 			if (dialog.open() != Window.OK) {
-				return null; // Пользователь отменил выбор
+				return null; // пользователь отменил выбор
 			}
 
 			ILaunchConfiguration selectedConfig = (ILaunchConfiguration) dialog.getFirstResult();
 
-			// Получаем порт из конфигурации, если есть
+			// -------------------------
+			// 2️⃣ Получаем порт (если есть) и VM args
+			// -------------------------
 			String vmArgs = selectedConfig.getAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, "");
-
 			Integer port = getPortFromConfiguration(vmArgs);
 			if (port == null) {
-				port = 5005; // дефолтный порт
+				port = 5005;
 				ILaunchConfigurationWorkingCopy wc = selectedConfig.getWorkingCopy();
 				if (!vmArgs.isEmpty())
 					vmArgs += " ";
-				vmArgs += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005";
+				vmArgs += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005";
 				wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, vmArgs);
-				ILaunchConfiguration newConfig = wc.doSave();
+				wc.doSave();
 			}
 
-			// Запускаем workflow
-			String host = "localhost"; // локальный хост
-			Factory.create(host, port, new OnWorkflowReadyListener() {
-				@Override
-				public void onReady(SimpleDebuggerWorkFlow workflow) {
-					new Thread(workflow::debug).start();
-				}
+			// -------------------------
+			// 3️⃣ Основная точка входа — создание workflow
+			// -------------------------
+			String mainClass = "com.example.TargetMain"; // TODO: заменить на свой main
+			List<String> options = List.of("-Xmx512m");
+
+			SimpleDebuggerWorkFlowFactory.createLaunched(mainClass, options, workflow -> {
+				// -------------------------
+				// Создаём окно DebugWindow в UI-потоке
+				// -------------------------
+//                Display.getDefault().asyncExec(() -> {
+//                    DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateWindow();
+//                    debugWindow.open();
+//                });
+
+				// -------------------------
+				// Сразу запускаем workflow.debug() в отдельном потоке
+				// -------------------------
+				new Thread(() -> {
+					try {
+						System.out.println("Starting workflow...");
+						DebuggerContext.context().setRunning(true);
+						workflow.debug();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}, "Workflow-Thread").start();
 			});
-
-			boolean ready = false;
-			while (!ready) {
-				ready = DebuggerContext.context().getSimpleDebuggerStatus() == DebuggerContext.SimpleDebuggerStatus.VM_AWAITING_CONNECTION;
-				System.out.println("READY: " + ready);
-				if (!ready) {
-					Thread.currentThread().sleep(200);
-				}
-			}
-
-			ILaunch launch = selectedConfig.launch(ILaunchManager.RUN_MODE, null);
-			System.out.println("Application launched: " + selectedConfig.getName());
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
-		return null;
+		return shell;
 	}
 
 	private Integer getPortFromConfiguration(String vmArgs) {

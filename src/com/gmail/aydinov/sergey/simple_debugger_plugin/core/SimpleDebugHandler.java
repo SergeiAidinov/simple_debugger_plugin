@@ -15,7 +15,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.Factory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.SimpleDebuggerWorkFlowFactory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
 
 public class SimpleDebugHandler extends AbstractHandler {
@@ -66,7 +66,7 @@ public class SimpleDebugHandler extends AbstractHandler {
 
 			// Запускаем workflow
 			String host = "localhost"; // локальный хост
-			Factory.create(host, port, new OnWorkflowReadyListener() {
+			SimpleDebuggerWorkFlowFactory.createAttached(host, port, new OnWorkflowReadyListener() {
 				@Override
 				public void onReady(SimpleDebuggerWorkFlow workflow) {
 					new Thread(workflow::debug).start();
