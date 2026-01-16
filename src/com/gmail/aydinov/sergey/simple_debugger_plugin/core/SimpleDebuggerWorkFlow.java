@@ -173,33 +173,35 @@ public class SimpleDebuggerWorkFlow {
 		}
 
 		private static void attachConsoleReaders(Process process) {
+			new Thread(new ConsoleReader(process.getInputStream(), "[TARGET]")).start();
+			new Thread(new ConsoleReader(process.getErrorStream(), "[TARGET-ERR]" )).start();
 		    // stdout
-		    new Thread(() -> {
-		        try (InputStream in = process.getInputStream();
-		             InputStreamReader isr = new InputStreamReader(in);
-		             BufferedReader reader = new BufferedReader(isr)) {
-		            String line;
-		            while ((line = reader.readLine()) != null) {
-		                System.out.println("[TARGET] " + line);
-		            }
-		        } catch (IOException e) {
-		            e.printStackTrace();
-		        }
-		    }, "Console-stdout").start();
+//		    new Thread(() -> {
+//		        try (InputStream in = process.getInputStream();
+//		             InputStreamReader isr = new InputStreamReader(in);
+//		             BufferedReader reader = new BufferedReader(isr)) {
+//		            String line;
+//		            while ((line = reader.readLine()) != null) {
+//		                System.out.println("[TARGET] " + line);
+//		            }
+//		        } catch (IOException e) {
+//		            e.printStackTrace();
+//		        }
+//		    }, "Console-stdout").start();
 
 		    // stderr
-		    new Thread(() -> {
-		        try (InputStream err = process.getErrorStream();
-		             InputStreamReader isr = new InputStreamReader(err);
-		             BufferedReader reader = new BufferedReader(isr)) {
-		            String line;
-		            while ((line = reader.readLine()) != null) {
-		                System.err.println("[TARGET-ERR] " + line);
-		            }
-		        } catch (IOException e) {
-		            e.printStackTrace();
-		        }
-		    }, "Console-stderr").start();
+//		    new Thread(() -> {
+//		        try (InputStream err = process.getErrorStream();
+//		             InputStreamReader isr = new InputStreamReader(err);
+//		             BufferedReader reader = new BufferedReader(isr)) {
+//		            String line;
+//		            while ((line = reader.readLine()) != null) {
+//		                System.err.println("[TARGET-ERR] " + line);
+//		            }
+//		        } catch (IOException e) {
+//		            e.printStackTrace();
+//		        }
+//		    }, "Console-stderr").start();
 		}
 	}
 }
