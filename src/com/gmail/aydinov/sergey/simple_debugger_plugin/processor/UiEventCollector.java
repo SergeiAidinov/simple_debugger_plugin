@@ -2,7 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
 import java.util.concurrent.TimeUnit;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractUIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 
 public interface UiEventCollector {
 

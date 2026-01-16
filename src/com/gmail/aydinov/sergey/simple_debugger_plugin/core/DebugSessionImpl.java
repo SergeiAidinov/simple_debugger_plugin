@@ -23,12 +23,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtual
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractUIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
@@ -237,7 +237,7 @@ public class DebugSessionImpl implements DebugSession {
         if (frame == null) return false;
 
         Location location = breakpointEvent.location();
-        SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder()
+        DebugStoppedAtBreakepointEvent dto = new DebugStoppedAtBreakepointEvent.Builder()
                 .type(SimpleDebugEventType.STOPPED_AT_BREAKEPOINT)
                 .className(location.declaringType().name())
                 .methodName(location.method().name())

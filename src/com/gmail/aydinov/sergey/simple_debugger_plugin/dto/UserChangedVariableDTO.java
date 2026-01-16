@@ -1,6 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractUIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 
 /**
  * DTO для передачи изменений переменной из UI в отладчик

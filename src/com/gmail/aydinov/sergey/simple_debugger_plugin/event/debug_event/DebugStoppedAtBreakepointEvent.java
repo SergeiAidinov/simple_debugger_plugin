@@ -1,12 +1,13 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event;
 
 import java.util.List;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 
-public class SimpleDebugEventDTO extends AbstractSimpleDebugEventDTO{
+public class DebugStoppedAtBreakepointEvent extends AbstractSimpleDebugEvent{
 
     //private final SimpleDebugEventType type;
     private final String className;
@@ -19,7 +20,7 @@ public class SimpleDebugEventDTO extends AbstractSimpleDebugEventDTO{
     private final String resultOfMethodInvocation;
     private final List<MethodCallInStack> methodCallInStacks;
 
-    public SimpleDebugEventDTO(SimpleDebugEventType type,
+    public DebugStoppedAtBreakepointEvent(SimpleDebugEventType type,
                                String className,
                                String methodName,
                                int lineNumber,
@@ -120,8 +121,8 @@ public class SimpleDebugEventDTO extends AbstractSimpleDebugEventDTO{
             return this;
         }
 
-        public SimpleDebugEventDTO build() {
-            return new SimpleDebugEventDTO(
+        public DebugStoppedAtBreakepointEvent build() {
+            return new DebugStoppedAtBreakepointEvent(
                     type,
                     className,
                     methodName,

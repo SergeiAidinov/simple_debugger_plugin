@@ -14,11 +14,11 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebugEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
@@ -171,13 +171,13 @@ public class DebugWindow {
 		return shell;
 	}
 
-	public void handleDebugEvent(AbstractSimpleDebugEventDTO event) {
+	public void handleDebugEvent(AbstractSimpleDebugEvent event) {
 		Display.getDefault().asyncExec(() -> {
 			try {
 				if (shell.isDisposed())
 					return;
 				if (event.getType().equals(SimpleDebugEventType.STOPPED_AT_BREAKEPOINT))
-					refreshDataAtBreakepoint((SimpleDebugEventDTO) event);
+					refreshDataAtBreakepoint((DebugStoppedAtBreakepointEvent) event);
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -186,7 +186,7 @@ public class DebugWindow {
 
 	}
 
-	private void refreshDataAtBreakepoint(SimpleDebugEventDTO simpleDebugEventDTO) {
+	private void refreshDataAtBreakepoint(DebugStoppedAtBreakepointEvent simpleDebugEventDTO) {
 	    // -----------------------------
 	    // 0. Проверка наличия debugEvent
 	    // -----------------------------
