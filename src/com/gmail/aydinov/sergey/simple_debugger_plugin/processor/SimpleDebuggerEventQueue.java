@@ -22,7 +22,6 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
 		return INSTANCE;
 	}
 
-	//private final Queue<UIEvent> uIEventQueue = new ConcurrentLinkedQueue<>();
 	private final BlockingQueue<AbstractUIEvent> uIEventQueue = new LinkedBlockingQueue<>();
 	private final BlockingQueue<AbstractSimpleDebugEvent> debugEventQueue = new LinkedBlockingQueue<>();
 
@@ -42,14 +41,7 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
 		return debugEventQueue.take(); // блокируется, пока нет событий
 	}
 	
-	public AbstractUIEvent takeUiEvent() throws InterruptedException {
-		return uIEventQueue.take(); // блокируется, пока нет событий
-	}
-	
-	public AbstractUIEvent pollUiEvent(long timeout, TimeUnit unit) throws InterruptedException {
-        return uIEventQueue.poll(timeout, unit);
-    }
-	
+	@Override
 	public AbstractUIEvent pollUiEvent() throws InterruptedException {
         return uIEventQueue.poll();
     }

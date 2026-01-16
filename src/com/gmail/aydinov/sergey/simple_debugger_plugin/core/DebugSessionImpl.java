@@ -23,7 +23,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtual
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
@@ -238,7 +238,7 @@ public class DebugSessionImpl implements DebugSession {
 
         Location location = breakpointEvent.location();
         DebugStoppedAtBreakepointEvent dto = new DebugStoppedAtBreakepointEvent.Builder()
-                .type(SimpleDebugEventType.STOPPED_AT_BREAKEPOINT)
+                .type(SimpleDebuggerEventType.STOPPED_AT_BREAKEPOINT)
                 .className(location.declaringType().name())
                 .methodName(location.method().name())
                 .lineNumber(location.lineNumber())

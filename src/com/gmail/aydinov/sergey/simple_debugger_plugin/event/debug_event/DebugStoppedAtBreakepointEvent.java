@@ -5,7 +5,7 @@ import java.util.List;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 
 public class DebugStoppedAtBreakepointEvent extends AbstractSimpleDebugEvent{
 
@@ -20,7 +20,7 @@ public class DebugStoppedAtBreakepointEvent extends AbstractSimpleDebugEvent{
     private final String resultOfMethodInvocation;
     private final List<MethodCallInStack> methodCallInStacks;
 
-    public DebugStoppedAtBreakepointEvent(SimpleDebugEventType type,
+    public DebugStoppedAtBreakepointEvent(SimpleDebuggerEventType type,
                                String className,
                                String methodName,
                                int lineNumber,
@@ -45,7 +45,7 @@ public class DebugStoppedAtBreakepointEvent extends AbstractSimpleDebugEvent{
 
     // ---------------- GETTERS ----------------
 
-    public SimpleDebugEventType getType() { return super.getType(); }
+    public SimpleDebuggerEventType getType() { return super.getType(); }
     public String getClassName() { return className; }
     public String getMethodName() { return methodName; }
     public int getLineNumber() { return lineNumber; }
@@ -59,7 +59,7 @@ public class DebugStoppedAtBreakepointEvent extends AbstractSimpleDebugEvent{
     // ---------------- BUILDER ----------------
 
     public static class Builder {
-        private SimpleDebugEventType type;
+        private SimpleDebuggerEventType type;
         private String className;
         private String methodName;
         private int lineNumber;
@@ -70,7 +70,7 @@ public class DebugStoppedAtBreakepointEvent extends AbstractSimpleDebugEvent{
         private String resultOfMethodInvocation;
         private List<MethodCallInStack> methodCallInStacks;
 
-        public Builder type(SimpleDebugEventType type) {
+        public Builder type(SimpleDebuggerEventType type) {
             this.type = type;
             return this;
         }
