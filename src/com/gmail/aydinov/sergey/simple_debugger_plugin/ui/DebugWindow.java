@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
@@ -9,6 +10,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventProvider;
@@ -140,11 +142,29 @@ public class DebugWindow {
     }
 
     private boolean handleWindowClose() {
-        UserClosedWindowUiEvent event = new UserClosedWindowUiEvent();
-        shell.dispose();
-        uiEventCollector.collectUiEvent(event);
-        return true;
-    }
+
+		MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO);
+		messageBox.setText("Confirmation");
+		messageBox.setMessage("Close the debugger window?");
+
+		int response = messageBox.open();
+		if (response == SWT.NO) {
+			return false; // отменяем закрытие
+		}
+
+		// закрываем
+		System.out.println("Debug window closed");
+		showVmStoppedMessage();
+		// sendUiEvent(new UserClosedWindowUiEvent());
+		shell.dispose();
+		uiEventCollector.collectUiEvent(new UserClosedWindowUiEvent());
+		return true; // разрешаем закрытие
+	}
+    
+    private void showVmStoppedMessage() {
+	    // Например:
+	    MessageDialog.openInformation(shell, "Debugger", "Debugger detached. Target VM continues running");
+	}
 
     private void hookResumeButton() {
         resumeButton.addListener(SWT.Selection, e -> pressResumeButton());
