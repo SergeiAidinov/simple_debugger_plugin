@@ -24,6 +24,7 @@ import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.VirtualMachineManager;
 import com.sun.jdi.connect.AttachingConnector;
 import com.sun.jdi.connect.Connector;
+import com.sun.jdi.connect.LaunchingConnector;
 import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
 import com.sun.jdi.request.EventRequestManager;
@@ -50,84 +51,80 @@ public class SimpleDebuggerWorkFlow {
 
 	/** Запуск дебага */
 	public void debug() {
-	    System.out.println("DEBUG");
-	    
-	    openDebugWindow();
-	    VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
-	    vm.resume();
-	    Process process = vm.process();
-	    new Thread(() -> {
-	        try (InputStream in = process.getInputStream()) {
-	            in.transferTo(System.out);
-	        } catch (IOException ignored) {}
-	    }).start();
+		System.out.println("DEBUG");
 
-	    // stderr
-	    new Thread(() -> {
-	        try (InputStream err = process.getErrorStream()) {
-	            err.transferTo(System.err);
-	        } catch (IOException ignored) {}
-	    }).start();
-	    try {
-	        // Подождём, пока VM реально запустится
-	        int attempts = 0;
-	        while (targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().size() == 0) { 
-	        	refreshBreakpoints();
-	            targetApplicationRepresentation
-	            .refreshReferencesToClassesOfTargetApplication(vm);
-	        	Thread.sleep(1000);
-	            attempts++;
-	            System.out.println("ATTEMPTS: " + attempts);
-	            
-	        }
+		openDebugWindow();
+		VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
+		vm.resume();
+		Process process = vm.process();
+		new Thread(() -> {
+			try (InputStream in = process.getInputStream()) {
+				in.transferTo(System.out);
+			} catch (IOException ignored) {
+			}
+		}).start();
 
-	      //  vm.resume(); // запускаем VM
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
+		// stderr
+		new Thread(() -> {
+			try (InputStream err = process.getErrorStream()) {
+				err.transferTo(System.err);
+			} catch (IOException ignored) {
+			}
+		}).start();
+		try {
+			// Подождём, пока VM реально запустится
+			int attempts = 0;
+			while (targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().size() == 0) {
+				refreshBreakpoints();
+				targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(vm);
+				Thread.sleep(1000);
+				attempts++;
+				System.out.println("ATTEMPTS: " + attempts);
 
-	   refreshBreakpoints();
-	    targetApplicationRepresentation
-	            .refreshReferencesToClassesOfTargetApplication(vm);
+			}
 
-	    boolean running = true;
-	    while (running) {
-	    	if (DebuggerContext.context().getTargetApplicationStatus()
-	    			.equals(TargetApplicationStatus.STARTING)) continue;
-	        EventQueue queue = vm.eventQueue();
-	        EventSet eventSet = null;
-	        try {
-	            eventSet = queue.remove();
-	        } catch (InterruptedException e) {
-	            e.printStackTrace();
-	        } catch (com.sun.jdi.VMDisconnectedException e) {
-	            System.out.println("VM disconnected, finishing debug loop.");
-	            break; // корректно выходим из цикла
-	        }
+			// vm.resume(); // запускаем VM
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
-	        if (eventSet == null)
-	            continue;
+		refreshBreakpoints();
+		targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(vm);
 
-	        DebugSession debugSession = new DebugSessionImpl(
-	                targetVirtualMachineRepresentation,
-	                targetApplicationRepresentation,
-	                eventSet,
-	                highlighter
-	        );
-	        Thread debugSessionThread = new Thread(debugSession);
-	        debugSessionThread.setDaemon(true);
-	        debugSessionThread.start();
+		boolean running = true;
+		while (running) {
+			if (DebuggerContext.context().getTargetApplicationStatus().equals(TargetApplicationStatus.STARTING))
+				continue;
+			EventQueue queue = vm.eventQueue();
+			EventSet eventSet = null;
+			try {
+				eventSet = queue.remove();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (com.sun.jdi.VMDisconnectedException e) {
+				System.out.println("VM disconnected, finishing debug loop.");
+				break; // корректно выходим из цикла
+			}
 
-	        try {
-	            debugSessionThread.join();
-	        } catch (InterruptedException e) {
-	            e.printStackTrace();
-	        }
+			if (eventSet == null)
+				continue;
 
-	        eventSet.resume();
+			DebugSession debugSession = new DebugSessionImpl(targetVirtualMachineRepresentation,
+					targetApplicationRepresentation, eventSet, highlighter);
+			Thread debugSessionThread = new Thread(debugSession);
+			debugSessionThread.setDaemon(true);
+			debugSessionThread.start();
 
-	        running = DebuggerContext.context().isRunning();
-	    }
+			try {
+				debugSessionThread.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+
+			eventSet.resume();
+
+			running = DebuggerContext.context().isRunning();
+		}
 	}
 
 	private void refreshBreakpoints() {
@@ -142,74 +139,116 @@ public class SimpleDebuggerWorkFlow {
 		});
 	}
 
-
 	public static class SimpleDebuggerWorkFlowFactory {
 
-	    private static SimpleDebuggerWorkFlow instance = null;
+		private static SimpleDebuggerWorkFlow instance = null;
 
-	    public static SimpleDebuggerWorkFlow getInstance() {
-	        return instance;
-	    }
+		public static SimpleDebuggerWorkFlow getInstance() {
+			return instance;
+		}
 
-//	    public static void createAttached(String host, int port, OnWorkflowReadyListener listener) {
-//	        CompletableFuture.runAsync(() -> {
-//	            var vm = VMLauncher.attach(host, port);
-//	            IBreakpointManager bpm = waitForBreakpointManager();
+		public static void createWorkFlow(String mainClass, List<String> options, OnWorkflowReadyListener listener) {
+			CompletableFuture.runAsync(() -> {
+				VirtualMachine virtualMachine = launchVirtualMachine();
+				IBreakpointManager breakpointManager = waitForBreakpointManager();
+				BreakePointListener breakePointListener = new BreakePointListener();
+				breakpointManager.setEnabled(true);
+				breakpointManager.addBreakpointListener(breakePointListener);
+				TargetVirtualMachineRepresentation targetVirtualMachineRepresentation = new TargetVirtualMachineRepresentation(
+						"localhost", 5005, virtualMachine);
+
+				instance = new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation, breakpointManager,
+						breakePointListener);
+				if (Objects.nonNull(listener)) {
+					Display.getDefault().asyncExec(() -> listener.onReady(instance));
+				}
+			});
+		}
+
+		private static IBreakpointManager waitForBreakpointManager() {
+			CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();
+			Runnable check = new Runnable() {
+				@Override
+				public void run() {
+					DebugPlugin plugin = DebugPlugin.getDefault();
+					if (plugin != null && plugin.getBreakpointManager() != null) {
+						future.complete(plugin.getBreakpointManager());
+					} else {
+						Display.getDefault().timerExec(500, this);
+					}
+				}
+			};
+			Display.getDefault().asyncExec(check);
+			return future.join();
+		}
+		
+//		public static VirtualMachine attach(String host, int port) {
+//	        try {
+//	            VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
+//	            AttachingConnector connector = vmm.attachingConnectors().stream()
+//	                    .filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
 //
-//	            var listenerBp = new BreakePointListener();
-//	            bpm.setEnabled(true);
-//	            bpm.addBreakpointListener(listenerBp);
+//	            Map<String, Connector.Argument> args = connector.defaultArguments();
+//	            args.get("hostname").setValue(host);
+//	            args.get("port").setValue(String.valueOf(port));
 //
-//	            instance = new SimpleDebuggerWorkFlow(new TargetVirtualMachineRepresentation(host, port, vm), bpm, listenerBp);
-//
-//	            if (Objects.nonNull(listener)) {
-//	                Display.getDefault().asyncExec(() -> listener.onReady(instance));
+//	            VirtualMachine vm;
+//	            while (true) {
+//	                try {
+//	                    vm = connector.attach(args);
+//	                    vm.suspend(); // останавливаем сразу после attach
+//	                    break;
+//	                } catch (Exception ignored) {
+//	                    Thread.sleep(500);
+//	                }
 //	            }
-//	        });
+//	            return vm;
+//	        } catch (Exception e) {
+//	            throw new RuntimeException("Cannot attach VM", e);
+//	        }
 //	    }
 
-	    public static void createLaunched(String mainClass, List<String> options, OnWorkflowReadyListener listener) {
-	        CompletableFuture.runAsync(() -> {
-	            var vm = VMLauncher.launch();
-	            IBreakpointManager bpm = waitForBreakpointManager();
+	    public static VirtualMachine launchVirtualMachine() {
+	        try {
+	            // Получаем стандартный LaunchingConnector
+	            LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
+	            Map<String, Connector.Argument> args = connector.defaultArguments();
 
-	            var listenerBp = new BreakePointListener();
-	            bpm.setEnabled(true);
-	            bpm.addBreakpointListener(listenerBp);
-	            TargetVirtualMachineRepresentation targetVirtualMachineRepresentation = new TargetVirtualMachineRepresentation("localhost", 5005, vm);
+	            // Полностью квалифицированное имя main-класса
+	            args.get("main").setValue("target_debug.Main");
 
-	            instance = new SimpleDebuggerWorkFlow(
-	                targetVirtualMachineRepresentation,
-	                bpm,
-	                listenerBp
-	            );
+	            // Classpath к скомпилированным классам (не исходники)
+	            args.get("options").setValue("-cp /home/sergei/eclipse-commiters-workspace/target_debug/bin"); 
 
-	         //  new Thread(new TargetLauncher(mainClass, options, targetVirtualMachineRepresentation)).start();
+	            // Не останавливать сразу JVM
+	            args.get("suspend").setValue("false");
 
-	            if (Objects.nonNull(listener)) {
-	                Display.getDefault().asyncExec(() -> listener.onReady(instance));
-	            }
-	        });
+	            // Запускаем target JVM
+	            VirtualMachine vm = connector.launch(args);
+
+	            System.out.println("==> VM LAUNCHED: " + vm.description());
+
+	            // Логируем stdout и stderr target-приложения
+	            Process process = vm.process();
+
+	            new Thread(() -> {
+	                try (InputStream in = process.getInputStream()) {
+	                    in.transferTo(System.out);
+	                } catch (Exception ignored) {}
+	            }).start();
+
+	            new Thread(() -> {
+	                try (InputStream err = process.getErrorStream()) {
+	                    err.transferTo(System.err);
+	                } catch (Exception ignored) {}
+	            }).start();
+
+	            return vm;
+
+	        } catch (Exception e) {
+	            throw new RuntimeException("Cannot launch VM", e);
+	        }
 	    }
 
-
-	    private static IBreakpointManager waitForBreakpointManager() {
-	        CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();
-	        Runnable check = new Runnable() {
-	            @Override
-	            public void run() {
-	                DebugPlugin plugin = DebugPlugin.getDefault();
-	                if (plugin != null && plugin.getBreakpointManager() != null) {
-	                    future.complete(plugin.getBreakpointManager());
-	                } else {
-	                    Display.getDefault().timerExec(500, this);
-	                }
-	            }
-	        };
-	        Display.getDefault().asyncExec(check);
-	        return future.join();
-	    }
-	
-
-}
+	}
 }

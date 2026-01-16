@@ -73,7 +73,7 @@ public class DebugWindow {
 		startButton.setEnabled(true);
 		resumeButton = new Button(topPanel, SWT.PUSH);
 		resumeButton.setText("Resume");
-		resumeButton.setEnabled(false);
+		resumeButton.setEnabled(true);
 		GridData buttonGD = new GridData(SWT.RIGHT, SWT.TOP, false, false); // вертикальное центрирование
 		resumeButton.setLayoutData(buttonGD);
 		

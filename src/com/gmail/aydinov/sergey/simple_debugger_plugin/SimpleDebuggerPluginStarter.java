@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.commands.AbstractHandler;
@@ -11,38 +12,23 @@ import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.window.Window;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.TargetApplicationStatus;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.SimpleDebuggerWorkFlowFactory;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.TargetLauncher;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 
 public class SimpleDebuggerPluginStarter extends AbstractHandler {
-	
-	String mainClass = "target_debug.Main";
-	List<String> options = List.of(
-		    "-Xmx512m"
-		);
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		
+
 		Shell shell = HandlerUtil.getActiveShell(event);
 
 		try {
-			// -------------------------
-			// 1️⃣ Выбор конфигурации
-			// -------------------------
 			ILaunchConfiguration[] configs = DebugPlugin.getDefault().getLaunchManager().getLaunchConfigurations();
-
 			ElementListSelectionDialog dialog = new ElementListSelectionDialog(shell, new LabelProvider() {
 				@Override
 				public String getText(Object element) {
@@ -52,38 +38,34 @@ public class SimpleDebuggerPluginStarter extends AbstractHandler {
 					return super.getText(element);
 				}
 			});
-
 			dialog.setTitle("Select Java Launch Configuration");
 			dialog.setMessage("Select the target application for debugging:");
 			dialog.setElements(configs);
 			dialog.setMultipleSelection(false);
 
 			if (dialog.open() != Window.OK) {
-				return null; // пользователь отменил выбор
+				return null; 
 			}
 
 			ILaunchConfiguration selectedConfig = (ILaunchConfiguration) dialog.getFirstResult();
-
-			// -------------------------
-			// 2️⃣ Получаем порт (если есть) и VM args
-			// -------------------------
 			String vmArgs = selectedConfig.getAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, "");
-			Integer port = getPortFromConfiguration(vmArgs);
-			if (port == null) {
-				port = 5005;
-				ILaunchConfigurationWorkingCopy wc = selectedConfig.getWorkingCopy();
-				if (!vmArgs.isEmpty())
-					vmArgs += " ";
-				vmArgs += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005";
-				wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, vmArgs);
-				wc.doSave();
+			Integer port = getPortFromConfigurationOrSetDefault(vmArgs);
+			ILaunchConfigurationWorkingCopy wc = selectedConfig.getWorkingCopy();
+			if (!vmArgs.contains("-agentlib:jdwp")) {
+			    if (!vmArgs.isEmpty()) vmArgs += " ";
+			    vmArgs += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=" + port;
+			    wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, vmArgs);
+			    wc.doSave();
 			}
-
-			// -------------------------
-			// 3️⃣ Основная точка входа — создание workflow
-			// -------------------------
-
-			SimpleDebuggerWorkFlowFactory.createLaunched(mainClass, options, workflow -> {
+			
+			String mainClass = selectedConfig.getAttribute(
+				    IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME,
+				    "target_debug.Main"
+				);
+			List<String> options = Arrays.stream(vmArgs.split("\\s+"))
+                    .filter(s -> !s.isBlank())
+                    .toList();
+			SimpleDebuggerWorkFlowFactory.createWorkFlow(mainClass, options, workflow -> {
 				DebuggerContext.context().setTargetApplicationStatus(TargetApplicationStatus.STARTING);
 				new Thread(() -> {
 					try {
@@ -103,20 +85,20 @@ public class SimpleDebuggerPluginStarter extends AbstractHandler {
 		return shell;
 	}
 
-	private Integer getPortFromConfiguration(String vmArgs) {
+	private Integer getPortFromConfigurationOrSetDefault(String vmArgs) {
+		Integer port = 5005;
 		if (vmArgs == null || vmArgs.isEmpty())
-			return null;
+			return port;
 		String[] parts = vmArgs.split(",");
 		for (String part : parts) {
 			part = part.trim();
 			if (part.startsWith("address=")) {
 				try {
-					return Integer.parseInt(part.substring("address=".length()));
+					port = Integer.parseInt(part.substring("address=".length()));
 				} catch (NumberFormatException e) {
-					return null;
 				}
 			}
 		}
-		return null;
+		return port;
 	}
 }
