@@ -12,10 +12,12 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
@@ -39,6 +41,7 @@ public class DebugWindow {
 	private EvaluateTabController evalTab;
 	private Button resumeButton;
 	private Label locationLabel;
+	private Text consoleText;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
 
 	private final String STOP_INFO = "Stopped at: ";
@@ -104,6 +107,18 @@ public class DebugWindow {
 		evalItem.setControl(evalTab.getControl());
 
 		tabFolder.setSelection(0);
+		
+		// ----------------- Console tab -----------------
+		CTabItem consoleItem = new CTabItem(tabFolder, SWT.NONE);
+		consoleItem.setText("Console");
+		consoleText = new Text(
+		        tabFolder,
+		        SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL | SWT.READ_ONLY
+		);
+
+		consoleText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		consoleItem.setControl(consoleText);
+
 
 		// ----------------- Hook кнопки Resume -----------------
 		hookResumeButton();
@@ -180,6 +195,8 @@ public class DebugWindow {
 					refreshDataAtBreakepoint((DebugStoppedAtBreakepointEvent) event);
 				} else if (event.getType().equals(SimpleDebuggerEventType.REFRESH_CONSOLE)) {
 					System.out.println(SimpleDebuggerEventType.REFRESH_CONSOLE);
+					ConsoleUpdateDebugEvent consoleUpdateDebugEvent = (ConsoleUpdateDebugEvent) event;
+					appendConsoleLine(consoleUpdateDebugEvent.getText());
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -215,6 +232,14 @@ public class DebugWindow {
 	    evalTab.updateFromEvent(simpleDebugEventDTO);
 
 	}
+	
+	public void appendConsoleLine(String line) {
+	    if (consoleText == null || consoleText.isDisposed())
+	        return;
+
+	    consoleText.append(line + "\n");
+	}
+
 
 	private void showVmStoppedMessage() {
 	    // Например:
