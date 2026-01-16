@@ -176,9 +176,11 @@ public class DebugWindow {
 			try {
 				if (shell.isDisposed())
 					return;
-				if (event.getType().equals(SimpleDebuggerEventType.STOPPED_AT_BREAKEPOINT))
+				if (event.getType().equals(SimpleDebuggerEventType.STOPPED_AT_BREAKEPOINT)) {
 					refreshDataAtBreakepoint((DebugStoppedAtBreakepointEvent) event);
-
+				} else if (event.getType().equals(SimpleDebuggerEventType.REFRESH_CONSOLE)) {
+					System.out.println(SimpleDebuggerEventType.REFRESH_CONSOLE);
+				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

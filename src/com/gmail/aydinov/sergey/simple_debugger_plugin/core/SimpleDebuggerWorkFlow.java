@@ -173,8 +173,8 @@ public class SimpleDebuggerWorkFlow {
 		}
 
 		private static void attachConsoleReaders(Process process) {
-			new Thread(new ConsoleReader(process.getInputStream(), "[TARGET]")).start();
-			new Thread(new ConsoleReader(process.getErrorStream(), "[TARGET-ERR]" )).start();
+			new Thread(new ConsoleWriter(process.getInputStream(), "[TARGET]")).start();
+			new Thread(new ConsoleWriter(process.getErrorStream(), "[TARGET-ERR]" )).start();
 		}
 	}
 }
