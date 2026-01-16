@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,7 +15,6 @@ import org.eclipse.swt.widgets.Display;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
@@ -24,8 +22,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.VirtualMachine;
-import com.sun.jdi.VirtualMachineManager;
-import com.sun.jdi.connect.AttachingConnector;
 import com.sun.jdi.connect.Connector;
 import com.sun.jdi.connect.LaunchingConnector;
 import com.sun.jdi.event.EventQueue;
@@ -59,24 +55,6 @@ public class SimpleDebuggerWorkFlow {
 		openDebugWindow();
 		VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
 		vm.resume();
-//		Process process = null;
-//		try {
-//			process = new ProcessBuilder(
-//				    "java",
-//				    "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005",
-//				    "-cp", "/home/sergei/eclipse-commiters-workspace/target_debug/bin",
-//				    "target_debug.Main"
-//				).start();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//
-//			new Thread(new ConsoleWriter(process), "stdout").start();
-			//new Thread(new ConsoleWriterErr(process), "stderr").start();
-
-			// потом
-			//VirtualMachine vm = attachTo(5005);
 		refreshBreakpoints();
 		targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(vm);
 		boolean running = true;
@@ -167,32 +145,6 @@ public class SimpleDebuggerWorkFlow {
 			Display.getDefault().asyncExec(check);
 			return future.join();
 		}
-		
-//		public static VirtualMachine attach(String host, int port) {
-//	        try {
-//	            VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
-//	            AttachingConnector connector = vmm.attachingConnectors().stream()
-//	                    .filter(c -> c.name().equals("com.sun.jdi.SocketAttach")).findAny().orElseThrow();
-//
-//	            Map<String, Connector.Argument> args = connector.defaultArguments();
-//	            args.get("hostname").setValue(host);
-//	            args.get("port").setValue(String.valueOf(port));
-//
-//	            VirtualMachine vm;
-//	            while (true) {
-//	                try {
-//	                    vm = connector.attach(args);
-//	                    vm.suspend(); // останавливаем сразу после attach
-//	                    break;
-//	                } catch (Exception ignored) {
-//	                    Thread.sleep(500);
-//	                }
-//	            }
-//	            return vm;
-//	        } catch (Exception e) {
-//	            throw new RuntimeException("Cannot attach VM", e);
-//	        }
-//	    }
 
 		public static VirtualMachine launchVirtualMachine() {
 		    try {
@@ -249,7 +201,5 @@ public class SimpleDebuggerWorkFlow {
 		        }
 		    }, "Console-stderr").start();
 		}
-
-
 	}
 }
