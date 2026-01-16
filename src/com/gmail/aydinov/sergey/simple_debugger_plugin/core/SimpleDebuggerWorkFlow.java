@@ -1,7 +1,10 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -56,45 +59,28 @@ public class SimpleDebuggerWorkFlow {
 		openDebugWindow();
 		VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
 		vm.resume();
-		Process process = vm.process();
-		new Thread(() -> {
-			try (InputStream in = process.getInputStream()) {
-				in.transferTo(System.out);
-			} catch (IOException ignored) {
-			}
-		}).start();
-
-		// stderr
-		new Thread(() -> {
-			try (InputStream err = process.getErrorStream()) {
-				err.transferTo(System.err);
-			} catch (IOException ignored) {
-			}
-		}).start();
-		//try {
-			// Подождём, пока VM реально запустится
-//			int attempts = 0;
-//			while (targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().size() == 0) {
-//				refreshBreakpoints();
-//				targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(vm);
-//				Thread.sleep(1000);
-//				attempts++;
-//				System.out.println("ATTEMPTS: " + attempts);
-//
-//			}
-//
-//			// vm.resume(); // запускаем VM
-//		} catch (Exception e) {
+//		Process process = null;
+//		try {
+//			process = new ProcessBuilder(
+//				    "java",
+//				    "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005",
+//				    "-cp", "/home/sergei/eclipse-commiters-workspace/target_debug/bin",
+//				    "target_debug.Main"
+//				).start();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
+//
+//			new Thread(new ConsoleWriter(process), "stdout").start();
+			//new Thread(new ConsoleWriterErr(process), "stderr").start();
 
+			// потом
+			//VirtualMachine vm = attachTo(5005);
 		refreshBreakpoints();
 		targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(vm);
-
 		boolean running = true;
 		while (running) {
-//			if (DebuggerContext.context().getTargetApplicationStatus().equals(TargetApplicationStatus.STARTING))
-//				continue;
 			EventQueue queue = vm.eventQueue();
 			EventSet eventSet = null;
 			try {
@@ -208,47 +194,62 @@ public class SimpleDebuggerWorkFlow {
 //	        }
 //	    }
 
-	    public static VirtualMachine launchVirtualMachine() {
-	        try {
-	            // Получаем стандартный LaunchingConnector
-	            LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
-	            Map<String, Connector.Argument> args = connector.defaultArguments();
+		public static VirtualMachine launchVirtualMachine() {
+		    try {
+		        LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
+		        Map<String, Connector.Argument> args = connector.defaultArguments();
 
-	            // Полностью квалифицированное имя main-класса
-	            args.get("main").setValue("target_debug.Main");
+		        // Main class и classpath
+		        args.get("main").setValue("target_debug.Main");
+		        args.get("options").setValue("-cp /home/sergei/eclipse-commiters-workspace/target_debug/bin");
 
-	            // Classpath к скомпилированным классам (не исходники)
-	            args.get("options").setValue("-cp /home/sergei/eclipse-commiters-workspace/target_debug/bin"); 
+		        // Не приостанавливать JVM
+		        args.get("suspend").setValue("false");
 
-	            // Не останавливать сразу JVM
-	            args.get("suspend").setValue("false");
+		        // Запуск таргета
+		        VirtualMachine vm = connector.launch(args);
+		        System.out.println("==> VM LAUNCHED: " + vm.description());
 
-	            // Запускаем target JVM
-	            VirtualMachine vm = connector.launch(args);
+		        // Запускаем потоки для консоли
+		        attachConsoleReaders(vm.process());
 
-	            System.out.println("==> VM LAUNCHED: " + vm.description());
+		        return vm;
 
-	            // Логируем stdout и stderr target-приложения
-	            Process process = vm.process();
+		    } catch (Exception e) {
+		        throw new RuntimeException("Cannot launch VM", e);
+		    }
+		}
 
-	            new Thread(() -> {
-	                try (InputStream in = process.getInputStream()) {
-	                    in.transferTo(System.out);
-	                } catch (Exception ignored) {}
-	            }).start();
+		private static void attachConsoleReaders(Process process) {
+		    // stdout
+		    new Thread(() -> {
+		        try (InputStream in = process.getInputStream();
+		             InputStreamReader isr = new InputStreamReader(in);
+		             BufferedReader reader = new BufferedReader(isr)) {
+		            String line;
+		            while ((line = reader.readLine()) != null) {
+		                System.out.println("[TARGET] " + line);
+		            }
+		        } catch (IOException e) {
+		            e.printStackTrace();
+		        }
+		    }, "Console-stdout").start();
 
-	            new Thread(() -> {
-	                try (InputStream err = process.getErrorStream()) {
-	                    err.transferTo(System.err);
-	                } catch (Exception ignored) {}
-	            }).start();
+		    // stderr
+		    new Thread(() -> {
+		        try (InputStream err = process.getErrorStream();
+		             InputStreamReader isr = new InputStreamReader(err);
+		             BufferedReader reader = new BufferedReader(isr)) {
+		            String line;
+		            while ((line = reader.readLine()) != null) {
+		                System.err.println("[TARGET-ERR] " + line);
+		            }
+		        } catch (IOException e) {
+		            e.printStackTrace();
+		        }
+		    }, "Console-stderr").start();
+		}
 
-	            return vm;
-
-	        } catch (Exception e) {
-	            throw new RuntimeException("Cannot launch VM", e);
-	        }
-	    }
 
 	}
 }
