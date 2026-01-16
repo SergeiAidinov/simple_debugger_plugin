@@ -2,12 +2,12 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
 import java.util.concurrent.TimeUnit;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractUIEvent;
 
 public interface UiEventCollector {
 
-	void collectUiEvent(UIEvent event);
+	void collectUiEvent(AbstractUIEvent event);
 
-	UIEvent pollUiEvent(long timeout, TimeUnit unit) throws InterruptedException;
+	AbstractUIEvent pollUiEvent(long timeout, TimeUnit unit) throws InterruptedException;
 
 }

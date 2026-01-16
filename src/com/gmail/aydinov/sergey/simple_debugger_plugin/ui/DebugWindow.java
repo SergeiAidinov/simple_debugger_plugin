@@ -14,6 +14,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
@@ -170,13 +171,13 @@ public class DebugWindow {
 		return shell;
 	}
 
-	public void handleDebugEvent(SimpleDebugEventDTO debugEvent) {
+	public void handleDebugEvent(AbstractSimpleDebugEventDTO event) {
 		Display.getDefault().asyncExec(() -> {
 			try {
 				if (shell.isDisposed())
 					return;
-				if (debugEvent.getType().equals(SimpleDebugEventType.REFRESH_DATA))
-					refreshData(debugEvent);
+				if (event.getType().equals(SimpleDebugEventType.STOPPED_AT_BREAKEPOINT))
+					refreshDataAtBreakepoint((SimpleDebugEventDTO) event);
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -185,7 +186,7 @@ public class DebugWindow {
 
 	}
 
-	private void refreshData(SimpleDebugEventDTO simpleDebugEventDTO) {
+	private void refreshDataAtBreakepoint(SimpleDebugEventDTO simpleDebugEventDTO) {
 	    // -----------------------------
 	    // 0. Проверка наличия debugEvent
 	    // -----------------------------

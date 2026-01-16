@@ -6,9 +6,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
 
-public class SimpleDebugEventDTO {
+public class SimpleDebugEventDTO extends AbstractSimpleDebugEventDTO{
 
-    private final SimpleDebugEventType type;
+    //private final SimpleDebugEventType type;
     private final String className;
     private final String methodName;
     private final int lineNumber;
@@ -29,7 +29,8 @@ public class SimpleDebugEventDTO {
                                List<TargetApplicationElementRepresentation> list,
                                List<MethodCallInStack> methodCallInStacks,
                                String resultOfMethodInvocation) {
-        this.type = type;
+    	super(type);
+       // this.type = type;
         this.className = className;
         this.methodName = methodName;
         this.lineNumber = lineNumber;
@@ -43,7 +44,7 @@ public class SimpleDebugEventDTO {
 
     // ---------------- GETTERS ----------------
 
-    public SimpleDebugEventType getType() { return type; }
+    public SimpleDebugEventType getType() { return super.getType(); }
     public String getClassName() { return className; }
     public String getMethodName() { return methodName; }
     public int getLineNumber() { return lineNumber; }

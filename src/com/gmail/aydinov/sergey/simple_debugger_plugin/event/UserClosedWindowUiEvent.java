@@ -1,5 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
-public class UserClosedWindowUiEvent extends UIEvent {
+public class UserClosedWindowUiEvent extends AbstractUIEvent {
 
 }

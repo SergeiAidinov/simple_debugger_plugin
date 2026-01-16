@@ -26,7 +26,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDT
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
@@ -93,7 +93,7 @@ public class DebugSessionImpl implements DebugSession {
                 refreshUI(breakpointEvent);
 
                 while (debugSessionRunning) {
-                    UIEvent uiEvent = null;
+                    AbstractUIEvent uiEvent = null;
                     try {
                         uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent();
                     } catch (InterruptedException e) {
@@ -116,7 +116,7 @@ public class DebugSessionImpl implements DebugSession {
         }
     }
 
-    private void handleBreakpoint(BreakpointEvent breakpointEvent, UIEvent uiEvent) {
+    private void handleBreakpoint(BreakpointEvent breakpointEvent, AbstractUIEvent uiEvent) {
         Display display = Display.getDefault();
         if (display != null && !display.isDisposed()) {
             display.asyncExec(() -> {
@@ -141,7 +141,7 @@ public class DebugSessionImpl implements DebugSession {
          if (debugSessionRunning) refreshUI(breakpointEvent);
     }
 
-    private void handleSingleUiEvent(UIEvent uiEvent, StackFrame frame) {
+    private void handleSingleUiEvent(AbstractUIEvent uiEvent, StackFrame frame) {
         try {
             if (uiEvent instanceof UserChangedVariableDTO dto) {
                 updateVariables(dto, frame);
@@ -238,7 +238,7 @@ public class DebugSessionImpl implements DebugSession {
 
         Location location = breakpointEvent.location();
         SimpleDebugEventDTO dto = new SimpleDebugEventDTO.Builder()
-                .type(SimpleDebugEventType.REFRESH_DATA)
+                .type(SimpleDebugEventType.STOPPED_AT_BREAKEPOINT)
                 .className(location.declaringType().name())
                 .methodName(location.method().name())
                 .lineNumber(location.lineNumber())
