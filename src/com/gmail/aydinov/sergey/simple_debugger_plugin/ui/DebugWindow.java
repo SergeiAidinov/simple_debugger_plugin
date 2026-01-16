@@ -18,7 +18,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedStartUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
@@ -38,7 +37,6 @@ public class DebugWindow {
 	private StackTabContent stackTab;
 	private EvaluateTabController evalTab;
 	private Button resumeButton;
-	private Button startButton;
 	private Label locationLabel;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
 
@@ -53,7 +51,7 @@ public class DebugWindow {
 
 		// ----------------- Панель сверху -----------------
 		Composite topPanel = new Composite(shell, SWT.NONE);
-		topPanel.setLayout(new GridLayout(4, false)); // 4 колонки
+		topPanel.setLayout(new GridLayout(3, false)); // 3 колонки
 		GridData topPanelGD = new GridData(SWT.FILL, SWT.TOP, true, false);
 		topPanel.setLayoutData(topPanelGD);
 
@@ -66,19 +64,13 @@ public class DebugWindow {
 		// 2) Spacer
 		Composite spacer = new Composite(topPanel, SWT.NONE);
 		spacer.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-		
+
 		// 3) Кнопка справа
-		startButton = new Button(topPanel, SWT.PUSH);
-		startButton.setText("Start");
-		startButton.setEnabled(true);
 		resumeButton = new Button(topPanel, SWT.PUSH);
 		resumeButton.setText("Resume");
-		resumeButton.setEnabled(true);
+		resumeButton.setEnabled(false);
 		GridData buttonGD = new GridData(SWT.RIGHT, SWT.TOP, false, false); // вертикальное центрирование
 		resumeButton.setLayoutData(buttonGD);
-		
-		GridData startGD = new GridData(SWT.RIGHT, SWT.TOP, false, false);
-		startButton.setLayoutData(startGD);
 
 		// Устанавливаем высоту панели: на 10 пикселей выше кнопки
 		int buttonHeight = resumeButton.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
@@ -112,8 +104,7 @@ public class DebugWindow {
 
 		tabFolder.setSelection(0);
 
-		// ----------------- Hook buttons -----------------
-		hookStartButton();
+		// ----------------- Hook кнопки Resume -----------------
 		hookResumeButton();
 		hookCross();
 
@@ -121,21 +112,6 @@ public class DebugWindow {
 		Thread thread = new Thread(simpleDebugEventProcessor);
 		thread.setDaemon(true);
 		thread.start();
-	}
-
-	private void hookStartButton() {
-		startButton.addListener(SWT.Selection, e -> {
-		    pressStartButton();
-		});
-
-		
-	}
-
-	private void pressStartButton() {
-		 Display.getDefault().asyncExec(() -> {
-		        uiEventCollector.collectUiEvent(new UserPressedStartUiEvent());
-		    });
-		
 	}
 
 	private void hookCross() {

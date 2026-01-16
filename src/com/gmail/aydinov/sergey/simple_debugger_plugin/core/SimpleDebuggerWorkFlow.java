@@ -71,30 +71,30 @@ public class SimpleDebuggerWorkFlow {
 			} catch (IOException ignored) {
 			}
 		}).start();
-		try {
+		//try {
 			// Подождём, пока VM реально запустится
-			int attempts = 0;
-			while (targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().size() == 0) {
-				refreshBreakpoints();
-				targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(vm);
-				Thread.sleep(1000);
-				attempts++;
-				System.out.println("ATTEMPTS: " + attempts);
-
-			}
-
-			// vm.resume(); // запускаем VM
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+//			int attempts = 0;
+//			while (targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().size() == 0) {
+//				refreshBreakpoints();
+//				targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(vm);
+//				Thread.sleep(1000);
+//				attempts++;
+//				System.out.println("ATTEMPTS: " + attempts);
+//
+//			}
+//
+//			// vm.resume(); // запускаем VM
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
 
 		refreshBreakpoints();
 		targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(vm);
 
 		boolean running = true;
 		while (running) {
-			if (DebuggerContext.context().getTargetApplicationStatus().equals(TargetApplicationStatus.STARTING))
-				continue;
+//			if (DebuggerContext.context().getTargetApplicationStatus().equals(TargetApplicationStatus.STARTING))
+//				continue;
 			EventQueue queue = vm.eventQueue();
 			EventSet eventSet = null;
 			try {
