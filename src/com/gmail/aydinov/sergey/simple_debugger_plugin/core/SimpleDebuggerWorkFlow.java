@@ -13,6 +13,7 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.swt.widgets.Display;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationBreakepointRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
@@ -54,11 +55,17 @@ public class SimpleDebuggerWorkFlow {
 
 		openDebugWindow();
 		VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
-		vm.resume();
 		refreshBreakpoints();
+		System.out.println("BEFORE CYCLE: " + targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
+				.prettyPrintBreakpoints());
 		targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(vm);
+		vm.resume();
 		boolean running = true;
 		while (running) {
+			System.out.println("===>");
+			System.out.println(targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
+					.prettyPrintBreakpoints());
+			System.out.println("<===");
 			EventQueue queue = vm.eventQueue();
 			EventSet eventSet = null;
 			try {
@@ -147,34 +154,34 @@ public class SimpleDebuggerWorkFlow {
 		}
 
 		public static VirtualMachine launchVirtualMachine() {
-		    try {
-		        LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
-		        Map<String, Connector.Argument> args = connector.defaultArguments();
+			try {
+				LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
+				Map<String, Connector.Argument> args = connector.defaultArguments();
 
-		        // Main class и classpath
-		        args.get("main").setValue("target_debug.Main");
-		        args.get("options").setValue("-cp /home/sergei/eclipse-commiters-workspace/target_debug/bin");
+				// Main class и classpath
+				args.get("main").setValue("target_debug.Main");
+				args.get("options").setValue("-cp /home/sergei/eclipse-commiters-workspace/target_debug/bin");
 
-		        // Не приостанавливать JVM
-		        args.get("suspend").setValue("false");
+				// Не приостанавливать JVM
+				args.get("suspend").setValue("false");
 
-		        // Запуск таргета
-		        VirtualMachine vm = connector.launch(args);
-		        System.out.println("==> VM LAUNCHED: " + vm.description());
+				// Запуск таргета
+				VirtualMachine vm = connector.launch(args);
+				System.out.println("==> VM LAUNCHED: " + vm.description());
 
-		        // Запускаем потоки для консоли
-		        attachConsoleReaders(vm.process());
+				// Запускаем потоки для консоли
+				attachConsoleReaders(vm.process());
 
-		        return vm;
+				return vm;
 
-		    } catch (Exception e) {
-		        throw new RuntimeException("Cannot launch VM", e);
-		    }
+			} catch (Exception e) {
+				throw new RuntimeException("Cannot launch VM", e);
+			}
 		}
 
 		private static void attachConsoleReaders(Process process) {
 			new Thread(new ConsoleWriter(process.getInputStream(), "[TARGET]")).start();
-			new Thread(new ConsoleWriter(process.getErrorStream(), "[TARGET-ERR]" )).start();
+			new Thread(new ConsoleWriter(process.getErrorStream(), "[TARGET-ERR]")).start();
 		}
 	}
 }

@@ -137,7 +137,56 @@ public class TargetApplicationBreakepointRepresentation
     // ========================================================================
     // Internal helpers
     // ========================================================================
+    public String prettyPrintBreakpoints() {
+        StringBuilder sb = new StringBuilder();
 
+        sb.append("Breakpoints:\n");
+
+        if (activeRequests.isEmpty() && pendingBreakpoints.isEmpty()) {
+            sb.append("  <none>\n");
+            return sb.toString();
+        }
+
+        // --------- Active ---------
+        if (!activeRequests.isEmpty()) {
+            sb.append("  Active:\n");
+            for (BreakpointRequestWrapper wrapper : activeRequests) {
+                IBreakpoint breakpoint = wrapper.getBreakpointWrapper().get();
+                sb.append("    ")
+                  .append(formatBreakpoint(breakpoint))
+                  .append("\n");
+            }
+        }
+
+        // --------- Pending ---------
+        if (!pendingBreakpoints.isEmpty()) {
+            sb.append("  Pending (class not loaded):\n");
+            for (BreakpointWrapper wrapper : pendingBreakpoints) {
+                sb.append("    ")
+                  .append(formatBreakpoint(wrapper.get()))
+                  .append("\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private String formatBreakpoint(IBreakpoint breakpoint) {
+        if (breakpoint == null) {
+            return "<invalid breakpoint>";
+        }
+
+        String typeName = getTypeName(breakpoint);
+        int lineNumber = getLineNumber(breakpoint);
+
+        if (typeName == null) {
+            return "<unknown location>";
+        }
+
+        return typeName + ":" + lineNumber;
+    }
+
+    
     private void createBreakpointRequest(
             BreakpointWrapper wrapper,
             Method method
