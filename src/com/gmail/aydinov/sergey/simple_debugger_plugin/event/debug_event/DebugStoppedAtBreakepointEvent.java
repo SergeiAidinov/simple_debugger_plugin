@@ -1,14 +1,15 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event;
 
 import java.util.List;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 
-public class SimpleDebugEventDTO {
+public class DebugStoppedAtBreakepointEvent extends AbstractSimpleDebugEvent{
 
-    private final SimpleDebugEventType type;
+    //private final SimpleDebugEventType type;
     private final String className;
     private final String methodName;
     private final int lineNumber;
@@ -19,7 +20,7 @@ public class SimpleDebugEventDTO {
     private final String resultOfMethodInvocation;
     private final List<MethodCallInStack> methodCallInStacks;
 
-    public SimpleDebugEventDTO(SimpleDebugEventType type,
+    public DebugStoppedAtBreakepointEvent(SimpleDebuggerEventType type,
                                String className,
                                String methodName,
                                int lineNumber,
@@ -29,7 +30,8 @@ public class SimpleDebugEventDTO {
                                List<TargetApplicationElementRepresentation> list,
                                List<MethodCallInStack> methodCallInStacks,
                                String resultOfMethodInvocation) {
-        this.type = type;
+    	super(type);
+       // this.type = type;
         this.className = className;
         this.methodName = methodName;
         this.lineNumber = lineNumber;
@@ -43,7 +45,7 @@ public class SimpleDebugEventDTO {
 
     // ---------------- GETTERS ----------------
 
-    public SimpleDebugEventType getType() { return type; }
+    public SimpleDebuggerEventType getType() { return super.getType(); }
     public String getClassName() { return className; }
     public String getMethodName() { return methodName; }
     public int getLineNumber() { return lineNumber; }
@@ -57,7 +59,7 @@ public class SimpleDebugEventDTO {
     // ---------------- BUILDER ----------------
 
     public static class Builder {
-        private SimpleDebugEventType type;
+        private SimpleDebuggerEventType type;
         private String className;
         private String methodName;
         private int lineNumber;
@@ -68,7 +70,7 @@ public class SimpleDebugEventDTO {
         private String resultOfMethodInvocation;
         private List<MethodCallInStack> methodCallInStacks;
 
-        public Builder type(SimpleDebugEventType type) {
+        public Builder type(SimpleDebuggerEventType type) {
             this.type = type;
             return this;
         }
@@ -119,8 +121,8 @@ public class SimpleDebugEventDTO {
             return this;
         }
 
-        public SimpleDebugEventDTO build() {
-            return new SimpleDebugEventDTO(
+        public DebugStoppedAtBreakepointEvent build() {
+            return new DebugStoppedAtBreakepointEvent(
                     type,
                     className,
                     methodName,

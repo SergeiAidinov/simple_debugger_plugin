@@ -5,8 +5,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 
 public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEventCollector {
 
@@ -21,31 +22,27 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
 		return INSTANCE;
 	}
 
-	//private final Queue<UIEvent> uIEventQueue = new ConcurrentLinkedQueue<>();
-	private final BlockingQueue<UIEvent> uIEventQueue = new LinkedBlockingQueue<>();
-	private final BlockingQueue<SimpleDebugEventDTO> debugEventQueue = new LinkedBlockingQueue<>();
+	private final BlockingQueue<AbstractUIEvent> uIEventQueue = new LinkedBlockingQueue<>();
+	private final BlockingQueue<AbstractSimpleDebugEvent> debugEventQueue = new LinkedBlockingQueue<>();
 
 	@Override
-	public void collectUiEvent(UIEvent event) {
+	public void collectUiEvent(AbstractUIEvent event) {
 		uIEventQueue.offer(event); 
 	}
 
 	@Override
-	public void collectDebugEvent(SimpleDebugEventDTO event) {
+	public void collectDebugEvent(AbstractSimpleDebugEvent event) {
 		debugEventQueue.offer(event); // offer не блокирует
 	}
 
 	// Получить событие для обработки (Worker поток)
 	@Override
-	public SimpleDebugEventDTO takeDebugEvent() throws InterruptedException {
+	public AbstractSimpleDebugEvent takeDebugEvent() throws InterruptedException {
 		return debugEventQueue.take(); // блокируется, пока нет событий
 	}
 	
-	public UIEvent pollUiEvent(long timeout, TimeUnit unit) throws InterruptedException {
-        return uIEventQueue.poll(timeout, unit);
-    }
-	
-	public UIEvent pollUiEvent() throws InterruptedException {
+	@Override
+	public AbstractUIEvent pollUiEvent() throws InterruptedException {
         return uIEventQueue.poll();
     }
 }

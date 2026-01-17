@@ -1,11 +1,11 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 
 /**
  * DTO для передачи изменений переменной из UI в отладчик
  */
-public class UserChangedVariableDTO extends UIEvent{
+public class UserChangedVariableDTO extends AbstractUIEvent{
 
     private final String name;      // имя переменной
     private final String type;      // тип переменной (для справки)

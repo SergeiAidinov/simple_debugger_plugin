@@ -14,114 +14,134 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserClosedWindowUiEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.UserPressedResumeUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabController;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldsTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.VariablesTabContent;
 
 public class DebugWindow {
+	
+	private DebugEventProvider debugEventProvider;
 
-	private Shell shell;
-	private CTabFolder tabFolder;
+    private Shell shell;
+    private CTabFolder tabFolder;
 
-	// Поля вкладок
-	private VariablesTabContent variablesTab;
-	private FieldsTabContent fieldsTab;
-	private StackTabContent stackTab;
-	private EvaluateTabController evalTab;
-	private Button resumeButton;
-	private Label locationLabel;
-	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
+    // Поля вкладок
+    private VariablesTabContent variablesTabContent;
+    private FieldsTabContent fieldsTabContent;
+    private StackTabContent stackTabContent;
+    private EvaluateTabController evaluateTabController;
+    private ConsoleTabContent consoleTabContent;
 
-	private final String STOP_INFO = "Stopped at: ";
+    private Button resumeButton;
+    private Label locationLabel;
 
-	public DebugWindow() {
-		Display display = Display.getDefault();
-		shell = new Shell(display);
-		shell.setText("Simple Debugger");
-		shell.setSize(800, 600);
-		shell.setLayout(new GridLayout(1, false));
+    private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
+    private final String STOP_INFO = "Stopped at: ";
 
-		// ----------------- Панель сверху -----------------
-		Composite topPanel = new Composite(shell, SWT.NONE);
-		topPanel.setLayout(new GridLayout(3, false)); // 3 колонки
-		GridData topPanelGD = new GridData(SWT.FILL, SWT.TOP, true, false);
-		topPanel.setLayoutData(topPanelGD);
+    public DebugWindow() {
+        Display display = Display.getDefault();
+        shell = new Shell(display);
+        shell.setText("Simple Debugger");
+        shell.setSize(800, 600);
+        shell.setLayout(new GridLayout(1, false));
 
-		// 1) Label слева
-		locationLabel = new Label(topPanel, SWT.NONE);
-		locationLabel.setText(STOP_INFO);
-		GridData labelGD = new GridData(SWT.FILL, SWT.TOP, true, false); // вертикальное центрирование
-		locationLabel.setLayoutData(labelGD);
+        // ----------------- Панель сверху -----------------
+        Composite topPanel = new Composite(shell, SWT.NONE);
+        topPanel.setLayout(new GridLayout(3, false));
+        topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-		// 2) Spacer
-		Composite spacer = new Composite(topPanel, SWT.NONE);
-		spacer.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+        locationLabel = new Label(topPanel, SWT.NONE);
+        locationLabel.setText(STOP_INFO);
+        locationLabel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-		// 3) Кнопка справа
-		resumeButton = new Button(topPanel, SWT.PUSH);
-		resumeButton.setText("Resume");
-		resumeButton.setEnabled(false);
-		GridData buttonGD = new GridData(SWT.RIGHT, SWT.TOP, false, false); // вертикальное центрирование
-		resumeButton.setLayoutData(buttonGD);
+        Composite spacerComposite = new Composite(topPanel, SWT.NONE);
+        spacerComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-		// Устанавливаем высоту панели: на 10 пикселей выше кнопки
-		int buttonHeight = resumeButton.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
-		topPanelGD.heightHint = buttonHeight + 10;
+        resumeButton = new Button(topPanel, SWT.PUSH);
+        resumeButton.setText("Resume");
+        resumeButton.setEnabled(false);
+        GridData resumeButtonGridData = new GridData(SWT.RIGHT, SWT.TOP, false, false);
+        resumeButton.setLayoutData(resumeButtonGridData);
 
-		// ----------------- TAB folder -----------------
-		tabFolder = new CTabFolder(shell, SWT.BORDER);
-		tabFolder.setSimple(false);
-		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        int buttonHeight = resumeButton.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
+        topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+        ((GridData) topPanel.getLayoutData()).heightHint = buttonHeight + 10;
 
-		// Таб-страницы
-		variablesTab = new VariablesTabContent(tabFolder, uiEventCollector);
-		CTabItem varItem = new CTabItem(tabFolder, SWT.NONE);
-		varItem.setText("Variables");
-		varItem.setControl(variablesTab.getControl());
+        // ----------------- TAB folder -----------------
+        tabFolder = new CTabFolder(shell, SWT.BORDER);
+        tabFolder.setSimple(false);
+        tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-		fieldsTab = new FieldsTabContent(tabFolder);
-		CTabItem fieldsItem = new CTabItem(tabFolder, SWT.NONE);
-		fieldsItem.setText("Fields");
-		fieldsItem.setControl(fieldsTab.getControl());
+        // Переменные
+        variablesTabContent = new VariablesTabContent(tabFolder, uiEventCollector);
+        CTabItem variablesTabItem = new CTabItem(tabFolder, SWT.NONE);
+        variablesTabItem.setText("Variables");
+        variablesTabItem.setControl(variablesTabContent.getControl());
 
-		stackTab = new StackTabContent(tabFolder);
-		CTabItem stackItem = new CTabItem(tabFolder, SWT.NONE);
-		stackItem.setText("Stack");
-		stackItem.setControl(stackTab.getControl());
+        // Поля
+        fieldsTabContent = new FieldsTabContent(tabFolder);
+        CTabItem fieldsTabItem = new CTabItem(tabFolder, SWT.NONE);
+        fieldsTabItem.setText("Fields");
+        fieldsTabItem.setControl(fieldsTabContent.getControl());
 
-		evalTab = new EvaluateTabController(tabFolder, uiEventCollector);
-		CTabItem evalItem = new CTabItem(tabFolder, SWT.NONE);
-		evalItem.setText("Evaluate");
-		evalItem.setControl(evalTab.getControl());
+        // Стек
+        stackTabContent = new StackTabContent(tabFolder);
+        CTabItem stackTabItem = new CTabItem(tabFolder, SWT.NONE);
+        stackTabItem.setText("Stack");
+        stackTabItem.setControl(stackTabContent.getControl());
 
-		tabFolder.setSelection(0);
+        // Evaluate
+        evaluateTabController = new EvaluateTabController(tabFolder, uiEventCollector);
+        CTabItem evaluateTabItem = new CTabItem(tabFolder, SWT.NONE);
+        evaluateTabItem.setText("Evaluate");
+        evaluateTabItem.setControl(evaluateTabController.getControl());
 
-		// ----------------- Hook кнопки Resume -----------------
-		hookResumeButton();
-		hookCross();
+        // Console
+        consoleTabContent = new ConsoleTabContent(tabFolder);
+        CTabItem consoleTabItem = new CTabItem(tabFolder, SWT.NONE);
+        consoleTabItem.setText("Console");
+        consoleTabItem.setControl(consoleTabContent.getControl());
 
-		SimpleDebugEventProcessor simpleDebugEventProcessor = new SimpleDebugEventProcessor(this);
-		Thread thread = new Thread(simpleDebugEventProcessor);
-		thread.setDaemon(true);
-		thread.start();
-	}
+        tabFolder.setSelection(0);
 
-	private void hookCross() {
-		shell.addListener(SWT.Close, event -> {
-			event.doit = false; // запретить автоматическое закрытие
-			handleWindowClose();
-		});
-	}
+        // ----------------- Hook кнопки Resume -----------------
+        hookResumeButton();
+        hookCross();
 
-	private boolean handleWindowClose() {
+        SimpleDebugEventProcessor simpleDebugEventProcessor = new SimpleDebugEventProcessor(this);
+        Thread processorThread = new Thread(simpleDebugEventProcessor);
+        processorThread.setDaemon(true);
+        processorThread.start();
+    }
+    
+    public void setDebugEventProvider(DebugEventProvider debugEventProvider) {
+        this.debugEventProvider = debugEventProvider;
+    }
+    
+    public Shell getShell() {
+        return shell;
+    }
+
+
+    private void hookCross() {
+        shell.addListener(SWT.Close, event -> {
+            event.doit = false;
+            handleWindowClose();
+        });
+    }
+
+    private boolean handleWindowClose() {
 
 		MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO);
 		messageBox.setText("Confirmation");
@@ -140,83 +160,68 @@ public class DebugWindow {
 		uiEventCollector.collectUiEvent(new UserClosedWindowUiEvent());
 		return true; // разрешаем закрытие
 	}
-
-	private void hookResumeButton() {
-		resumeButton.addListener(SWT.Selection, e -> {
-			pressResumeButton();
-		});
-
-	}
-
-	public void setDebugEventProvider(DebugEventProvider debugEventProvider) {
-	}
-
-	private void pressResumeButton() {
-		System.out.println("pressed Resume Button ");
-		Display.getDefault().asyncExec(() -> {
-			uiEventCollector.collectUiEvent(new UserPressedResumeUiEvent());
-		});
-	}
-
-	public void open() {
-		shell.open();
-	}
-
-	public boolean isOpen() {
-		return !shell.isDisposed();
-	}
-
-	public Shell getShell() {
-		return shell;
-	}
-
-	public void handleDebugEvent(SimpleDebugEventDTO debugEvent) {
-		Display.getDefault().asyncExec(() -> {
-			try {
-				if (shell.isDisposed())
-					return;
-				if (debugEvent.getType().equals(SimpleDebugEventType.REFRESH_DATA))
-					refreshData(debugEvent);
-
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		});
-
-	}
-
-	private void refreshData(SimpleDebugEventDTO simpleDebugEventDTO) {
-	    // -----------------------------
-	    // 0. Проверка наличия debugEvent
-	    // -----------------------------
-	    if (simpleDebugEventDTO == null) {
-	        System.out.println("refreshData: debugEvent = null -> skip");
-	        return;
-	    }
-
-	    // -----------------------------
-	    // 1. Обновляем UI (безопасно)
-	    // -----------------------------
-	    locationLabel.setText(
-	            STOP_INFO + simpleDebugEventDTO.getClassName() + "." +
-	            simpleDebugEventDTO.getMethodName() + " line:" + simpleDebugEventDTO.getLineNumber()
-	    );
-	    resumeButton.setEnabled(true);
-
-	    // -----------------------------
-	    // 2. Обновляем вкладки
-	    // -----------------------------
-	    variablesTab.updateVariables(simpleDebugEventDTO.getLocals()); // List<VariableDTO>
-	    fieldsTab.updateFields(simpleDebugEventDTO.getFields());               // List<VariableDTO>
-	    stackTab.updateStack(simpleDebugEventDTO.getMethodCallInStacks());
-	    evalTab.updateFromEvent(simpleDebugEventDTO);
-
-	}
-
-	private void showVmStoppedMessage() {
+    
+    private void showVmStoppedMessage() {
 	    // Например:
 	    MessageDialog.openInformation(shell, "Debugger", "Debugger detached. Target VM continues running");
 	}
 
+    private void hookResumeButton() {
+        resumeButton.addListener(SWT.Selection, e -> pressResumeButton());
+    }
 
+    private void pressResumeButton() {
+        uiEventCollector.collectUiEvent(new UserPressedResumeUiEvent());
+    }
+
+    public void open() {
+        shell.open();
+    }
+
+    public boolean isOpen() {
+        return shell != null && !shell.isDisposed();
+    }
+
+    public void handleDebugEvent(AbstractSimpleDebugEvent event) {
+        Display.getDefault().asyncExec(() -> {
+            if (shell.isDisposed()) return;
+
+            if (event.getType().equals(SimpleDebuggerEventType.STOPPED_AT_BREAKEPOINT)) {
+                refreshDataAtBreakepoint((DebugStoppedAtBreakepointEvent) event);
+            } else if (event.getType().equals(SimpleDebuggerEventType.REFRESH_CONSOLE)) {
+                ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
+                consoleTabContent.appendLine(consoleEvent.getText());
+            }
+        });
+    }
+
+    private void refreshDataAtBreakepoint(DebugStoppedAtBreakepointEvent event) {
+        if (event == null) return;
+
+        locationLabel.setText(STOP_INFO + event.getClassName() + "." + event.getMethodName() + " line:" + event.getLineNumber());
+        resumeButton.setEnabled(true);
+
+        variablesTabContent.updateVariables(event.getLocals());
+        fieldsTabContent.updateFields(event.getFields());
+        stackTabContent.updateStack(event.getMethodCallInStacks());
+        evaluateTabController.updateFromEvent(event);
+    }
+
+    public void appendConsoleLine(String line) {
+        consoleTabContent.appendLine(line);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null) return false;
+        if (!(object instanceof DebugWindow)) return false;
+        DebugWindow other = (DebugWindow) object;
+        return shell != null && shell.equals(other.shell);
+    }
+
+    @Override
+    public int hashCode() {
+        return shell != null ? shell.hashCode() : 0;
+    }
 }

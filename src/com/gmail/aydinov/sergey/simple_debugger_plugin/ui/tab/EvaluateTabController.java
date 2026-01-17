@@ -16,8 +16,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClas
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.InvokeMethodEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebugEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 
 import java.util.List;
@@ -136,7 +136,7 @@ public class EvaluateTabController {
         });
     }
 
-    public void updateFromEvent(SimpleDebugEventDTO dto) {
+    public void updateFromEvent(DebugStoppedAtBreakepointEvent dto) {
         classCombo.removeAll();
 
         for (TargetApplicationElementRepresentation el : dto.getTargetApplicationElementRepresentationList()) {
