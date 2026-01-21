@@ -61,83 +61,53 @@ public class SimpleDebuggerWorkFlow {
 
 	/** Запуск дебага */
 	public void debug() throws Exception {
-		VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
-	    EventRequestManager erm = vm.eventRequestManager();
-
-	    // подписываемся на загрузку Main
-	    ClassPrepareRequest cpr = erm.createClassPrepareRequest();
-	    cpr.addClassFilter("target_debug.Main");
-	    cpr.enable();
-
-	    boolean running = true;
-
-	    while (running) {
-	        EventSet eventSet = vm.eventQueue().remove();
-
-	        for (Event event : eventSet) {
-
-	            if (event instanceof VMStartEvent) {
-	                System.out.println("VMStartEvent");
-	            }
-
-	            else if (event instanceof ClassPrepareEvent cpe) {
-	                System.out.println("ClassPrepareEvent");
-
-	                ReferenceType ref = cpe.referenceType();
-
-	                Method main =
-	                        ref.methodsByName("main").get(0);
-
-	                Location firstLine =
-	                        main.allLineLocations().get(0);
-
-	                BreakpointRequest bp =
-	                        erm.createBreakpointRequest(firstLine);
-
-	                bp.enable();
-
-	                System.out.println(
-	                        "Breakpoint set at " +
-	                        firstLine.sourceName() +
-	                        ":" +
-	                        firstLine.lineNumber()
-	                );
-	            }
-
-	            else if (event instanceof BreakpointEvent bp) {
-	                Location loc = bp.location();
-
-	                System.out.println(
-	                        "🔥 HIT BREAKPOINT: " +
-	                        loc.declaringType().name() +
-	                        ":" +
-	                        loc.lineNumber()
-	                );
-
-	                running = false; // стопаемся
-	            }
-
-	            else if (event instanceof VMDisconnectEvent) {
-	                running = false;
-	            }
-	        }
-
-	        eventSet.resume();
-	    }
-	}
-
-
-	private void prepareTargetApplicationStart() {
 		openDebugWindow();
-		int loadedElementsQuantity = 0;
-		while(loadedElementsQuantity == 0) {
-			targetApplicationRepresentation
-				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-			loadedElementsQuantity = targetApplicationRepresentation.getTargetApplicationElements().size();
-		}
-		
-		refreshBreakpoints();
+		VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
+		EventRequestManager erm = vm.eventRequestManager();
 
+		// подписываемся на загрузку Main
+		ClassPrepareRequest cpr = erm.createClassPrepareRequest();
+		cpr.addClassFilter("target_debug.Main");
+		cpr.enable();
+
+		boolean running = true;
+
+		while (running) {
+			EventSet eventSet = vm.eventQueue().remove();
+			for (Event event : eventSet) {
+				if (event instanceof VMStartEvent) {
+					System.out.println("VMStartEvent");
+				}
+				else if (event instanceof ClassPrepareEvent cpe) {
+					System.out.println("ClassPrepareEvent");
+					ReferenceType ref = cpe.referenceType();
+					Method main = ref.methodsByName("main").get(0);
+					Location firstLine = main.allLineLocations().get(0);
+					BreakpointRequest bp = erm.createBreakpointRequest(firstLine);
+					bp.enable();
+					System.out.println("Breakpoint set at " + firstLine.sourceName() + ":" + firstLine.lineNumber());
+				}
+				else if (event instanceof BreakpointEvent bp) {
+					Location loc = bp.location();
+					System.out.println("🔥 HIT BREAKPOINT: " + loc.declaringType().name() + ":" + loc.lineNumber());
+					 DebugSession debugSession =
+			                    new DebugSessionImpl(
+			                        targetVirtualMachineRepresentation,
+			                        targetApplicationRepresentation,
+			                        eventSet,
+			                        highlighter
+			                    );
+
+			                Thread sessionThread = new Thread(debugSession, "DebugSession");
+			                sessionThread.start();
+			                sessionThread.join(); // ждём, пока пользователь н
+				}
+				else if (event instanceof VMDisconnectEvent) {
+					running = false;
+				}
+			}
+			eventSet.resume();
+		}
 	}
 
 	private void refreshBreakpoints() {
