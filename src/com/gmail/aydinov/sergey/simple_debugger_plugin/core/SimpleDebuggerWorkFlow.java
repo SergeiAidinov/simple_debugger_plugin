@@ -22,11 +22,21 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflo
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.sun.jdi.Bootstrap;
+import com.sun.jdi.Location;
+import com.sun.jdi.Method;
+import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.connect.Connector;
 import com.sun.jdi.connect.LaunchingConnector;
+import com.sun.jdi.event.BreakpointEvent;
+import com.sun.jdi.event.ClassPrepareEvent;
+import com.sun.jdi.event.Event;
 import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
+import com.sun.jdi.event.VMDisconnectEvent;
+import com.sun.jdi.event.VMStartEvent;
+import com.sun.jdi.request.BreakpointRequest;
+import com.sun.jdi.request.ClassPrepareRequest;
 import com.sun.jdi.request.EventRequestManager;
 
 public class SimpleDebuggerWorkFlow {
@@ -50,52 +60,84 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	/** Запуск дебага */
-	public void debug() {
-		System.out.println("DEBUG");
-
-		openDebugWindow();
+	public void debug() throws Exception {
 		VirtualMachine vm = targetVirtualMachineRepresentation.getVirtualMachine();
-		refreshBreakpoints();
-		System.out.println("BEFORE CYCLE: " + targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
-				.prettyPrintBreakpoints());
-		targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(vm);
-		vm.resume();
-		boolean running = true;
-		while (running) {
-			System.out.println("===>");
-			System.out.println(targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
-					.prettyPrintBreakpoints());
-			System.out.println("<===");
-			EventQueue queue = vm.eventQueue();
-			EventSet eventSet = null;
-			try {
-				eventSet = queue.remove();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (com.sun.jdi.VMDisconnectedException e) {
-				System.out.println("VM disconnected, finishing debug loop.");
-				break; // корректно выходим из цикла
-			}
+	    EventRequestManager erm = vm.eventRequestManager();
 
-			if (eventSet == null)
-				continue;
+	    // подписываемся на загрузку Main
+	    ClassPrepareRequest cpr = erm.createClassPrepareRequest();
+	    cpr.addClassFilter("target_debug.Main");
+	    cpr.enable();
 
-			DebugSession debugSession = new DebugSessionImpl(targetVirtualMachineRepresentation,
-					targetApplicationRepresentation, eventSet, highlighter);
-			Thread debugSessionThread = new Thread(debugSession);
-			debugSessionThread.setDaemon(true);
-			debugSessionThread.start();
+	    boolean running = true;
 
-			try {
-				debugSessionThread.join();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+	    while (running) {
+	        EventSet eventSet = vm.eventQueue().remove();
 
-			eventSet.resume();
+	        for (Event event : eventSet) {
 
-			running = DebuggerContext.context().isRunning();
+	            if (event instanceof VMStartEvent) {
+	                System.out.println("VMStartEvent");
+	            }
+
+	            else if (event instanceof ClassPrepareEvent cpe) {
+	                System.out.println("ClassPrepareEvent");
+
+	                ReferenceType ref = cpe.referenceType();
+
+	                Method main =
+	                        ref.methodsByName("main").get(0);
+
+	                Location firstLine =
+	                        main.allLineLocations().get(0);
+
+	                BreakpointRequest bp =
+	                        erm.createBreakpointRequest(firstLine);
+
+	                bp.enable();
+
+	                System.out.println(
+	                        "Breakpoint set at " +
+	                        firstLine.sourceName() +
+	                        ":" +
+	                        firstLine.lineNumber()
+	                );
+	            }
+
+	            else if (event instanceof BreakpointEvent bp) {
+	                Location loc = bp.location();
+
+	                System.out.println(
+	                        "🔥 HIT BREAKPOINT: " +
+	                        loc.declaringType().name() +
+	                        ":" +
+	                        loc.lineNumber()
+	                );
+
+	                running = false; // стопаемся
+	            }
+
+	            else if (event instanceof VMDisconnectEvent) {
+	                running = false;
+	            }
+	        }
+
+	        eventSet.resume();
+	    }
+	}
+
+
+	private void prepareTargetApplicationStart() {
+		openDebugWindow();
+		int loadedElementsQuantity = 0;
+		while(loadedElementsQuantity == 0) {
+			targetApplicationRepresentation
+				.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+			loadedElementsQuantity = targetApplicationRepresentation.getTargetApplicationElements().size();
 		}
+		
+		refreshBreakpoints();
+
 	}
 
 	private void refreshBreakpoints() {
@@ -156,20 +198,19 @@ public class SimpleDebuggerWorkFlow {
 		public static VirtualMachine launchVirtualMachine() {
 			try {
 				LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
+
 				Map<String, Connector.Argument> args = connector.defaultArguments();
 
-				// Main class и classpath
 				args.get("main").setValue("target_debug.Main");
 				args.get("options").setValue("-cp /home/sergei/eclipse-commiters-workspace/target_debug/bin");
 
-				// Не приостанавливать JVM
-				args.get("suspend").setValue("false");
+				// 🔴 ВАЖНО: JVM стартует ОСТАНОВЛЕННОЙ
+				args.get("suspend").setValue("true");
 
-				// Запуск таргета
 				VirtualMachine vm = connector.launch(args);
-				System.out.println("==> VM LAUNCHED: " + vm.description());
 
-				// Запускаем потоки для консоли
+				System.out.println("==> VM LAUNCHED (SUSPENDED): " + vm.description());
+
 				attachConsoleReaders(vm.process());
 
 				return vm;
