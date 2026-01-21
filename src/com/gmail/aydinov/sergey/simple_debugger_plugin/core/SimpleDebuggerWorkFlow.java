@@ -13,6 +13,7 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.swt.widgets.Display;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationBreakepointRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
@@ -164,15 +165,15 @@ public class SimpleDebuggerWorkFlow {
 			return instance;
 		}
 
-		public static void createWorkFlow(String mainClass, List<String> options, OnWorkflowReadyListener listener) {
+		public static void createWorkFlow(/*String mainClass, List<String> options,*/ DebugConfiguration debugConfiguration, OnWorkflowReadyListener listener) {
 			CompletableFuture.runAsync(() -> {
-				VirtualMachine virtualMachine = launchVirtualMachine();
+				VirtualMachine virtualMachine = launchVirtualMachine(debugConfiguration);
 				IBreakpointManager breakpointManager = waitForBreakpointManager();
 				BreakePointListener breakePointListener = new BreakePointListener();
 				breakpointManager.setEnabled(true);
 				breakpointManager.addBreakpointListener(breakePointListener);
 				TargetVirtualMachineRepresentation targetVirtualMachineRepresentation = new TargetVirtualMachineRepresentation(
-						"localhost", 5005, virtualMachine);
+						"localhost", debugConfiguration.getPort(), virtualMachine);
 
 				instance = new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation, breakpointManager,
 						breakePointListener);
@@ -199,28 +200,29 @@ public class SimpleDebuggerWorkFlow {
 			return future.join();
 		}
 
-		public static VirtualMachine launchVirtualMachine() {
-			try {
-				LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
+		private static VirtualMachine launchVirtualMachine(DebugConfiguration debugConfiguration) {
+		    try {
+		        LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
+		        Map<String, Connector.Argument> args = connector.defaultArguments();
 
-				Map<String, Connector.Argument> args = connector.defaultArguments();
+		        // main класс
+		        args.get("main").setValue(debugConfiguration.getMainClass());
 
-				args.get("main").setValue("target_debug.Main");
-				args.get("options").setValue("-cp /home/sergei/eclipse-commiters-workspace/target_debug/bin");
+		        // classpath + VM options
+		        args.get("options").setValue("-cp " + debugConfiguration.getOutputFolder());
 
-				args.get("suspend").setValue("true");
+		        // jdwp
+		        args.get("suspend").setValue("true");
 
-				VirtualMachine vm = connector.launch(args);
+		        VirtualMachine vm = connector.launch(args);
+		        System.out.println("==> VM LAUNCHED (SUSPENDED): " + vm.description());
 
-				System.out.println("==> VM LAUNCHED (SUSPENDED): " + vm.description());
+		        attachConsoleWriters(vm.process());
 
-				attachConsoleWriters(vm.process());
-
-				return vm;
-
-			} catch (Exception e) {
-				throw new RuntimeException("Cannot launch VM", e);
-			}
+		        return vm;
+		    } catch (Exception e) {
+		        throw new RuntimeException("Cannot launch VM", e);
+		    }
 		}
 
 		private static void attachConsoleWriters(Process process) {
