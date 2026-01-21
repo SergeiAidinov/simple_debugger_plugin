@@ -7,8 +7,8 @@ import java.util.stream.Collectors;
 
 public class DebugConfiguration {
     private final String mainClass;
-    private final List<String> vmOptions;
-    private final int port;
+    private List<String> vmOptions;
+    private int port;
 
     private final Path workingDirectory;         // root проекта / рабочая директория
     private final Path outputFolder;             // папка с бинарниками (.class)
@@ -107,6 +107,12 @@ public class DebugConfiguration {
                 .filter(opt -> !opt.contains("-agentlib:jdwp"))
                 .collect(Collectors.joining(" "));
     }
+    
+    public void setVmOptions(String[] options) {
+        this.vmOptions = List.of(options);
+    }
 
-
+    public void setPort(int port) {
+        this.port = port;
+    }
 }
