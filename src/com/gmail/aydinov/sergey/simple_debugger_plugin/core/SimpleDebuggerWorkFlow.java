@@ -101,7 +101,8 @@ public class SimpleDebuggerWorkFlow {
 
 	private void prepareDebug(EventQueue queue) {
 		openDebugWindow();
-		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
+		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
+				.eventRequestManager();
 		ClassPrepareRequest classPrepareRequest = eventRequestManager.createClassPrepareRequest();
 		classPrepareRequest.addClassFilter("target_debug.Main");
 		classPrepareRequest.enable();
@@ -165,7 +166,9 @@ public class SimpleDebuggerWorkFlow {
 			return instance;
 		}
 
-		public static void createWorkFlow(/*String mainClass, List<String> options,*/ DebugConfiguration debugConfiguration, OnWorkflowReadyListener listener) {
+		public static void createWorkFlow(
+				/* String mainClass, List<String> options, */ DebugConfiguration debugConfiguration,
+				OnWorkflowReadyListener listener) {
 			CompletableFuture.runAsync(() -> {
 				VirtualMachine virtualMachine = launchVirtualMachine(debugConfiguration);
 				IBreakpointManager breakpointManager = waitForBreakpointManager();
@@ -201,28 +204,33 @@ public class SimpleDebuggerWorkFlow {
 		}
 
 		private static VirtualMachine launchVirtualMachine(DebugConfiguration debugConfiguration) {
-		    try {
-		        LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
-		        Map<String, Connector.Argument> args = connector.defaultArguments();
+			try {
+				LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
+				Map<String, Connector.Argument> args = connector.defaultArguments();
 
-		        // main класс
-		        args.get("main").setValue(debugConfiguration.getMainClass());
+				// main класс
+				args.get("main").setValue(debugConfiguration.getMainClass());
 
-		        // classpath + VM options
-		        args.get("options").setValue("-cp " + debugConfiguration.getOutputFolder());
+				// classpath + VM options
+				String optStr = "-cp " + debugConfiguration.getOutputFolder() + " "
+						+ debugConfiguration.getVmOptionsStringWithoutJDWP();
+				System.out.println("OPT: " + optStr);
+				// args.get("options").setValue(" -cp " + debugConfiguration.getOutputFolder());
+				// args.get("options").setValue(optStr);
+				args.get("options").setValue(optStr);
 
-		        // jdwp
-		        args.get("suspend").setValue("true");
+				// jdwp
+				args.get("suspend").setValue("true");
 
-		        VirtualMachine vm = connector.launch(args);
-		        System.out.println("==> VM LAUNCHED (SUSPENDED): " + vm.description());
+				VirtualMachine vm = connector.launch(args);
+				System.out.println("==> VM LAUNCHED (SUSPENDED): " + vm.description());
 
-		        attachConsoleWriters(vm.process());
+				attachConsoleWriters(vm.process());
 
-		        return vm;
-		    } catch (Exception e) {
-		        throw new RuntimeException("Cannot launch VM", e);
-		    }
+				return vm;
+			} catch (Exception e) {
+				throw new RuntimeException("Cannot launch VM", e);
+			}
 		}
 
 		private static void attachConsoleWriters(Process process) {

@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DebugConfiguration {
     private final String mainClass;
@@ -100,5 +101,12 @@ public class DebugConfiguration {
         sb.append("===========================\n");
         return sb.toString();
     }
+    
+    public String getVmOptionsStringWithoutJDWP() {
+        return vmOptions.stream()
+                .filter(opt -> !opt.contains("-agentlib:jdwp"))
+                .collect(Collectors.joining(" "));
+    }
+
 
 }
