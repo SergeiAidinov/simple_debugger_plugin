@@ -52,7 +52,7 @@ public class TargetApplicationRepresentation {
 			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
 			BreakpointSubscriberRegistrar breakpointHitListener) {
 		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakepointRepresentation(
-				iBreakpointManager, eventRequestManager, virtualMachine);
+				iBreakpointManager, virtualMachine);
 		breakpointHitListener.register(targetApplicationBreakepointRepresentation);
 		this.virtualMachine = virtualMachine;
 	}
