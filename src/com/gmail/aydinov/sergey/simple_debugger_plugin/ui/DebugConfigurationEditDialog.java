@@ -37,7 +37,7 @@ public class DebugConfigurationEditDialog extends TitleAreaDialog {
         // Main class (read-only)
         // ----------------------------
         createLabel(container, "Main class:");
-        createReadOnlyText(container, config.getMainClass());
+        createReadOnlyText(container, config.getMainClassName());
 
         // ----------------------------
         // Working directory (read-only)

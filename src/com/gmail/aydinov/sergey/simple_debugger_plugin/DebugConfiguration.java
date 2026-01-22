@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DebugConfiguration {
-    private final String mainClass;
+    private final String mainClassName;
     private List<String> vmOptions;
     private int port;
 
@@ -22,7 +22,7 @@ public class DebugConfiguration {
             Path outputFolder,
             List<Path> additionalClasspath
     ) {
-        this.mainClass = mainClass;
+        this.mainClassName = mainClass;
         this.vmOptions = List.copyOf(vmOptions);
         this.port = port;
         this.workingDirectory = workingDirectory;
@@ -30,8 +30,8 @@ public class DebugConfiguration {
         this.additionalClasspath = List.copyOf(additionalClasspath);
     }
 
-    public String getMainClass() {
-        return mainClass;
+    public String getMainClassName() {
+        return mainClassName;
     }
 
     public List<String> getVmOptions() {
@@ -78,7 +78,7 @@ public class DebugConfiguration {
     public String prettyPrint() {
         StringBuilder sb = new StringBuilder();
         sb.append("=== DebugConfiguration ===\n");
-        sb.append("Main class: ").append(mainClass).append("\n");
+        sb.append("Main class: ").append(mainClassName).append("\n");
         sb.append("Port: ").append(port).append("\n");
         sb.append("Working directory: ").append(
             workingDirectory != null ? workingDirectory.toString() : "null"

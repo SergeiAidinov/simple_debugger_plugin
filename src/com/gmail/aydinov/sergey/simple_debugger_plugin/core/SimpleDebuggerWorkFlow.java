@@ -62,11 +62,15 @@ public class SimpleDebuggerWorkFlow {
 		DebuggerContext.context().setRunning(true);
 	}
 
-	/** Запуск дебага */
-	public void debug() {
+	/**
+	 * Запуск дебага
+	 * 
+	 * @param mainClassName
+	 */
+	public void debug(String mainClassName) {
 		System.out.println("DEBUG");
 		openDebugWindow();
-		prepareDebug(targetVirtualMachineRepresentation.getVirtualMachine().eventQueue());
+		prepareDebug(targetVirtualMachineRepresentation.getVirtualMachine().eventQueue(), mainClassName);
 		targetVirtualMachineRepresentation.getVirtualMachine().resume();
 		boolean running = true;
 		while (running) {
@@ -100,12 +104,12 @@ public class SimpleDebuggerWorkFlow {
 		}
 	}
 
-	private void prepareDebug(EventQueue queue) {
+	private void prepareDebug(EventQueue queue, String mainClassName) {
 		openDebugWindow();
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine()
 				.eventRequestManager();
 		ClassPrepareRequest classPrepareRequest = eventRequestManager.createClassPrepareRequest();
-		classPrepareRequest.addClassFilter("target_debug.Main");
+		classPrepareRequest.addClassFilter(mainClassName);
 		classPrepareRequest.enable();
 		boolean preparing = true;
 		while (preparing) {
@@ -167,9 +171,7 @@ public class SimpleDebuggerWorkFlow {
 			return instance;
 		}
 
-		public static void createWorkFlow(
-				/* String mainClass, List<String> options, */ DebugConfiguration debugConfiguration,
-				OnWorkflowReadyListener listener) {
+		public static void createWorkFlow(DebugConfiguration debugConfiguration, OnWorkflowReadyListener listener) {
 			CompletableFuture.runAsync(() -> {
 				VirtualMachine virtualMachine = launchVirtualMachine(debugConfiguration);
 				IBreakpointManager breakpointManager = waitForBreakpointManager();
@@ -210,7 +212,7 @@ public class SimpleDebuggerWorkFlow {
 				Map<String, Connector.Argument> args = connector.defaultArguments();
 
 				// main класс
-				args.get("main").setValue(debugConfiguration.getMainClass());
+				args.get("main").setValue(debugConfiguration.getMainClassName());
 
 				// classpath + VM options
 				String optStr = "-cp " + debugConfiguration.getOutputFolder() + " "

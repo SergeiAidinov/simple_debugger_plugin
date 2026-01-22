@@ -92,7 +92,7 @@ public class SimpleDebuggerPluginStarter extends AbstractHandler {
                     try {
                         System.out.println("Starting workflow...");
                         DebuggerContext.context().setRunning(true);
-                        workflow.debug();
+                        workflow.debug(debugConfiguration.getMainClassName());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
