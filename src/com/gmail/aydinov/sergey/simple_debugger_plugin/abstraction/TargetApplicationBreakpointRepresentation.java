@@ -54,16 +54,12 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
     @Override
     public synchronized void addBreakepoint(IBreakpoint breakpoint) {
         if (breakpoint == null) return;
-
-        // не добавляем дубликаты
         if (breakpoints.stream().anyMatch(bw -> bw.getBreakpoint().equals(breakpoint)))
             return;
-
-        Optional<Location> location = findLocation(breakpoint);
-
-        if (location.isPresent()) {
+        Optional<Location> locationOptional = findLocation(breakpoint);
+        if (locationOptional.isPresent()) {
             BreakpointRequest request =
-                    eventRequestManager.createBreakpointRequest(location.get());
+                    eventRequestManager.createBreakpointRequest(locationOptional.get());
             request.enable();
             breakpoints.add(new BreakpointWrapper(breakpoint, request));
         } else {
@@ -82,20 +78,16 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
         		breakpointWrapperToBeDeleted = breakpointWrapper;
         		try {
 					breakpoint.setEnabled(false);
-					
-				
-					 List<BreakpointRequest> qq = eventRequestManager.breakpointRequests();
-					 for (BreakpointRequest breakpointRequest : qq) {
-						if (breakpointRequest.equals(breakpointWrapper.getBreakpointRequest())) {
-							eventRequestManager.deleteEventRequest(breakpointRequest);
-							System.out.println("DELETED BP_REQUEST: " + breakpointRequest);
-						}
-					 }
-					 System.out.println(qq);
 				} catch (CoreException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+        		for (BreakpointRequest breakpointRequest : eventRequestManager.breakpointRequests()) {
+					if (breakpointRequest.equals(breakpointWrapper.getBreakpointRequest())) {
+						eventRequestManager.deleteEventRequest(breakpointRequest);
+						System.out.println("DELETED BP_REQUEST: " + breakpointRequest);
+					}
+				 }
         	}
         }
         

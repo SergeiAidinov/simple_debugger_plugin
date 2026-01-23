@@ -6,7 +6,7 @@ import org.eclipse.debug.core.model.IBreakpoint;
 import com.sun.jdi.Location;
 import com.sun.jdi.request.BreakpointRequest;
 
-public class BreakpointWrapper implements Comparable<BreakpointWrapper> {
+public class BreakpointWrapper /*implements Comparable<BreakpointWrapper> */{
 
 	private BreakpointRequest breakpointRequest;
     private final IBreakpoint breakpoint;
@@ -37,13 +37,13 @@ public class BreakpointWrapper implements Comparable<BreakpointWrapper> {
 		this.breakpointRequest = breakpointRequest;
 	}
 
-	@Override
-    public int compareTo(BreakpointWrapper o) {
-        if (o == null) return 1;
-        int cmp = path.compareTo(o.path);
-        if (cmp != 0) return cmp;
-        return Integer.compare(line, o.line);
-    }
+//	@Override
+//    public int compareTo(BreakpointWrapper o) {
+//        if (o == null) return 1;
+//        int cmp = path.compareTo(o.path);
+//        if (cmp != 0) return cmp;
+//        return Integer.compare(line, o.line);
+//    }
 
     @Override
     public boolean equals(Object obj) {
@@ -67,11 +67,9 @@ public class BreakpointWrapper implements Comparable<BreakpointWrapper> {
     
     public String prettyPrint() {
         StringBuilder sb = new StringBuilder();
-
         sb.append("BreakpointWrapper {\n");
         sb.append("  path: ").append(path.isEmpty() ? "<unknown>" : path).append("\n");
         sb.append("  line: ").append(line >= 0 ? line : "<unknown>").append("\n");
-
         sb.append("  breakpoint: ");
         if (breakpoint != null) {
             sb.append(breakpoint.getClass().getSimpleName());
@@ -79,7 +77,6 @@ public class BreakpointWrapper implements Comparable<BreakpointWrapper> {
             sb.append("<null>");
         }
         sb.append("\n");
-
         sb.append("  breakpointRequest: ");
         if (breakpointRequest != null) {
             sb.append(breakpointRequest.getClass().getSimpleName());
@@ -87,9 +84,7 @@ public class BreakpointWrapper implements Comparable<BreakpointWrapper> {
             sb.append("<null>");
         }
         sb.append("\n");
-
         sb.append("}");
-
         return sb.toString();
     }
 

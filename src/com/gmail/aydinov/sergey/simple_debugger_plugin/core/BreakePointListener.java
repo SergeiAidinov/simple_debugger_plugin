@@ -28,31 +28,12 @@ public class BreakePointListener implements IBreakpointListener, BreakpointSubsc
 
 	@Override
 	public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
-			try {
-			if (breakpoint.isEnabled())	breakpoint.setEnabled(false);
-			//breakpoint.delete();
-			} catch (CoreException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 		printBreakpoint(breakpoint, "REMOVED");
 		breakpointSubscriber.deleteBreakepoint(breakpoint);	
 	}
 
 	@Override
 	public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
-		System.out.println("breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta): breakpoint: " + breakpoint + " delta: " +  delta);		
-		if (delta == null) {
-	        return;
-	    }
-
-	    if ((delta.getKind() & IResourceDelta.REMOVED) != 0) {
-	        System.out.println("Marker REMOVED for breakpoint: " + breakpoint);
-	        return;
-	    }
-
-	    System.out.println("Breakpoint changed (but marker still exists)");
-	
 	}
 	
 	private void printBreakpoint(IBreakpoint breakpoint, String action) {
