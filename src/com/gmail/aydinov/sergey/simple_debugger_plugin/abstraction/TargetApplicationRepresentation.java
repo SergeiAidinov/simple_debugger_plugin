@@ -45,19 +45,19 @@ import com.sun.jdi.request.EventRequestManager;
 public class TargetApplicationRepresentation {
 
 	private final Map<ReferenceType, TargetApplicationElementRepresentation> referencesAtClassesAndInterfaces = new ConcurrentHashMap<ReferenceType, TargetApplicationElementRepresentation>();
-	private final TargetApplicationBreakepointRepresentation targetApplicationBreakepointRepresentation;
+	private final TargetApplicationBreakpointRepresentation targetApplicationBreakepointRepresentation;
 	private final VirtualMachine virtualMachine;
 
 	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
 			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
 			BreakpointSubscriberRegistrar breakpointHitListener) {
-		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakepointRepresentation(
+		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakpointRepresentation(
 				iBreakpointManager, virtualMachine);
 		breakpointHitListener.register(targetApplicationBreakepointRepresentation);
 		this.virtualMachine = virtualMachine;
 	}
 
-	public TargetApplicationBreakepointRepresentation getTargetApplicationBreakepointRepresentation() {
+	public TargetApplicationBreakpointRepresentation getTargetApplicationBreakepointRepresentation() {
 		return targetApplicationBreakepointRepresentation;
 	}
 

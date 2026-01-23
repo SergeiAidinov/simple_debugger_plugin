@@ -22,11 +22,21 @@ public class BreakpointWrapper implements Comparable<BreakpointWrapper> {
         this.breakpointRequest = breakpointRequest;
     }
 
-    public IBreakpoint get() {
+    public IBreakpoint getBreakpoint() {
         return breakpoint;
     }
+    
+    
 
-    @Override
+    public BreakpointRequest getBreakpointRequest() {
+		return breakpointRequest;
+	}
+
+	public void setBreakpointRequest(BreakpointRequest breakpointRequest) {
+		this.breakpointRequest = breakpointRequest;
+	}
+
+	@Override
     public int compareTo(BreakpointWrapper o) {
         if (o == null) return 1;
         int cmp = path.compareTo(o.path);
