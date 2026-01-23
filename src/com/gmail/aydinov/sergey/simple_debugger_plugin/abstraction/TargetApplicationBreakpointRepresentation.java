@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -81,6 +82,16 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
         		breakpointWrapperToBeDeleted = breakpointWrapper;
         		try {
 					breakpoint.setEnabled(false);
+					
+				
+					 List<BreakpointRequest> qq = eventRequestManager.breakpointRequests();
+					 for (BreakpointRequest breakpointRequest : qq) {
+						if (breakpointRequest.equals(breakpointWrapper.getBreakpointRequest())) {
+							eventRequestManager.deleteEventRequest(breakpointRequest);
+							System.out.println("DELETED BP_REQUEST: " + breakpointRequest);
+						}
+					 }
+					 System.out.println(qq);
 				} catch (CoreException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

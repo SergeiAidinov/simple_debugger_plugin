@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.debug.core.model.IBreakpoint;
 
+import com.sun.jdi.Location;
 import com.sun.jdi.request.BreakpointRequest;
 
 public class BreakpointWrapper implements Comparable<BreakpointWrapper> {
