@@ -63,4 +63,33 @@ public class BreakpointWrapper implements Comparable<BreakpointWrapper> {
     public String toString() {
         return "Breakpoint at " + path + ":" + line;
     }
+    
+    public String prettyPrint() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("BreakpointWrapper {\n");
+        sb.append("  path: ").append(path.isEmpty() ? "<unknown>" : path).append("\n");
+        sb.append("  line: ").append(line >= 0 ? line : "<unknown>").append("\n");
+
+        sb.append("  breakpoint: ");
+        if (breakpoint != null) {
+            sb.append(breakpoint.getClass().getSimpleName());
+        } else {
+            sb.append("<null>");
+        }
+        sb.append("\n");
+
+        sb.append("  breakpointRequest: ");
+        if (breakpointRequest != null) {
+            sb.append(breakpointRequest.getClass().getSimpleName());
+        } else {
+            sb.append("<null>");
+        }
+        sb.append("\n");
+
+        sb.append("}");
+
+        return sb.toString();
+    }
+
 }

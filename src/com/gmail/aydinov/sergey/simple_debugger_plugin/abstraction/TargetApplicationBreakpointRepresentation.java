@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,8 +73,12 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 
     @Override
     public synchronized void deleteBreakepoint(IBreakpoint breakpoint) {
+    	System.out.println("BEFORE DELETION: ");
+    	breakpoints.stream().forEach(bw -> System.out.println(bw.prettyPrint()));
+    	BreakpointWrapper breakpointWrapperToBeDeleted = null;
         for (BreakpointWrapper breakpointWrapper : breakpoints) {
         	if (breakpointWrapper.getBreakpoint().equals(breakpoint)) {
+        		breakpointWrapperToBeDeleted = breakpointWrapper;
         		try {
 					breakpoint.setEnabled(false);
 				} catch (CoreException e) {
@@ -82,6 +87,10 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 				}
         	}
         }
+        
+        if (Objects.nonNull(breakpointWrapperToBeDeleted)) breakpoints.remove(breakpointWrapperToBeDeleted);
+        System.out.println("AFTER DELETION: ");
+    	breakpoints.stream().forEach(bw -> System.out.println(bw.prettyPrint()));
     }
 
     @Override
