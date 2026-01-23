@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DebugConfiguration {
-    private final String mainClassName;
+    private String mainClassName;
     private List<String> vmOptions;
     private int port;
 
@@ -115,4 +115,9 @@ public class DebugConfiguration {
     public void setPort(int port) {
         this.port = port;
     }
+
+	public void setMainClassName(String mainClassName) {
+		this.mainClassName = mainClassName;
+		
+	}
 }

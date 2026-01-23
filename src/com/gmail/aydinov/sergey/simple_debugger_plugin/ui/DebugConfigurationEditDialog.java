@@ -16,6 +16,7 @@ public class DebugConfigurationEditDialog extends TitleAreaDialog {
 
     private DebugConfiguration config;
 
+    private Text mainClassText;
     private Text vmOptionsText;
     private Text portText;
 
@@ -27,17 +28,17 @@ public class DebugConfigurationEditDialog extends TitleAreaDialog {
     @Override
     protected Control createDialogArea(Composite parent) {
         setTitle("Edit Debug Configuration");
-        setMessage("You can edit VM options and port before launching the target");
+        setMessage("You can edit Main class, VM options and port before launching the target");
 
         Composite area = (Composite) super.createDialogArea(parent);
         Composite container = new Composite(area, SWT.NONE);
         container.setLayout(new GridLayout(2, false));
 
         // ----------------------------
-        // Main class (read-only)
+        // Main class (editable)
         // ----------------------------
         createLabel(container, "Main class:");
-        createReadOnlyText(container, config.getMainClassName());
+        mainClassText = createEditableText(container, config.getMainClassName(), 60);
 
         // ----------------------------
         // Working directory (read-only)
@@ -92,22 +93,50 @@ public class DebugConfigurationEditDialog extends TitleAreaDialog {
         Text t = new Text(parent, SWT.BORDER | SWT.SINGLE);
         t.setText(text);
         GridData gd = new GridData(GridData.FILL_HORIZONTAL);
-        gd.widthHint = widthHint * 7;
+        gd.widthHint = widthHint * 7; // приближение ширины символов
         t.setLayoutData(gd);
         return t;
     }
 
     @Override
     protected void okPressed() {
-        // Сохраняем изменения в DebugConfiguration
+        // ----------------------------
+        // Сохраняем Main class
+        // ----------------------------
+        String mainClass = mainClassText.getText().trim();
+        config.setMainClassName(mainClass);
+
+        // ----------------------------
+        // Сохраняем VM Options
+        // ----------------------------
         String vmOptions = vmOptionsText.getText().trim();
         config.setVmOptions(vmOptions.split("\\s+"));
+
+        // ----------------------------
+        // Сохраняем порт
+        // ----------------------------
         try {
             int port = Integer.parseInt(portText.getText().trim());
+            if (port < 0 || port > 65535) {
+                showError("Invalid Port", "Port must be between 0 and 65535.");
+                return; // не закрывать диалог
+            }
             config.setPort(port);
         } catch (NumberFormatException e) {
-            // можно показать сообщение или оставить старый порт
+            showError("Invalid Port", "Please enter a valid number for port.");
+            return; // не закрывать диалог
         }
+
         super.okPressed();
+    }
+
+    // ----------------------------
+    // Вспомогательный метод для сообщений об ошибке
+    // ----------------------------
+    private void showError(String title, String message) {
+        MessageBox box = new MessageBox(getShell(), SWT.ICON_ERROR | SWT.OK);
+        box.setText(title);
+        box.setMessage(message);
+        box.open();
     }
 }
