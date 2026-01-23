@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.model.IBreakpoint;
 
@@ -71,13 +72,16 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 
     @Override
     public synchronized void deleteBreakepoint(IBreakpoint breakpoint) {
-        breakpoints.removeIf(bw -> {
-            if (!bw.getBreakpoint().equals(breakpoint))
-                return false;
-
-            deleteJdiRequest(bw);
-            return true;
-        });
+        for (BreakpointWrapper breakpointWrapper : breakpoints) {
+        	if (breakpointWrapper.getBreakpoint().equals(breakpoint)) {
+        		try {
+					breakpoint.setEnabled(false);
+				} catch (CoreException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+        	}
+        }
     }
 
     @Override

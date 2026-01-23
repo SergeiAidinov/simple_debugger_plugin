@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.IBreakpointListener;
 import org.eclipse.debug.core.model.IBreakpoint;
@@ -29,7 +30,7 @@ public class BreakePointListener implements IBreakpointListener, BreakpointSubsc
 	public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
 			try {
 			if (breakpoint.isEnabled())	breakpoint.setEnabled(false);
-			breakpoint.delete();
+			//breakpoint.delete();
 			} catch (CoreException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -40,7 +41,18 @@ public class BreakePointListener implements IBreakpointListener, BreakpointSubsc
 
 	@Override
 	public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
-		throw new UnsupportedOperationException();		
+		System.out.println("breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta): breakpoint: " + breakpoint + " delta: " +  delta);		
+		if (delta == null) {
+	        return;
+	    }
+
+	    if ((delta.getKind() & IResourceDelta.REMOVED) != 0) {
+	        System.out.println("Marker REMOVED for breakpoint: " + breakpoint);
+	        return;
+	    }
+
+	    System.out.println("Breakpoint changed (but marker still exists)");
+	
 	}
 	
 	private void printBreakpoint(IBreakpoint breakpoint, String action) {
