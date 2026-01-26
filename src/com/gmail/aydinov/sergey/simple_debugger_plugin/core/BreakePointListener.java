@@ -2,17 +2,17 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.IBreakpointListener;
 import org.eclipse.debug.core.model.IBreakpoint;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.BreakpointSubscriber;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 
 public class BreakePointListener implements IBreakpointListener, BreakpointSubscriberRegistrar {
 	
-	BreakpointSubscriber subscriber;
+	private BreakpointSubscriber breakpointSubscriber;
 
 	@Override
 	public void breakpointAdded(IBreakpoint breakpoint) {
@@ -23,24 +23,17 @@ public class BreakePointListener implements IBreakpointListener, BreakpointSubsc
 				e.printStackTrace();
 			}
 		printBreakpoint(breakpoint, "ADDED");
-		subscriber.addBreakepoint(new BreakpointWrapper(breakpoint));
+		breakpointSubscriber.addBreakepoint(breakpoint);
 	}
 
 	@Override
 	public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
-			try {
-			if (breakpoint.isEnabled())	breakpoint.setEnabled(false);
-			} catch (CoreException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 		printBreakpoint(breakpoint, "REMOVED");
-		subscriber.deleteBreakepoint(new BreakpointWrapper(breakpoint));	
+		breakpointSubscriber.deleteBreakepoint(breakpoint);	
 	}
 
 	@Override
 	public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
-		//printBreakpoint(breakpoint, "CHANGED");		
 	}
 	
 	private void printBreakpoint(IBreakpoint breakpoint, String action) {
@@ -64,7 +57,7 @@ public class BreakePointListener implements IBreakpointListener, BreakpointSubsc
 	@Override
 	public void register(
 			BreakpointSubscriber targetApplicationBreakepointRepresentation) {
-		this.subscriber = targetApplicationBreakepointRepresentation;
+		this.breakpointSubscriber = targetApplicationBreakepointRepresentation;
 		
 	}
 }

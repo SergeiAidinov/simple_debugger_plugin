@@ -1,13 +1,13 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
+import org.eclipse.debug.core.model.IBreakpoint;
 
 public interface BreakpointSubscriber {
 
-	void addBreakepoint(BreakpointWrapper breakpointWrapper);
+	void addBreakepoint(IBreakpoint breakpoint);
 
-	void deleteBreakepoint(BreakpointWrapper breakpointWrapper);
+	void deleteBreakepoint(IBreakpoint breakpoint);
 
-	void changeBreakpoint(BreakpointWrapper breakpointWrapper);
+	void changeBreakpoint(IBreakpoint breakpoint);
 
 }

@@ -25,6 +25,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.MethodInvokedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
@@ -218,6 +219,8 @@ public class DebugSessionImpl implements DebugSession {
                     method, args, ClassType.INVOKE_SINGLE_THREADED);
 
             resultOfMethodInvocation.set(String.valueOf(result));
+            SimpleDebuggerEventQueue.instance().collectDebugEvent(
+            		new MethodInvokedEvent(SimpleDebuggerEventType.METHOD_INVOKE, resultOfMethodInvocation.get()));
         } catch (Exception e) {
             e.printStackTrace();
         }

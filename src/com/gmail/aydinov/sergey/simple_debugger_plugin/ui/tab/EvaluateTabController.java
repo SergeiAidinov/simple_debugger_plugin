@@ -1,21 +1,13 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
-import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.ILabelProviderListener;
-import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
@@ -39,6 +31,7 @@ public class EvaluateTabController {
 
     public EvaluateTabController(Composite parent, UiEventCollector uiEventCollector) {
         this.uiEventCollector = uiEventCollector;
+
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(2, false));
 
@@ -51,6 +44,7 @@ public class EvaluateTabController {
         classCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         classCombo.setToolTipText("Select a Class or Interface to invoke methods on");
 
+        // ====== Method label ======
         Label methodLabel = new Label(root, SWT.NONE);
         methodLabel.setText("Method:");
         methodLabel.setToolTipText("Select a method to move to Arguments field");
@@ -84,7 +78,8 @@ public class EvaluateTabController {
         invokeBtn.setLayoutData(invokeGD);
 
         // ====== Result field ======
-        resultField = new Text(root, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.WRAP | SWT.READ_ONLY);
+        resultField = new Text(root,
+                SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.WRAP | SWT.READ_ONLY);
         GridData gd = new GridData(GridData.FILL_BOTH);
         gd.horizontalSpan = 2;
         resultField.setLayoutData(gd);
@@ -100,6 +95,7 @@ public class EvaluateTabController {
         return root;
     }
 
+    // ----------------- Stack Viewer -----------------
     public void createStackViewer(Composite parent) {
         stackTableViewer = new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
         Table table = stackTableViewer.getTable();
@@ -107,8 +103,8 @@ public class EvaluateTabController {
         table.setLinesVisible(true);
         table.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        String[] titles = { "Class", "Method", "Source" };
-        int[] bounds = { 200, 150, 150 };
+        String[] titles = {"Class", "Method", "Source"};
+        int[] bounds = {200, 150, 150};
 
         for (int i = 0; i < titles.length; i++) {
             TableViewerColumn col = new TableViewerColumn(stackTableViewer, SWT.NONE);
@@ -137,27 +133,30 @@ public class EvaluateTabController {
     }
 
     public void updateFromEvent(DebugStoppedAtBreakepointEvent dto) {
-        classCombo.removeAll();
+        Display.getDefault().asyncExec(() -> {
+            if (root.isDisposed()) return;
 
-        for (TargetApplicationElementRepresentation el : dto.getTargetApplicationElementRepresentationList()) {
-            if (el instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
-                String nameAndType = clazz.getTargetApplicationElementName() + " ("
-                        + el.getTargetApplicationElementType() + ")";
-                classCombo.add(nameAndType);
-                classCombo.setData(nameAndType, clazz);
+            classCombo.removeAll();
+
+            for (TargetApplicationElementRepresentation el : dto.getTargetApplicationElementRepresentationList()) {
+                if (el instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
+                    String nameAndType = clazz.getTargetApplicationElementName() + " ("
+                            + el.getTargetApplicationElementType() + ")";
+                    classCombo.add(nameAndType);
+                    classCombo.setData(nameAndType, clazz);
+                }
             }
-        }
 
-        if (classCombo.getItemCount() > 0) {
-            classCombo.select(0);
-            updateMethods();
-        }
+            if (classCombo.getItemCount() > 0) {
+                classCombo.select(0);
+                updateMethods();
+            }
 
-        if (dto.getResultOfMethodInvocation() != null) {
-            resultField.setText(dto.getResultOfMethodInvocation());
-        } else {
-            resultField.setText("");
-        }
+            // Обновление resultField
+            resultField.setText(dto.getResultOfMethodInvocation() != null
+                    ? dto.getResultOfMethodInvocation()
+                    : "");
+        });
     }
 
     public void updateStack(List<MethodCallInStack> stack) {
@@ -166,6 +165,7 @@ public class EvaluateTabController {
         }
     }
 
+    // ----------------- Method/Arguments -----------------
     private void updateMethods() {
         methodCombo.removeAll();
 
@@ -179,37 +179,20 @@ public class EvaluateTabController {
         TargetApplicationMethodDTO methodToSelect = null;
 
         for (TargetApplicationMethodDTO m : clazz.getMethods()) {
-            StringBuilder display = new StringBuilder();
-            display.append(m.getMethodName()).append("(");
-
-            List<TargetApplicationMethodParameterDTO> params = m.getParameters();
-            for (int i = 0; i < params.size(); i++) {
-                TargetApplicationMethodParameterDTO p = params.get(i);
-                display.append(p.getName())
-                       .append(": ")
-                       .append(cleanTypeName(p.getType().name()));
-                if (i < params.size() - 1) display.append(", ");
-            }
-
-            display.append(") : ")
-                   .append(cleanTypeName(m.getReturnType()));
-
-            String displayStr = display.toString();
+            String displayStr = buildMethodDisplay(m);
             methodCombo.add(displayStr);
             methodCombo.setData(displayStr, m);
 
-            // Если lastMethod есть и совпадает с этим методом — выбираем его
-            if (lastMethod != null /*&& lastMethod.equals(m)*/) {
+            if (lastMethod != null && lastMethod.equals(m)) {
                 methodToSelect = m;
             }
         }
 
-        // Если lastMethod найден в списке — оставляем его выбранным
         if (methodToSelect != null) {
             methodCombo.setText(buildMethodDisplay(methodToSelect));
         } else if (methodCombo.getItemCount() > 0) {
             methodCombo.select(0);
-            lastMethod = getSelectedMethod(); // обновляем lastMethod на первый метод
+            lastMethod = getSelectedMethod();
         }
     }
 
@@ -235,16 +218,16 @@ public class EvaluateTabController {
         TargetApplicationMethodDTO selectedMethod = getSelectedMethod();
         if (selectedMethod == null) return;
 
-        lastMethod = selectedMethod; // сохраняем выбранный метод
-
+        lastMethod = selectedMethod;
         methodInput.setText(buildMethodDisplay(selectedMethod));
-
-        int cursorPos = selectedMethod.getMethodName().length() + 1;
-        methodInput.setSelection(cursorPos);
+        methodInput.setSelection(selectedMethod.getMethodName().length() + 1);
         methodInput.setFocus();
     }
 
     private void onInvokeMethod() {
+        // Очищаем результат перед новым вызовом
+        clearResult();
+
         if (lastMethod == null) {
             resultField.setText("No method selected to invoke.");
             return;
@@ -261,12 +244,29 @@ public class EvaluateTabController {
         }
     }
 
+    // ----------------- Public helpers -----------------
     public TargetApplicationClassOrInterfaceRepresentation getSelectedClass() {
         return (TargetApplicationClassOrInterfaceRepresentation) classCombo.getData(classCombo.getText());
     }
 
     public TargetApplicationMethodDTO getSelectedMethod() {
         return (TargetApplicationMethodDTO) methodCombo.getData(methodCombo.getText());
+    }
+
+    public void clearResult() {
+        Display.getDefault().asyncExec(() -> {
+            if (!resultField.isDisposed()) {
+                resultField.setText("");
+            }
+        });
+    }
+
+    public void showResult(String text) {
+        Display.getDefault().asyncExec(() -> {
+            if (!resultField.isDisposed()) {
+                resultField.setText(text);
+            }
+        });
     }
 
     public Button getSelectButton() {
