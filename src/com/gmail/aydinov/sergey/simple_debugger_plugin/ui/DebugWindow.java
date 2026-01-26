@@ -194,7 +194,9 @@ public class DebugWindow {
                 consoleTabContent.appendLine(consoleEvent.getText());
             } else if (event.getType().equals(SimpleDebuggerEventType.METHOD_INVOKE)) {
             	MethodInvokedEvent methodInvokedEvent = (MethodInvokedEvent) event;
-            	updateResult(methodInvokedEvent.getResultOfInvocation());
+            	System.out.println(methodInvokedEvent);
+            	evaluateTabController.clearResult();
+            	evaluateTabController.showResult(methodInvokedEvent.getResultOfInvocation());
             	
             }
         });
@@ -216,13 +218,7 @@ public class DebugWindow {
         consoleTabContent.appendLine(line);
     }
     
-    private void updateResult(String text) {
-        Display.getDefault().asyncExec(() -> {
-            if (!evaluateTabController.getResultField().isDisposed()) {
-            	evaluateTabController.getResultField().setText(text);
-            }
-        });
-    }
+    
 
 
     @Override
