@@ -4,5 +4,6 @@ public enum SimpleDebuggerEventType {
 	
 	STOPPED_AT_BREAKEPOINT
 	, REFRESH_CONSOLE
+	, METHOD_INVOKE
 
 }

@@ -18,6 +18,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.MethodInvokedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventProcessor;
@@ -191,6 +192,10 @@ public class DebugWindow {
             } else if (event.getType().equals(SimpleDebuggerEventType.REFRESH_CONSOLE)) {
                 ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
                 consoleTabContent.appendLine(consoleEvent.getText());
+            } else if (event.getType().equals(SimpleDebuggerEventType.METHOD_INVOKE)) {
+            	MethodInvokedEvent methodInvokedEvent = (MethodInvokedEvent) event;
+            	updateResult(methodInvokedEvent.getResultOfInvocation());
+            	
             }
         });
     }
@@ -210,6 +215,15 @@ public class DebugWindow {
     public void appendConsoleLine(String line) {
         consoleTabContent.appendLine(line);
     }
+    
+    private void updateResult(String text) {
+        Display.getDefault().asyncExec(() -> {
+            if (!evaluateTabController.getResultField().isDisposed()) {
+            	evaluateTabController.getResultField().setText(text);
+            }
+        });
+    }
+
 
     @Override
     public boolean equals(Object object) {
