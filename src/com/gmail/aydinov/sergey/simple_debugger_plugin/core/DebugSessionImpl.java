@@ -163,7 +163,8 @@ public class DebugSessionImpl implements DebugSession {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if (Objects.isNull(frame)) return;
+		if (Objects.isNull(frame))
+			return;
 		try {
 			if (uiEvent instanceof UserChangedVariableDTO dto) {
 				updateVariables(dto, frame);
@@ -224,29 +225,29 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	 private void invokeMethod(InvokeMethodEvent event, BreakpointEvent breakpointEvent) {
-	        try {
-	            List<Value> args = DebugUtils.parseArguments(targetVirtualMachineRepresentation.getVirtualMachine(), event);
-	            ReferenceType refType = targetApplicationRepresentation.findReferenceTypeForClass(event.getClazz());
-	            Method method = refType.methodsByName(event.getMethod().getMethodName()).get(0);
-	            ObjectReference instance = !method.isStatic()
-	                    ? targetApplicationRepresentation.createObjectInstance((ClassType) refType)
-	                    : null;
+	private void invokeMethod(InvokeMethodEvent event, BreakpointEvent breakpointEvent) {
+		try {
+			List<Value> args = DebugUtils.parseArguments(targetVirtualMachineRepresentation.getVirtualMachine(), event);
+			ReferenceType refType = targetApplicationRepresentation.findReferenceTypeForClass(event.getClazz());
+			Method method = refType.methodsByName(event.getMethod().getMethodName()).get(0);
+			ObjectReference instance = !method.isStatic()
+					? targetApplicationRepresentation.createObjectInstance((ClassType) refType)
+					: null;
 
-	            Value result = instance != null
-	                    ? instance.invokeMethod(targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0),
-	                    method, args, ObjectReference.INVOKE_SINGLE_THREADED)
-	                    : ((ClassType) refType).invokeMethod(
-	                    targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0),
-	                    method, args, ClassType.INVOKE_SINGLE_THREADED);
+			Value result = instance != null
+					? instance.invokeMethod(targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0),
+							method, args, ObjectReference.INVOKE_SINGLE_THREADED)
+					: ((ClassType) refType).invokeMethod(
+							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), method, args,
+							ClassType.INVOKE_SINGLE_THREADED);
 
-	            resultOfMethodInvocation.set(String.valueOf(result));
-	            SimpleDebuggerEventQueue.instance().collectDebugEvent(
-	            		new MethodInvokedEvent(SimpleDebuggerEventType.METHOD_INVOKE, resultOfMethodInvocation.get()));
-	        } catch (Exception e) {
-	            e.printStackTrace();
-	        }
-	    }
+			resultOfMethodInvocation.set(String.valueOf(result));
+			SimpleDebuggerEventQueue.instance().collectDebugEvent(
+					new MethodInvokedEvent(SimpleDebuggerEventType.METHOD_INVOKE, resultOfMethodInvocation.get()));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	private StackFrame getTopFrame(ThreadReference thread) {
 		try {
@@ -264,28 +265,16 @@ public class DebugSessionImpl implements DebugSession {
 			return false;
 
 		Location location = breakpointEvent.location();
-		List<TargetApplicationElementRepresentation> withoutVoidMethods = new ArrayList<TargetApplicationElementRepresentation>();
-		for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : targetApplicationRepresentation.getTargetApplicationElements()) {
-			TargetApplicationClassOrInterfaceRepresentation targetApplicationClassOrInterfaceRepresentation = (TargetApplicationClassOrInterfaceRepresentation) targetApplicationElementRepresentation;
-			TargetApplicationElementRepresentation copy = targetApplicationClassOrInterfaceRepresentation.clone();
-			Set<TargetApplicationMethodDTO> unvoidMathods = targetApplicationElementRepresentation.getMethods()
-					 .stream().filter(m -> !"void".equals(m.getReturnType())).collect(Collectors.toSet());
-			 copy.setMethods(unvoidMathods);
-			 targetApplicationElementRepresentation.setMethods(unvoidMathods);
-			 withoutVoidMethods.add(copy);
-		}
+
 		DebugStoppedAtBreakepointEvent dto = new DebugStoppedAtBreakepointEvent.Builder()
-				.type(SimpleDebuggerEventType.STOPPED_AT_BREAKEPOINT)
-				.className(location.declaringType().name())
-				.methodName(location.method().name())
-				.lineNumber(location.lineNumber())
+				.type(SimpleDebuggerEventType.STOPPED_AT_BREAKEPOINT).className(location.declaringType().name())
+				.methodName(location.method().name()).lineNumber(location.lineNumber())
 				.fields(DebugUtils.mapFields(DebugUtils.compileFields(frame)))
 				.locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(frame)))
 				.stackTrace(resultOfMethodInvocation.get())
-				.targetApplicationElementRepresentationList(withoutVoidMethods)
+				.targetApplicationElementRepresentationList(discardVoidMethods(targetApplicationRepresentation.getTargetApplicationElements()))
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
-				.resultOfMethodInvocation(resultOfMethodInvocation.get().toString())
-				.build();
+				.resultOfMethodInvocation(resultOfMethodInvocation.get().toString()).build();
 
 		SimpleDebuggerEventQueue.instance().collectDebugEvent(dto);
 		Display display = Display.getDefault();
@@ -303,6 +292,19 @@ public class DebugSessionImpl implements DebugSession {
 			});
 		}
 		return true;
+	}
+
+	private List<TargetApplicationElementRepresentation> discardVoidMethods(Iterable<TargetApplicationElementRepresentation> targetApplicationElements) {
+		List<TargetApplicationElementRepresentation> withoutVoidMethods = new ArrayList<TargetApplicationElementRepresentation>();
+		for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : targetApplicationRepresentation
+				.getTargetApplicationElements()) {
+			TargetApplicationElementRepresentation copy = targetApplicationElementRepresentation.clone();
+			Set<TargetApplicationMethodDTO> unvoidMathods = targetApplicationElementRepresentation.getMethods().stream()
+					.filter(m -> !"void".equals(m.getReturnType())).collect(Collectors.toSet());
+			copy.setMethods(unvoidMathods);
+			withoutVoidMethods.add(copy);
+		}
+		return withoutVoidMethods;
 	}
 
 	private ITextEditor openEditorForLocation(Location location) throws Exception {

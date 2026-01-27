@@ -2,7 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import java.util.Set;
 
-public interface TargetApplicationElementRepresentation {
+public interface TargetApplicationElementRepresentation extends Cloneable {
 
 	void setMethods(Set<TargetApplicationMethodDTO> methods);
 	
@@ -15,5 +15,7 @@ public interface TargetApplicationElementRepresentation {
 	TargetApplicationElementType getTargetApplicationElementType();
 	
 	String prettyPrint();
+
+	TargetApplicationElementRepresentation clone();
 
 }

@@ -7,8 +7,7 @@ import java.util.stream.Collectors;
 
 import com.sun.jdi.Field;
 
-public class TargetApplicationClassOrInterfaceRepresentation 
-        implements TargetApplicationElementRepresentation, Cloneable {
+public class TargetApplicationClassOrInterfaceRepresentation implements TargetApplicationElementRepresentation {
 
     private final String targetApplicationElementName;
     private final TargetApplicationElementType targetApplicationElementType;
