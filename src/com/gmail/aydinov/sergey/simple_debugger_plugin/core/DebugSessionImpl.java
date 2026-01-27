@@ -2,10 +2,14 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -21,6 +25,9 @@ import org.eclipse.ui.texteditor.ITextEditor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
@@ -257,16 +264,28 @@ public class DebugSessionImpl implements DebugSession {
 			return false;
 
 		Location location = breakpointEvent.location();
+		List<TargetApplicationElementRepresentation> withoutVoidMethods = new ArrayList<TargetApplicationElementRepresentation>();
+		for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : targetApplicationRepresentation.getTargetApplicationElements()) {
+			TargetApplicationClassOrInterfaceRepresentation targetApplicationClassOrInterfaceRepresentation = (TargetApplicationClassOrInterfaceRepresentation) targetApplicationElementRepresentation;
+			TargetApplicationElementRepresentation copy = targetApplicationClassOrInterfaceRepresentation.clone();
+			Set<TargetApplicationMethodDTO> unvoidMathods = targetApplicationElementRepresentation.getMethods()
+					 .stream().filter(m -> !"void".equals(m.getReturnType())).collect(Collectors.toSet());
+			 copy.setMethods(unvoidMathods);
+			 targetApplicationElementRepresentation.setMethods(unvoidMathods);
+			 withoutVoidMethods.add(copy);
+		}
 		DebugStoppedAtBreakepointEvent dto = new DebugStoppedAtBreakepointEvent.Builder()
-				.type(SimpleDebuggerEventType.STOPPED_AT_BREAKEPOINT).className(location.declaringType().name())
-				.methodName(location.method().name()).lineNumber(location.lineNumber())
+				.type(SimpleDebuggerEventType.STOPPED_AT_BREAKEPOINT)
+				.className(location.declaringType().name())
+				.methodName(location.method().name())
+				.lineNumber(location.lineNumber())
 				.fields(DebugUtils.mapFields(DebugUtils.compileFields(frame)))
 				.locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(frame)))
 				.stackTrace(resultOfMethodInvocation.get())
-				.targetApplicationElementRepresentationList(
-						targetApplicationRepresentation.getTargetApplicationElements())
+				.targetApplicationElementRepresentationList(withoutVoidMethods)
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
-				.resultOfMethodInvocation(resultOfMethodInvocation.get().toString()).build();
+				.resultOfMethodInvocation(resultOfMethodInvocation.get().toString())
+				.build();
 
 		SimpleDebuggerEventQueue.instance().collectDebugEvent(dto);
 		Display display = Display.getDefault();

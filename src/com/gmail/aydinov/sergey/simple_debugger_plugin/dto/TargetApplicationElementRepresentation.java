@@ -4,6 +4,8 @@ import java.util.Set;
 
 public interface TargetApplicationElementRepresentation {
 
+	void setMethods(Set<TargetApplicationMethodDTO> methods);
+	
 	Set<TargetApplicationMethodDTO> getMethods();
 
 	Set<com.sun.jdi.Field> getFields();

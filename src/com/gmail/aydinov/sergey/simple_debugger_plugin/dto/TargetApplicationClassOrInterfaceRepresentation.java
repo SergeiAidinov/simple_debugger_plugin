@@ -1,64 +1,86 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.sun.jdi.Field;
-import com.sun.jdi.Method;
 
-public class TargetApplicationClassOrInterfaceRepresentation implements TargetApplicationElementRepresentation {
+public class TargetApplicationClassOrInterfaceRepresentation 
+        implements TargetApplicationElementRepresentation, Cloneable {
 
-	private final String targetApplicationElementName;
-	private final TargetApplicationElementType targetApplicationElementType;
-	private final Set<TargetApplicationMethodDTO> methods;
-	private final Set<com.sun.jdi.Field> fields;
+    private final String targetApplicationElementName;
+    private final TargetApplicationElementType targetApplicationElementType;
+    private Set<TargetApplicationMethodDTO> methods;
+    private final Set<Field> fields;
 
-	public TargetApplicationClassOrInterfaceRepresentation(String targetApplicationElementName,
-			TargetApplicationElementType targetApplicationElementType, Set<TargetApplicationMethodDTO> methods,
-			Set<Field> fields) {
-		this.targetApplicationElementName = targetApplicationElementName;
-		this.targetApplicationElementType = targetApplicationElementType;
-		this.methods = methods;
-		this.fields = fields;
-	}
+    public TargetApplicationClassOrInterfaceRepresentation(String targetApplicationElementName,
+            TargetApplicationElementType targetApplicationElementType, Set<TargetApplicationMethodDTO> methods,
+            Set<Field> fields) {
+        this.targetApplicationElementName = targetApplicationElementName;
+        this.targetApplicationElementType = targetApplicationElementType;
+        this.methods = methods;
+        this.fields = fields;
+    }
 
-	public Set<TargetApplicationMethodDTO> getMethods() {
-		return methods;
-	}
+    @Override
+    public void setMethods(Set<TargetApplicationMethodDTO> methods) {
+        this.methods = methods;
+    }
 
-	public Set<com.sun.jdi.Field> getFields() {
-		return fields;
-	}
+    public Set<TargetApplicationMethodDTO> getMethods() {
+        return methods;
+    }
 
-	public String getTargetApplicationElementName() {
-		return targetApplicationElementName;
-	}
+    public Set<Field> getFields() {
+        return fields;
+    }
 
-	public TargetApplicationElementType getTargetApplicationElementType() {
-		return targetApplicationElementType;
-	}
+    public String getTargetApplicationElementName() {
+        return targetApplicationElementName;
+    }
 
-	public String prettyPrint() {
-		String methodsPretty = methods.stream().sorted()
-				.map(m -> "    " + String.format("%-30s", m.getMethodName()) + "  " + m.getReturnType())
-				.collect(Collectors.joining("\n"));
+    public TargetApplicationElementType getTargetApplicationElementType() {
+        return targetApplicationElementType;
+    }
 
-		String fieldsPretty = fields.stream().sorted(Comparator.comparing(Field::name))
-				.map(f -> "    " + String.format("%-30s", f.name()) + "  " + f.typeName())
-				.collect(Collectors.joining("\n"));
+    public String prettyPrint() {
+        String methodsPretty = methods.stream().sorted()
+                .map(m -> String.format("%-30s  %s", m.getMethodName(), m.getReturnType()))
+                .collect(Collectors.joining("\n"));
 
-		return """
-				TargetApplicationElement {
-				  name  = '%s'
-				  type  = %s
+        String fieldsPretty = fields.stream().sorted(Comparator.comparing(Field::name))
+                .map(f -> String.format("%-30s  %s", f.name(), f.typeName()))
+                .collect(Collectors.joining("\n"));
 
-				  methods:
-				%s
+        return """
+                TargetApplicationElement {
+                  name  = '%s'
+                  type  = %s
 
-				  fields:
-				%s
-				}
-				""".formatted(targetApplicationElementName, targetApplicationElementType, methodsPretty, fieldsPretty);
-	}
+                  methods:
+                %s
+
+                  fields:
+                %s
+                }
+                """.formatted(targetApplicationElementName, targetApplicationElementType, methodsPretty, fieldsPretty);
+    }
+
+    @Override
+    public TargetApplicationClassOrInterfaceRepresentation clone() {
+        try {
+            TargetApplicationClassOrInterfaceRepresentation copy = 
+                (TargetApplicationClassOrInterfaceRepresentation) super.clone();
+
+            // создаём новый Set методов (глубокая копия коллекции)
+            copy.methods = new HashSet<>(this.methods);
+
+            // поля fields оставляем как есть (JDI Field не клонируется)
+            return copy;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("Clone not supported", e);
+        }
+    }
 }
