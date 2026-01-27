@@ -299,7 +299,7 @@ public class DebugUtils {
 		for (int i = 0; i < params.size(); i++) {
 			TargetApplicationMethodParameterDTO param = params.get(i);
 			String argStr = argStrings[i].trim();
-			String typeName = param.getType().name();
+			String typeName = param.getTypeName();
 
 			// Убираем кавычки у строк
 			if ((argStr.startsWith("\"") && argStr.endsWith("\""))

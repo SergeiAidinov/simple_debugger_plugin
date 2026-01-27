@@ -1,38 +1,29 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
-import com.sun.jdi.Type;
 
-public class TargetApplicationMethodParameterDTO {
+public final class TargetApplicationMethodParameterDTO {
+
     private final String name;
-    private final Type type;
+    private final String typeName;
 
-    public TargetApplicationMethodParameterDTO(String name, Type type) {
+    public TargetApplicationMethodParameterDTO(String name, String typeName) {
         this.name = name;
-        this.type = type;
+        this.typeName = typeName;
     }
 
     public String getName() {
         return name;
     }
 
-    public Type getType() {
-        return type;
+    public String getTypeName() {
+        return typeName;
     }
 
     @Override
     public String toString() {
-        String typeName;
-        try {
-            typeName = type.name();
-        } catch (Exception e) {
-            typeName = e.getMessage();
-        }
-
-        // УБИРАЕМ только "no class loader"
-        if (typeName != null && typeName.contains("no class loader")) {
-            typeName = "";
-        }
-
-        return typeName.isEmpty() ? name : name + ": " + typeName;
+        return typeName == null || typeName.isEmpty()
+                ? name
+                : name + ": " + typeName;
     }
 }
+

@@ -202,7 +202,7 @@ public class EvaluateTabController {
         List<TargetApplicationMethodParameterDTO> params = method.getParameters();
         for (int i = 0; i < params.size(); i++) {
             TargetApplicationMethodParameterDTO p = params.get(i);
-            sb.append(p.getName()).append(": ").append(cleanTypeName(p.getType().name()));
+            sb.append(p.getName()).append(": ").append(cleanTypeName(p.getTypeName()));
             if (i < params.size() - 1) sb.append(", ");
         }
         sb.append(") : ").append(cleanTypeName(method.getReturnType()));

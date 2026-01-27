@@ -38,7 +38,7 @@ public class TargetApplicationMethodDTO implements Comparable<TargetApplicationM
             .map(p -> {
                 String typeName;
                 try {
-                    typeName = p.getType().name();
+                    typeName = p.getTypeName();
                 } catch (Exception e) {
                     typeName = e.getMessage();
                 }
