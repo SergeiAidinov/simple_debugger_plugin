@@ -26,7 +26,7 @@ import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.TargetApplicationStatus;
+//import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.SimpleDebuggerWorkFlowFactory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugConfigurationEditDialog;
 
@@ -87,11 +87,11 @@ public class SimpleDebuggerPluginStarter extends AbstractHandler {
             // 4️⃣ Запуск workflow с обновлённой конфигурацией
             // ----------------------------
             SimpleDebuggerWorkFlowFactory.createWorkFlow(debugConfiguration, workflow -> {
-                DebuggerContext.context().setTargetApplicationStatus(TargetApplicationStatus.STARTING);
+              //  DebuggerContext.context().setTargetApplicationStatus(TargetApplicationStatus.STARTING);
                 new Thread(() -> {
                     try {
                         System.out.println("Starting workflow...");
-                        DebuggerContext.context().setRunning(true);
+                       // DebuggerContext.context().setRunning(true);
                         workflow.debug(debugConfiguration.getMainClassName());
                     } catch (Exception e) {
                         e.printStackTrace();

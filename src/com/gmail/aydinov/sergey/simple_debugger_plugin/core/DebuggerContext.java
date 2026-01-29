@@ -1,64 +1,73 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class DebuggerContext {
 
-    public enum SimpleDebuggerStatus {
-        STARTING,
-        VM_AWAITING_CONNECTION,
-        VM_CONNECTED
-    }
-
-    public enum TargetApplicationStatus {
-        STARTING,
-        RUNNING,
-        STOPPED_AT_BREAKPOINT,
-        STOPPING
-    }
+	public enum SimpleDebuggerStatus {
+		NOT_STARTED, STARTING, VM_AWAITING_CONNECTION, VM_CONNECTED, PREPARED, RUNNING, SESSION_STARTED,
+		SESSION_FINISHED, STOPPED
+	}
 
 	private static final DebuggerContext INSTANCE = new DebuggerContext();
 
-    private final AtomicBoolean running = new AtomicBoolean(false);
-    private volatile SimpleDebuggerStatus simpleDebuggerStatus;
-    private volatile TargetApplicationStatus targetApplicationStatus;
+	private final ReentrantLock lock = new ReentrantLock(true); // fair lock
+	private volatile SimpleDebuggerStatus status;
+	private static final Set<SimpleDebuggerStatus> RUNNING_STATES = EnumSet.of(SimpleDebuggerStatus.RUNNING,
+			SimpleDebuggerStatus.SESSION_STARTED, SimpleDebuggerStatus.SESSION_FINISHED
 
-    private DebuggerContext() {
-        simpleDebuggerStatus = SimpleDebuggerStatus.STARTING;
-        targetApplicationStatus = TargetApplicationStatus.STARTING;
-    }
+	);
 
-    public static DebuggerContext context() {
-        return INSTANCE;
-    }
+	private DebuggerContext() {
+		status = SimpleDebuggerStatus.STARTING;
+	}
 
-    // -----------------------
-    // Running flag
-    public boolean isRunning() {
-        return running.get();
-    }
+	public static DebuggerContext context() {
+		return INSTANCE;
+	}
 
-    public void setRunning(boolean value) {
-        running.set(value);
-    }
+	// -----------------------
+	// Status API
 
-    // -----------------------
-    // SimpleDebuggerStatus
-    public SimpleDebuggerStatus getSimpleDebuggerStatus() {
-        return simpleDebuggerStatus;
-    }
+	public SimpleDebuggerStatus getStatus() {
+		lock.lock();
+		try {
+			return status;
+		} finally {
+			lock.unlock();
+		}
+	}
 
-    public void setSimpleDebuggerStatus(SimpleDebuggerStatus status) {
-        this.simpleDebuggerStatus = status;
-    }
+	public void setStatus(SimpleDebuggerStatus newStatus) {
+		lock.lock();
+		try {
+			this.status = newStatus;
+		} finally {
+			lock.unlock();
+		}
+	}
 
-    // -----------------------
-    // TargetApplicationStatus
-    public TargetApplicationStatus getTargetApplicationStatus() {
-        return targetApplicationStatus;
-    }
+	// -----------------------
+	// Derived state
 
-    public void setTargetApplicationStatus(TargetApplicationStatus status) {
-        this.targetApplicationStatus = status;
-    }
+	public boolean isRunning() {
+		lock.lock();
+		try {
+			return RUNNING_STATES.contains(status);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	public boolean isSessionActive() {
+		lock.lock();
+		try {
+			return status.equals(SimpleDebuggerStatus.SESSION_STARTED);
+		} finally {
+			lock.unlock();
+		}
+	}
+
 }

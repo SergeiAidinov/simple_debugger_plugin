@@ -24,6 +24,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
@@ -66,8 +67,6 @@ public class DebugSessionImpl implements DebugSession {
 	private final EventSet eventSet;
 	private final CurrentLineHighlighter highlighter;
 
-	private boolean debugSessionRunning = true;
-
 	public DebugSessionImpl(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			TargetApplicationRepresentation targetApplicationRepresentation, EventSet eventSet,
 			CurrentLineHighlighter highlighter) {
@@ -80,6 +79,7 @@ public class DebugSessionImpl implements DebugSession {
 	@Override
 	public void run() {
 		try {
+			DebuggerContext.context().setStatus(SimpleDebuggerStatus.SESSION_STARTED);
 			System.out.println("DEBUG SESSION STARTED: " + LocalDateTime.now());
 			process();
 		} catch (Throwable t) {
@@ -91,7 +91,7 @@ public class DebugSessionImpl implements DebugSession {
 
 	private void process() {
 		for (Event event : eventSet) {
-			if (!debugSessionRunning)
+			if (!DebuggerContext.context().isRunning())
 				return;
 
 			if (event instanceof BreakpointEvent breakpointEvent) {
@@ -103,7 +103,7 @@ public class DebugSessionImpl implements DebugSession {
 
 				refreshUI(breakpointEvent);
 
-				while (debugSessionRunning) {
+				while (DebuggerContext.context().isSessionActive()) {
 					AbstractUIEvent uiEvent = null;
 					try {
 						uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent();
@@ -115,7 +115,8 @@ public class DebugSessionImpl implements DebugSession {
 					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
 							.refreshBreakpoints();
 					handleBreakpoint(breakpointEvent, uiEvent);
-					refreshUI(breakpointEvent);
+					if (DebuggerContext.context().isRunning())
+						refreshUI(breakpointEvent);
 				}
 			}
 		}
@@ -151,7 +152,7 @@ public class DebugSessionImpl implements DebugSession {
 			logError("Breakpoint handler error", t);
 		}
 
-		if (debugSessionRunning)
+		if (DebuggerContext.context().isRunning())
 			refreshUI(breakpointEvent);
 	}
 
@@ -174,17 +175,13 @@ public class DebugSessionImpl implements DebugSession {
 				invokeMethod(evt, breakpointEvent);
 			} else if (uiEvent instanceof UserPressedResumeUiEvent) {
 				System.out.println("User pressed RESUME");
-				debugSessionRunning = false;
-				// eventSet.resume();
+				DebuggerContext.context().setStatus(SimpleDebuggerStatus.SESSION_FINISHED);
 			} else if (uiEvent instanceof UserClosedWindowUiEvent) {
 				System.out.println("User closed debug window → stopping debug session only");
-				debugSessionRunning = false;
-				DebuggerContext.context().setRunning(false);
+				DebuggerContext.context().setStatus(SimpleDebuggerStatus.STOPPED);
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
 			} else {
-				// Необработанное событие
-				// System.out.println("Unhandled UI event: " +
-				// uiEvent.getClass().getSimpleName());
+				System.out.println("Unhandled UI event: " + uiEvent.getClass().getSimpleName());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -272,7 +269,8 @@ public class DebugSessionImpl implements DebugSession {
 				.fields(DebugUtils.mapFields(DebugUtils.compileFields(frame)))
 				.locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(frame)))
 				.stackTrace(resultOfMethodInvocation.get())
-				.targetApplicationElementRepresentationList(discardVoidMethods(targetApplicationRepresentation.getTargetApplicationElements()))
+				.targetApplicationElementRepresentationList(
+						discardVoidMethods(targetApplicationRepresentation.getTargetApplicationElements()))
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
 				.resultOfMethodInvocation(resultOfMethodInvocation.get().toString()).build();
 
@@ -294,7 +292,8 @@ public class DebugSessionImpl implements DebugSession {
 		return true;
 	}
 
-	private List<TargetApplicationElementRepresentation> discardVoidMethods(Iterable<TargetApplicationElementRepresentation> targetApplicationElements) {
+	private List<TargetApplicationElementRepresentation> discardVoidMethods(
+			Iterable<TargetApplicationElementRepresentation> targetApplicationElements) {
 		List<TargetApplicationElementRepresentation> withoutVoidMethods = new ArrayList<TargetApplicationElementRepresentation>();
 		for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : targetApplicationRepresentation
 				.getTargetApplicationElements()) {
@@ -328,10 +327,10 @@ public class DebugSessionImpl implements DebugSession {
 		throw new IllegalStateException("Opened editor is not a text editor");
 	}
 
-	@Override
-	public void stop() {
-		DebuggerContext.context().setRunning(false);
-	}
+//	@Override
+//	public void stop() {
+//		DebuggerContext.context().setRunning(false);
+//	}
 
 	private void logError(String message, Throwable t) {
 		StatusManager.getManager().handle(new Status(IStatus.ERROR, "simple_debugger_plugin", message, t),
