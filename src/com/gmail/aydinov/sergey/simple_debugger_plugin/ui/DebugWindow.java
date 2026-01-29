@@ -217,9 +217,6 @@ public class DebugWindow {
     public void appendConsoleLine(String line) {
         consoleTabContent.appendLine(line);
     }
-    
-    
-
 
     @Override
     public boolean equals(Object object) {
@@ -234,4 +231,5 @@ public class DebugWindow {
     public int hashCode() {
         return shell != null ? shell.hashCode() : 0;
     }
+
 }

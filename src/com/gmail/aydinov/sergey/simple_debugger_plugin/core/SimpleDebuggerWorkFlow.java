@@ -11,7 +11,9 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationBreakpointRepresentation;
@@ -68,6 +70,7 @@ public class SimpleDebuggerWorkFlow {
 	 * @param mainClassName
 	 */
 	public void debug(String mainClassName) {
+		//if (1==1) return;
 		System.out.println("DEBUG");
 		openDebugWindow();
 		prepareDebug(targetVirtualMachineRepresentation.getVirtualMachine().eventQueue(), mainClassName);
@@ -173,6 +176,11 @@ public class SimpleDebuggerWorkFlow {
 
 		public static void createWorkFlow(DebugConfiguration debugConfiguration, OnWorkflowReadyListener listener) {
 			CompletableFuture.runAsync(() -> {
+				if (isDebugPortBusy(debugConfiguration.getPort())) {
+		            // ❌ НЕ создаём workflow
+		            notifyAlreadyRunning(debugConfiguration);
+		            return;
+		        }
 				VirtualMachine virtualMachine = launchVirtualMachine(debugConfiguration);
 				IBreakpointManager breakpointManager = waitForBreakpointManager();
 				BreakePointListener breakePointListener = new BreakePointListener();
@@ -188,6 +196,26 @@ public class SimpleDebuggerWorkFlow {
 				}
 			});
 		}
+		
+		private static boolean isDebugPortBusy(int port) {
+		    try (var socket = new java.net.Socket("localhost", port)) {
+		        return true; // кто-то слушает порт
+		    } catch (IOException e) {
+		        return false; // порт свободен
+		    }
+		}
+		
+		private static void notifyAlreadyRunning(DebugConfiguration config) {
+		    Display.getDefault().asyncExec(() -> {
+		        Shell shell = Display.getDefault().getActiveShell();
+		        MessageDialog.openError(
+		            shell,
+		            "Debug session already running",
+		            "Application is already running on port " + config.getPort()
+		        );
+		    });
+		}
+
 
 		private static IBreakpointManager waitForBreakpointManager() {
 			CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();
