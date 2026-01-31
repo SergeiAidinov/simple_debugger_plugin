@@ -24,8 +24,6 @@ public class DebugWindowManager {
 
 	/** Возвращает текущее окно или создаёт его, если его нет */
     public DebugWindow getOrCreateWindow() {
-//    	 TargetApplicationStatus qq = targetApplicationStatusProvider.getTargetApplicationStatus();
-//    	 System.out.println(qq);
     	if (!DebuggerContext.context().isRunning()) return null;
         if (debugWindow == null || !debugWindow.isOpen()) {
             debugWindow = new DebugWindow();

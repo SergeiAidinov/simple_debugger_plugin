@@ -14,22 +14,18 @@ public class SimpleDebuggerLogger {
     private static final String PLUGIN_ID = "com.gmail.aydinov.sergey.simpledebugger";
     private static volatile ILog LOG = null;
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static int attempt = 0;
 
     static {
         // Инициализация LOG в отдельном потоке
         Thread initializer = new Thread(() -> {
             try {
                 Bundle bundle = null;
-                while (LOG == null) {
-                	attempt++;
+                while (Objects.isNull(LOG)) {
                     try {
                         bundle = Platform.getBundle(PLUGIN_ID);
-                        if (bundle != null) {
+                        if (Objects.nonNull(bundle)) {
                             LOG = Platform.getLog(bundle);
-                            System.out.println("Log obtained. Attempt: " + LOG.toString());
                         } else {
-                        	System.out.println("Log NOT obtained: " + attempt);
                             Thread.sleep(200); // ждем пока bundle появится
                         }
                     } catch (Exception ignored) {
@@ -52,7 +48,6 @@ public class SimpleDebuggerLogger {
 
     public static void info(String message) {
         String msg = addTimestamp(message);
-        System.out.println("[INFO] " + msg); // всегда пишем в консоль для раннего запуска
         if (LOG != null) {
             LOG.log(new Status(Status.INFO, PLUGIN_ID, msg));
         }
@@ -60,7 +55,6 @@ public class SimpleDebuggerLogger {
 
     public static void warn(String message) {
         String msg = addTimestamp(message);
-        System.out.println("[WARN] " + msg);
         if (LOG != null) {
             LOG.log(new Status(Status.WARNING, PLUGIN_ID, msg));
         }
@@ -68,7 +62,6 @@ public class SimpleDebuggerLogger {
 
     public static void error(String message, Throwable t) {
         String msg = addTimestamp(message);
-        System.err.println("[ERROR] " + msg);
         if (t != null) t.printStackTrace(System.err);
         if (LOG != null) {
             LOG.log(new Status(Status.ERROR, PLUGIN_ID, msg, t));

@@ -50,8 +50,8 @@ public class SimpleDebuggerWorkFlow {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
-	private final IBreakpointManager iBreakpointManager;
-	private final BreakpointSubscriberRegistrar breakpointListener;
+	private final IBreakpointManager iBreakpointManager; // DO NOT remove; does not work without it!!!
+	private final BreakpointSubscriberRegistrar breakpointListener; // DO NOT remove; does not work without it!!!
 	private final CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
@@ -72,7 +72,7 @@ public class SimpleDebuggerWorkFlow {
 	 */
 	public void debug(String mainClassName) {
 		prepareDebug(targetVirtualMachineRepresentation.getVirtualMachine().eventQueue(), mainClassName);
-		System.out.println("DEBUG");
+		SimpleDebuggerLogger.info("DEBUG");
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.RUNNING);
 		openDebugWindow();
 		targetVirtualMachineRepresentation.getVirtualMachine().resume();
@@ -125,9 +125,9 @@ public class SimpleDebuggerWorkFlow {
 			}
 			for (Event event : eventSet) {
 				if (event instanceof VMStartEvent) {
-					System.out.println("VMStartEvent");
+					SimpleDebuggerLogger.info("VMStartEvent");
 				} else if (event instanceof ClassPrepareEvent classPrepareEvent) {
-					System.out.println("ClassPrepareEvent");
+					SimpleDebuggerLogger.info("ClassPrepareEvent");
 					ReferenceType referenceType = classPrepareEvent.referenceType();
 					Method main = referenceType.methodsByName("main").get(0);
 					Location firstLine = null;
@@ -139,8 +139,8 @@ public class SimpleDebuggerWorkFlow {
 					BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(firstLine);
 					breakpointRequest.enable();
 					try {
-						System.out
-								.println("Breakpoint set at " + firstLine.sourceName() + ":" + firstLine.lineNumber());
+						SimpleDebuggerLogger
+								.info("Breakpoint set at " + firstLine.sourceName() + ":" + firstLine.lineNumber());
 						preparing = false;
 						break;
 					} catch (AbsentInformationException e) {
@@ -150,7 +150,7 @@ public class SimpleDebuggerWorkFlow {
 				}
 				eventSet.resume();
 			}
-			System.out.println("Debug prepared");
+			SimpleDebuggerLogger.info("Debug prepared");
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.PREPARED);
 		}
 	}
@@ -230,6 +230,7 @@ public class SimpleDebuggerWorkFlow {
 		}
 
 		private static VirtualMachine launchVirtualMachine(DebugConfiguration debugConfiguration) {
+			VirtualMachine vm = null;
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.VM_AWAITING_CONNECTION);
 			try {
 				LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
@@ -241,23 +242,25 @@ public class SimpleDebuggerWorkFlow {
 				// classpath + VM options
 				String optStr = "-cp " + debugConfiguration.getOutputFolder() + " "
 						+ debugConfiguration.getVmOptionsStringWithoutJDWP();
-				System.out.println("OPT: " + optStr);
-				// args.get("options").setValue(" -cp " + debugConfiguration.getOutputFolder());
-				// args.get("options").setValue(optStr);
 				args.get("options").setValue(optStr);
 
 				// jdwp
 				args.get("suspend").setValue("true");
 
-				VirtualMachine vm = connector.launch(args);
-				System.out.println("==> VM LAUNCHED (SUSPENDED): " + vm.description());
-
+				vm = connector.launch(args);
+				SimpleDebuggerLogger.info("==> VM LAUNCHED (SUSPENDED): " + vm.description());
 				attachConsoleWriters(vm.process());
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.VM_CONNECTED);
 				return vm;
 			} catch (Exception e) {
-				throw new RuntimeException("Cannot launch VM", e);
+				SimpleDebuggerLogger.error("Cannot launch VM", e);
+				Display.getDefault().asyncExec(() -> {
+				    DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
+				    window.showError("Cannot launch VM", e.getMessage());
+				});
+
 			}
+			return vm;
 		}
 
 		private static void attachConsoleWriters(Process process) {

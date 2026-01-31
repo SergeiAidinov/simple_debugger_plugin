@@ -21,6 +21,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugSt
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.MethodInvokedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
@@ -154,7 +155,7 @@ public class DebugWindow {
 		}
 
 		// закрываем
-		System.out.println("Debug window closed");
+		SimpleDebuggerLogger.info("Debug window closed");
 		showVmStoppedMessage();
 		// sendUiEvent(new UserClosedWindowUiEvent());
 		shell.dispose();
@@ -194,7 +195,6 @@ public class DebugWindow {
                 consoleTabContent.appendLine(consoleEvent.getText());
             } else if (event.getType().equals(SimpleDebuggerEventType.METHOD_INVOKE)) {
             	MethodInvokedEvent methodInvokedEvent = (MethodInvokedEvent) event;
-            	System.out.println(methodInvokedEvent);
             	evaluateTabController.clearResult();
             	evaluateTabController.showResult(methodInvokedEvent.getResultOfInvocation());
             	
@@ -230,6 +230,24 @@ public class DebugWindow {
     @Override
     public int hashCode() {
         return shell != null ? shell.hashCode() : 0;
+    }
+
+    /**
+     * Показывает диалог ошибки пользователю
+     * @param title заголовок окна
+     * @param message текст ошибки
+     */
+    public void showError(String title, String message) {
+        if (shell == null || shell.isDisposed()) {
+            shell = new Shell(Display.getDefault());
+        }
+
+        Display.getDefault().asyncExec(() -> {
+            MessageBox dialog = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
+            dialog.setText(title);
+            dialog.setMessage(message);
+            dialog.open();
+        });
     }
 
 }

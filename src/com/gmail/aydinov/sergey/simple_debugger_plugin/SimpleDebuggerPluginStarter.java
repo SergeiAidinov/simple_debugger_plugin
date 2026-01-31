@@ -28,6 +28,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 //import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.SimpleDebuggerWorkFlowFactory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugConfigurationEditDialog;
 
 public class SimpleDebuggerPluginStarter extends AbstractHandler {
@@ -70,7 +71,6 @@ public class SimpleDebuggerPluginStarter extends AbstractHandler {
             // 2️⃣ Строим DebugConfiguration
             // ----------------------------
             DebugConfiguration debugConfiguration = buildDebugConfiguration(selectedConfig);
-            System.out.println(debugConfiguration.prettyPrint());
 
             // ----------------------------
             // 3️⃣ Диалог редактирования VM options и порта
@@ -79,7 +79,7 @@ public class SimpleDebuggerPluginStarter extends AbstractHandler {
                     new DebugConfigurationEditDialog(Display.getDefault().getActiveShell(), debugConfiguration);
 
             if (editDialog.open() != Window.OK) {
-                System.out.println("Debug launch cancelled by user.");
+                SimpleDebuggerLogger.info("Debug launch cancelled by user.");
                 return null;
             }
 
@@ -90,7 +90,7 @@ public class SimpleDebuggerPluginStarter extends AbstractHandler {
               //  DebuggerContext.context().setTargetApplicationStatus(TargetApplicationStatus.STARTING);
                 new Thread(() -> {
                     try {
-                        System.out.println("Starting workflow...");
+                        SimpleDebuggerLogger.info("Starting workflow...");
                        // DebuggerContext.context().setRunning(true);
                         workflow.debug(debugConfiguration.getMainClassName());
                     } catch (Exception e) {
