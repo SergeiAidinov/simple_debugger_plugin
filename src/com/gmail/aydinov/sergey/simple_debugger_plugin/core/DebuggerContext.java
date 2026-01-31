@@ -4,6 +4,8 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
+
 public class DebuggerContext {
 
 	public enum SimpleDebuggerStatus {
@@ -41,13 +43,19 @@ public class DebuggerContext {
 	}
 
 	public void setStatus(SimpleDebuggerStatus newStatus) {
-		lock.lock();
-		try {
-			this.status = newStatus;
-		} finally {
-			lock.unlock();
-		}
+	    lock.lock();
+	    try {
+	        if (this.status != newStatus) {
+	            SimpleDebuggerLogger.info(
+	                "Debugger state: " + this.status + " -> " + newStatus
+	            );
+	            this.status = newStatus;
+	        }
+	    } finally {
+	        lock.unlock();
+	    }
 	}
+
 
 	// -----------------------
 	// Derived state

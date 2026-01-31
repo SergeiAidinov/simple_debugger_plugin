@@ -29,6 +29,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -71,14 +72,14 @@ public class TargetApplicationRepresentation {
 
 	public void refreshReferencesToClassesOfTargetApplication(VirtualMachine virtualMachine) {
 		referencesAtClassesAndInterfaces.clear();
-		System.out.println("Target class not loaded yet. Waiting...");
+		SimpleDebuggerLogger.info("Target class not loaded yet. Waiting...");
 
 		// 1. Ждём загрузки классов
 		List<ReferenceType> loaded = waitUntilClassesAreLoaded(virtualMachine);
 
 		// 2. Фильтруем классы содержащие слово "target"
 		List<ReferenceType> targetClasses = filterTargetClasses(loaded);
-		System.out.println("Loaded " + targetClasses.size() + " classes.");
+		SimpleDebuggerLogger.info("Loaded " + targetClasses.size() + " classes.");
 
 		// 3. Находим классы, определённые загрузчиками
 		Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
@@ -99,10 +100,7 @@ public class TargetApplicationRepresentation {
 					new TargetApplicationClassOrInterfaceRepresentation(referenceType.name(), type, methods, fields));
 		}
 
-		System.out.println("LOADED CLASSES: " + referencesAtClassesAndInterfaces.size());
-		for (var ci : referencesAtClassesAndInterfaces.values()) {
-			// System.out.println(ci.prettyPrint());
-		}
+		SimpleDebuggerLogger.info("LOADED CLASSES: " + referencesAtClassesAndInterfaces.size());
 	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine vm) {
@@ -116,7 +114,7 @@ public class TargetApplicationRepresentation {
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException ignored) {
-				System.out.println(ignored);
+				SimpleDebuggerLogger.error(ignored.getMessage(), ignored);
 			}
 		}
 		return list;

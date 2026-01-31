@@ -9,6 +9,7 @@ import org.eclipse.debug.core.model.IBreakpoint;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.BreakpointSubscriber;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
 public class BreakePointListener implements IBreakpointListener, BreakpointSubscriberRegistrar {
 	
@@ -45,11 +46,11 @@ public class BreakePointListener implements IBreakpointListener, BreakpointSubsc
 			int lineNumber = breakpoint.getMarker().getAttribute("lineNumber", -1);
 			boolean enabled = breakpoint.isEnabled();
 
-			System.out.println(action + " -> проект: " + projectName + ", файл: " + fileName + ", строка: " + lineNumber
+			SimpleDebuggerLogger.info(action + " -> проект: " + projectName + ", файл: " + fileName + ", строка: " + lineNumber
 					+ ", включён: " + enabled);
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			SimpleDebuggerLogger.error(e.getMessage(), e);
 		}
 	}
 

@@ -70,8 +70,6 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 
     @Override
     public synchronized void deleteBreakepoint(IBreakpoint breakpoint) {
-    	System.out.println("BEFORE DELETION: ");
-    	breakpoints.stream().forEach(bw -> System.out.println(bw.prettyPrint()));
     	BreakpointWrapper breakpointWrapperToBeDeleted = null;
         for (BreakpointWrapper breakpointWrapper : breakpoints) {
         	if (breakpointWrapper.getBreakpoint().equals(breakpoint)) {
@@ -85,15 +83,12 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
         		for (BreakpointRequest breakpointRequest : eventRequestManager.breakpointRequests()) {
 					if (breakpointRequest.equals(breakpointWrapper.getBreakpointRequest())) {
 						eventRequestManager.deleteEventRequest(breakpointRequest);
-						System.out.println("DELETED BP_REQUEST: " + breakpointRequest);
 					}
 				 }
         	}
         }
         
         if (Objects.nonNull(breakpointWrapperToBeDeleted)) breakpoints.remove(breakpointWrapperToBeDeleted);
-        System.out.println("AFTER DELETION: ");
-    	breakpoints.stream().forEach(bw -> System.out.println(bw.prettyPrint()));
     }
 
     @Override

@@ -23,6 +23,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.Simp
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugConfigurationEditDialog;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
@@ -49,8 +50,8 @@ public class SimpleDebuggerWorkFlow {
 
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
-	private final IBreakpointManager iBreakpointManager;
-	private final BreakpointSubscriberRegistrar breakpointListener;
+	private final IBreakpointManager iBreakpointManager; // DO NOT remove; does not work without it!!!
+	private final BreakpointSubscriberRegistrar breakpointListener; // DO NOT remove; does not work without it!!!
 	private final CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
@@ -62,7 +63,6 @@ public class SimpleDebuggerWorkFlow {
 		this.breakpointListener = breakpointListener;
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
-	//	DebuggerContext.context().setRunning(true);
 	}
 
 	/**
@@ -72,7 +72,7 @@ public class SimpleDebuggerWorkFlow {
 	 */
 	public void debug(String mainClassName) {
 		prepareDebug(targetVirtualMachineRepresentation.getVirtualMachine().eventQueue(), mainClassName);
-		System.out.println("DEBUG");
+		SimpleDebuggerLogger.info("DEBUG");
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.RUNNING);
 		openDebugWindow();
 		targetVirtualMachineRepresentation.getVirtualMachine().resume();
@@ -86,7 +86,7 @@ public class SimpleDebuggerWorkFlow {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (com.sun.jdi.VMDisconnectedException e) {
-				System.out.println("VM disconnected, finishing debug loop.");
+				SimpleDebuggerLogger.info("VM disconnected, finishing debug loop.");
 				break; // корректно выходим из цикла
 			}
 			if (Objects.isNull(eventSet))
@@ -103,7 +103,7 @@ public class SimpleDebuggerWorkFlow {
 				e.printStackTrace();
 			}
 			eventSet.resume();
-			//running = DebuggerContext.context().isRunning();
+			// running = DebuggerContext.context().isRunning();
 		}
 	}
 
@@ -125,9 +125,9 @@ public class SimpleDebuggerWorkFlow {
 			}
 			for (Event event : eventSet) {
 				if (event instanceof VMStartEvent) {
-					System.out.println("VMStartEvent");
+					SimpleDebuggerLogger.info("VMStartEvent");
 				} else if (event instanceof ClassPrepareEvent classPrepareEvent) {
-					System.out.println("ClassPrepareEvent");
+					SimpleDebuggerLogger.info("ClassPrepareEvent");
 					ReferenceType referenceType = classPrepareEvent.referenceType();
 					Method main = referenceType.methodsByName("main").get(0);
 					Location firstLine = null;
@@ -139,8 +139,8 @@ public class SimpleDebuggerWorkFlow {
 					BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(firstLine);
 					breakpointRequest.enable();
 					try {
-						System.out
-								.println("Breakpoint set at " + firstLine.sourceName() + ":" + firstLine.lineNumber());
+						SimpleDebuggerLogger
+								.info("Breakpoint set at " + firstLine.sourceName() + ":" + firstLine.lineNumber());
 						preparing = false;
 						break;
 					} catch (AbsentInformationException e) {
@@ -150,7 +150,7 @@ public class SimpleDebuggerWorkFlow {
 				}
 				eventSet.resume();
 			}
-			System.out.println("Debug prepared");
+			SimpleDebuggerLogger.info("Debug prepared");
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.PREPARED);
 		}
 	}
@@ -170,12 +170,14 @@ public class SimpleDebuggerWorkFlow {
 	public static class SimpleDebuggerWorkFlowFactory {
 
 		public static void createWorkFlow(DebugConfiguration debugConfiguration, OnWorkflowReadyListener listener) {
+			SimpleDebuggerLogger.info("Starting debug workflow");
 			CompletableFuture.runAsync(() -> {
 				if (isDebugPortBusy(debugConfiguration.getPort())) {
-		            DebuggerContext.context().setStatus(SimpleDebuggerStatus.NOT_STARTED);
-		            notifyAlreadyRunning(debugConfiguration);
-		            return;
-		        }
+					DebuggerContext.context().setStatus(SimpleDebuggerStatus.NOT_STARTED);
+					SimpleDebuggerLogger.warn("Debug port " + debugConfiguration.getPort() + " is already in use");
+					notifyAlreadyRunning(debugConfiguration);
+					return;
+				}
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.STARTING);
 				VirtualMachine virtualMachine = launchVirtualMachine(debugConfiguration);
 				IBreakpointManager breakpointManager = waitForBreakpointManager();
@@ -184,35 +186,31 @@ public class SimpleDebuggerWorkFlow {
 				breakpointManager.addBreakpointListener(breakePointListener);
 				TargetVirtualMachineRepresentation targetVirtualMachineRepresentation = new TargetVirtualMachineRepresentation(
 						"localhost", debugConfiguration.getPort(), virtualMachine);
-
-//				instance = new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation, breakpointManager,
-//						breakePointListener);
 				if (Objects.nonNull(listener)) {
-					Display.getDefault().asyncExec(() -> listener.onReady( new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation, breakpointManager,
-							breakePointListener)));
+					Display.getDefault().asyncExec(
+							() -> listener.onReady(new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation,
+									breakpointManager, breakePointListener)));
 				}
+				SimpleDebuggerLogger.info("VM launched: " + virtualMachine.description());
+			});
+
+		}
+
+		private static boolean isDebugPortBusy(int port) {
+			try (var socket = new java.net.Socket("localhost", port)) {
+				return true; // кто-то слушает порт
+			} catch (IOException e) {
+				return false; // порт свободен
+			}
+		}
+
+		private static void notifyAlreadyRunning(DebugConfiguration config) {
+			Display.getDefault().asyncExec(() -> {
+				Shell shell = Display.getDefault().getActiveShell();
+				MessageDialog.openError(shell, "Debug session already running",
+						"Application is already running on port " + config.getPort());
 			});
 		}
-		
-		private static boolean isDebugPortBusy(int port) {
-		    try (var socket = new java.net.Socket("localhost", port)) {
-		        return true; // кто-то слушает порт
-		    } catch (IOException e) {
-		        return false; // порт свободен
-		    }
-		}
-		
-		private static void notifyAlreadyRunning(DebugConfiguration config) {
-		    Display.getDefault().asyncExec(() -> {
-		        Shell shell = Display.getDefault().getActiveShell();
-		        MessageDialog.openError(
-		            shell,
-		            "Debug session already running",
-		            "Application is already running on port " + config.getPort()
-		        );
-		    });
-		}
-
 
 		private static IBreakpointManager waitForBreakpointManager() {
 			CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();
@@ -232,6 +230,7 @@ public class SimpleDebuggerWorkFlow {
 		}
 
 		private static VirtualMachine launchVirtualMachine(DebugConfiguration debugConfiguration) {
+			VirtualMachine vm = null;
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.VM_AWAITING_CONNECTION);
 			try {
 				LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
@@ -243,23 +242,25 @@ public class SimpleDebuggerWorkFlow {
 				// classpath + VM options
 				String optStr = "-cp " + debugConfiguration.getOutputFolder() + " "
 						+ debugConfiguration.getVmOptionsStringWithoutJDWP();
-				System.out.println("OPT: " + optStr);
-				// args.get("options").setValue(" -cp " + debugConfiguration.getOutputFolder());
-				// args.get("options").setValue(optStr);
 				args.get("options").setValue(optStr);
 
 				// jdwp
 				args.get("suspend").setValue("true");
 
-				VirtualMachine vm = connector.launch(args);
-				System.out.println("==> VM LAUNCHED (SUSPENDED): " + vm.description());
-
+				vm = connector.launch(args);
+				SimpleDebuggerLogger.info("==> VM LAUNCHED (SUSPENDED): " + vm.description());
 				attachConsoleWriters(vm.process());
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.VM_CONNECTED);
 				return vm;
 			} catch (Exception e) {
-				throw new RuntimeException("Cannot launch VM", e);
+				SimpleDebuggerLogger.error("Cannot launch VM", e);
+				Display.getDefault().asyncExec(() -> {
+				    DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
+				    window.showError("Cannot launch VM", e.getMessage());
+				});
+
 			}
+			return vm;
 		}
 
 		private static void attachConsoleWriters(Process process) {

@@ -28,7 +28,6 @@ public class ConsoleWriter implements Runnable {
 		try {
 			while (Objects.nonNull(line = reader.readLine())) {
 				String text = prefix + line;
-				System.out.println(text);
 				ConsoleUpdateDebugEvent consoleUpdateDebugEvent = new ConsoleUpdateDebugEvent(
 						SimpleDebuggerEventType.REFRESH_CONSOLE, text);
 				SimpleDebuggerEventQueue.instance().collectDebugEvent(consoleUpdateDebugEvent);
