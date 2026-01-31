@@ -1,7 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
-import java.util.Objects;
-
 import org.eclipse.swt.widgets.Display;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
@@ -28,7 +26,7 @@ public class DebugWindowManager {
     public DebugWindow getOrCreateWindow() {
 //    	 TargetApplicationStatus qq = targetApplicationStatusProvider.getTargetApplicationStatus();
 //    	 System.out.println(qq);
-    	if (Objects.equals(DebuggerContext.context().getTargetApplicationStatus(), DebuggerContext.TargetApplicationStatus.STOPPING )) return null;
+    	if (!DebuggerContext.context().isRunning()) return null;
         if (debugWindow == null || !debugWindow.isOpen()) {
             debugWindow = new DebugWindow();
             Display.getDefault().asyncExec(() -> {
