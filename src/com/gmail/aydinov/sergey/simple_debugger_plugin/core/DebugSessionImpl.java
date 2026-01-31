@@ -82,12 +82,11 @@ public class DebugSessionImpl implements DebugSession {
 		try {
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.SESSION_STARTED);
 			SimpleDebuggerLogger.info("DEBUG SESSION STARTED");
-			System.out.println("DEBUG SESSION STARTED: " + LocalDateTime.now());
 			process();
 		} catch (Throwable t) {
 			logError("Fatal error in JDI event loop", t);
 		} finally {
-			System.out.println("DEBUG SESSION FINISHED: " + LocalDateTime.now());
+			SimpleDebuggerLogger.info("DEBUG SESSION FINISHED");
 		}
 	}
 
@@ -176,17 +175,17 @@ public class DebugSessionImpl implements DebugSession {
 			} else if (uiEvent instanceof InvokeMethodEvent evt) {
 				invokeMethod(evt, breakpointEvent);
 			} else if (uiEvent instanceof UserPressedResumeUiEvent) {
-				System.out.println("User pressed RESUME");
+				SimpleDebuggerLogger.info("User pressed RESUME");
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.SESSION_FINISHED);
 			} else if (uiEvent instanceof UserClosedWindowUiEvent) {
-				System.out.println("User closed debug window → stopping debug session only");
+				SimpleDebuggerLogger.info("User closed debug window → stopping debug session only");
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.STOPPED);
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
 			} else {
-				System.out.println("Unhandled UI event: " + uiEvent.getClass().getSimpleName());
+				SimpleDebuggerLogger.info("Unhandled UI event: " + uiEvent.getClass().getSimpleName());
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			SimpleDebuggerLogger.error(e.getMessage(), e);
 		}
 	}
 

@@ -17,7 +17,6 @@ public class SimpleDebugEventProcessor implements Runnable {
 
 	@Override
 	public void run() {
-		System.out.println(Thread.currentThread() + " started.");
 		while (true) {
 			try {
 				AbstractSimpleDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
