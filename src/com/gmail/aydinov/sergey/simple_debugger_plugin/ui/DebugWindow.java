@@ -1,9 +1,12 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
+import java.io.InputStream;
+
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -177,8 +180,30 @@ public class DebugWindow {
     }
 
     public void open() {
+        final Image[] iconHolder = new Image[1]; // держим Image в final массиве
+
+        try (InputStream is = getClass().getResourceAsStream("/icons/icon.png")) {
+            if (is != null) {
+                iconHolder[0] = new Image(Display.getDefault(), is);
+                shell.setImage(iconHolder[0]);
+            } else {
+            	SimpleDebuggerLogger.error("Icon not found: /icons/icon.png", null);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // Открываем окно
         shell.open();
+
+        // Уничтожаем изображение после закрытия окна
+        shell.addListener(SWT.Dispose, event -> {
+            if (iconHolder[0] != null && !iconHolder[0].isDisposed()) {
+                iconHolder[0].dispose();
+            }
+        });
     }
+
 
     public boolean isOpen() {
         return shell != null && !shell.isDisposed();
