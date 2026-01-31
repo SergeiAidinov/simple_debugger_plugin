@@ -23,6 +23,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.Simp
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugConfigurationEditDialog;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
@@ -62,7 +63,6 @@ public class SimpleDebuggerWorkFlow {
 		this.breakpointListener = breakpointListener;
 		this.targetApplicationRepresentation = new TargetApplicationRepresentation(iBreakpointManager,
 				eventRequestManager, targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener);
-	//	DebuggerContext.context().setRunning(true);
 	}
 
 	/**
@@ -86,7 +86,7 @@ public class SimpleDebuggerWorkFlow {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (com.sun.jdi.VMDisconnectedException e) {
-				System.out.println("VM disconnected, finishing debug loop.");
+				SimpleDebuggerLogger.info("VM disconnected, finishing debug loop.");
 				break; // корректно выходим из цикла
 			}
 			if (Objects.isNull(eventSet))
@@ -103,7 +103,7 @@ public class SimpleDebuggerWorkFlow {
 				e.printStackTrace();
 			}
 			eventSet.resume();
-			//running = DebuggerContext.context().isRunning();
+			// running = DebuggerContext.context().isRunning();
 		}
 	}
 
@@ -170,12 +170,14 @@ public class SimpleDebuggerWorkFlow {
 	public static class SimpleDebuggerWorkFlowFactory {
 
 		public static void createWorkFlow(DebugConfiguration debugConfiguration, OnWorkflowReadyListener listener) {
+			SimpleDebuggerLogger.info("Starting debug workflow");
 			CompletableFuture.runAsync(() -> {
 				if (isDebugPortBusy(debugConfiguration.getPort())) {
-		            DebuggerContext.context().setStatus(SimpleDebuggerStatus.NOT_STARTED);
-		            notifyAlreadyRunning(debugConfiguration);
-		            return;
-		        }
+					DebuggerContext.context().setStatus(SimpleDebuggerStatus.NOT_STARTED);
+					SimpleDebuggerLogger.warn("Debug port " + debugConfiguration.getPort() + " is already in use");
+					notifyAlreadyRunning(debugConfiguration);
+					return;
+				}
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.STARTING);
 				VirtualMachine virtualMachine = launchVirtualMachine(debugConfiguration);
 				IBreakpointManager breakpointManager = waitForBreakpointManager();
@@ -184,35 +186,31 @@ public class SimpleDebuggerWorkFlow {
 				breakpointManager.addBreakpointListener(breakePointListener);
 				TargetVirtualMachineRepresentation targetVirtualMachineRepresentation = new TargetVirtualMachineRepresentation(
 						"localhost", debugConfiguration.getPort(), virtualMachine);
-
-//				instance = new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation, breakpointManager,
-//						breakePointListener);
 				if (Objects.nonNull(listener)) {
-					Display.getDefault().asyncExec(() -> listener.onReady( new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation, breakpointManager,
-							breakePointListener)));
+					Display.getDefault().asyncExec(
+							() -> listener.onReady(new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation,
+									breakpointManager, breakePointListener)));
 				}
+				SimpleDebuggerLogger.info("VM launched: " + virtualMachine.description());
+			});
+
+		}
+
+		private static boolean isDebugPortBusy(int port) {
+			try (var socket = new java.net.Socket("localhost", port)) {
+				return true; // кто-то слушает порт
+			} catch (IOException e) {
+				return false; // порт свободен
+			}
+		}
+
+		private static void notifyAlreadyRunning(DebugConfiguration config) {
+			Display.getDefault().asyncExec(() -> {
+				Shell shell = Display.getDefault().getActiveShell();
+				MessageDialog.openError(shell, "Debug session already running",
+						"Application is already running on port " + config.getPort());
 			});
 		}
-		
-		private static boolean isDebugPortBusy(int port) {
-		    try (var socket = new java.net.Socket("localhost", port)) {
-		        return true; // кто-то слушает порт
-		    } catch (IOException e) {
-		        return false; // порт свободен
-		    }
-		}
-		
-		private static void notifyAlreadyRunning(DebugConfiguration config) {
-		    Display.getDefault().asyncExec(() -> {
-		        Shell shell = Display.getDefault().getActiveShell();
-		        MessageDialog.openError(
-		            shell,
-		            "Debug session already running",
-		            "Application is already running on port " + config.getPort()
-		        );
-		    });
-		}
-
 
 		private static IBreakpointManager waitForBreakpointManager() {
 			CompletableFuture<IBreakpointManager> future = new CompletableFuture<>();

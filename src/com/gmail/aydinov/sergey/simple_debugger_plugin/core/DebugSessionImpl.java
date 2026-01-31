@@ -38,6 +38,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
@@ -80,6 +81,7 @@ public class DebugSessionImpl implements DebugSession {
 	public void run() {
 		try {
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.SESSION_STARTED);
+			SimpleDebuggerLogger.info("DEBUG SESSION STARTED");
 			System.out.println("DEBUG SESSION STARTED: " + LocalDateTime.now());
 			process();
 		} catch (Throwable t) {
