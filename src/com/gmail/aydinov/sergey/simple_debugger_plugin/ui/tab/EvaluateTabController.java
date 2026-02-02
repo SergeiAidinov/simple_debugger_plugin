@@ -8,7 +8,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.*;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 
@@ -132,13 +132,13 @@ public class EvaluateTabController {
         });
     }
 
-    public void updateFromEvent(DebugStoppedAtBreakepointEvent dto) {
+    public void updateFromEvent(DebugStoppedAtBreakpointEvent dto) {
         Display.getDefault().asyncExec(() -> {
             if (root.isDisposed()) return;
 
             classCombo.removeAll();
 
-            for (TargetApplicationElementRepresentation el : dto.getTargetApplicationElementRepresentationList()) {
+            for (TargetApplicationElementRepresentation el : dto.getTargetApplicationElements()) {
                 if (el instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
                     String nameAndType = clazz.getTargetApplicationElementName() + " ("
                             + el.getTargetApplicationElementType() + ")";

@@ -20,7 +20,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEven
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.MethodInvokedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
@@ -213,8 +213,8 @@ public class DebugWindow {
         Display.getDefault().asyncExec(() -> {
             if (shell.isDisposed()) return;
 
-            if (event.getType().equals(SimpleDebuggerEventType.STOPPED_AT_BREAKEPOINT)) {
-                refreshDataAtBreakepoint((DebugStoppedAtBreakepointEvent) event);
+            if (event.getType().equals(SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT)) {
+                refreshDataAtBreakepoint((DebugStoppedAtBreakpointEvent) event);
             } else if (event.getType().equals(SimpleDebuggerEventType.REFRESH_CONSOLE)) {
                 ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
                 consoleTabContent.appendLine(consoleEvent.getText());
@@ -227,7 +227,7 @@ public class DebugWindow {
         });
     }
 
-    private void refreshDataAtBreakepoint(DebugStoppedAtBreakepointEvent event) {
+    private void refreshDataAtBreakepoint(DebugStoppedAtBreakpointEvent event) {
         if (event == null) return;
 
         locationLabel.setText(STOP_INFO + event.getClassName() + "." + event.getMethodName() + " line:" + event.getLineNumber());

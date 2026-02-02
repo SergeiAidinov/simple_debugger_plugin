@@ -1,6 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 
 /**
  * Functional interface for sending debug events related to breakpoints.
@@ -13,5 +13,5 @@ public interface DebugEventProvider {
      *
      * @param stoppedEvent the breakpoint stop event
      */
-    void sendDebugEvent(DebugStoppedAtBreakepointEvent stoppedEvent);
+    void sendDebugEvent(DebugStoppedAtBreakpointEvent stoppedEvent);
 }

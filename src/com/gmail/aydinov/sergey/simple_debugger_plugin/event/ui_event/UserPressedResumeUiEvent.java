@@ -1,5 +1,8 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event;
 
+/**
+ * Marker Event indicating that the user pressed the "Resume" button in the UI.
+ */
 public class UserPressedResumeUiEvent extends AbstractUIEvent {
 
 }

@@ -28,7 +28,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMeth
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakepointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.MethodInvokedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
@@ -222,7 +222,7 @@ public class DebugSessionImpl implements DebugSession {
     private void invokeMethod(InvokeMethodEvent invokeEvent, BreakpointEvent breakpointEvent, StackFrame currentFrame) {
         try {
             List<Value> args = DebugUtils.parseArguments(targetVM.getVirtualMachine(), invokeEvent);
-            ReferenceType refType = targetApp.findReferenceTypeForClass(invokeEvent.getClazz());
+            ReferenceType refType = targetApp.findReferenceTypeForClass(invokeEvent.getTargetClass());
             Method method = refType.methodsByName(invokeEvent.getMethod().getMethodName()).get(0);
             ObjectReference instance = !method.isStatic() ? targetApp.createObjectInstance((ClassType) refType) : null;
 
@@ -257,15 +257,15 @@ public class DebugSessionImpl implements DebugSession {
 
         Location location = breakpointEvent.location();
 
-        DebugStoppedAtBreakepointEvent debugEvent = new DebugStoppedAtBreakepointEvent.Builder()
-                .type(SimpleDebuggerEventType.STOPPED_AT_BREAKEPOINT)
+        DebugStoppedAtBreakpointEvent debugEvent = new DebugStoppedAtBreakpointEvent.Builder()
+                .type(SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT)
                 .className(location.declaringType().name())
                 .methodName(location.method().name())
                 .lineNumber(location.lineNumber())
                 .fields(DebugUtils.mapFields(DebugUtils.compileFields(currentFrame)))
                 .locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(currentFrame)))
                 .stackTrace(methodInvocationResult.get())
-                .targetApplicationElementRepresentationList(
+                .targetApplicationElements(
                         discardVoidMethods(targetApp.getTargetApplicationElements()))
                 .methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
                 .resultOfMethodInvocation(methodInvocationResult.get())
