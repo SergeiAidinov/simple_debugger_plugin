@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
+import java.util.Objects;
+
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 
 /**
@@ -22,7 +24,7 @@ public class UserChangedFieldDTO extends AbstractUIEvent {
     public UserChangedFieldDTO(String fieldName, String fieldType, Object newValue) {
         this.fieldName = fieldName;
         this.fieldType = fieldType;
-        this.newValue = newValue != null ? newValue.toString() : null;
+        this.newValue = Objects.nonNull(newValue) ? newValue.toString() : null;
     }
 
     /** @return the name of the field */
@@ -46,6 +48,8 @@ public class UserChangedFieldDTO extends AbstractUIEvent {
      */
     @Override
     public String toString() {
-        return fieldName + " : " + fieldType + " = " + newValue;
+        return (fieldName != null ? fieldName : "<unknown>")
+                + " : " + (fieldType != null ? fieldType : "<unknown>")
+                + " = " + (newValue != null ? newValue : "<null>");
     }
 }

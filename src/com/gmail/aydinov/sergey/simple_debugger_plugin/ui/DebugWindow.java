@@ -17,7 +17,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugEventProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
@@ -39,8 +38,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.VariablesTabConten
  * Main debugger window displaying variables, fields, stack trace, evaluation, and console.
  */
 public class DebugWindow {
-
-    private DebugEventProvider debugEventProvider;
 
     private Shell shell;
     private CTabFolder tabFolder;
@@ -136,10 +133,6 @@ public class DebugWindow {
         Thread processorThread = new Thread(simpleDebugEventProcessor);
         processorThread.setDaemon(true);
         processorThread.start();
-    }
-
-    public void setDebugEventProvider(DebugEventProvider debugEventProvider) {
-        this.debugEventProvider = debugEventProvider;
     }
 
     public Shell getShell() {

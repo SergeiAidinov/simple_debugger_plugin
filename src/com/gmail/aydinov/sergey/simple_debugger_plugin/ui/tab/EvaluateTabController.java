@@ -34,12 +34,6 @@ public class EvaluateTabController {
     /** Last selected method */
     private TargetApplicationMethodDTO lastMethod;
 
-    /**
-     * Constructs the Evaluate tab controller.
-     *
-     * @param parent the parent composite
-     * @param uiEventCollector the event collector to send UI events
-     */
     public EvaluateTabController(Composite parent, UiEventCollector uiEventCollector) {
         this.uiEventCollector = uiEventCollector;
 
@@ -101,21 +95,11 @@ public class EvaluateTabController {
         invokeBtn.addListener(SWT.Selection, e -> onInvokeMethod());
     }
 
-    /**
-     * Returns the root composite of the tab.
-     *
-     * @return the root composite
-     */
     public Composite getControl() {
         return root;
     }
 
     // ----------------- Stack Viewer -----------------
-    /**
-     * Creates a table viewer for the call stack.
-     *
-     * @param parent the parent composite
-     */
     public void createStackViewer(Composite parent) {
         stackTableViewer = new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
         Table table = stackTableViewer.getTable();
@@ -152,11 +136,6 @@ public class EvaluateTabController {
         });
     }
 
-    /**
-     * Updates the class/method comboboxes and result field from the breakpoint event.
-     *
-     * @param dto the event data from the stopped breakpoint
-     */
     public void updateFromEvent(DebugStoppedAtBreakpointEvent dto) {
         Display.getDefault().asyncExec(() -> {
             if (root.isDisposed()) return;
@@ -176,18 +155,13 @@ public class EvaluateTabController {
                 updateMethods();
             }
 
-            // Update result field
+            // Updating resultField with a safe null replacement
             resultField.setText(Objects.requireNonNullElse(dto.getResultOfMethodInvocation(), ""));
         });
     }
 
-    /**
-     * Updates the call stack viewer.
-     *
-     * @param stack the list of method calls
-     */
     public void updateStack(List<MethodCallInStack> stack) {
-        if (stackTableViewer != null && !stackTableViewer.getTable().isDisposed()) {
+        if (Objects.nonNull(stackTableViewer) && !stackTableViewer.getTable().isDisposed()) {
             stackTableViewer.setInput(stack);
         }
     }
@@ -201,7 +175,7 @@ public class EvaluateTabController {
 
         TargetApplicationClassOrInterfaceRepresentation clazz =
                 (TargetApplicationClassOrInterfaceRepresentation) classCombo.getData(className);
-        if (clazz == null) return;
+        if (Objects.isNull(clazz)) return;
 
         TargetApplicationMethodDTO methodToSelect = null;
 
@@ -215,7 +189,7 @@ public class EvaluateTabController {
             }
         }
 
-        if (methodToSelect != null) {
+        if (Objects.nonNull(methodToSelect)) {
             methodCombo.setText(buildMethodDisplay(methodToSelect));
         } else if (methodCombo.getItemCount() > 0) {
             methodCombo.select(0);
@@ -237,13 +211,13 @@ public class EvaluateTabController {
     }
 
     private String cleanTypeName(String typeName) {
-        if (typeName == null) return "";
+        if (Objects.isNull(typeName)) return "";
         return typeName.replace(" (no class loader)", "");
     }
 
     private void onSelectMethod() {
         TargetApplicationMethodDTO selectedMethod = getSelectedMethod();
-        if (selectedMethod == null) return;
+        if (Objects.isNull(selectedMethod)) return;
 
         lastMethod = selectedMethod;
         methodInput.setText(buildMethodDisplay(selectedMethod));
@@ -254,7 +228,7 @@ public class EvaluateTabController {
     private void onInvokeMethod() {
         clearResult();
 
-        if (lastMethod == null) {
+        if (Objects.isNull(lastMethod)) {
             resultField.setText("No method selected to invoke.");
             return;
         }
@@ -262,7 +236,7 @@ public class EvaluateTabController {
         TargetApplicationClassOrInterfaceRepresentation clazz = getSelectedClass();
         String argsText = methodInput.getText();
 
-        if (clazz != null) {
+        if (Objects.nonNull(clazz)) {
             InvokeMethodEvent invokeMethodEvent = new InvokeMethodEvent(clazz, lastMethod, argsText);
             uiEventCollector.collectUiEvent(invokeMethodEvent);
         } else {
@@ -281,7 +255,7 @@ public class EvaluateTabController {
 
     public void clearResult() {
         Display.getDefault().asyncExec(() -> {
-            if (!resultField.isDisposed()) {
+            if (Objects.nonNull(resultField) && !resultField.isDisposed()) {
                 resultField.setText("");
             }
         });
@@ -289,7 +263,7 @@ public class EvaluateTabController {
 
     public void showResult(String text) {
         Display.getDefault().asyncExec(() -> {
-            if (!resultField.isDisposed()) {
+            if (Objects.nonNull(resultField) && !resultField.isDisposed()) {
                 resultField.setText(text);
             }
         });

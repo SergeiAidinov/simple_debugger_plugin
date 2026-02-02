@@ -52,7 +52,7 @@ public class TargetApplicationMethodDTO implements Comparable<TargetApplicationM
      */
     @Override
     public String toString() {
-        String params = parameters.stream()
+        String params = parameters == null ? "" : parameters.stream()
             .map(p -> {
                 String typeName;
                 try {
@@ -62,11 +62,11 @@ public class TargetApplicationMethodDTO implements Comparable<TargetApplicationM
                 }
 
                 // Remove only "no class loader" phrase from type name
-                if (typeName != null && typeName.contains("no class loader")) {
+                if (Objects.nonNull(typeName) && typeName.contains("no class loader")) {
                     typeName = "";
                 }
 
-                return typeName.isEmpty()
+                return (typeName == null || typeName.isEmpty())
                         ? p.getName()
                         : p.getName() + ": " + typeName;
             })
@@ -77,7 +77,7 @@ public class TargetApplicationMethodDTO implements Comparable<TargetApplicationM
 
     @Override
     public int compareTo(TargetApplicationMethodDTO o) {
-        if (o == null) return 1;
+        if (Objects.isNull(o)) return 1;
         int c = methodName.compareTo(o.methodName);
         if (c != 0) return c;
         return returnType.compareTo(o.returnType);

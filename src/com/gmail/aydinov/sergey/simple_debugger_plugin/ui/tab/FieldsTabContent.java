@@ -4,43 +4,50 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import org.eclipse.jface.viewers.*;
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.CellEditor;
+import org.eclipse.jface.viewers.ColumnLabelProvider;
+import org.eclipse.jface.viewers.ICellModifier;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.jface.viewers.TextCellEditor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Text;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 
 /**
- * Manages the "Fields" tab in the debugger UI, showing all fields of the current context.
- * Allows editing field values and sending changes to the debugger backend.
+ * Manages the "Fields" tab in the debugger UI.
+ * 
+ * Displays all fields of the current context, allows editing their values,
+ * and safely propagates changes to the debugger backend.
  */
 public class FieldsTabContent {
 
-    /** Root composite for this tab */
+    /** Root composite for the tab */
     private final Composite root;
 
-    /** Table widget displaying the fields */
+    /** Table widget showing the fields */
     private final Table table;
 
     /** TableViewer for structured display and editing */
     private final TableViewer viewer;
 
-    /** Cached list of VariableDTO entries displayed in the table */
+    /** Cached list of fields displayed in the table */
     private final List<VariableDTO> entries = new ArrayList<>();
 
-    /** Collector to send user UI events to the debugger */
+    /** Collector for sending UI events to the debugger */
     private final UiEventCollector uiEventCollector;
 
     /**
-     * Constructs a FieldsTabContent attached to a parent composite.
+     * Constructs the Fields tab content.
      *
      * @param parent the parent composite
      */
@@ -62,7 +69,7 @@ public class FieldsTabContent {
         setupCellModifier();
     }
 
-    /** Sets up the table columns: Field, Type, Value */
+    /** Sets up table columns: Field, Type, Value */
     private void setupColumns() {
         TableViewerColumn nameColumn = new TableViewerColumn(viewer, SWT.NONE);
         nameColumn.getColumn().setText("Field");
@@ -97,6 +104,7 @@ public class FieldsTabContent {
             @Override
             public String getText(Object element) {
                 if (element instanceof VariableDTO dto) {
+                    // Updating value safely with null replacement
                     return Objects.toString(dto.getValue(), "");
                 }
                 return "";
@@ -107,7 +115,7 @@ public class FieldsTabContent {
         viewer.setCellEditors(new CellEditor[]{null, null, new TextCellEditor(table)});
     }
 
-    /** Sets up cell editing for the "Value" column */
+    /** Sets up editing for the Value column */
     private void setupCellModifier() {
         viewer.setCellModifier(new ICellModifier() {
             @Override
@@ -130,11 +138,11 @@ public class FieldsTabContent {
                 VariableDTO entry = (VariableDTO) item.getData();
                 String valueStr = Objects.toString(newValue, null);
 
-                // Send user change event
+                // Send user field change event
                 UserChangedFieldDTO dto = new UserChangedFieldDTO(entry.getName(), entry.getType(), valueStr);
                 uiEventCollector.collectUiEvent(dto);
 
-                // Update the table
+                // Refresh table to reflect new value
                 viewer.update(entry, null);
             }
         });
@@ -143,24 +151,22 @@ public class FieldsTabContent {
     /**
      * Updates the fields displayed in the tab.
      *
-     * @param vars list of VariableDTOs representing fields; can be null
+     * @param vars list of variables to show; can be null
      */
     public void updateFields(List<VariableDTO> vars) {
         if (table.isDisposed()) return;
 
         entries.clear();
-        if (vars != null) {
-            entries.addAll(vars);
-        }
+        if (vars != null) entries.addAll(vars);
 
         viewer.setInput(entries);
         viewer.refresh();
     }
 
     /**
-     * Returns the root composite containing this tab's controls.
+     * Returns the root composite of this tab.
      *
-     * @return the composite
+     * @return the root composite
      */
     public Composite getControl() {
         return root;

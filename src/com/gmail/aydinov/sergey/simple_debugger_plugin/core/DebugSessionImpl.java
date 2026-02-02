@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -103,10 +104,8 @@ public class DebugSessionImpl implements DebugSession {
                 updateUI(breakpointEvent);
 
                 while (DebuggerContext.context().isSessionActive()) {
-                    AbstractUIEvent uiEvent = null;
-                    uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent();
-
-                    if (uiEvent == null) continue;
+                    AbstractUIEvent uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent();
+                    if (Objects.isNull(uiEvent)) continue;
 
                     targetApp.getTargetApplicationBreakepointRepresentation().refreshBreakpoints();
                     handleBreakpointEvent(breakpointEvent, uiEvent);
@@ -128,11 +127,11 @@ public class DebugSessionImpl implements DebugSession {
 
     private void handleBreakpointEvent(BreakpointEvent breakpointEvent, AbstractUIEvent uiEvent) {
         Display display = Display.getDefault();
-        if (display != null && !display.isDisposed()) {
+        if (Objects.nonNull(display) && !display.isDisposed()) {
             display.asyncExec(() -> {
                 try {
                     ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-                    if (editor != null) {
+                    if (Objects.nonNull(editor)) {
                         int lineNumber = breakpointEvent.location().lineNumber() - 1;
                         lineHighlighter.highlight(editor, lineNumber);
                     }
@@ -155,7 +154,7 @@ public class DebugSessionImpl implements DebugSession {
 
     private void handleSingleUiEvent(AbstractUIEvent uiEvent, BreakpointEvent breakpointEvent) {
         StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
-        if (currentFrame == null) return;
+        if (Objects.isNull(currentFrame)) return;
 
         try {
             if (uiEvent instanceof UserChangedVariableDTO variableEvent) {
@@ -186,7 +185,7 @@ public class DebugSessionImpl implements DebugSession {
                     .findFirst()
                     .orElse(null);
 
-            if (localVar == null) return;
+            if (Objects.isNull(localVar)) return;
 
             Value value = DebugUtils.createJdiValueFromString(
                     targetVM.getVirtualMachine(), localVar, variableEvent.getNewValue().toString()
@@ -198,11 +197,11 @@ public class DebugSessionImpl implements DebugSession {
     }
 
     private void updateField(UserChangedFieldDTO fieldEvent, StackFrame currentFrame) throws Exception {
-        ReferenceType refType = currentFrame.thisObject() != null
+        ReferenceType refType = Objects.nonNull(currentFrame.thisObject())
                 ? currentFrame.thisObject().referenceType()
                 : currentFrame.location().declaringType();
         Field field = refType.fieldByName(fieldEvent.getFieldName());
-        if (field == null) return;
+        if (Objects.isNull(field)) return;
 
         Value value = DebugUtils.createJdiObjectFromString(
                 targetVM.getVirtualMachine(), field.type(), fieldEvent.getNewValue(), currentFrame.thread()
@@ -210,7 +209,7 @@ public class DebugSessionImpl implements DebugSession {
 
         if (Modifier.isStatic(field.modifiers()) && refType instanceof ClassType classType) {
             classType.setValue(field, value);
-        } else if (currentFrame.thisObject() != null) {
+        } else if (Objects.nonNull(currentFrame.thisObject())) {
             currentFrame.thisObject().setValue(field, value);
         }
     }
@@ -222,7 +221,7 @@ public class DebugSessionImpl implements DebugSession {
             Method method = refType.methodsByName(invokeEvent.getMethod().getMethodName()).get(0);
             ObjectReference instance = !method.isStatic() ? targetApp.createObjectInstance((ClassType) refType) : null;
 
-            Value result = instance != null
+            Value result = Objects.nonNull(instance)
                     ? instance.invokeMethod(targetVM.getVirtualMachine().allThreads().get(0),
                                            method, args, ObjectReference.INVOKE_SINGLE_THREADED)
                     : ((ClassType) refType).invokeMethod(targetVM.getVirtualMachine().allThreads().get(0),
@@ -246,10 +245,10 @@ public class DebugSessionImpl implements DebugSession {
     }
 
     private boolean updateUI(BreakpointEvent breakpointEvent) {
-        if (breakpointEvent == null) return false;
+        if (Objects.isNull(breakpointEvent)) return false;
 
         StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
-        if (currentFrame == null) return false;
+        if (Objects.isNull(currentFrame)) return false;
 
         Location location = breakpointEvent.location();
 
@@ -270,11 +269,11 @@ public class DebugSessionImpl implements DebugSession {
         SimpleDebuggerEventQueue.instance().collectDebugEvent(debugEvent);
 
         Display display = Display.getDefault();
-        if (display != null && !display.isDisposed()) {
+        if (Objects.nonNull(display) && !display.isDisposed()) {
             display.asyncExec(() -> {
                 try {
                     ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-                    if (editor != null) {
+                    if (Objects.nonNull(editor)) {
                         int lineNumber = breakpointEvent.location().lineNumber() - 1;
                         lineHighlighter.highlight(editor, lineNumber);
                     }
@@ -305,16 +304,16 @@ public class DebugSessionImpl implements DebugSession {
     }
 
     private ITextEditor openEditorForLocation(Location location) throws Exception {
-        if (location == null) return null;
+        if (Objects.isNull(location)) return null;
 
         IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-        if (window == null) return null;
+        if (Objects.isNull(window)) return null;
 
         IWorkbenchPage page = window.getActivePage();
-        if (page == null) return null;
+        if (Objects.isNull(page)) return null;
 
         IFile file = targetApp.findIFileForLocation(location);
-        if (file == null)
+        if (Objects.isNull(file))
             throw new IllegalStateException("Cannot map location to IFile: " + location);
 
         IEditorPart editorPart = IDE.openEditor(page, file, true);

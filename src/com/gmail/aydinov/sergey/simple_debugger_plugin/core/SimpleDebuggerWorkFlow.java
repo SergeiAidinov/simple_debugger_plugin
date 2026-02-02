@@ -46,8 +46,8 @@ public class SimpleDebuggerWorkFlow {
 
     private final TargetVirtualMachineRepresentation targetVmRepresentation;
     private final TargetApplicationRepresentation targetAppRepresentation;
-    private final IBreakpointManager breakpointManager; // Required, cannot be removed
-    private final BreakpointSubscriberRegistrar breakpointListener; // Required, cannot be removed
+    private final IBreakpointManager breakpointManager;
+    private final BreakpointSubscriberRegistrar breakpointListener;
     private final CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
 
     public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVmRepresentation,
@@ -66,11 +66,7 @@ public class SimpleDebuggerWorkFlow {
         );
     }
 
-    /**
-     * Starts the debugging workflow.
-     *
-     * @param mainClassName fully qualified main class name
-     */
+    /** Starts the debug workflow */
     public void debug(String mainClassName) {
         prepareDebug(targetVmRepresentation.getVirtualMachine().eventQueue(), mainClassName);
 
@@ -97,8 +93,12 @@ public class SimpleDebuggerWorkFlow {
 
             if (Objects.isNull(eventSet)) continue;
 
-            DebugSession debugSession = new DebugSessionImpl(targetVmRepresentation,
-                    targetAppRepresentation, eventSet, highlighter);
+            DebugSession debugSession = new DebugSessionImpl(
+                    targetVmRepresentation,
+                    targetAppRepresentation,
+                    eventSet,
+                    highlighter
+            );
 
             Thread sessionThread = new Thread(debugSession);
             sessionThread.setDaemon(true);
@@ -128,32 +128,34 @@ public class SimpleDebuggerWorkFlow {
             } catch (InterruptedException ignored) {
             }
 
-            for (Event event : eventSet) {
-                if (event instanceof VMStartEvent) {
-                    SimpleDebuggerLogger.info("VMStartEvent received");
-                } else if (event instanceof ClassPrepareEvent classPrepareEvent) {
-                    SimpleDebuggerLogger.info("ClassPrepareEvent received");
-                    ReferenceType referenceType = classPrepareEvent.referenceType();
-                    Method mainMethod = referenceType.methodsByName("main").get(0);
-                    Location firstLine = null;
-                    try {
-                        firstLine = mainMethod.allLineLocations().get(0);
-                    } catch (AbsentInformationException ignored) {
-                    }
+            if (Objects.nonNull(eventSet)) {
+                for (Event event : eventSet) {
+                    if (event instanceof VMStartEvent) {
+                        SimpleDebuggerLogger.info("VMStartEvent received");
+                    } else if (event instanceof ClassPrepareEvent classPrepareEvent) {
+                        SimpleDebuggerLogger.info("ClassPrepareEvent received");
+                        ReferenceType referenceType = classPrepareEvent.referenceType();
+                        Method mainMethod = referenceType.methodsByName("main").get(0);
+                        Location firstLine = null;
+                        try {
+                            firstLine = mainMethod.allLineLocations().get(0);
+                        } catch (AbsentInformationException ignored) {
+                        }
 
-                    BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(firstLine);
-                    breakpointRequest.enable();
+                        BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(firstLine);
+                        breakpointRequest.enable();
 
-                    try {
-                        SimpleDebuggerLogger.info(
-                                "Breakpoint set at " + firstLine.sourceName() + ":" + firstLine.lineNumber()
-                        );
-                        preparing = false;
-                        break;
-                    } catch (AbsentInformationException ignored) {
+                        try {
+                            SimpleDebuggerLogger.info(
+                                    "Breakpoint set at " + firstLine.sourceName() + ":" + firstLine.lineNumber()
+                            );
+                            preparing = false;
+                            break;
+                        } catch (AbsentInformationException ignored) {
+                        }
                     }
+                    eventSet.resume();
                 }
-                eventSet.resume();
             }
 
             SimpleDebuggerLogger.info("Debug preparation complete");
@@ -172,9 +174,7 @@ public class SimpleDebuggerWorkFlow {
         });
     }
 
-    /**
-     * Factory for creating a debug workflow asynchronously.
-     */
+    /** Factory for creating a debug workflow asynchronously */
     public static class SimpleDebuggerWorkFlowFactory {
 
         public static void createWorkflow(DebugConfiguration debugConfiguration,
@@ -253,10 +253,8 @@ public class SimpleDebuggerWorkFlow {
                 Map<String, Connector.Argument> args = connector.defaultArguments();
 
                 args.get("main").setValue(debugConfig.getMainClassName());
-
                 String options = "-cp " + debugConfig.getOutputFolder() + " " + debugConfig.getVmOptionsStringWithoutJDWP();
                 args.get("options").setValue(options);
-
                 args.get("suspend").setValue("true");
 
                 vm = connector.launch(args);
