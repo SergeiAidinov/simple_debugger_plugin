@@ -3,7 +3,8 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 
 /**
- * DTO события изменения поля объекта пользователем через UI.
+ * Represents a UI event where a user changes a field of an object.
+ * Stores the field name, type, and the new value assigned by the user.
  */
 public class UserChangedFieldDTO extends AbstractUIEvent {
 
@@ -11,24 +12,38 @@ public class UserChangedFieldDTO extends AbstractUIEvent {
     private final String fieldType;
     private final String newValue;
 
+    /**
+     * Constructs a UserChangedFieldDTO.
+     *
+     * @param fieldName the name of the field that was changed
+     * @param fieldType the type of the field
+     * @param newValue the new value assigned to the field (converted to String)
+     */
     public UserChangedFieldDTO(String fieldName, String fieldType, Object newValue) {
         this.fieldName = fieldName;
         this.fieldType = fieldType;
         this.newValue = newValue != null ? newValue.toString() : null;
     }
 
+    /** @return the name of the field */
     public String getFieldName() {
         return fieldName;
     }
 
+    /** @return the type of the field */
     public String getFieldType() {
         return fieldType;
     }
 
+    /** @return the new value assigned to the field */
     public String getNewValue() {
         return newValue;
     }
 
+    /**
+     * Returns a human-readable string representation of this event.
+     * Format: "fieldName : fieldType = newValue"
+     */
     @Override
     public String toString() {
         return fieldName + " : " + fieldType + " = " + newValue;
