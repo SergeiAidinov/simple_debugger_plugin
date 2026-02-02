@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,301 +46,435 @@ import com.sun.jdi.request.EventRequestManager;
 
 public class TargetApplicationRepresentation {
 
-	private final Map<ReferenceType, TargetApplicationElementRepresentation> referencesAtClassesAndInterfaces = new ConcurrentHashMap<ReferenceType, TargetApplicationElementRepresentation>();
-	private final TargetApplicationBreakpointRepresentation targetApplicationBreakepointRepresentation;
-	private final VirtualMachine virtualMachine;
+    private final Map<ReferenceType, TargetApplicationElementRepresentation>
+            referencesAtClassesAndInterfaces =
+            new ConcurrentHashMap<>();
 
-	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
-			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
-			BreakpointSubscriberRegistrar breakpointHitListener) {
-		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakpointRepresentation(
-				iBreakpointManager, virtualMachine);
-		breakpointHitListener.register(targetApplicationBreakepointRepresentation);
-		this.virtualMachine = virtualMachine;
-	}
+    private final TargetApplicationBreakpointRepresentation
+            targetApplicationBreakepointRepresentation;
 
-	public TargetApplicationBreakpointRepresentation getTargetApplicationBreakepointRepresentation() {
-		return targetApplicationBreakepointRepresentation;
-	}
+    private final VirtualMachine virtualMachine;
 
-	public Map<ReferenceType, TargetApplicationElementRepresentation> getReferencesAtClassesAndInterfaces() {
-		return referencesAtClassesAndInterfaces;
-	}
+    public TargetApplicationRepresentation(
+            IBreakpointManager iBreakpointManager,
+            EventRequestManager eventRequestManager,
+            VirtualMachine virtualMachine,
+            BreakpointSubscriberRegistrar breakpointSubscriberRegistrar
+    ) {
+        this.targetApplicationBreakepointRepresentation =
+                new TargetApplicationBreakpointRepresentation(
+                        iBreakpointManager,
+                        virtualMachine
+                );
+        breakpointSubscriberRegistrar.register(
+                targetApplicationBreakepointRepresentation
+        );
+        this.virtualMachine = virtualMachine;
+    }
 
-	public List<TargetApplicationElementRepresentation> getTargetApplicationElements() {
-		return referencesAtClassesAndInterfaces.values().stream().collect(Collectors.toList());
-	}
+    public TargetApplicationBreakpointRepresentation
+    getTargetApplicationBreakepointRepresentation() {
+        return targetApplicationBreakepointRepresentation;
+    }
 
-	public void refreshReferencesToClassesOfTargetApplication(VirtualMachine virtualMachine) {
-		referencesAtClassesAndInterfaces.clear();
-		SimpleDebuggerLogger.info("Target class not loaded yet. Waiting...");
+    public Map<ReferenceType, TargetApplicationElementRepresentation>
+    getReferencesAtClassesAndInterfaces() {
+        return referencesAtClassesAndInterfaces;
+    }
 
-		// 1. Ждём загрузки классов
-		List<ReferenceType> loaded = waitUntilClassesAreLoaded(virtualMachine);
+    public List<TargetApplicationElementRepresentation>
+    getTargetApplicationElements() {
+        return referencesAtClassesAndInterfaces
+                .values()
+                .stream()
+                .collect(Collectors.toList());
+    }
 
-		// 2. Фильтруем классы содержащие слово "target"
-		List<ReferenceType> targetClasses = filterTargetClasses(loaded);
-		SimpleDebuggerLogger.info("Loaded " + targetClasses.size() + " classes.");
+    public void refreshReferencesToClassesOfTargetApplication(
+            VirtualMachine virtualMachine
+    ) {
+        referencesAtClassesAndInterfaces.clear();
+        SimpleDebuggerLogger.info(
+                "Target classes are not loaded yet. Waiting..."
+        );
 
-		// 3. Находим классы, определённые загрузчиками
-		Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
+        // 1. Wait until classes are loaded
+        List<ReferenceType> loaded =
+                waitUntilClassesAreLoaded(virtualMachine);
 
-		// 4. Обрабатываем каждый класс/интерфейс
-		for (ReferenceType referenceType : definedByLoaders) {
+        // 2. Filter classes containing the word "target"
+        List<ReferenceType> targetClasses =
+                filterTargetClasses(loaded);
 
-			TargetApplicationElementType type = determineElementType(referenceType);
-			if (type == null) {
-				continue;
-			}
+        SimpleDebuggerLogger.info(
+                "Loaded " + targetClasses.size() + " classes."
+        );
 
-			Set<TargetApplicationMethodDTO> methods = buildMethodDTOs(referenceType);
+        // 3. Collect classes defined by class loaders
+        Set<ReferenceType> definedByLoaders =
+                collectDefinedClasses(targetClasses);
 
-			Set<Field> fields = new HashSet<>(referenceType.allFields());
+        // 4. Process each class or interface
+        for (ReferenceType referenceType : definedByLoaders) {
 
-			referencesAtClassesAndInterfaces.put(referenceType,
-					new TargetApplicationClassOrInterfaceRepresentation(referenceType.name(), type, methods, fields));
-		}
+            TargetApplicationElementType type =
+                    determineElementType(referenceType);
 
-		SimpleDebuggerLogger.info("LOADED CLASSES: " + referencesAtClassesAndInterfaces.size());
-	}
+            if (Objects.isNull(type)) {
+                continue;
+            }
 
-	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine vm) {
-		List<ReferenceType> list = new ArrayList<>();
+            Set<TargetApplicationMethodDTO> methods =
+                    buildMethodDTOs(referenceType);
 
-		while (list.isEmpty()) {
-			list.addAll(vm.allClasses());
-			if (!list.isEmpty()) {
-				break;
-			}
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException ignored) {
-				SimpleDebuggerLogger.error(ignored.getMessage(), ignored);
-			}
-		}
-		return list;
-	}
+            Set<Field> fields =
+                    new HashSet<>(referenceType.allFields());
 
-	private List<ReferenceType> filterTargetClasses(List<ReferenceType> list) {
-		List<ReferenceType> result = new ArrayList<>();
-		for (ReferenceType rt : list) {
-			if (rt.name().contains("target")) {
-				result.add(rt);
-			}
-		}
-		return result;
-	}
+            referencesAtClassesAndInterfaces.put(
+                    referenceType,
+                    new TargetApplicationClassOrInterfaceRepresentation(
+                            referenceType.name(),
+                            type,
+                            methods,
+                            fields
+                    )
+            );
+        }
 
-	private Set<ReferenceType> collectDefinedClasses(List<ReferenceType> classes) {
-		Set<ReferenceType> result = new HashSet<>();
+        SimpleDebuggerLogger.info(
+                "LOADED CLASSES: "
+                        + referencesAtClassesAndInterfaces.size()
+        );
+    }
 
-		for (ReferenceType ref : classes) {
-			ClassLoaderReference loader = ref.classLoader();
-			if (loader == null) {
-				continue;
-			}
+    private List<ReferenceType> waitUntilClassesAreLoaded(
+            VirtualMachine virtualMachine
+    ) {
+        List<ReferenceType> referenceTypes = new ArrayList<>();
 
-			List<ReferenceType> defined = loader.definedClasses();
-			for (ReferenceType d : defined) {
-				if (d != null) {
-					result.add(d);
-				}
-			}
-		}
-		return result;
-	}
+        while (referenceTypes.isEmpty()) {
+            referenceTypes.addAll(virtualMachine.allClasses());
+            if (!referenceTypes.isEmpty()) {
+                break;
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException interruptedException) {
+                SimpleDebuggerLogger.error(
+                        interruptedException.getMessage(),
+                        interruptedException
+                );
+            }
+        }
+        return referenceTypes;
+    }
 
-	private TargetApplicationElementType determineElementType(ReferenceType ref) {
-		if (ref instanceof ClassType) {
-			return TargetApplicationElementType.CLASS;
-		} else if (ref instanceof InterfaceType) {
-			return TargetApplicationElementType.INTERFACE;
-		}
-		return null;
-	}
+    private List<ReferenceType> filterTargetClasses(
+            List<ReferenceType> referenceTypes
+    ) {
+        List<ReferenceType> result = new ArrayList<>();
 
-	private Set<TargetApplicationMethodDTO> buildMethodDTOs(ReferenceType referenceType) {
-		Set<TargetApplicationMethodDTO> result = new TreeSet<>();
+        for (ReferenceType referenceType : referenceTypes) {
+            if (referenceType.name().contains("target")) {
+                result.add(referenceType);
+            }
+        }
+        return result;
+    }
 
-		for (Method m : referenceType.allMethods()) {
+    private Set<ReferenceType> collectDefinedClasses(
+            List<ReferenceType> referenceTypes
+    ) {
+        Set<ReferenceType> result = new HashSet<>();
 
-			if (m.isNative()) {
-				continue;
-			}
-			if ("<init>".equals(m.name())) {
-				continue;
-			}
+        for (ReferenceType referenceType : referenceTypes) {
+            ClassLoaderReference classLoaderReference =
+                    referenceType.classLoader();
 
-			TargetApplicationMethodDTO dto = createMethodDTO(m);
-			if (dto != null) {
-				result.add(dto);
-			}
-		}
+            if (Objects.isNull(classLoaderReference)) {
+                continue;
+            }
 
-		return result;
-	}
+            for (ReferenceType definedReferenceType
+                    : classLoaderReference.definedClasses()) {
 
-	private TargetApplicationMethodDTO createMethodDTO(Method m) {
-		try {
-			List<com.sun.jdi.Type> argTypes = m.argumentTypes();
-			List<com.sun.jdi.LocalVariable> argVars = loadArgVars(m);
+                if (Objects.nonNull(definedReferenceType)) {
+                    result.add(definedReferenceType);
+                }
+            }
+        }
+        return result;
+    }
 
-			List<TargetApplicationMethodParameterDTO> params = compileParameters(argTypes, argVars);
+    private TargetApplicationElementType determineElementType(
+            ReferenceType referenceType
+    ) {
+        if (referenceType instanceof ClassType) {
+            return TargetApplicationElementType.CLASS;
+        }
+        if (referenceType instanceof InterfaceType) {
+            return TargetApplicationElementType.INTERFACE;
+        }
+        return null;
+    }
 
-			return new TargetApplicationMethodDTO(m.name(), m.returnType().toString(), params);
+    private Set<TargetApplicationMethodDTO> buildMethodDTOs(
+            ReferenceType referenceType
+    ) {
+        Set<TargetApplicationMethodDTO> result = new TreeSet<>();
 
-		} catch (ClassNotLoadedException e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
+        for (Method method : referenceType.allMethods()) {
 
-	private List<com.sun.jdi.LocalVariable> loadArgVars(Method m) {
-		try {
-			return m.arguments();
-		} catch (Exception e) {
-			return List.of();
-		}
-	}
+            if (method.isNative()) {
+                continue;
+            }
+            if ("<init>".equals(method.name())) {
+                continue;
+            }
 
-	private List<TargetApplicationMethodParameterDTO> compileParameters(List<com.sun.jdi.Type> argTypes,
-			List<com.sun.jdi.LocalVariable> argVars) {
-		List<TargetApplicationMethodParameterDTO> params = new ArrayList<>();
+            TargetApplicationMethodDTO targetApplicationMethodDTO =
+                    createMethodDTO(method);
 
-		for (int i = 0; i < argTypes.size(); i++) {
-			com.sun.jdi.Type type = argTypes.get(i);
+            if (Objects.nonNull(targetApplicationMethodDTO)) {
+                result.add(targetApplicationMethodDTO);
+            }
+        }
+        return result;
+    }
 
-			// Имя параметра
-			String name = (i < argVars.size()) ? argVars.get(i).name() : "arg" + i;
+    private TargetApplicationMethodDTO createMethodDTO(Method method) {
+        try {
+            List<com.sun.jdi.Type> argumentTypes =
+                    method.argumentTypes();
+            List<com.sun.jdi.LocalVariable> argumentVariables =
+                    loadArgVars(method);
 
-			// Превращаем JDI Type в строку и чистим "no class loader"
-			String typeName;
-			try {
-				typeName = type.name();
-			} catch (Exception e) {
-				typeName = "";
-			}
-			if (typeName != null && typeName.contains("no class loader")) {
-				typeName = "";
-			}
+            List<TargetApplicationMethodParameterDTO> parameters =
+                    compileParameters(
+                            argumentTypes,
+                            argumentVariables
+                    );
 
-			// Создаём DTO с типом как String, JDI больше не хранится
-			params.add(new TargetApplicationMethodParameterDTO(name, typeName));
-		}
+            return new TargetApplicationMethodDTO(
+                    method.name(),
+                    method.returnType().toString(),
+                    parameters
+            );
 
-		return params;
-	}
+        } catch (ClassNotLoadedException classNotLoadedException) {
+            classNotLoadedException.printStackTrace();
+            return null;
+        }
+    }
 
-	public void detachDebugger() {
-		if (virtualMachine == null)
-			return;
+    private List<com.sun.jdi.LocalVariable> loadArgVars(Method method) {
+        try {
+            return method.arguments();
+        } catch (Exception exception) {
+            return List.of();
+        }
+    }
 
-		try {
-			// Отключаем все брейкпоинты
-			virtualMachine.eventRequestManager().deleteAllBreakpoints();
+    private List<TargetApplicationMethodParameterDTO> compileParameters(
+            List<com.sun.jdi.Type> argumentTypes,
+            List<com.sun.jdi.LocalVariable> argumentVariables
+    ) {
+        List<TargetApplicationMethodParameterDTO> parameters =
+                new ArrayList<>();
 
-			// Продолжаем все приостановленные потоки
-			virtualMachine.allThreads().forEach(thread -> {
-				try {
-					if (thread.suspendCount() > 0) {
-						thread.resume();
-					}
-				} catch (Exception ignored) {
-				}
-			});
+        for (int index = 0; index < argumentTypes.size(); index++) {
+            com.sun.jdi.Type type =
+                    argumentTypes.get(index);
 
-			// Отсоединяемся от VM, оставляя процесс работать
-			virtualMachine.dispose();
+            String name =
+                    (index < argumentVariables.size())
+                            ? argumentVariables.get(index).name()
+                            : "arg" + index;
 
-		} catch (VMDisconnectedException e) {
-			// VM уже отключена — игнорируем
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+            String typeName;
+            try {
+                typeName = type.name();
+            } catch (Exception exception) {
+                typeName = "";
+            }
 
-	public IFile findIFileForLocation(Location location) {
-		ReferenceType refType = location.declaringType();
-		if (refType == null)
-			return null;
+            if (Objects.nonNull(typeName)
+                    && typeName.contains("no class loader")) {
+                typeName = "";
+            }
 
-		// Имя типа в формате JVM => преобразуем в Java вид
-		// было: Lcom/example/MyClass; => com.example.MyClass
-		String jvmName = refType.name();
-		String className = jvmName.replace('/', '.');
+            parameters.add(
+                    new TargetApplicationMethodParameterDTO(
+                            name,
+                            typeName
+                    )
+            );
+        }
+        return parameters;
+    }
 
-		// Удаляем ведущую 'L' и ';', если они есть
-		if (className.startsWith("L") && className.endsWith(";")) {
-			className = className.substring(1, className.length() - 1);
-		}
+    public void detachDebugger() {
+        if (Objects.isNull(virtualMachine)) {
+            return;
+        }
 
-		// Теперь это нормальное имя класса, ищем по нему IType
-		IWorkspace ws = ResourcesPlugin.getWorkspace();
-		IWorkspaceRoot root = ws.getRoot();
+        try {
+            virtualMachine
+                    .eventRequestManager()
+                    .deleteAllBreakpoints();
 
-		// Перебираем все Java-проекты
-		for (IProject project : root.getProjects()) {
-			try {
-				if (!project.isOpen() || !project.hasNature(JavaCore.NATURE_ID))
-					continue;
-			} catch (CoreException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			IJavaProject javaProject = JavaCore.create(project);
-			IType type = null;
-			try {
-				type = javaProject.findType(className);
-			} catch (JavaModelException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			if (type != null) {
-				ICompilationUnit unit = type.getCompilationUnit();
-				if (unit != null) {
-					IResource resource = null;
-					try {
-						resource = unit.getUnderlyingResource();
-					} catch (JavaModelException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					if (resource instanceof IFile) {
-						return (IFile) resource;
-					}
-				}
-			}
-		}
-		return null;
-	}
+            virtualMachine
+                    .allThreads()
+                    .forEach(threadReference -> {
+                        try {
+                            if (threadReference.suspendCount() > 0) {
+                                threadReference.resume();
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    });
 
-	public ReferenceType findReferenceTypeForClass(TargetApplicationClassOrInterfaceRepresentation clazz) {
-		if (clazz == null)
-			return null;
+            virtualMachine.dispose();
 
-		String className = clazz.getTargetApplicationElementName();
+        } catch (VMDisconnectedException ignored) {
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+    }
 
-		for (Map.Entry<ReferenceType, TargetApplicationElementRepresentation> entry : referencesAtClassesAndInterfaces
-				.entrySet()) {
-			ReferenceType ref = entry.getKey();
-			if (ref != null && className.equals(ref.name())) {
-				return ref;
-			}
-		}
+    public IFile findIFileForLocation(Location location) {
+        ReferenceType referenceType =
+                location.declaringType();
 
-		return null; // не найден
-	}
+        if (Objects.isNull(referenceType)) {
+            return null;
+        }
 
-	public ObjectReference createObjectInstance(ClassType classType) {
-		try {
-			Method constructor = classType.concreteMethodByName("<init>", "()V");
-			if (constructor == null)
-				throw new RuntimeException("No default constructor for " + classType.name());
-			return classType.newInstance(virtualMachine.allThreads().get(0), constructor, List.of(),
-					ClassType.INVOKE_SINGLE_THREADED);
-		} catch (Exception e) {
-			throw new RuntimeException("Cannot create instance of " + classType.name(), e);
-		}
-	}
+        String jvmName = referenceType.name();
+        String className = jvmName.replace('/', '.');
 
+        if (className.startsWith("L")
+                && className.endsWith(";")) {
+            className =
+                    className.substring(
+                            1,
+                            className.length() - 1
+                    );
+        }
+
+        IWorkspace iWorkspace =
+                ResourcesPlugin.getWorkspace();
+        IWorkspaceRoot iWorkspaceRoot =
+                iWorkspace.getRoot();
+
+        for (IProject iProject
+                : iWorkspaceRoot.getProjects()) {
+
+            try {
+                if (!iProject.isOpen()
+                        || !iProject.hasNature(
+                                JavaCore.NATURE_ID
+                        )) {
+                    continue;
+                }
+            } catch (CoreException coreException) {
+                coreException.printStackTrace();
+            }
+
+            IJavaProject iJavaProject =
+                    JavaCore.create(iProject);
+
+            IType iType;
+            try {
+                iType =
+                        iJavaProject.findType(className);
+            } catch (JavaModelException javaModelException) {
+                javaModelException.printStackTrace();
+                continue;
+            }
+
+            if (Objects.nonNull(iType)) {
+                ICompilationUnit iCompilationUnit =
+                        iType.getCompilationUnit();
+
+                if (Objects.nonNull(iCompilationUnit)) {
+                    try {
+                        IResource iResource =
+                                iCompilationUnit
+                                        .getUnderlyingResource();
+                        if (iResource instanceof IFile) {
+                            return (IFile) iResource;
+                        }
+                    } catch (JavaModelException javaModelException) {
+                        javaModelException.printStackTrace();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public ReferenceType findReferenceTypeForClass(
+            TargetApplicationClassOrInterfaceRepresentation
+                    targetApplicationClassOrInterfaceRepresentation
+    ) {
+        if (Objects.isNull(
+                targetApplicationClassOrInterfaceRepresentation
+        )) {
+            return null;
+        }
+
+        String className =
+                targetApplicationClassOrInterfaceRepresentation
+                        .getTargetApplicationElementName();
+
+        for (Map.Entry<
+                ReferenceType,
+                TargetApplicationElementRepresentation> entry
+                : referencesAtClassesAndInterfaces.entrySet()) {
+
+            ReferenceType referenceType = entry.getKey();
+
+            if (Objects.nonNull(referenceType)
+                    && className.equals(
+                            referenceType.name()
+                    )) {
+                return referenceType;
+            }
+        }
+        return null;
+    }
+
+    public ObjectReference createObjectInstance(
+            ClassType classType
+    ) {
+        try {
+            Method constructor =
+                    classType.concreteMethodByName(
+                            "<init>",
+                            "()V"
+                    );
+
+            if (Objects.isNull(constructor)) {
+                throw new RuntimeException(
+                        "No default constructor for "
+                                + classType.name()
+                );
+            }
+
+            return classType.newInstance(
+                    virtualMachine.allThreads().get(0),
+                    constructor,
+                    List.of(),
+                    ClassType.INVOKE_SINGLE_THREADED
+            );
+
+        } catch (Exception exception) {
+            throw new RuntimeException(
+                    "Cannot create instance of "
+                            + classType.name(),
+                    exception
+            );
+        }
+    }
 }
