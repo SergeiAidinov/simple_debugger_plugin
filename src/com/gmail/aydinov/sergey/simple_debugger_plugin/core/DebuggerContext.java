@@ -6,76 +6,116 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
+/**
+ * Singleton context holding the current state of the debugger.
+ * Provides thread-safe access and status management.
+ */
 public class DebuggerContext {
 
-	public enum SimpleDebuggerStatus {
-		NOT_STARTED, STARTING, VM_AWAITING_CONNECTION, VM_CONNECTED, PREPARED, RUNNING, SESSION_STARTED,
-		SESSION_FINISHED, STOPPED
-	}
+    /**
+     * Represents the possible states of the debugger.
+     */
+    public enum SimpleDebuggerStatus {
+        NOT_STARTED,
+        STARTING,
+        VM_AWAITING_CONNECTION,
+        VM_CONNECTED,
+        PREPARED,
+        RUNNING,
+        SESSION_STARTED,
+        SESSION_FINISHED,
+        STOPPED
+    }
 
-	private static final DebuggerContext INSTANCE = new DebuggerContext();
+    private static final DebuggerContext INSTANCE = new DebuggerContext();
 
-	private final ReentrantLock lock = new ReentrantLock(true); // fair lock
-	private volatile SimpleDebuggerStatus status;
-	private static final Set<SimpleDebuggerStatus> RUNNING_STATES = EnumSet.of(SimpleDebuggerStatus.RUNNING,
-			SimpleDebuggerStatus.SESSION_STARTED, SimpleDebuggerStatus.SESSION_FINISHED
+    private final ReentrantLock lock = new ReentrantLock(true); // fair lock
+    private volatile SimpleDebuggerStatus status;
 
-	);
+    private static final Set<SimpleDebuggerStatus> RUNNING_STATES = EnumSet.of(
+            SimpleDebuggerStatus.RUNNING,
+            SimpleDebuggerStatus.SESSION_STARTED,
+            SimpleDebuggerStatus.SESSION_FINISHED
+    );
 
-	private DebuggerContext() {
-		status = SimpleDebuggerStatus.STARTING;
-	}
+    private DebuggerContext() {
+        status = SimpleDebuggerStatus.STARTING;
+    }
 
-	public static DebuggerContext context() {
-		return INSTANCE;
-	}
+    /**
+     * Returns the singleton instance of DebuggerContext.
+     *
+     * @return the DebuggerContext instance
+     */
+    public static DebuggerContext context() {
+        return INSTANCE;
+    }
 
-	// -----------------------
-	// Status API
+    // -----------------------
+    // Status API
 
-	public SimpleDebuggerStatus getStatus() {
-		lock.lock();
-		try {
-			return status;
-		} finally {
-			lock.unlock();
-		}
-	}
+    /**
+     * Returns the current status of the debugger.
+     *
+     * @return the current SimpleDebuggerStatus
+     */
+    public SimpleDebuggerStatus getStatus() {
+        lock.lock();
+        try {
+            return status;
+        } finally {
+            lock.unlock();
+        }
+    }
 
-	public void setStatus(SimpleDebuggerStatus newStatus) {
-	    lock.lock();
-	    try {
-	        if (this.status != newStatus) {
-	            SimpleDebuggerLogger.info(
-	                "Debugger state: " + this.status + " -> " + newStatus
-	            );
-	            this.status = newStatus;
-	        }
-	    } finally {
-	        lock.unlock();
-	    }
-	}
+    /**
+     * Updates the debugger status in a thread-safe manner.
+     * Logs state transitions if the status actually changes.
+     *
+     * @param newStatus the new status to set
+     */
+    public void setStatus(SimpleDebuggerStatus newStatus) {
+        lock.lock();
+        try {
+            if (this.status != newStatus) {
+                SimpleDebuggerLogger.info(
+                        "Debugger state: " + this.status + " -> " + newStatus
+                );
+                this.status = newStatus;
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
 
+    // -----------------------
+    // Derived state
 
-	// -----------------------
-	// Derived state
+    /**
+     * Returns true if the debugger is in a running state.
+     *
+     * @return true if debugger is running or session is active/finished
+     */
+    public boolean isRunning() {
+        lock.lock();
+        try {
+            return RUNNING_STATES.contains(status);
+        } finally {
+            lock.unlock();
+        }
+    }
 
-	public boolean isRunning() {
-		lock.lock();
-		try {
-			return RUNNING_STATES.contains(status);
-		} finally {
-			lock.unlock();
-		}
-	}
-
-	public boolean isSessionActive() {
-		lock.lock();
-		try {
-			return status.equals(SimpleDebuggerStatus.SESSION_STARTED);
-		} finally {
-			lock.unlock();
-		}
-	}
-
+    /**
+     * Returns true if a debugger session is currently active.
+     *
+     * @return true if the debugger session has started
+     */
+    public boolean isSessionActive() {
+        lock.lock();
+        try {
+            return status.equals(SimpleDebuggerStatus.SESSION_STARTED);
+        } finally {
+            lock.unlock();
+        }
+    }
 }

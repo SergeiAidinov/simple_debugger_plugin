@@ -91,7 +91,7 @@ public class SimpleDebuggerPluginStarter extends AbstractHandler {
             // ----------------------------
             // 4️⃣ Start workflow with updated configuration
             // ----------------------------
-            SimpleDebuggerWorkFlowFactory.createWorkFlow(
+            SimpleDebuggerWorkFlowFactory.createWorkflow(
                     debugConfiguration,
                     workflow -> new Thread(() -> {
                         try {
