@@ -104,11 +104,7 @@ public class DebugSessionImpl implements DebugSession {
 
                 while (DebuggerContext.context().isSessionActive()) {
                     AbstractUIEvent uiEvent = null;
-                    try {
-                        uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent();
-                    } catch (InterruptedException exception) {
-                        exception.printStackTrace();
-                    }
+                    uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent();
 
                     if (uiEvent == null) continue;
 

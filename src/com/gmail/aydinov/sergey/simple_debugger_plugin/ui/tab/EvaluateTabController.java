@@ -13,7 +13,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMeth
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 
 import java.util.List;
+import java.util.Objects;
 
+/**
+ * Controller for the "Evaluate" tab in the debugger window.
+ * Allows selecting classes and methods, entering arguments, invoking methods, and displaying results.
+ */
 public class EvaluateTabController {
 
     private final Composite root;
@@ -26,16 +31,22 @@ public class EvaluateTabController {
     private final UiEventCollector uiEventCollector;
     private TableViewer stackTableViewer;
 
-    // Последний выбранный метод
+    /** Last selected method */
     private TargetApplicationMethodDTO lastMethod;
 
+    /**
+     * Constructs the Evaluate tab controller.
+     *
+     * @param parent the parent composite
+     * @param uiEventCollector the event collector to send UI events
+     */
     public EvaluateTabController(Composite parent, UiEventCollector uiEventCollector) {
         this.uiEventCollector = uiEventCollector;
 
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(2, false));
 
-        // ====== Type label ======
+        // ====== Class selection ======
         Label typeLabel = new Label(root, SWT.NONE);
         typeLabel.setText("Type:");
         typeLabel.setToolTipText("Class or Interface");
@@ -44,7 +55,7 @@ public class EvaluateTabController {
         classCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         classCombo.setToolTipText("Select a Class or Interface to invoke methods on");
 
-        // ====== Method label ======
+        // ====== Method selection ======
         Label methodLabel = new Label(root, SWT.NONE);
         methodLabel.setText("Method:");
         methodLabel.setToolTipText("Select a method to move to Arguments field");
@@ -53,7 +64,7 @@ public class EvaluateTabController {
         methodCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         methodCombo.setToolTipText("Select a method");
 
-        // ====== Button Select ======
+        // ====== Select button ======
         selectBtn = new Button(root, SWT.PUSH);
         selectBtn.setText("Select");
         GridData selectGD = new GridData();
@@ -61,7 +72,7 @@ public class EvaluateTabController {
         selectGD.horizontalAlignment = SWT.CENTER;
         selectBtn.setLayoutData(selectGD);
 
-        // ====== Arguments field ======
+        // ====== Arguments input ======
         methodInput = new Text(root, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
         GridData inputGD = new GridData(GridData.FILL_HORIZONTAL);
         inputGD.horizontalSpan = 2;
@@ -78,8 +89,7 @@ public class EvaluateTabController {
         invokeBtn.setLayoutData(invokeGD);
 
         // ====== Result field ======
-        resultField = new Text(root,
-                SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.WRAP | SWT.READ_ONLY);
+        resultField = new Text(root, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.WRAP | SWT.READ_ONLY);
         GridData gd = new GridData(GridData.FILL_BOTH);
         gd.horizontalSpan = 2;
         resultField.setLayoutData(gd);
@@ -91,11 +101,21 @@ public class EvaluateTabController {
         invokeBtn.addListener(SWT.Selection, e -> onInvokeMethod());
     }
 
+    /**
+     * Returns the root composite of the tab.
+     *
+     * @return the root composite
+     */
     public Composite getControl() {
         return root;
     }
 
     // ----------------- Stack Viewer -----------------
+    /**
+     * Creates a table viewer for the call stack.
+     *
+     * @param parent the parent composite
+     */
     public void createStackViewer(Composite parent) {
         stackTableViewer = new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
         Table table = stackTableViewer.getTable();
@@ -132,6 +152,11 @@ public class EvaluateTabController {
         });
     }
 
+    /**
+     * Updates the class/method comboboxes and result field from the breakpoint event.
+     *
+     * @param dto the event data from the stopped breakpoint
+     */
     public void updateFromEvent(DebugStoppedAtBreakpointEvent dto) {
         Display.getDefault().asyncExec(() -> {
             if (root.isDisposed()) return;
@@ -140,8 +165,7 @@ public class EvaluateTabController {
 
             for (TargetApplicationElementRepresentation el : dto.getTargetApplicationElements()) {
                 if (el instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
-                    String nameAndType = clazz.getTargetApplicationElementName() + " ("
-                            + el.getTargetApplicationElementType() + ")";
+                    String nameAndType = clazz.getTargetApplicationElementName() + " (" + el.getTargetApplicationElementType() + ")";
                     classCombo.add(nameAndType);
                     classCombo.setData(nameAndType, clazz);
                 }
@@ -152,13 +176,16 @@ public class EvaluateTabController {
                 updateMethods();
             }
 
-            // Обновление resultField
-            resultField.setText(dto.getResultOfMethodInvocation() != null
-                    ? dto.getResultOfMethodInvocation()
-                    : "");
+            // Update result field
+            resultField.setText(Objects.requireNonNullElse(dto.getResultOfMethodInvocation(), ""));
         });
     }
 
+    /**
+     * Updates the call stack viewer.
+     *
+     * @param stack the list of method calls
+     */
     public void updateStack(List<MethodCallInStack> stack) {
         if (stackTableViewer != null && !stackTableViewer.getTable().isDisposed()) {
             stackTableViewer.setInput(stack);
@@ -170,7 +197,7 @@ public class EvaluateTabController {
         methodCombo.removeAll();
 
         String className = classCombo.getText();
-        if (className == null) return;
+        if (className.isBlank()) return;
 
         TargetApplicationClassOrInterfaceRepresentation clazz =
                 (TargetApplicationClassOrInterfaceRepresentation) classCombo.getData(className);
@@ -183,7 +210,7 @@ public class EvaluateTabController {
             methodCombo.add(displayStr);
             methodCombo.setData(displayStr, m);
 
-            if (lastMethod != null && lastMethod.equals(m)) {
+            if (Objects.equals(lastMethod, m)) {
                 methodToSelect = m;
             }
         }
@@ -225,7 +252,6 @@ public class EvaluateTabController {
     }
 
     private void onInvokeMethod() {
-        // Очищаем результат перед новым вызовом
         clearResult();
 
         if (lastMethod == null) {
