@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class DebugConfiguration {
@@ -10,9 +11,9 @@ public class DebugConfiguration {
     private List<String> vmOptions;
     private int port;
 
-    private final Path workingDirectory;         // root проекта / рабочая директория
-    private final Path outputFolder;             // папка с бинарниками (.class)
-    private final List<Path> additionalClasspath; // JAR зависимости
+    private final Path workingDirectory;          // project root / working directory
+    private final Path outputFolder;              // folder with compiled binaries (.class)
+    private final List<Path> additionalClasspath; // JAR dependencies
 
     public DebugConfiguration(
             String mainClass,
@@ -58,37 +59,37 @@ public class DebugConfiguration {
         return String.join(" ", vmOptions);
     }
 
-    // 🔹 собираем classpath: бинарники + JAR
+    // Builds classpath: project binaries + JAR dependencies
     public String buildClasspathString() {
         List<String> paths = new ArrayList<>();
-        paths.add(outputFolder.toString()); // бинарники проекта
-        for (Path p : additionalClasspath) {
-            paths.add(p.toString());
+        paths.add(outputFolder.toString());
+        for (Path path : additionalClasspath) {
+            paths.add(path.toString());
         }
         return String.join(System.getProperty("path.separator"), paths);
     }
 
-    // 🔹 строка для args.get("options") (-cp + VM options)
+    // Builds options string for args.get("options") (-cp + VM options)
     public String buildOptionsString() {
-        String cp = buildClasspathString();
+        String classpath = buildClasspathString();
         String vmOpts = asVmOptionsString();
-        return "-cp \"" + cp + "\" " + vmOpts;
+        return "-cp \"" + classpath + "\" " + vmOpts;
     }
-    
+
     public String prettyPrint() {
         StringBuilder sb = new StringBuilder();
         sb.append("=== DebugConfiguration ===\n");
         sb.append("Main class: ").append(mainClassName).append("\n");
         sb.append("Port: ").append(port).append("\n");
         sb.append("Working directory: ").append(
-            workingDirectory != null ? workingDirectory.toString() : "null"
+                Objects.nonNull(workingDirectory) ? workingDirectory.toString() : "null"
         ).append("\n");
         sb.append("Output folder: ").append(
-            outputFolder != null ? outputFolder.toString() : "null"
+                Objects.nonNull(outputFolder) ? outputFolder.toString() : "null"
         ).append("\n");
 
         sb.append("Classpath:\n");
-        sb.append("  ").append(outputFolder != null ? outputFolder.toString() : "").append("\n");
+        sb.append("  ").append(Objects.nonNull(outputFolder) ? outputFolder.toString() : "").append("\n");
         for (Path jar : additionalClasspath) {
             sb.append("  ").append(jar.toString()).append("\n");
         }
@@ -101,13 +102,13 @@ public class DebugConfiguration {
         sb.append("===========================\n");
         return sb.toString();
     }
-    
+
     public String getVmOptionsStringWithoutJDWP() {
         return vmOptions.stream()
                 .filter(opt -> !opt.contains("-agentlib:jdwp"))
                 .collect(Collectors.joining(" "));
     }
-    
+
     public void setVmOptions(String[] options) {
         this.vmOptions = List.of(options);
     }
@@ -116,8 +117,7 @@ public class DebugConfiguration {
         this.port = port;
     }
 
-	public void setMainClassName(String mainClassName) {
-		this.mainClassName = mainClassName;
-		
-	}
+    public void setMainClassName(String mainClassName) {
+        this.mainClassName = mainClassName;
+    }
 }
