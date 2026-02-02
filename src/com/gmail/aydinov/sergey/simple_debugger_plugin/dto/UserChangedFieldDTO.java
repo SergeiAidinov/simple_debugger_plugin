@@ -48,8 +48,8 @@ public class UserChangedFieldDTO extends AbstractUIEvent {
      */
     @Override
     public String toString() {
-        return (fieldName != null ? fieldName : "<unknown>")
-                + " : " + (fieldType != null ? fieldType : "<unknown>")
-                + " = " + (newValue != null ? newValue : "<null>");
+        return (Objects.nonNull(fieldName) ? fieldName : "<unknown>")
+                + " : " + (Objects.nonNull(fieldType) ? fieldType : "<unknown>")
+                + " = " + (Objects.nonNull(newValue) ? newValue : "<null>");
     }
 }

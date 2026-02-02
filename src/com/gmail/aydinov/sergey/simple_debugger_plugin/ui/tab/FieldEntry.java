@@ -28,7 +28,7 @@ public class FieldEntry {
     public FieldEntry(Field field, Value value) {
         this.field = field;
         this.originalValue = value;
-        this.newValue = (value == null ? "null" : value.toString());
+        this.newValue = (Objects.isNull(value) ? "null" : value.toString());
     }
 
     /**

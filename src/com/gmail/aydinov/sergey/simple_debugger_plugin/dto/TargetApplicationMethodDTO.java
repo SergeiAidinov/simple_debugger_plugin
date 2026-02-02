@@ -52,7 +52,7 @@ public class TargetApplicationMethodDTO implements Comparable<TargetApplicationM
      */
     @Override
     public String toString() {
-        String params = parameters == null ? "" : parameters.stream()
+        String params = Objects.isNull(parameters) ? "" : parameters.stream()
             .map(p -> {
                 String typeName;
                 try {
@@ -66,7 +66,7 @@ public class TargetApplicationMethodDTO implements Comparable<TargetApplicationM
                     typeName = "";
                 }
 
-                return (typeName == null || typeName.isEmpty())
+                return (Objects.isNull(typeName) || typeName.isEmpty())
                         ? p.getName()
                         : p.getName() + ": " + typeName;
             })

@@ -60,7 +60,7 @@ public class StackTabContent {
      * @param stackFrames list of MethodCallInStack objects
      */
     public void updateStack(List<MethodCallInStack> stackFrames) {
-        if (table.isDisposed() || stackFrames == null) return;
+        if (table.isDisposed() || Objects.isNull(stackFrames)) return;
         table.removeAll();
 
         for (MethodCallInStack frame : stackFrames) {

@@ -301,7 +301,7 @@ public class DebugUtils {
 
                 ClassType classType = (ClassType) refType;
                 Method constructor = classType.concreteMethodByName("<init>", "()V");
-                if (constructor == null)
+                if (Objects.isNull(constructor))
                     throw new IllegalArgumentException("No no-args constructor for " + typeName);
 
                 return classType.newInstance(vm.allThreads().get(0), constructor, List.of(),

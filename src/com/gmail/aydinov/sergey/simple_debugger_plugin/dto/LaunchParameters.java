@@ -21,7 +21,7 @@ public class LaunchParameters {
      * @throws IllegalArgumentException if mainClass is null or blank
      */
     public LaunchParameters(String mainClass, List<String> options, int debugPort) {
-        if (mainClass == null || mainClass.isBlank()) {
+        if (Objects.isNull(mainClass) || mainClass.isBlank()) {
             throw new IllegalArgumentException("Main class cannot be null or blank");
         }
         this.mainClass = mainClass;
@@ -29,23 +29,17 @@ public class LaunchParameters {
         this.debugPort = debugPort;
     }
 
-    /**
-     * Returns the fully qualified main class name.
-     */
+    /** Returns the fully qualified main class name. */
     public String getMainClass() {
         return mainClass;
     }
 
-    /**
-     * Returns the list of VM options or program arguments.
-     */
+    /** Returns the list of VM options or program arguments. */
     public List<String> getOptions() {
         return options;
     }
 
-    /**
-     * Returns the debug port for JDWP connection.
-     */
+    /** Returns the debug port for JDWP connection. */
     public int getDebugPort() {
         return debugPort;
     }

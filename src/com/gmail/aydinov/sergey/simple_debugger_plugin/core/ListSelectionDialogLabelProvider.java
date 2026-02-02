@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
+import java.util.Objects;
 import org.eclipse.jface.viewers.LabelProvider;
 
 /**
@@ -16,7 +17,7 @@ public class ListSelectionDialogLabelProvider extends LabelProvider {
      */
     @Override
     public String getText(Object element) {
-        if (element == null) {
+        if (Objects.isNull(element)) {
             return "";
         }
         return element.toString();

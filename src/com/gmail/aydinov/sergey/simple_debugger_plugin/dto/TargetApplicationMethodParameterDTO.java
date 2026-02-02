@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
+import java.util.Objects;
+
 /**
  * Represents a parameter of a method in a target application.
  * Stores the parameter's name and its type.
@@ -36,7 +38,7 @@ public final class TargetApplicationMethodParameterDTO {
      */
     @Override
     public String toString() {
-        return typeName == null || typeName.isEmpty()
+        return Objects.isNull(typeName) || typeName.isEmpty()
                 ? name
                 : name + ": " + typeName;
     }

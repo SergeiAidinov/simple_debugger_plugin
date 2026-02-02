@@ -35,8 +35,7 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
     private final EventRequestManager eventRequestManager;
 
     /** All breakpoints (active + pending) */
-    private final Set<BreakpointWrapper> breakpoints =
-            ConcurrentHashMap.newKeySet();
+    private final Set<BreakpointWrapper> breakpoints = ConcurrentHashMap.newKeySet();
 
     public TargetApplicationBreakpointRepresentation(
             IBreakpointManager breakpointManager,
@@ -58,27 +57,19 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
         }
 
         if (breakpoints.stream()
-                .anyMatch(breakpointWrapper ->
-                        breakpointWrapper.getBreakpoint().equals(iBreakpoint))) {
+                .anyMatch(b -> b.getBreakpoint().equals(iBreakpoint))) {
             return;
         }
 
         Optional<Location> locationOptional = findLocation(iBreakpoint);
 
         if (locationOptional.isPresent()) {
-            BreakpointRequest breakpointRequest =
-                    eventRequestManager.createBreakpointRequest(
-                            locationOptional.get()
-                    );
+            BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(locationOptional.get());
             breakpointRequest.enable();
-            breakpoints.add(
-                    new BreakpointWrapper(iBreakpoint, breakpointRequest)
-            );
+            breakpoints.add(new BreakpointWrapper(iBreakpoint, breakpointRequest));
         } else {
             // Class is not loaded yet
-            breakpoints.add(
-                    new BreakpointWrapper(iBreakpoint, null)
-            );
+            breakpoints.add(new BreakpointWrapper(iBreakpoint, null));
         }
     }
 
@@ -96,14 +87,9 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
                     e.printStackTrace();
                 }
 
-                for (BreakpointRequest breakpointRequest
-                        : eventRequestManager.breakpointRequests()) {
-
-                    if (breakpointRequest.equals(
-                            breakpointWrapper.getBreakpointRequest())) {
-                        eventRequestManager.deleteEventRequest(
-                                breakpointRequest
-                        );
+                for (BreakpointRequest breakpointRequest : eventRequestManager.breakpointRequests()) {
+                    if (breakpointRequest.equals(breakpointWrapper.getBreakpointRequest())) {
+                        eventRequestManager.deleteEventRequest(breakpointRequest);
                     }
                 }
             }
@@ -131,31 +117,19 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
                 continue;
             }
 
-            IBreakpoint iBreakpoint =
-                    breakpointWrapper.getBreakpoint();
-            String typeName =
-                    getTypeName(iBreakpoint);
+            IBreakpoint iBreakpoint = breakpointWrapper.getBreakpoint();
+            String typeName = getTypeName(iBreakpoint);
 
-            if (Objects.isNull(typeName)
-                    || !typeName.equals(referenceType.name())) {
+            if (Objects.isNull(typeName) || !typeName.equals(referenceType.name())) {
                 continue;
             }
 
-            Optional<Location> location =
-                    findLocation(iBreakpoint);
+            Optional<Location> location = findLocation(iBreakpoint);
+            if (location.isEmpty()) continue;
 
-            if (location.isEmpty()) {
-                continue;
-            }
-
-            BreakpointRequest breakpointRequest =
-                    eventRequestManager.createBreakpointRequest(
-                            location.get()
-                    );
+            BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(location.get());
             breakpointRequest.enable();
-            breakpointWrapper.setBreakpointRequest(
-                    breakpointRequest
-            );
+            breakpointWrapper.setBreakpointRequest(breakpointRequest);
         }
     }
 
@@ -176,15 +150,12 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
     // ======================================================================
 
     private void deleteJdiRequest(BreakpointWrapper breakpointWrapper) {
-        BreakpointRequest breakpointRequest =
-                breakpointWrapper.getBreakpointRequest();
+        BreakpointRequest breakpointRequest = breakpointWrapper.getBreakpointRequest();
 
         if (Objects.nonNull(breakpointRequest)) {
             try {
                 breakpointRequest.disable();
-                eventRequestManager.deleteEventRequest(
-                        breakpointRequest
-                );
+                eventRequestManager.deleteEventRequest(breakpointRequest);
             } catch (Exception ignored) {
             }
             breakpointWrapper.setBreakpointRequest(null);
@@ -192,29 +163,20 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
     }
 
     private Optional<Location> findLocation(IBreakpoint iBreakpoint) {
-        String className =
-                getTypeName(iBreakpoint);
-        int line =
-                getLineNumber(iBreakpoint);
+        String className = getTypeName(iBreakpoint);
+        int line = getLineNumber(iBreakpoint);
 
         if (Objects.isNull(className) || line < 0) {
             return Optional.empty();
         }
 
-        List<ReferenceType> classes =
-                virtualMachine.classesByName(className);
+        List<ReferenceType> classes = virtualMachine.classesByName(className);
+        if (classes.isEmpty()) return Optional.empty();
 
-        if (classes.isEmpty()) {
-            return Optional.empty();
-        }
-
-        ReferenceType referenceType =
-                classes.get(0);
+        ReferenceType referenceType = classes.get(0);
 
         try {
-            return referenceType.locationsOfLine(line)
-                    .stream()
-                    .findFirst();
+            return referenceType.locationsOfLine(line).stream().findFirst();
         } catch (AbsentInformationException e) {
             return Optional.empty();
         }
@@ -226,13 +188,9 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 
     private String getTypeName(IBreakpoint iBreakpoint) {
         try {
-            IMarker marker =
-                    iBreakpoint.getMarker();
+            IMarker marker = iBreakpoint.getMarker();
             if (Objects.nonNull(marker)) {
-                return marker.getAttribute(
-                        "org.eclipse.jdt.debug.core.typeName",
-                        (String) null
-                );
+                return marker.getAttribute("org.eclipse.jdt.debug.core.typeName", (String) null);
             }
         } catch (Exception ignored) {
         }
@@ -241,13 +199,9 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 
     private int getLineNumber(IBreakpoint iBreakpoint) {
         try {
-            IMarker marker =
-                    iBreakpoint.getMarker();
+            IMarker marker = iBreakpoint.getMarker();
             if (Objects.nonNull(marker)) {
-                return marker.getAttribute(
-                        IMarker.LINE_NUMBER,
-                        -1
-                );
+                return marker.getAttribute(IMarker.LINE_NUMBER, -1);
             }
         } catch (Exception ignored) {
         }

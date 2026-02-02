@@ -1,12 +1,14 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
+import java.util.Objects;
+
 import org.eclipse.swt.widgets.Display;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 
 /**
- * Singleton, управляющий окном отладчика.
- * Позволяет получить текущее окно или создать новое при необходимости.
+ * Singleton managing the debugger window.
+ * Provides access to the current window or creates a new one if needed.
  */
 public class DebugWindowManager {
 
@@ -19,28 +21,29 @@ public class DebugWindowManager {
     }
 
     /**
-     * Возвращает единственный экземпляр DebugWindowManager.
+     * Returns the singleton instance of DebugWindowManager.
      */
     public static synchronized DebugWindowManager instance() {
-        if (INSTANCE == null) {
+        if (Objects.isNull(INSTANCE)) {
             INSTANCE = new DebugWindowManager();
         }
         return INSTANCE;
     }
 
     /**
-     * Возвращает текущее окно отладчика, создавая его, если оно не существует или закрыто.
-     * @return объект DebugWindow или null, если отладка не запущена.
+     * Returns the current debugger window, creating it if it doesn't exist or is closed.
+     *
+     * @return the DebugWindow instance, or null if debugging is not running
      */
     public DebugWindow getOrCreateWindow() {
         if (!DebuggerContext.context().isRunning()) {
             return null;
         }
 
-        if (debugWindow == null || !debugWindow.isOpen()) {
+        if (Objects.isNull(debugWindow) || !debugWindow.isOpen()) {
             debugWindow = new DebugWindow();
 
-            // Открываем окно в UI-потоке
+            // Open window in the UI thread
             Display.getDefault().asyncExec(() -> debugWindow.open());
         }
 

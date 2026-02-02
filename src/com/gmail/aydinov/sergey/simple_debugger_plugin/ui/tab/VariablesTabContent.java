@@ -154,7 +154,7 @@ public class VariablesTabContent {
      * @param vars list of VariableDTOs to display
      */
     public void updateVariables(List<VariableDTO> vars) {
-        if (table.isDisposed() || vars == null) return;
+        if (table.isDisposed() || Objects.isNull(vars)) return;
 
         entries.clear();
         entries.addAll(vars);
