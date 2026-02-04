@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 public class DebugConfiguration {
 
     private String mainClassName;
-    private List<String> vmOptions;
+    private List<String> virtualMachineOptions;
     private int port;
-
+    private String targetRootPackage; // nullable
     private final Path workingDirectory;          // Project root / working directory
     private final Path outputFolder;              // Folder with compiled binaries (.class)
     private final List<Path> additionalClasspath; // JAR dependencies
@@ -24,20 +24,20 @@ public class DebugConfiguration {
      * Constructs a new DebugConfiguration.
      *
      * @param mainClass         fully qualified main class name
-     * @param vmOptions         list of VM options
+     * @param virtualMachineOptions         list of VM options
      * @param port              debug port
      * @param workingDirectory  project root or working directory
      * @param outputFolder      folder with compiled binaries
      * @param additionalClasspath list of JAR dependencies
      */
     public DebugConfiguration(String mainClass,
-                              List<String> vmOptions,
+                              List<String> virtualMachineOptions,
                               int port,
                               Path workingDirectory,
                               Path outputFolder,
                               List<Path> additionalClasspath) {
         this.mainClassName = mainClass;
-        this.vmOptions = List.copyOf(vmOptions);
+        this.virtualMachineOptions = List.copyOf(virtualMachineOptions);
         this.port = port;
         this.workingDirectory = workingDirectory;
         this.outputFolder = outputFolder;
@@ -49,11 +49,15 @@ public class DebugConfiguration {
     }
 
     public List<String> getVmOptions() {
-        return vmOptions;
+        return virtualMachineOptions;
     }
 
     public int getPort() {
         return port;
+    }
+    
+    public String getTargetRootPackage() {
+        return targetRootPackage;
     }
 
     public Path getWorkingDirectory() {
@@ -74,7 +78,7 @@ public class DebugConfiguration {
      * @return concatenated VM options
      */
     public String asVmOptionsString() {
-        return String.join(" ", vmOptions);
+        return String.join(" ", virtualMachineOptions);
     }
 
     /**
@@ -126,7 +130,7 @@ public class DebugConfiguration {
         }
 
         sb.append("VM Options:\n");
-        for (String opt : vmOptions) {
+        for (String opt : virtualMachineOptions) {
             sb.append("  ").append(opt).append("\n");
         }
 
@@ -139,18 +143,22 @@ public class DebugConfiguration {
      *
      * @return VM options string without JDWP
      */
-    public String getVmOptionsStringWithoutJDWP() {
-        return vmOptions.stream()
+    public String getvirtualMachineOptionsStringWithoutJDWP() {
+        return virtualMachineOptions.stream()
                 .filter(opt -> !opt.contains("-agentlib:jdwp"))
                 .collect(Collectors.joining(" "));
     }
 
-    public void setVmOptions(String[] options) {
-        this.vmOptions = List.of(options);
+    public void setvirtualMachineOptions(String[] options) {
+        this.virtualMachineOptions = List.of(options);
     }
 
     public void setPort(int port) {
         this.port = port;
+    }
+    
+    public void setTargetRootPackage(String targetRootPackage) {
+        this.targetRootPackage = targetRootPackage;
     }
 
     public void setMainClassName(String mainClassName) {

@@ -46,35 +46,35 @@ public class SimpleDebuggerWorkFlow {
 
 	private final TargetVirtualMachineRepresentation targetVmRepresentation;
 	private final TargetApplicationRepresentation targetAppRepresentation;
-	private final IBreakpointManager breakpointManager;
-	private final BreakpointSubscriberRegistrar breakpointListener;
+	private final IBreakpointManager breakpointManager; // do NOT remove
+	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove
 	private final CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVmRepresentation,
-			IBreakpointManager breakpointManager, BreakpointSubscriberRegistrar breakpointListener) {
+			IBreakpointManager breakpointManager, BreakpointSubscriberRegistrar breakpointListener,
+			DebugConfiguration debugConfiguration) {
 		this.targetVmRepresentation = targetVmRepresentation;
 		this.breakpointManager = breakpointManager;
 		this.breakpointListener = breakpointListener;
 
 		EventRequestManager eventRequestManager = targetVmRepresentation.getVirtualMachine().eventRequestManager();
 		this.targetAppRepresentation = new TargetApplicationRepresentation(breakpointManager, eventRequestManager,
-				targetVmRepresentation.getVirtualMachine(), breakpointListener);
+				targetVmRepresentation.getVirtualMachine(), breakpointListener, debugConfiguration);
 	}
 
 	/** Starts the debug workflow */
 	public void debug(String mainClassName) {
 		prepareDebug(targetVmRepresentation.getVirtualMachine().eventQueue(), mainClassName);
 
-		SimpleDebuggerLogger.info("DEBUG SESSION STARTED");
+		SimpleDebuggerLogger.info("DEBUGGER STARTED");
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.RUNNING);
-
 		openDebugWindow();
 		targetVmRepresentation.getVirtualMachine().resume();
 
 		while (DebuggerContext.context().isRunning()) {
 			targetAppRepresentation
 					.refreshReferencesToClassesOfTargetApplication(targetVmRepresentation.getVirtualMachine());
-			refreshBreakpoints();
+			targetAppRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakpoints();
 
 			EventSet eventSet = null;
 			try {
@@ -153,10 +153,6 @@ public class SimpleDebuggerWorkFlow {
 		}
 	}
 
-	private void refreshBreakpoints() {
-		targetAppRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakpoints();
-	}
-
 	private void openDebugWindow() {
 		Display.getDefault().asyncExec(() -> {
 			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
@@ -191,8 +187,8 @@ public class SimpleDebuggerWorkFlow {
 						"localhost", debugConfiguration.getPort(), vm);
 
 				if (Objects.nonNull(listener)) {
-					Display.getDefault().asyncExec(() -> listener.onReady(
-							new SimpleDebuggerWorkFlow(vmRepresentation, breakpointManager, breakpointListener)));
+					Display.getDefault().asyncExec(() -> listener.onReady(new SimpleDebuggerWorkFlow(vmRepresentation,
+							breakpointManager, breakpointListener, debugConfiguration)));
 				}
 
 				SimpleDebuggerLogger.info("VM launched: " + vm.description());
@@ -242,7 +238,7 @@ public class SimpleDebuggerWorkFlow {
 
 				args.get("main").setValue(debugConfig.getMainClassName());
 				String options = "-cp " + debugConfig.getOutputFolder() + " "
-						+ debugConfig.getVmOptionsStringWithoutJDWP();
+						+ debugConfig.getvirtualMachineOptionsStringWithoutJDWP();
 				args.get("options").setValue(options);
 				args.get("suspend").setValue("true");
 

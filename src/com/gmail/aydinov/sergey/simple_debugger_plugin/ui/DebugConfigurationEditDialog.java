@@ -101,7 +101,7 @@ public class DebugConfigurationEditDialog extends TitleAreaDialog {
 
         // Save VM Options
         String vmOptions = vmOptionsText.getText().trim();
-        config.setVmOptions(vmOptions.split("\\s+"));
+        config.setvirtualMachineOptions(vmOptions.split("\\s+"));
 
         // Save port
         try {

@@ -124,10 +124,10 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
                 continue;
             }
 
-            Optional<Location> location = findLocation(iBreakpoint);
-            if (location.isEmpty()) continue;
+            Optional<Location> locationOptional = findLocation(iBreakpoint);
+            if (locationOptional.isEmpty()) continue;
 
-            BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(location.get());
+            BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(locationOptional.get());
             breakpointRequest.enable();
             breakpointWrapper.setBreakpointRequest(breakpointRequest);
         }
