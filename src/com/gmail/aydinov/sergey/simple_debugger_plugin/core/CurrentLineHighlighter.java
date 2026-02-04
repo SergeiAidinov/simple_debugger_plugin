@@ -57,7 +57,6 @@ public class CurrentLineHighlighter {
     public void clearPreviousHighlight(ITextEditor editor) {
         IAnnotationModel model = getAnnotationModel(editor);
         if (Objects.isNull(model)) return;
-
         List<Annotation> toRemove = new ArrayList<>();
         Iterator<?> iterator = model.getAnnotationIterator();
         while (iterator.hasNext()) {
