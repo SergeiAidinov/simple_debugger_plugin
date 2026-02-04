@@ -1,10 +1,11 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.sun.jdi.Field;
 
 /**

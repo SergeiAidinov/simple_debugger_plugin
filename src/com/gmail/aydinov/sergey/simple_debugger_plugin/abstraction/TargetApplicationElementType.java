@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 /**
  * Type of a target application element.
