@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
@@ -309,15 +309,15 @@ public class DebugUtils {
         }
     }
 
-    public static List<MethodCallInStack> compileStackInfo(ThreadReference threadReference) {
+    public static List<MethodCallInStackDTO> compileStackInfo(ThreadReference threadReference) {
         List<StackFrame> frames = Collections.emptyList();
-        List<MethodCallInStack> calls = new ArrayList<>();
+        List<MethodCallInStackDTO> calls = new ArrayList<>();
 
         try {
             frames = threadReference.frames();
         } catch (IncompatibleThreadStateException e) {
             e.printStackTrace();
-            return List.of(new MethodCallInStack("Cannot get frames: " + e.getMessage(), "", ""));
+            return List.of(new MethodCallInStackDTO("Cannot get frames: " + e.getMessage(), "", ""));
         }
 
         for (int i = 0; i < frames.size(); i++) {
@@ -338,11 +338,11 @@ public class DebugUtils {
                         sourceInfo = "Unknown:" + line;
                     }
 
-                    calls.add(new MethodCallInStack(className, methodName, sourceInfo));
+                    calls.add(new MethodCallInStackDTO(className, methodName, sourceInfo));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                calls.add(new MethodCallInStack("<error retrieving frame>", "", ""));
+                calls.add(new MethodCallInStackDTO("<error retrieving frame>", "", ""));
             }
         }
 

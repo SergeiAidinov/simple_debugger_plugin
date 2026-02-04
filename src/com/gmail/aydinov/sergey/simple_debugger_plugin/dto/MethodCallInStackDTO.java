@@ -3,7 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 /**
  * Represents a single method call in a thread's stack trace.
  */
-public class MethodCallInStack {
+public class MethodCallInStackDTO {
 
     private final String className;
     private final String methodName;
@@ -16,7 +16,7 @@ public class MethodCallInStack {
      * @param methodName name of the method
      * @param sourceInfo source file information (e.g., file name and line number)
      */
-    public MethodCallInStack(String className, String methodName, String sourceInfo) {
+    public MethodCallInStackDTO(String className, String methodName, String sourceInfo) {
         this.className = className;
         this.methodName = methodName;
         this.sourceInfo = sourceInfo;

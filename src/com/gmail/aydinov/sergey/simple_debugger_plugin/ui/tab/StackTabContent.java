@@ -10,7 +10,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 
 /**
  * Manages the "Stack" tab in the debugger UI, showing the current call stack.
@@ -59,11 +59,11 @@ public class StackTabContent {
      *
      * @param stackFrames list of MethodCallInStack objects
      */
-    public void updateStack(List<MethodCallInStack> stackFrames) {
+    public void updateStack(List<MethodCallInStackDTO> stackFrames) {
         if (table.isDisposed() || Objects.isNull(stackFrames)) return;
         table.removeAll();
 
-        for (MethodCallInStack frame : stackFrames) {
+        for (MethodCallInStackDTO frame : stackFrames) {
             TableItem item = new TableItem(table, SWT.NONE);
             item.setText(new String[]{
                 Objects.toString(frame.getClassName(), "") + "." + 

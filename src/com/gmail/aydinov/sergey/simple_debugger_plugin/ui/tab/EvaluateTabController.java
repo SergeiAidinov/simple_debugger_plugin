@@ -122,7 +122,7 @@ public class EvaluateTabController {
         stackTableViewer.setContentProvider(ArrayContentProvider.getInstance());
         stackTableViewer.setLabelProvider(new ITableLabelProvider() {
             public String getColumnText(Object element, int columnIndex) {
-                if (!(element instanceof MethodCallInStack call)) return "";
+                if (!(element instanceof MethodCallInStackDTO call)) return "";
                 return switch (columnIndex) {
                     case 0 -> call.getClassName();
                     case 1 -> call.getMethodName();
@@ -162,7 +162,7 @@ public class EvaluateTabController {
         });
     }
 
-    public void updateStack(List<MethodCallInStack> stack) {
+    public void updateStack(List<MethodCallInStackDTO> stack) {
         if (Objects.nonNull(stackTableViewer) && !stackTableViewer.getTable().isDisposed()) {
             stackTableViewer.setInput(stack);
         }

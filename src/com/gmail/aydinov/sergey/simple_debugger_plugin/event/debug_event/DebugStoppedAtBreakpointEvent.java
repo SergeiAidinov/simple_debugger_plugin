@@ -3,7 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event;
 import java.util.List;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStack;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 
@@ -22,7 +22,7 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 	private final String stackTrace;
 	private final List<TargetApplicationElementRepresentation> targetApplicationElements;
 	private final String resultOfMethodInvocation;
-	private final List<MethodCallInStack> methodCallInStacks;
+	private final List<MethodCallInStackDTO> methodCallInStacks;
 
 	/**
 	 * Creates a new event representing a breakpoint stop.
@@ -43,7 +43,7 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 	public DebugStoppedAtBreakpointEvent(SimpleDebuggerEventType type, String className, String methodName,
 			int lineNumber, List<VariableDTO> fields, List<VariableDTO> locals, String stackTrace,
 			List<TargetApplicationElementRepresentation> targetApplicationElements,
-			List<MethodCallInStack> methodCallInStacks, String resultOfMethodInvocation) {
+			List<MethodCallInStackDTO> methodCallInStacks, String resultOfMethodInvocation) {
 		super(type);
 		this.className = className;
 		this.methodName = methodName;
@@ -86,7 +86,7 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 		return targetApplicationElements;
 	}
 
-	public List<MethodCallInStack> getMethodCallInStacks() {
+	public List<MethodCallInStackDTO> getMethodCallInStacks() {
 		return methodCallInStacks;
 	}
 
@@ -105,7 +105,7 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 		private List<VariableDTO> fields;
 		private String stackTrace;
 		private List<TargetApplicationElementRepresentation> targetApplicationElements;
-		private List<MethodCallInStack> methodCallInStacks;
+		private List<MethodCallInStackDTO> methodCallInStacks;
 		private String resultOfMethodInvocation;
 
 		public Builder type(SimpleDebuggerEventType type) {
@@ -148,7 +148,7 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 			return this;
 		}
 
-		public Builder methodCallInStacks(List<MethodCallInStack> methodCallInStacks) {
+		public Builder methodCallInStacks(List<MethodCallInStackDTO> methodCallInStacks) {
 			this.methodCallInStacks = methodCallInStacks;
 			return this;
 		}

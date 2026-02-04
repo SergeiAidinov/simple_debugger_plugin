@@ -12,7 +12,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.model.IBreakpoint;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.BreakpointWrapper;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Location;
