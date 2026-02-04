@@ -11,7 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 
 import java.util.List;
@@ -239,7 +239,7 @@ public class EvaluateTabController {
         String argsText = methodInput.getText();
 
         if (Objects.nonNull(clazz)) {
-            InvokeMethodEvent invokeMethodEvent = new InvokeMethodEvent(clazz, lastMethod, argsText);
+            UserInvokedMethodEvent invokeMethodEvent = new UserInvokedMethodEvent(clazz, lastMethod, argsText);
             uiEventCollector.collectUiEvent(invokeMethodEvent);
         } else {
             resultField.setText("No class selected to invoke method.");

@@ -21,7 +21,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.MethodInvokedEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.BackendMethodExecutedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
@@ -235,7 +235,7 @@ public class DebugWindow {
                 ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
                 consoleTabContent.appendLine(consoleEvent.getText());
             } else if (event.getType().equals(SimpleDebuggerEventType.METHOD_INVOKE)) {
-                MethodInvokedEvent methodInvokedEvent = (MethodInvokedEvent) event;
+                BackendMethodExecutedEvent methodInvokedEvent = (BackendMethodExecutedEvent) event;
                 evaluateTabController.clearResult();
                 evaluateTabController.showResult(methodInvokedEvent.getResultOfInvocation());
             }

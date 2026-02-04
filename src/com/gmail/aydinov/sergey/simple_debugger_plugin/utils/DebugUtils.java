@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -222,7 +222,7 @@ public class DebugUtils {
     /**
      * Converts argumentsText to a list of JDI values for method invocation
      */
-    public static List<Value> parseArguments(VirtualMachine vm, InvokeMethodEvent invokeMethodEvent) {
+    public static List<Value> parseArguments(VirtualMachine vm, UserInvokedMethodEvent invokeMethodEvent) {
         List<Value> values = new ArrayList<>();
 
         String argsText = invokeMethodEvent.getArgumentsText().trim();

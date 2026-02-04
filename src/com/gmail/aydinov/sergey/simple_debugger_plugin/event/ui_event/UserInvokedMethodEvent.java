@@ -7,7 +7,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMeth
  * Event representing a request to invoke a method on a target class or interface
  * from the UI.
  */
-public class InvokeMethodEvent extends AbstractUIEvent {
+public class UserInvokedMethodEvent extends AbstractUIEvent {
 
     /** Target class or interface where the method will be invoked */
     private final TargetApplicationClassOrInterfaceRepresentation targetClass;
@@ -18,7 +18,7 @@ public class InvokeMethodEvent extends AbstractUIEvent {
     /** Arguments for the method invocation, serialized as a string */
     private final String argumentsText;
 
-    public InvokeMethodEvent(
+    public UserInvokedMethodEvent(
             TargetApplicationClassOrInterfaceRepresentation targetClass,
             TargetApplicationMethodDTO method,
             String argumentsText

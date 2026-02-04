@@ -5,7 +5,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 /**
  * Event representing the result of a method invocation in the target application.
  */
-public class MethodInvokedEvent extends AbstractSimpleDebugEvent {
+public class BackendMethodExecutedEvent extends AbstractSimpleDebugEvent {
 
     private final String resultOfInvocation;
 
@@ -15,7 +15,7 @@ public class MethodInvokedEvent extends AbstractSimpleDebugEvent {
      * @param type the type of debugger event
      * @param resultOfInvocation the result returned by the invoked method
      */
-    public MethodInvokedEvent(SimpleDebuggerEventType type, String resultOfInvocation) {
+    public BackendMethodExecutedEvent(SimpleDebuggerEventType type, String resultOfInvocation) {
         super(type);
         this.resultOfInvocation = resultOfInvocation;
     }

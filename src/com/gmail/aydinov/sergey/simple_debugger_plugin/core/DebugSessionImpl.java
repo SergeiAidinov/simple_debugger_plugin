@@ -28,9 +28,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSess
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.MethodInvokedEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.BackendMethodExecutedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
@@ -163,7 +163,7 @@ public class DebugSessionImpl implements DebugSession {
 				updateLocalVariable(variableEvent, currentFrame);
 			} else if (uiEvent instanceof UserChangedFieldEvent fieldEvent) {
 				updateField(fieldEvent, currentFrame);
-			} else if (uiEvent instanceof InvokeMethodEvent invokeEvent) {
+			} else if (uiEvent instanceof UserInvokedMethodEvent invokeEvent) {
 				invokeMethod(invokeEvent, breakpointEvent, currentFrame);
 			} else if (uiEvent instanceof UserPressedResumeUiEvent) {
 				SimpleDebuggerLogger.info("User pressed RESUME");
@@ -214,7 +214,7 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void invokeMethod(InvokeMethodEvent invokeEvent, BreakpointEvent breakpointEvent, StackFrame currentFrame) {
+	private void invokeMethod(UserInvokedMethodEvent invokeEvent, BreakpointEvent breakpointEvent, StackFrame currentFrame) {
 		try {
 			List<Value> methodArguments = DebugUtils
 					.parseArguments(targetVirtualMachineRepresentation.getVirtualMachine(), invokeEvent);
@@ -234,7 +234,7 @@ public class DebugSessionImpl implements DebugSession {
 
 			methodInvocationResult.set(String.valueOf(result));
 			SimpleDebuggerEventQueue.instance().collectDebugEvent(
-					new MethodInvokedEvent(SimpleDebuggerEventType.METHOD_INVOKE, methodInvocationResult.get()));
+					new BackendMethodExecutedEvent(SimpleDebuggerEventType.METHOD_INVOKE, methodInvocationResult.get()));
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}
