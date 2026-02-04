@@ -14,8 +14,8 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.jface.viewers.TextCellEditor;
 import org.eclipse.jface.viewers.CellEditor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 
 /**
@@ -130,7 +130,7 @@ public class VariablesTabContent {
                 String newValStr = newValue.toString();
 
                 // Send DTO to event collector
-                UserChangedVariableDTO dto = new UserChangedVariableDTO(
+                UserChangedVariableEvent dto = new UserChangedVariableEvent(
                         oldEntry.getName(),
                         oldEntry.getType(),
                         newValStr

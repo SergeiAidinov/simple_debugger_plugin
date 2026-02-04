@@ -1,12 +1,10 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
-
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event;
 
 /**
  * DTO representing a user-initiated change of a variable in the UI.
  * Contains the variable's name, type, and the new value entered by the user.
  */
-public class UserChangedVariableDTO extends AbstractUIEvent {
+public class UserChangedVariableEvent extends AbstractUIEvent {
 
     private final String name;      // the variable name
     private final String type;      // the variable type (informational)
@@ -19,7 +17,7 @@ public class UserChangedVariableDTO extends AbstractUIEvent {
      * @param type the type of the variable
      * @param newValue the new value assigned to the variable
      */
-    public UserChangedVariableDTO(String name, String type, Object newValue) {
+    public UserChangedVariableEvent(String name, String type, Object newValue) {
         this.name = name;
         this.type = type;
         this.newValue = newValue;

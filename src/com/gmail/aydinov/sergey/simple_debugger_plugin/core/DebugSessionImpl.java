@@ -26,13 +26,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.Simp
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.MethodInvokedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.InvokeMethodEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
@@ -159,9 +159,9 @@ public class DebugSessionImpl implements DebugSession {
 			return;
 
 		try {
-			if (uiEvent instanceof UserChangedVariableDTO variableEvent) {
+			if (uiEvent instanceof UserChangedVariableEvent variableEvent) {
 				updateLocalVariable(variableEvent, currentFrame);
-			} else if (uiEvent instanceof UserChangedFieldDTO fieldEvent) {
+			} else if (uiEvent instanceof UserChangedFieldEvent fieldEvent) {
 				updateField(fieldEvent, currentFrame);
 			} else if (uiEvent instanceof InvokeMethodEvent invokeEvent) {
 				invokeMethod(invokeEvent, breakpointEvent, currentFrame);
@@ -180,7 +180,7 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void updateLocalVariable(UserChangedVariableDTO variableEvent, StackFrame currentFrame) {
+	private void updateLocalVariable(UserChangedVariableEvent variableEvent, StackFrame currentFrame) {
 		try {
 			LocalVariable localVariable = currentFrame.visibleVariables().stream()
 					.filter(v -> v.name().equals(variableEvent.getName())).findFirst().orElse(null);
@@ -196,7 +196,7 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void updateField(UserChangedFieldDTO fieldEvent, StackFrame currentFrame) throws Exception {
+	private void updateField(UserChangedFieldEvent fieldEvent, StackFrame currentFrame) throws Exception {
 		ReferenceType referenceType = Objects.nonNull(currentFrame.thisObject())
 				? currentFrame.thisObject().referenceType()
 				: currentFrame.location().declaringType();

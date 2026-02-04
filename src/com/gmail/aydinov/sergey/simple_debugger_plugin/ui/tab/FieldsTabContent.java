@@ -13,8 +13,8 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 
@@ -134,7 +134,7 @@ public class FieldsTabContent {
                 String valueStr = Objects.toString(newValue, null);
 
                 // Send user field change event
-                UserChangedFieldDTO dto = new UserChangedFieldDTO(entry.getName(), entry.getType(), valueStr);
+                UserChangedFieldEvent dto = new UserChangedFieldEvent(entry.getName(), entry.getType(), valueStr);
                 uiEventCollector.collectUiEvent(dto);
 
                 // Refresh table to reflect new value
