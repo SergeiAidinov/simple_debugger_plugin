@@ -173,7 +173,7 @@ public class SimpleDebuggerWorkFlow {
 
 			CompletableFuture.runAsync(() -> {
 				if (isDebugPortBusy(debugConfiguration.getPort())) {
-					DebuggerContext.context().setStatus(SimpleDebuggerStatus.NOT_STARTED);
+					DebuggerContext.context().setStatus(SimpleDebuggerStatus.WILL_NOT_START);
 					SimpleDebuggerLogger.warn("Debug port " + debugConfiguration.getPort() + " is already in use");
 					notifyAlreadyRunning(debugConfiguration);
 					return;

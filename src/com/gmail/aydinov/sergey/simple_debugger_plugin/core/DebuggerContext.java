@@ -16,7 +16,7 @@ public class DebuggerContext {
      * Represents the possible states of the debugger.
      */
     public enum SimpleDebuggerStatus {
-        NOT_STARTED,
+        WILL_NOT_START,
         STARTING,
         VM_AWAITING_CONNECTION,
         VM_CONNECTED,
@@ -28,10 +28,8 @@ public class DebuggerContext {
     }
 
     private static final DebuggerContext INSTANCE = new DebuggerContext();
-
     private final ReentrantLock lock = new ReentrantLock(true); // fair lock
     private volatile SimpleDebuggerStatus status;
-
     private static final Set<SimpleDebuggerStatus> RUNNING_STATES = EnumSet.of(
             SimpleDebuggerStatus.RUNNING,
             SimpleDebuggerStatus.SESSION_STARTED,
