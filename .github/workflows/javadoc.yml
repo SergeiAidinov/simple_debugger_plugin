@@ -11,21 +11,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Step 2: Set up Java
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: '21'
 
-      - name: Download Eclipse libraries
-        run: |
-          mkdir -p lib
-          wget -O lib/swt.jar https://repo1.maven.org/maven2/swt/swt-linux-gtk/3.0m8/swt-linux-gtk-3.0m8.jar
-          wget -O lib/jface.jar https://repo1.maven.org/maven2/org/eclipse/jface/3.3.0-I20070606-0010/jface-3.3.0-I20070606-0010.jar
-
+      # Step 3: Generate Javadoc using local lib/ jars
       - name: Generate Javadoc
         run: |
           mkdir -p doc
@@ -37,6 +34,7 @@ jobs:
             -windowtitle "Simple Debugger Plugin API" \
             -doctitle "Simple Debugger Plugin Documentation"
 
+      # Step 4: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
