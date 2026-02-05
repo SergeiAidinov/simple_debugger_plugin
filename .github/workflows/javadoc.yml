@@ -22,6 +22,9 @@ jobs:
 
       - name: Generate Javadoc
         run: |
+          mkdir -p lib
+          wget -O lib/swt.jar https://repo1.maven.org/maven2/org/eclipse/swt/org.eclipse.swt/4.29-20230228/org.eclipse.swt-4.29-20230228.jar
+          wget -O lib/jface.jar https://repo1.maven.org/maven2/org/eclipse/jface/org.eclipse.jface/3.26.0/org.eclipse.jface-3.26.0.jar
           mkdir -p doc
           javadoc -d doc -sourcepath src -subpackages com.gmail.aydinov.sergey.simple_debugger_plugin -classpath "/opt/eclipse-commiters/eclipse/plugins/*" -author -version -windowtitle "Simple Debugger Plugin API" -doctitle "Simple Debugger Plugin Documentation"
 
