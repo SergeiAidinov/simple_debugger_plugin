@@ -69,7 +69,12 @@ public class SimpleDebuggerLogger {
         }
     }
 
-    /** Logs error-level message with optional Throwable */
+    /**
+     * Logs an error message with an optional throwable.
+     *
+     * @param message the error message to log
+     * @param t       the throwable associated with the error (can be null)
+     */
     public static void error(String message, Throwable t) {
         if (Objects.nonNull(t)) t.printStackTrace(System.err);
         if (Objects.nonNull(LOG)) {

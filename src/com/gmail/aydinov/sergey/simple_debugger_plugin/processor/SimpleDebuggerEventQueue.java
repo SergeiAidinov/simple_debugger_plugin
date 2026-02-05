@@ -72,10 +72,8 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
     }
 
     /**
-     * Retrieves and removes the next UI event, or returns null if none is available.
-     *
-     * @return the next UI event, or null if queue is empty
-     * @throws InterruptedException ignored here because poll() is non-blocking
+     * Polls the event queue and returns the next event if available.
+     * Non-blocking operation.
      */
     @Override
     public AbstractUIEvent pollUiEvent() {
