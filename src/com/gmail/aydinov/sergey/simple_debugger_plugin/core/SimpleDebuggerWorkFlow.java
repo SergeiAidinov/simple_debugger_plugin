@@ -67,7 +67,18 @@ public class SimpleDebuggerWorkFlow {
 	/** Starts the debug workflow */
 	public void debug(String mainClassName) {
 		prepareDebug(targetVmRepresentation.getVirtualMachine().eventQueue(), mainClassName);
-
+		if (!DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.PREPARED)) {
+			Display.getDefault().asyncExec(() -> {
+				Shell shell = Display.getDefault().getActiveShell();
+				MessageDialog.openError(
+				        shell,
+				        "Debug Startup Failed",
+				        "Failed to start the debug session."
+				);
+			});
+			DebuggerContext.context().setStatus(SimpleDebuggerStatus.WILL_NOT_START);
+			return;
+		}
 		SimpleDebuggerLogger.info("DEBUGGER STARTED");
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.RUNNING);
 		openDebugWindow();
@@ -91,6 +102,7 @@ public class SimpleDebuggerWorkFlow {
 				continue;
 
 			for (Event event : eventSet) {
+				if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.STOPPED)) break;
 				if (event instanceof ClassPrepareEvent classPrepareEvent) {
 					targetAppRepresentation.getTargetApplicationBreakepointRepresentation()
 							.onClassPrepared(classPrepareEvent.referenceType());
@@ -111,6 +123,8 @@ public class SimpleDebuggerWorkFlow {
 	}
 
 	private void prepareDebug(EventQueue queue, String mainClassName) {
+		SimpleDebuggerLogger.info("Debug preparation...");
+		DebuggerContext.context().setStatus(SimpleDebuggerStatus.PREPARING);
 		openDebugWindow();
 		EventRequestManager eventRequestManager = targetVmRepresentation.getVirtualMachine().eventRequestManager();
 		ClassPrepareRequest classPrepareRequest = eventRequestManager.createClassPrepareRequest();
@@ -168,7 +182,8 @@ public class SimpleDebuggerWorkFlow {
 	/** Factory for creating a debug workflow asynchronously */
 	public static class SimpleDebuggerWorkFlowFactory {
 
-		public static void createWorkflow(DebugConfiguration debugConfiguration, OnWorkflowReadyListener onWorkflowReadyListener) {
+		public static void createWorkflow(DebugConfiguration debugConfiguration,
+				OnWorkflowReadyListener onWorkflowReadyListener) {
 			SimpleDebuggerLogger.info("Starting debug workflow");
 
 			CompletableFuture.runAsync(() -> {
@@ -191,8 +206,10 @@ public class SimpleDebuggerWorkFlow {
 						"localhost", debugConfiguration.getPort(), virtualMachine);
 
 				if (Objects.nonNull(onWorkflowReadyListener)) {
-					Display.getDefault().asyncExec(() -> onWorkflowReadyListener.onReady(new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation,
-							breakpointManager, breakpointListener, debugConfiguration)));
+					Display.getDefault()
+							.asyncExec(() -> onWorkflowReadyListener
+									.onReady(new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation,
+											breakpointManager, breakpointListener, debugConfiguration)));
 				}
 				SimpleDebuggerLogger.info("VM launched: " + virtualMachine.description());
 			});
