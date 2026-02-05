@@ -23,7 +23,7 @@ jobs:
       - name: Download Eclipse libraries
         run: |
           mkdir -p lib
-          wget -O lib/swt.jar https://repo1.maven.org/maven2/org/eclipse/platform/org.eclipse.swt.gtk.linux.x86_64/4.30.0/org.eclipse.swt.gtk.linux.x86_64-4.30.0.jar
+          wget -O lib/swt.jar https://mvnrepository.com/artifact/org.eclipse.swt/org.eclipse.swt.gtk.linux.x86_64/4.3
           wget -O lib/jface.jar https://repo1.maven.org/maven2/org/eclipse/platform/org.eclipse.jface/3.30.0/org.eclipse.jface-3.30.0.jar
 
       - name: Generate Javadoc
