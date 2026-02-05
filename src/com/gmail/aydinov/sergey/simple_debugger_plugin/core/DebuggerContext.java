@@ -20,6 +20,7 @@ public class DebuggerContext {
         STARTING,
         VM_AWAITING_CONNECTION,
         VM_CONNECTED,
+        PREPARING,
         PREPARED,
         RUNNING,
         SESSION_STARTED,
@@ -34,6 +35,10 @@ public class DebuggerContext {
             SimpleDebuggerStatus.RUNNING,
             SimpleDebuggerStatus.SESSION_STARTED,
             SimpleDebuggerStatus.SESSION_FINISHED
+    );
+    private static final Set<SimpleDebuggerStatus> UNCHANGEABLE_STATES = EnumSet.of(
+            SimpleDebuggerStatus.WILL_NOT_START,
+            SimpleDebuggerStatus.STOPPED
     );
 
     private DebuggerContext() {
@@ -72,18 +77,20 @@ public class DebuggerContext {
      *
      * @param newStatus the new status to set
      */
-    public void setStatus(SimpleDebuggerStatus newStatus) {
+    public boolean setStatus(SimpleDebuggerStatus newStatus) {
         lock.lock();
         try {
+        	if (UNCHANGEABLE_STATES.contains(status)) return false;
             if (this.status != newStatus) {
                 SimpleDebuggerLogger.info(
-                        "Debugger state: " + this.status + " -> " + newStatus
+                        "Debugger state changed: " + this.status + " -> " + newStatus
                 );
                 this.status = newStatus;
             }
         } finally {
             lock.unlock();
         }
+		return true;
     }
 
     // -----------------------

@@ -86,6 +86,7 @@ public class DebugSessionImpl implements DebugSession {
 			logError("Fatal error in JDI event loop", exception);
 		} finally {
 			SimpleDebuggerLogger.info("DEBUG SESSION FINISHED");
+			DebuggerContext.context().setStatus(SimpleDebuggerStatus.SESSION_FINISHED);
 		}
 	}
 
