@@ -12,6 +12,11 @@ import org.osgi.framework.Bundle;
 /**
  * Logger utility for the Simple Debugger plugin.
  * Wraps Eclipse ILog and adds timestamp to messages.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class SimpleDebuggerLogger {
 

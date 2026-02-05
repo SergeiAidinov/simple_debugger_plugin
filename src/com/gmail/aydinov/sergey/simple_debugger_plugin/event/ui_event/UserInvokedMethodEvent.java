@@ -6,6 +6,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMeth
 /**
  * Event representing a request to invoke a method on a target class or interface
  * from the UI.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class UserInvokedMethodEvent extends AbstractUIEvent {
 

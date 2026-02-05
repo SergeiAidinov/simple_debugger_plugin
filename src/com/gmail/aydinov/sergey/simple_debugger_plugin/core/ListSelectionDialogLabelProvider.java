@@ -6,6 +6,11 @@ import org.eclipse.jface.viewers.LabelProvider;
 /**
  * Provides textual representation for elements in selection dialogs.
  * Returns the element's toString() value or an empty string if the element is null.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class ListSelectionDialogLabelProvider extends LabelProvider {
 

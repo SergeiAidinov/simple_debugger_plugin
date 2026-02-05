@@ -10,6 +10,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
 /**
  * Singleton queue for handling UI and Debug events in the Simple Debugger.
  * Supports multiple producers (UI or Debug threads) and consumers (Worker threads).
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEventCollector {
 

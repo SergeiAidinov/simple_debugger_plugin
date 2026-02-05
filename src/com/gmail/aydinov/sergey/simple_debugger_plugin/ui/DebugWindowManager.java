@@ -9,6 +9,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 /**
  * Singleton managing the debugger window.
  * Provides access to the current window or creates a new one if needed.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class DebugWindowManager {
 

@@ -4,6 +4,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 
 /**
  * Event representing an update to the debugger console output.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class ConsoleUpdateDebugEvent extends AbstractSimpleDebugEvent {
 

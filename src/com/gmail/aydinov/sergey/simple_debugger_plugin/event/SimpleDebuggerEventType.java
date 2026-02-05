@@ -2,6 +2,11 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 /**
  * Types of events emitted by the simple debugger.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public enum SimpleDebuggerEventType {
 

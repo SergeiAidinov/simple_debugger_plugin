@@ -15,6 +15,11 @@ import org.eclipse.ui.texteditor.ITextEditor;
 /**
  * Highlights the current line in an Eclipse text editor.
  * Used to indicate where execution is currently stopped.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class CurrentLineHighlighter {
 

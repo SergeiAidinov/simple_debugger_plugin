@@ -33,6 +33,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugConfigurationEdit
 /**
  * Handler for starting the Simple Debugger plugin from Eclipse UI. Launches the
  * target application in debug mode and starts the workflow.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class SimpleDebuggerPluginStarter extends AbstractHandler {
 

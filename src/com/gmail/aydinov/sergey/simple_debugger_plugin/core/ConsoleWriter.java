@@ -13,6 +13,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerE
 /**
  * Reads an InputStream (e.g., process output) and sends each line to the debug
  * console.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class ConsoleWriter implements Runnable {
 

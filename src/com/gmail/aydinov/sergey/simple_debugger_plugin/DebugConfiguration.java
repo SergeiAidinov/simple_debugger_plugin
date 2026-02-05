@@ -9,6 +9,11 @@ import java.util.stream.Collectors;
 /**
  * Configuration for launching and debugging a Java application.
  * Contains main class, VM options, port, working directory, output folder, and additional classpath entries.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class DebugConfiguration {
 

@@ -43,6 +43,11 @@ import com.sun.jdi.request.EventRequestManager;
 /**
  * Main workflow for controlling the debug session. Handles VM launch,
  * breakpoint setup, event loop, and UI updates.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class SimpleDebuggerWorkFlow {
 

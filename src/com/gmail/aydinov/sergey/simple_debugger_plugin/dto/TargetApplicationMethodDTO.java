@@ -7,6 +7,11 @@ import java.util.stream.Collectors;
 /**
  * Represents a method of a target application class or interface.
  * Stores method name, return type, and parameters.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class TargetApplicationMethodDTO implements Comparable<TargetApplicationMethodDTO> {
 

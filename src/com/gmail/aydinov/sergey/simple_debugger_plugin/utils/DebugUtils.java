@@ -30,6 +30,11 @@ import com.sun.jdi.VirtualMachine;
 
 /**
  * Utility class for JDI (Java Debug Interface) operations
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class DebugUtils {
 

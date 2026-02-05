@@ -4,6 +4,11 @@ import com.sun.jdi.VirtualMachine;
 
 /**
  * Representation of a target virtual machine.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class TargetVirtualMachineRepresentation {
 

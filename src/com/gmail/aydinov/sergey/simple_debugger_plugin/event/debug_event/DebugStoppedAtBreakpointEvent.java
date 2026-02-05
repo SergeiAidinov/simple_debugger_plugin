@@ -11,6 +11,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
  * Event representing that the debugger has stopped at a breakpoint. Contains
  * information about the location, local variables, fields, stack trace, target
  * application elements, method calls, and any method invocation result.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 

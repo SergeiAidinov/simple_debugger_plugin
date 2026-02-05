@@ -9,6 +9,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 /**
  * Handler to open the Simple Debugger window.
  * If the window is already open, it will bring it to the front.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class OpenDebugWindowHandler extends AbstractHandler {
 

@@ -21,6 +21,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollecto
 /**
  * Tab content showing all variables in the debugger.
  * Users can edit variable values directly in the table.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class VariablesTabContent {
 

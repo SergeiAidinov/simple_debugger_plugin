@@ -8,6 +8,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 /**
  * Processes debug events collected by the Simple Debugger.
  * Runs in a dedicated thread and dispatches events to the DebugWindow.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class SimpleDebugEventProcessor implements Runnable {
 

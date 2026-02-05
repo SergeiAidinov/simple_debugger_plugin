@@ -15,6 +15,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLog
 /**
  * Listener for Eclipse breakpoints, forwarding events to the registered
  * subscriber.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class BreakePointListener implements IBreakpointListener, BreakpointSubscriberRegistrar {
 

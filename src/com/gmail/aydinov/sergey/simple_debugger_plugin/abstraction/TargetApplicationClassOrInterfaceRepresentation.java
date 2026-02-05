@@ -11,6 +11,11 @@ import com.sun.jdi.Field;
 /**
  * Representation of a target application class or interface in the debugged JVM.
  * Contains information about its methods and fields.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class TargetApplicationClassOrInterfaceRepresentation implements TargetApplicationElementRepresentation {
 

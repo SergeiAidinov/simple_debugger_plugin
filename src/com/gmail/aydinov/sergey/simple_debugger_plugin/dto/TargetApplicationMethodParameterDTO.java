@@ -5,6 +5,11 @@ import java.util.Objects;
 /**
  * Represents a parameter of a method in a target application.
  * Stores the parameter's name and its type.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public final class TargetApplicationMethodParameterDTO {
 

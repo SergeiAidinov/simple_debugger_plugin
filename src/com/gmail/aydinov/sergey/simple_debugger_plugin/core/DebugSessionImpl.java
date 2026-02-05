@@ -58,6 +58,11 @@ import com.sun.jdi.event.VMDisconnectEvent;
  * Implementation of a debug session that processes JDI events, handles
  * breakpoints, updates UI, and allows variable/field modification and method
  * invocation in the target application.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class DebugSessionImpl implements DebugSession {
 

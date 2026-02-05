@@ -9,6 +9,11 @@ import org.eclipse.jface.window.Window;
 /**
  * Dialog to select a port for the Simple Debugger.
  * Users can choose from popular ports or enter a custom port.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class PortSelectionDialog extends TitleAreaDialog {
 

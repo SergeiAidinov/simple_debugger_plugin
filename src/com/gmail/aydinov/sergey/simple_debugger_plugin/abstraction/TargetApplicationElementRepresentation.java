@@ -9,6 +9,11 @@ import com.sun.jdi.Field;
  * Represents an element of the target application (class or interface) 
  * in the debugged JVM.
  * Provides access to methods, fields, name, and type.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public interface TargetApplicationElementRepresentation extends Cloneable {
 
