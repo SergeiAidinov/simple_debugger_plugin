@@ -21,7 +21,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
  */
 public class DebugConfigurationEditDialog extends TitleAreaDialog {
 
-    private DebugConfiguration config;
+    private DebugConfiguration debugConfiguration;
 
     private Text mainClassText;
     private Text vmOptionsText;
@@ -29,7 +29,7 @@ public class DebugConfigurationEditDialog extends TitleAreaDialog {
 
     public DebugConfigurationEditDialog(Shell parentShell, DebugConfiguration config) {
         super(parentShell);
-        this.config = config;
+        this.debugConfiguration = config;
     }
 
     @Override
@@ -43,30 +43,30 @@ public class DebugConfigurationEditDialog extends TitleAreaDialog {
 
         // Main class (editable)
         createLabel(container, "Main class:");
-        mainClassText = createEditableText(container, config.getMainClassName(), 60);
+        mainClassText = createEditableText(container, debugConfiguration.getMainClassName(), 60);
 
         // Working directory (read-only)
         createLabel(container, "Working directory:");
-        createReadOnlyText(container, config.getWorkingDirectory().toString());
+        createReadOnlyText(container, debugConfiguration.getWorkingDirectory().toString());
 
         // Output folder (read-only)
         createLabel(container, "Output folder:");
-        createReadOnlyText(container, config.getOutputFolder().toString());
+        createReadOnlyText(container, debugConfiguration.getOutputFolder().toString());
 
         // Classpath (read-only)
         createLabel(container, "Classpath:");
         createReadOnlyText(container,
-                config.getAdditionalClasspath().stream()
+                debugConfiguration.getAdditionalClasspath().stream()
                         .map(Path::toString)
                         .collect(Collectors.joining(System.getProperty("path.separator"))));
 
         // VM Options (editable)
         createLabel(container, "VM Options:");
-        vmOptionsText = createEditableText(container, config.asVmOptionsString(), 60);
+        vmOptionsText = createEditableText(container, debugConfiguration.asVmOptionsString(), 60);
 
         // Port (editable)
         createLabel(container, "Port:");
-        portText = createEditableText(container, String.valueOf(config.getPort()), 10);
+        portText = createEditableText(container, String.valueOf(debugConfiguration.getPort()), 10);
 
         return area;
     }
@@ -75,33 +75,33 @@ public class DebugConfigurationEditDialog extends TitleAreaDialog {
         new Label(parent, SWT.NONE).setText(text);
     }
 
-    private Text createReadOnlyText(Composite parent, String text) {
-        Text t = new Text(parent, SWT.BORDER | SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
-        t.setText(text);
+    private Text createReadOnlyText(Composite parent, String input) {
+        Text text = new Text(parent, SWT.BORDER | SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
+        text.setText(input);
         GridData gd = new GridData(GridData.FILL_HORIZONTAL);
         gd.heightHint = 40;
-        t.setLayoutData(gd);
-        return t;
+        text.setLayoutData(gd);
+        return text;
     }
 
-    private Text createEditableText(Composite parent, String text, int widthHint) {
-        Text t = new Text(parent, SWT.BORDER | SWT.SINGLE);
-        t.setText(text);
+    private Text createEditableText(Composite parent, String input, int widthHint) {
+        Text text = new Text(parent, SWT.BORDER | SWT.SINGLE);
+        text.setText(input);
         GridData gd = new GridData(GridData.FILL_HORIZONTAL);
         gd.widthHint = widthHint * 7; // approximate width in pixels
-        t.setLayoutData(gd);
-        return t;
+        text.setLayoutData(gd);
+        return text;
     }
 
     @Override
     protected void okPressed() {
         // Save Main class
         String mainClass = mainClassText.getText().trim();
-        config.setMainClassName(mainClass);
+        debugConfiguration.setMainClassName(mainClass);
 
         // Save VM Options
         String vmOptions = vmOptionsText.getText().trim();
-        config.setvirtualMachineOptions(vmOptions.split("\\s+"));
+        debugConfiguration.setvirtualMachineOptions(vmOptions.split("\\s+"));
 
         // Save port
         try {
@@ -110,7 +110,7 @@ public class DebugConfigurationEditDialog extends TitleAreaDialog {
                 showError("Invalid Port", "Port must be between 0 and 65535.");
                 return; // prevent closing the dialog
             }
-            config.setPort(port);
+            debugConfiguration.setPort(port);
         } catch (NumberFormatException e) {
             showError("Invalid Port", "Please enter a valid number for port.");
             return; // prevent closing the dialog

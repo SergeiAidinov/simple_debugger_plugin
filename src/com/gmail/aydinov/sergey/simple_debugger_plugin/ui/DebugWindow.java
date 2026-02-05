@@ -154,16 +154,13 @@ public class DebugWindow {
      * @return true if window is allowed to close
      */
     private boolean handleWindowClose() {
-
         MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO);
         messageBox.setText("Confirmation");
         messageBox.setMessage("Close the debugger window?");
-
         int response = messageBox.open();
         if (response == SWT.NO) {
             return false; // cancel closing
         }
-
         // close window
         SimpleDebuggerLogger.info("Debug window closed");
         showVmStoppedMessage();
@@ -195,7 +192,6 @@ public class DebugWindow {
      */
     public void open() {
         final Image[] iconHolder = new Image[1];
-
         try (InputStream is = getClass().getResourceAsStream("/icons/icon.png")) {
             if (Objects.nonNull(is)) {
                 iconHolder[0] = new Image(Display.getDefault(), is);
@@ -206,9 +202,7 @@ public class DebugWindow {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         shell.open();
-
         // Dispose icon on window dispose
         shell.addListener(SWT.Dispose, event -> {
             if (Objects.nonNull(iconHolder[0]) && !iconHolder[0].isDisposed()) {
@@ -228,7 +222,6 @@ public class DebugWindow {
     public void handleDebugEvent(AbstractSimpleDebugEvent event) {
         Display.getDefault().asyncExec(() -> {
             if (shell.isDisposed()) return;
-
             if (event.getType().equals(SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT)) {
                 refreshDataAtBreakepoint((DebugStoppedAtBreakpointEvent) event);
             } else if (event.getType().equals(SimpleDebuggerEventType.REFRESH_CONSOLE)) {
@@ -247,10 +240,8 @@ public class DebugWindow {
      */
     private void refreshDataAtBreakepoint(DebugStoppedAtBreakpointEvent event) {
         if (Objects.isNull(event)) return;
-
         locationLabel.setText(STOP_INFO + event.getClassName() + "." + event.getMethodName() + " line:" + event.getLineNumber());
         resumeButton.setEnabled(true);
-
         variablesTabContent.updateVariables(event.getLocals());
         fieldsTabContent.updateFields(event.getFields());
         stackTabContent.updateStack(event.getMethodCallInStacks());
@@ -284,7 +275,6 @@ public class DebugWindow {
         if (Objects.isNull(shell) || shell.isDisposed()) {
             shell = new Shell(Display.getDefault());
         }
-
         Display.getDefault().asyncExec(() -> {
             MessageBox dialog = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
             dialog.setText(title);

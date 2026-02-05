@@ -113,20 +113,20 @@ public class EvaluateTabController {
         int[] bounds = {200, 150, 150};
 
         for (int i = 0; i < titles.length; i++) {
-            TableViewerColumn col = new TableViewerColumn(stackTableViewer, SWT.NONE);
-            col.getColumn().setText(titles[i]);
-            col.getColumn().setWidth(bounds[i]);
-            col.getColumn().setResizable(true);
+            TableViewerColumn tableViewerColumn = new TableViewerColumn(stackTableViewer, SWT.NONE);
+            tableViewerColumn.getColumn().setText(titles[i]);
+            tableViewerColumn.getColumn().setWidth(bounds[i]);
+            tableViewerColumn.getColumn().setResizable(true);
         }
 
         stackTableViewer.setContentProvider(ArrayContentProvider.getInstance());
         stackTableViewer.setLabelProvider(new ITableLabelProvider() {
             public String getColumnText(Object element, int columnIndex) {
-                if (!(element instanceof MethodCallInStackDTO call)) return "";
+                if (!(element instanceof MethodCallInStackDTO methodCallInStackDTO)) return "";
                 return switch (columnIndex) {
-                    case 0 -> call.getClassName();
-                    case 1 -> call.getMethodName();
-                    case 2 -> call.getSourceInfo();
+                    case 0 -> methodCallInStackDTO.getClassName();
+                    case 1 -> methodCallInStackDTO.getMethodName();
+                    case 2 -> methodCallInStackDTO.getSourceInfo();
                     default -> "";
                 };
             }
@@ -138,15 +138,13 @@ public class EvaluateTabController {
         });
     }
 
-    public void updateFromEvent(DebugStoppedAtBreakpointEvent dto) {
+    public void updateFromEvent(DebugStoppedAtBreakpointEvent debugStoppedAtBreakpointEvent) {
         Display.getDefault().asyncExec(() -> {
             if (root.isDisposed()) return;
-
             classCombo.removeAll();
-
-            for (TargetApplicationElementRepresentation el : dto.getTargetApplicationElements()) {
-                if (el instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
-                    String nameAndType = clazz.getTargetApplicationElementName() + " (" + el.getTargetApplicationElementType() + ")";
+            for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : debugStoppedAtBreakpointEvent.getTargetApplicationElements()) {
+                if (targetApplicationElementRepresentation instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
+                    String nameAndType = clazz.getTargetApplicationElementName() + " (" + targetApplicationElementRepresentation.getTargetApplicationElementType() + ")";
                     classCombo.add(nameAndType);
                     classCombo.setData(nameAndType, clazz);
                 }
@@ -158,7 +156,7 @@ public class EvaluateTabController {
             }
 
             // Updating resultField with a safe null replacement
-            resultField.setText(Objects.requireNonNullElse(dto.getResultOfMethodInvocation(), ""));
+            resultField.setText(Objects.requireNonNullElse(debugStoppedAtBreakpointEvent.getResultOfMethodInvocation(), ""));
         });
     }
 
@@ -181,13 +179,13 @@ public class EvaluateTabController {
 
         TargetApplicationMethodDTO methodToSelect = null;
 
-        for (TargetApplicationMethodDTO m : clazz.getMethods()) {
-            String displayStr = buildMethodDisplay(m);
+        for (TargetApplicationMethodDTO targetApplicationMethodDTO : clazz.getMethods()) {
+            String displayStr = buildMethodDisplay(targetApplicationMethodDTO);
             methodCombo.add(displayStr);
-            methodCombo.setData(displayStr, m);
+            methodCombo.setData(displayStr, targetApplicationMethodDTO);
 
-            if (Objects.equals(lastMethod, m)) {
-                methodToSelect = m;
+            if (Objects.equals(lastMethod, targetApplicationMethodDTO)) {
+                methodToSelect = targetApplicationMethodDTO;
             }
         }
 
@@ -199,16 +197,16 @@ public class EvaluateTabController {
         }
     }
 
-    private String buildMethodDisplay(TargetApplicationMethodDTO method) {
+    private String buildMethodDisplay(TargetApplicationMethodDTO targetApplicationMethodDTO) {
         StringBuilder sb = new StringBuilder();
-        sb.append(method.getMethodName()).append("(");
-        List<TargetApplicationMethodParameterDTO> params = method.getParameters();
+        sb.append(targetApplicationMethodDTO.getMethodName()).append("(");
+        List<TargetApplicationMethodParameterDTO> params = targetApplicationMethodDTO.getParameters();
         for (int i = 0; i < params.size(); i++) {
             TargetApplicationMethodParameterDTO p = params.get(i);
             sb.append(p.getName()).append(": ").append(cleanTypeName(p.getTypeName()));
             if (i < params.size() - 1) sb.append(", ");
         }
-        sb.append(") : ").append(cleanTypeName(method.getReturnType()));
+        sb.append(") : ").append(cleanTypeName(targetApplicationMethodDTO.getReturnType()));
         return sb.toString();
     }
 

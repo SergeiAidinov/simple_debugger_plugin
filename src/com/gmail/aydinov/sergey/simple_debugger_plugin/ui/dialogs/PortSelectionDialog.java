@@ -40,11 +40,10 @@ public class PortSelectionDialog extends TitleAreaDialog {
     @Override
     protected Control createDialogArea(Composite parent) {
         Composite area = (Composite) super.createDialogArea(parent);
-
         Composite container = new Composite(area, SWT.NONE);
         container.setLayout(new GridLayout(2, false));
         container.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
+        
         // Popular ports
         new Label(container, SWT.NONE).setText("Popular ports:");
         combo = new Combo(container, SWT.DROP_DOWN | SWT.READ_ONLY);

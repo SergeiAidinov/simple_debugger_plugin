@@ -39,14 +39,12 @@ public class DebugWindowManager {
         if (!DebuggerContext.context().isRunning()) {
             return null;
         }
-
         if (Objects.isNull(debugWindow) || !debugWindow.isOpen()) {
             debugWindow = new DebugWindow();
 
             // Open window in the UI thread
             Display.getDefault().asyncExec(() -> debugWindow.open());
         }
-
         return debugWindow;
     }
 }
