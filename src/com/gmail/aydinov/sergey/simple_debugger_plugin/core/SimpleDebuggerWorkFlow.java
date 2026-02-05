@@ -242,22 +242,18 @@ public class SimpleDebuggerWorkFlow {
 						+ debugConfiguration.getvirtualMachineOptionsStringWithoutJDWP();
 				launchArguments.get("options").setValue(options);
 				launchArguments.get("suspend").setValue("true");
-
 				virtualMachine = connector.launch(launchArguments);
 				SimpleDebuggerLogger.info("==> VM LAUNCHED (SUSPENDED): " + virtualMachine.description());
-
 				attachConsoleWriters(virtualMachine.process());
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.VM_CONNECTED);
 				return virtualMachine;
-
 			} catch (Exception ex) {
 				SimpleDebuggerLogger.error("Cannot launch VM", ex);
 				Display.getDefault().asyncExec(() -> {
-					DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-					window.showError("Cannot launch VM", ex.getMessage());
+					DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateWindow();
+					debugWindow.showError("Cannot launch VM", ex.getMessage());
 				});
 			}
-
 			return virtualMachine;
 		}
 
