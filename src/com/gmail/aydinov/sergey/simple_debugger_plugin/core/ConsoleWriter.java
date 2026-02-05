@@ -10,31 +10,44 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 
+/**
+ * Reads an InputStream (e.g., process output) and sends each line to the debug
+ * console.
+ */
 public class ConsoleWriter implements Runnable {
 
 	private final InputStream inputStream;
 	private final String prefix;
 
+	/**
+	 * Creates a new ConsoleWriter for a given InputStream.
+	 *
+	 * @param inputStream the input stream to read from
+	 * @param prefix      a string to prepend to each line (e.g., "STDOUT: " or
+	 *                    "STDERR: ")
+	 */
 	public ConsoleWriter(InputStream inputStream, String prefix) {
 		this.inputStream = inputStream;
 		this.prefix = prefix;
 	}
 
+	/**
+	 * Continuously reads lines from the input stream and sends them as
+	 * ConsoleUpdateDebugEvents to the event queue.
+	 */
 	@Override
 	public void run() {
 		InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-		BufferedReader reader = new BufferedReader(inputStreamReader);
+		BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 		String line;
 		try {
-			while (Objects.nonNull(line = reader.readLine())) {
+			while (Objects.nonNull(line = bufferedReader.readLine())) {
 				String text = prefix + line;
-				ConsoleUpdateDebugEvent consoleUpdateDebugEvent = new ConsoleUpdateDebugEvent(
-						SimpleDebuggerEventType.REFRESH_CONSOLE, text);
-				SimpleDebuggerEventQueue.instance().collectDebugEvent(consoleUpdateDebugEvent);
+				SimpleDebuggerEventQueue.instance().collectDebugEvent(new ConsoleUpdateDebugEvent(
+						SimpleDebuggerEventType.REFRESH_CONSOLE, text));
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (IOException exception) {
+			exception.printStackTrace();
 		}
 	}
-
 }

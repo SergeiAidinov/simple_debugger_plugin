@@ -9,14 +9,17 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.osgi.framework.Bundle;
 
+/**
+ * Logger utility for the Simple Debugger plugin.
+ * Wraps Eclipse ILog and adds timestamp to messages.
+ */
 public class SimpleDebuggerLogger {
 
     private static final String PLUGIN_ID = "com.gmail.aydinov.sergey.simpledebugger";
     private static volatile ILog LOG = null;
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     static {
-        // Инициализация LOG в отдельном потоке
         Thread initializer = new Thread(() -> {
             try {
                 Bundle bundle = null;
@@ -26,14 +29,14 @@ public class SimpleDebuggerLogger {
                         if (Objects.nonNull(bundle)) {
                             LOG = Platform.getLog(bundle);
                         } else {
-                            Thread.sleep(200); // ждем пока bundle появится
+                            Thread.sleep(200);
                         }
                     } catch (Exception ignored) {
                         Thread.sleep(200);
                     }
                 }
             } catch (InterruptedException ignored) {
-                // прерывание потока – безопасно игнорируем
+                // Safe to ignore
             }
         }, "SimpleDebuggerLogger-Init");
         initializer.setDaemon(true);
@@ -42,29 +45,30 @@ public class SimpleDebuggerLogger {
 
     private SimpleDebuggerLogger() { }
 
+    /** Adds timestamp to a message */
     private static String addTimestamp(String message) {
-        return "[" + LocalDateTime.now().format(formatter) + "] " + message;
+        return "[" + LocalDateTime.now().format(FORMATTER) + "] " + message;
     }
 
+    /** Logs info-level message */
     public static void info(String message) {
-        String msg = addTimestamp(message);
-        if (LOG != null) {
-            LOG.log(new Status(Status.INFO, PLUGIN_ID, msg));
+        if (Objects.nonNull(LOG)) {
+            LOG.log(new Status(Status.INFO, PLUGIN_ID, addTimestamp(message)));
         }
     }
 
+    /** Logs warning-level message */
     public static void warn(String message) {
-        String msg = addTimestamp(message);
-        if (LOG != null) {
-            LOG.log(new Status(Status.WARNING, PLUGIN_ID, msg));
+        if (Objects.nonNull(LOG)) {
+            LOG.log(new Status(Status.WARNING, PLUGIN_ID, addTimestamp(message)));
         }
     }
 
+    /** Logs error-level message with optional Throwable */
     public static void error(String message, Throwable t) {
-        String msg = addTimestamp(message);
-        if (t != null) t.printStackTrace(System.err);
-        if (LOG != null) {
-            LOG.log(new Status(Status.ERROR, PLUGIN_ID, msg, t));
+        if (Objects.nonNull(t)) t.printStackTrace(System.err);
+        if (Objects.nonNull(LOG)) {
+            LOG.log(new Status(Status.ERROR, PLUGIN_ID, addTimestamp(message), t));
         }
     }
 }

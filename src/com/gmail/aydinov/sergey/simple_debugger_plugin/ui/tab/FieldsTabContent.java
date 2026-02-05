@@ -1,8 +1,8 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.SWT;
@@ -10,20 +10,42 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.Text;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 
+/**
+ * Manages the "Fields" tab in the debugger UI.
+ * 
+ * Displays all fields of the current context, allows editing their values,
+ * and safely propagates changes to the debugger backend.
+ */
 public class FieldsTabContent {
 
+    /** Root composite for the tab */
     private final Composite root;
+
+    /** Table widget showing the fields */
     private final Table table;
+
+    /** TableViewer for structured display and editing */
     private final TableViewer viewer;
+
+    /** Cached list of fields displayed in the table */
     private final List<VariableDTO> entries = new ArrayList<>();
+
+    /** Collector for sending UI events to the debugger */
     private final UiEventCollector uiEventCollector;
 
+    /**
+     * Constructs the Fields tab content.
+     *
+     * @param parent the parent composite
+     */
     public FieldsTabContent(Composite parent) {
         this.uiEventCollector = SimpleDebuggerEventQueue.instance();
 
@@ -42,6 +64,7 @@ public class FieldsTabContent {
         setupCellModifier();
     }
 
+    /** Sets up table columns: Field, Type, Value */
     private void setupColumns() {
         TableViewerColumn nameColumn = new TableViewerColumn(viewer, SWT.NONE);
         nameColumn.getColumn().setText("Field");
@@ -49,10 +72,10 @@ public class FieldsTabContent {
         nameColumn.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
-                if (element instanceof VariableDTO) {
-                    return ((VariableDTO) element).getName();
+                if (element instanceof VariableDTO dto) {
+                    return Objects.toString(dto.getName(), "");
                 }
-                return super.getText(element);
+                return "";
             }
         });
 
@@ -62,10 +85,10 @@ public class FieldsTabContent {
         typeColumn.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
-                if (element instanceof VariableDTO) {
-                    return ((VariableDTO) element).getType();
+                if (element instanceof VariableDTO dto) {
+                    return Objects.toString(dto.getType(), "");
                 }
-                return super.getText(element);
+                return "";
             }
         });
 
@@ -75,10 +98,11 @@ public class FieldsTabContent {
         valueColumn.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
-                if (element instanceof VariableDTO) {
-                    return ((VariableDTO) element).getValue();
+                if (element instanceof VariableDTO dto) {
+                    // Updating value safely with null replacement
+                    return Objects.toString(dto.getValue(), "");
                 }
-                return super.getText(element);
+                return "";
             }
         });
 
@@ -86,6 +110,7 @@ public class FieldsTabContent {
         viewer.setCellEditors(new CellEditor[]{null, null, new TextCellEditor(table)});
     }
 
+    /** Sets up editing for the Value column */
     private void setupCellModifier() {
         viewer.setCellModifier(new ICellModifier() {
             @Override
@@ -95,41 +120,49 @@ public class FieldsTabContent {
 
             @Override
             public Object getValue(Object element, String property) {
-                if (element instanceof VariableDTO) {
-                    return ((VariableDTO) element).getValue();
+                if (element instanceof VariableDTO dto) {
+                    return dto.getValue();
                 }
                 return null;
             }
 
             @Override
             public void modify(Object element, String property, Object newValue) {
-                if (!(element instanceof org.eclipse.swt.widgets.TableItem)) return;
+                if (!(element instanceof TableItem item)) return;
 
-                VariableDTO entry = (VariableDTO) ((org.eclipse.swt.widgets.TableItem) element).getData();
-                String valueStr = newValue != null ? newValue.toString() : null;
+                VariableDTO entry = (VariableDTO) item.getData();
+                String valueStr = Objects.toString(newValue, null);
 
-                // Отправляем DTO в обработчик событий
-                UserChangedFieldDTO dto = new UserChangedFieldDTO(entry.getName(), entry.getType(), valueStr);
+                // Send user field change event
+                UserChangedFieldEvent dto = new UserChangedFieldEvent(entry.getName(), entry.getType(), valueStr);
                 uiEventCollector.collectUiEvent(dto);
 
-                // Обновляем таблицу
+                // Refresh table to reflect new value
                 viewer.update(entry, null);
             }
         });
     }
 
+    /**
+     * Updates the fields displayed in the tab.
+     *
+     * @param vars list of variables to show; may be null
+     */
     public void updateFields(List<VariableDTO> vars) {
         if (table.isDisposed()) return;
 
         entries.clear();
-        if (vars != null) {
-            entries.addAll(vars);
-        }
+        if (Objects.nonNull(vars)) entries.addAll(vars);
 
         viewer.setInput(entries);
         viewer.refresh();
     }
 
+    /**
+     * Returns the root composite of this tab.
+     *
+     * @return the root composite
+     */
     public Composite getControl() {
         return root;
     }

@@ -4,12 +4,23 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * Represents a method of a target application class or interface.
+ * Stores method name, return type, and parameters.
+ */
 public class TargetApplicationMethodDTO implements Comparable<TargetApplicationMethodDTO> {
 
     private final String methodName;
     private final String returnType;
     private final List<TargetApplicationMethodParameterDTO> parameters; 
 
+    /**
+     * Constructs a method representation.
+     *
+     * @param methodName the name of the method
+     * @param returnType the return type of the method
+     * @param parameters the list of method parameters
+     */
     public TargetApplicationMethodDTO(
             String methodName,
             String returnType,
@@ -20,21 +31,28 @@ public class TargetApplicationMethodDTO implements Comparable<TargetApplicationM
         this.parameters = parameters;
     }
 
+    /** @return method name */
     public String getMethodName() {
         return methodName;
     }
 
+    /** @return return type of the method */
     public String getReturnType() {
         return returnType;
     }
 
+    /** @return list of method parameters */
     public List<TargetApplicationMethodParameterDTO> getParameters() {
         return parameters;
     }
 
+    /**
+     * Builds a human-readable string representation of the method,
+     * including parameters and their types.
+     */
     @Override
     public String toString() {
-        String params = parameters.stream()
+        String params = Objects.isNull(parameters) ? "" : parameters.stream()
             .map(p -> {
                 String typeName;
                 try {
@@ -43,12 +61,12 @@ public class TargetApplicationMethodDTO implements Comparable<TargetApplicationM
                     typeName = e.getMessage();
                 }
 
-                // Убираем только фразу no class loader
-                if (typeName != null && typeName.contains("no class loader")) {
+                // Remove only "no class loader" phrase from type name
+                if (Objects.nonNull(typeName) && typeName.contains("no class loader")) {
                     typeName = "";
                 }
 
-                return typeName.isEmpty()
+                return (Objects.isNull(typeName) || typeName.isEmpty())
                         ? p.getName()
                         : p.getName() + ": " + typeName;
             })
@@ -57,10 +75,9 @@ public class TargetApplicationMethodDTO implements Comparable<TargetApplicationM
         return methodName + "(" + params + ")";
     }
 
-
     @Override
     public int compareTo(TargetApplicationMethodDTO o) {
-        if (o == null) return 1;
+        if (Objects.isNull(o)) return 1;
         int c = methodName.compareTo(o.methodName);
         if (c != 0) return c;
         return returnType.compareTo(o.returnType);

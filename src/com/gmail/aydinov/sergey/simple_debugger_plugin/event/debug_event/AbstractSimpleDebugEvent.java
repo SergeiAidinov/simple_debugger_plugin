@@ -2,16 +2,29 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 
+/**
+ * Base class for all events emitted by the simple debugger.
+ */
 public class AbstractSimpleDebugEvent {
-	
-	private final SimpleDebuggerEventType type;
 
-	public AbstractSimpleDebugEvent(SimpleDebuggerEventType type) {
-		this.type = type;
-	}
+    /** Type of this debugger event */
+    private final SimpleDebuggerEventType type;
 
-	public SimpleDebuggerEventType getType() {
-		return type;
-	}
-	
+    /**
+     * Creates a new debugger event with the specified type.
+     *
+     * @param type the type of the debugger event
+     */
+    public AbstractSimpleDebugEvent(SimpleDebuggerEventType type) {
+        this.type = type;
+    }
+
+    /**
+     * Returns the type of this debugger event.
+     *
+     * @return the event type
+     */
+    public SimpleDebuggerEventType getType() {
+        return type;
+    }
 }

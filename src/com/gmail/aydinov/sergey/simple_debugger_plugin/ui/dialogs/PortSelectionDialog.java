@@ -6,12 +6,26 @@ import org.eclipse.swt.widgets.*;
 import org.eclipse.swt.layout.*;
 import org.eclipse.jface.window.Window;
 
+/**
+ * Dialog to select a port for the Simple Debugger.
+ * Users can choose from popular ports or enter a custom port.
+ */
 public class PortSelectionDialog extends TitleAreaDialog {
 
+    /** Currently selected port as string */
     private String selectedPort = "5005";
+
+    /** Combo box for popular ports */
     private Combo combo;
+
+    /** Text field for manual port entry */
     private Text manualInput;
 
+    /**
+     * Creates a port selection dialog.
+     *
+     * @param parentShell parent shell
+     */
     public PortSelectionDialog(Shell parentShell) {
         super(parentShell);
     }
@@ -26,18 +40,15 @@ public class PortSelectionDialog extends TitleAreaDialog {
     @Override
     protected Control createDialogArea(Composite parent) {
         Composite area = (Composite) super.createDialogArea(parent);
-
         Composite container = new Composite(area, SWT.NONE);
         container.setLayout(new GridLayout(2, false));
         container.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
+        
         // Popular ports
         new Label(container, SWT.NONE).setText("Popular ports:");
-
         combo = new Combo(container, SWT.DROP_DOWN | SWT.READ_ONLY);
         combo.setItems(new String[]{"5005", "8000", "8787", "9000"});
         combo.select(0);
-
         combo.addListener(SWT.Selection, e -> manualInput.setText(combo.getText()));
 
         // Manual input
@@ -45,23 +56,26 @@ public class PortSelectionDialog extends TitleAreaDialog {
         manualInput = new Text(container, SWT.BORDER);
         manualInput.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         manualInput.setText(combo.getText());
-
         manualInput.addListener(SWT.Modify, e -> validatePort());
 
         return area;
     }
 
+    /**
+     * Validates the manually entered port and enables/disables the OK button.
+     */
     private void validatePort() {
         String text = manualInput.getText();
         try {
-            int p = Integer.parseInt(text);
-            if (p > 0 && p < 65536) {
+            int port = Integer.parseInt(text);
+            if (port > 0 && port < 65536) {
                 selectedPort = text;
                 getButton(OK).setEnabled(true);
                 setErrorMessage(null);
                 return;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         getButton(OK).setEnabled(false);
         setErrorMessage("Enter a valid port number (1–65535).");
@@ -79,6 +93,11 @@ public class PortSelectionDialog extends TitleAreaDialog {
         super.okPressed();
     }
 
+    /**
+     * Returns the selected port if OK was pressed, otherwise null.
+     *
+     * @return selected port number or null
+     */
     public Integer getPort() {
         return (getReturnCode() == Window.OK)
                 ? Integer.parseInt(selectedPort)
