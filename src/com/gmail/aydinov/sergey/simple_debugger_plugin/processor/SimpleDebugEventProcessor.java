@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
@@ -27,7 +28,7 @@ public class SimpleDebugEventProcessor implements Runnable {
      */
     @Override
     public void run() {
-        while (true) {
+        while (!DebuggerContext.context().isInTerminalState()) {
             try {
                 AbstractSimpleDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
                 SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);

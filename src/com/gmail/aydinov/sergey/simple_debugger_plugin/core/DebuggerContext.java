@@ -36,7 +36,7 @@ public class DebuggerContext {
             SimpleDebuggerStatus.SESSION_STARTED,
             SimpleDebuggerStatus.SESSION_FINISHED
     );
-    private static final Set<SimpleDebuggerStatus> UNCHANGEABLE_STATES = EnumSet.of(
+    private static final Set<SimpleDebuggerStatus> TERMINAL_STATES = EnumSet.of(
             SimpleDebuggerStatus.WILL_NOT_START,
             SimpleDebuggerStatus.STOPPED
     );
@@ -80,7 +80,7 @@ public class DebuggerContext {
     public boolean setStatus(SimpleDebuggerStatus newStatus) {
         lock.lock();
         try {
-        	if (UNCHANGEABLE_STATES.contains(status)) return false;
+        	if (TERMINAL_STATES.contains(status)) return false;
             if (this.status != newStatus) {
                 SimpleDebuggerLogger.info(
                         "Debugger state changed: " + this.status + " -> " + newStatus
@@ -105,6 +105,26 @@ public class DebuggerContext {
         lock.lock();
         try {
             return RUNNING_STATES.contains(status);
+        } finally {
+            lock.unlock();
+        }
+    }
+    
+    /**
+     * Returns whether the debugger is in a non-terminal state.
+     * <p>
+     * This method returns {@code true} if the debugger has not yet reached
+     * an unchangeable (terminal) state such as {@link SimpleDebuggerStatus#STOPPED}
+     * or {@link SimpleDebuggerStatus#WILL_NOT_START}.
+     * </p>
+     *
+     * @return {@code true} if the debugger can still change its state,
+     *         {@code false} if it is already stopped or cannot be started
+     */
+    public boolean isInTerminalState() {
+        lock.lock();
+        try {
+            return TERMINAL_STATES.contains(status);
         } finally {
             lock.unlock();
         }
