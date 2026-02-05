@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -140,7 +141,6 @@ public class SimpleDebuggerWorkFlow {
 
 						BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(firstLine);
 						breakpointRequest.enable();
-
 						try {
 							SimpleDebuggerLogger
 									.info("Breakpoint set at " + firstLine.sourceName() + ":" + firstLine.lineNumber());
@@ -152,7 +152,6 @@ public class SimpleDebuggerWorkFlow {
 					eventSet.resume();
 				}
 			}
-
 			SimpleDebuggerLogger.info("Debug preparation complete");
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.PREPARED);
 		}
@@ -160,16 +159,16 @@ public class SimpleDebuggerWorkFlow {
 
 	private void openDebugWindow() {
 		Display.getDefault().asyncExec(() -> {
-			DebugWindow window = DebugWindowManager.instance().getOrCreateWindow();
-			if (Objects.nonNull(window) && !window.isOpen())
-				window.open();
+			DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateWindow();
+			if (Objects.nonNull(debugWindow) && !debugWindow.isOpen())
+				debugWindow.open();
 		});
 	}
 
 	/** Factory for creating a debug workflow asynchronously */
 	public static class SimpleDebuggerWorkFlowFactory {
 
-		public static void createWorkflow(DebugConfiguration debugConfiguration, OnWorkflowReadyListener listener) {
+		public static void createWorkflow(DebugConfiguration debugConfiguration, OnWorkflowReadyListener onWorkflowReadyListener) {
 			SimpleDebuggerLogger.info("Starting debug workflow");
 
 			CompletableFuture.runAsync(() -> {
@@ -181,38 +180,37 @@ public class SimpleDebuggerWorkFlow {
 				}
 
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.STARTING);
-				VirtualMachine vm = launchVirtualMachine(debugConfiguration);
+				VirtualMachine virtualMachine = launchVirtualMachine(debugConfiguration);
 
 				IBreakpointManager breakpointManager = waitForBreakpointManager();
 				BreakePointListener breakpointListener = new BreakePointListener();
 				breakpointManager.setEnabled(true);
 				breakpointManager.addBreakpointListener(breakpointListener);
 
-				TargetVirtualMachineRepresentation vmRepresentation = new TargetVirtualMachineRepresentation(
-						"localhost", debugConfiguration.getPort(), vm);
+				TargetVirtualMachineRepresentation targetVirtualMachineRepresentation = new TargetVirtualMachineRepresentation(
+						"localhost", debugConfiguration.getPort(), virtualMachine);
 
-				if (Objects.nonNull(listener)) {
-					Display.getDefault().asyncExec(() -> listener.onReady(new SimpleDebuggerWorkFlow(vmRepresentation,
+				if (Objects.nonNull(onWorkflowReadyListener)) {
+					Display.getDefault().asyncExec(() -> onWorkflowReadyListener.onReady(new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation,
 							breakpointManager, breakpointListener, debugConfiguration)));
 				}
-
-				SimpleDebuggerLogger.info("VM launched: " + vm.description());
+				SimpleDebuggerLogger.info("VM launched: " + virtualMachine.description());
 			});
 		}
 
 		private static boolean isDebugPortBusy(int port) {
-			try (var socket = new java.net.Socket("localhost", port)) {
+			try (Socket socket = new java.net.Socket("localhost", port)) {
 				return true;
 			} catch (IOException e) {
 				return false;
 			}
 		}
 
-		private static void notifyAlreadyRunning(DebugConfiguration config) {
+		private static void notifyAlreadyRunning(DebugConfiguration debugConfiguration) {
 			Display.getDefault().asyncExec(() -> {
 				Shell shell = Display.getDefault().getActiveShell();
 				MessageDialog.openError(shell, "Debug session already running",
-						"Application is already running on port " + config.getPort());
+						"Application is already running on port " + debugConfiguration.getPort());
 			});
 		}
 
@@ -233,26 +231,24 @@ public class SimpleDebuggerWorkFlow {
 			return future.join();
 		}
 
-		private static VirtualMachine launchVirtualMachine(DebugConfiguration debugConfig) {
-			VirtualMachine vm = null;
+		private static VirtualMachine launchVirtualMachine(DebugConfiguration debugConfiguration) {
+			VirtualMachine virtualMachine = null;
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.VM_AWAITING_CONNECTION);
-
 			try {
 				LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
-				Map<String, Connector.Argument> args = connector.defaultArguments();
+				Map<String, Connector.Argument> launchArguments = connector.defaultArguments();
+				launchArguments.get("main").setValue(debugConfiguration.getMainClassName());
+				String options = "-cp " + debugConfiguration.getOutputFolder() + " "
+						+ debugConfiguration.getvirtualMachineOptionsStringWithoutJDWP();
+				launchArguments.get("options").setValue(options);
+				launchArguments.get("suspend").setValue("true");
 
-				args.get("main").setValue(debugConfig.getMainClassName());
-				String options = "-cp " + debugConfig.getOutputFolder() + " "
-						+ debugConfig.getvirtualMachineOptionsStringWithoutJDWP();
-				args.get("options").setValue(options);
-				args.get("suspend").setValue("true");
+				virtualMachine = connector.launch(launchArguments);
+				SimpleDebuggerLogger.info("==> VM LAUNCHED (SUSPENDED): " + virtualMachine.description());
 
-				vm = connector.launch(args);
-				SimpleDebuggerLogger.info("==> VM LAUNCHED (SUSPENDED): " + vm.description());
-
-				attachConsoleWriters(vm.process());
+				attachConsoleWriters(virtualMachine.process());
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.VM_CONNECTED);
-				return vm;
+				return virtualMachine;
 
 			} catch (Exception ex) {
 				SimpleDebuggerLogger.error("Cannot launch VM", ex);
@@ -262,7 +258,7 @@ public class SimpleDebuggerWorkFlow {
 				});
 			}
 
-			return vm;
+			return virtualMachine;
 		}
 
 		private static void attachConsoleWriters(Process process) {
