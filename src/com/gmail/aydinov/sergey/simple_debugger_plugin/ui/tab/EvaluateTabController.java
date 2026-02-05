@@ -26,8 +26,8 @@ public class EvaluateTabController {
     private final Composite root;
     private final Combo classCombo;
     private final Combo methodCombo;
-    private final Button selectBtn;
-    private final Button invokeBtn;
+    private final Button selectButton;
+    private final Button invokeButton;
     private final Text methodInput;
     private final Text resultField;
     private final UiEventCollector uiEventCollector;
@@ -61,12 +61,12 @@ public class EvaluateTabController {
         methodCombo.setToolTipText("Select a method");
 
         // ====== Select button ======
-        selectBtn = new Button(root, SWT.PUSH);
-        selectBtn.setText("Select");
+        selectButton = new Button(root, SWT.PUSH);
+        selectButton.setText("Select");
         GridData selectGD = new GridData();
         selectGD.horizontalSpan = 2;
         selectGD.horizontalAlignment = SWT.CENTER;
-        selectBtn.setLayoutData(selectGD);
+        selectButton.setLayoutData(selectGD);
 
         // ====== Arguments input ======
         methodInput = new Text(root, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
@@ -77,12 +77,12 @@ public class EvaluateTabController {
         methodInput.setToolTipText("Edit method arguments here");
 
         // ====== Invoke button ======
-        invokeBtn = new Button(root, SWT.PUSH);
-        invokeBtn.setText("Invoke");
+        invokeButton = new Button(root, SWT.PUSH);
+        invokeButton.setText("Invoke");
         GridData invokeGD = new GridData();
         invokeGD.horizontalSpan = 2;
         invokeGD.horizontalAlignment = SWT.CENTER;
-        invokeBtn.setLayoutData(invokeGD);
+        invokeButton.setLayoutData(invokeGD);
 
         // ====== Result field ======
         resultField = new Text(root, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.WRAP | SWT.READ_ONLY);
@@ -93,8 +93,8 @@ public class EvaluateTabController {
 
         // ====== Listeners ======
         classCombo.addListener(SWT.Selection, e -> updateMethods());
-        selectBtn.addListener(SWT.Selection, e -> onSelectMethod());
-        invokeBtn.addListener(SWT.Selection, e -> onInvokeMethod());
+        selectButton.addListener(SWT.Selection, e -> onSelectMethod());
+        invokeButton.addListener(SWT.Selection, e -> onInvokeMethod());
     }
 
     public Composite getControl() {
@@ -270,11 +270,11 @@ public class EvaluateTabController {
     }
 
     public Button getSelectButton() {
-        return selectBtn;
+        return selectButton;
     }
 
     public Button getInvokeButton() {
-        return invokeBtn;
+        return invokeButton;
     }
 
     public Text getMethodInput() {
