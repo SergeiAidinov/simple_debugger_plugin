@@ -3,14 +3,14 @@ Bundle-Name: Simple Debugger Plugin
 Bundle-SymbolicName: com.gmail.aydinov.sergey.simpledebugger;singleton:=true
 Require-Bundle: 
  org.eclipse.core.runtime,
- org.eclipse.ui,
- org.eclipse.ui.editors,
- org.eclipse.ui.ide,
- org.eclipse.jdt.debug, 
  org.eclipse.debug.core,
  org.eclipse.debug.ui,
- org.eclipse.jface.text,
  org.eclipse.jdt.core,
+ org.eclipse.jdt.debug,
+ org.eclipse.jdt.launching;bundle-version="3.20.0",
  org.eclipse.jface,
- org.eclipse.jdt.launching;bundle-version="3.20.0"
+ org.eclipse.jface.text,
+ org.eclipse.ui,
+ org.eclipse.ui.editors,
+ org.eclipse.ui.ide
 Bundle-Version: 1.0.0
