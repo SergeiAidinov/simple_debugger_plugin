@@ -41,34 +41,37 @@ import com.sun.jdi.request.ClassPrepareRequest;
 import com.sun.jdi.request.EventRequestManager;
 
 /**
- * Orchestrates the lifecycle of a simple debug session based on JDI.
+ * Coordinates the execution flow of a JDI-based debugging process.
  * <p>
  * This class is responsible for:
  * <ul>
  *   <li>launching and attaching to the target JVM,</li>
- *   <li>preparing the initial breakpoint (typically at {@code main}),</li>
- *   <li>entering and maintaining the JDI event loop,</li>
+ *   <li>preparing initial breakpoints (e.g. at {@code main}),</li>
+ *   <li>running the JDI event loop,</li>
  *   <li>starting a {@link DebugSession} when a breakpoint is hit.</li>
  * </ul>
  *
  * <p>
- * <strong>Important:</strong> this class does <em>not</em> update or manage UI state.
- * It only triggers debug sessions in reaction to JDI events.
- * Any UI-related actions (windows, dialogs, highlighting) are delegated to
- * other components and executed asynchronously on the UI thread.
+ * This class is <strong>not</strong> a debug session.
+ * A debug session is represented by {@link DebugSession} and is created
+ * per breakpoint hit.
  * </p>
  *
  * <p>
- * The workflow blocks on the JDI event queue while the debugger is running and
- * spawns a dedicated {@link DebugSession} for each breakpoint event.
+ * No UI state is managed directly by this class.
+ * Any UI-related operations are delegated to other components and executed
+ * asynchronously on the UI thread.
  * </p>
  *
  * <p>
- * Lifecycle state is tracked via {@link DebuggerContext} and
- * {@link DebuggerContext.SimpleDebuggerStatus}.
+ * Global debugger state transitions are tracked via {@link DebuggerContext}
+ * and {@link DebuggerContext.SimpleDebuggerStatus}.
  * </p>
  *
  * @author Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  * @see DebugSession
  * @see TargetVirtualMachineRepresentation
  * @see TargetApplicationRepresentation
