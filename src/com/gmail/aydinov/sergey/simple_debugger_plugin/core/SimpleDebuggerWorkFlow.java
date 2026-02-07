@@ -41,37 +41,61 @@ import com.sun.jdi.request.ClassPrepareRequest;
 import com.sun.jdi.request.EventRequestManager;
 
 /**
- * Main workflow for controlling the debug session. Handles VM launch,
- * breakpoint setup, event loop, and UI updates.
+ * Orchestrates the lifecycle of a simple debug session based on JDI.
  * <p>
- * Author: Sergei Aidinov
- * <br>
- * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * This class is responsible for:
+ * <ul>
+ *   <li>launching and attaching to the target JVM,</li>
+ *   <li>preparing the initial breakpoint (typically at {@code main}),</li>
+ *   <li>entering and maintaining the JDI event loop,</li>
+ *   <li>starting a {@link DebugSession} when a breakpoint is hit.</li>
+ * </ul>
+ *
+ * <p>
+ * <strong>Important:</strong> this class does <em>not</em> update or manage UI state.
+ * It only triggers debug sessions in reaction to JDI events.
+ * Any UI-related actions (windows, dialogs, highlighting) are delegated to
+ * other components and executed asynchronously on the UI thread.
  * </p>
+ *
+ * <p>
+ * The workflow blocks on the JDI event queue while the debugger is running and
+ * spawns a dedicated {@link DebugSession} for each breakpoint event.
+ * </p>
+ *
+ * <p>
+ * Lifecycle state is tracked via {@link DebuggerContext} and
+ * {@link DebuggerContext.SimpleDebuggerStatus}.
+ * </p>
+ *
+ * @author Sergei Aidinov
+ * @see DebugSession
+ * @see TargetVirtualMachineRepresentation
+ * @see TargetApplicationRepresentation
  */
 public class SimpleDebuggerWorkFlow {
 
-	private final TargetVirtualMachineRepresentation targetVmRepresentation;
-	private final TargetApplicationRepresentation targetAppRepresentation;
+	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
+	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	private final IBreakpointManager breakpointManager; // do NOT remove
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove
 	private final CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
 
-	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVmRepresentation,
+	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager breakpointManager, BreakpointSubscriberRegistrar breakpointListener,
 			DebugConfiguration debugConfiguration) {
-		this.targetVmRepresentation = targetVmRepresentation;
+		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
 		this.breakpointManager = breakpointManager;
 		this.breakpointListener = breakpointListener;
 
-		EventRequestManager eventRequestManager = targetVmRepresentation.getVirtualMachine().eventRequestManager();
-		this.targetAppRepresentation = new TargetApplicationRepresentation(breakpointManager, eventRequestManager,
-				targetVmRepresentation.getVirtualMachine(), breakpointListener, debugConfiguration);
+		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
+		this.targetApplicationRepresentation = new TargetApplicationRepresentation(breakpointManager, eventRequestManager,
+				targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener, debugConfiguration);
 	}
 
 	/** Starts the debug workflow */
 	public void debug(String mainClassName) {
-		prepareDebug(targetVmRepresentation.getVirtualMachine().eventQueue(), mainClassName);
+		prepareDebug(targetVirtualMachineRepresentation.getVirtualMachine().eventQueue(), mainClassName);
 		if (!DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.PREPARED)) {
 			Display.getDefault().asyncExec(() -> {
 				Shell shell = Display.getDefault().getActiveShell();
@@ -87,16 +111,16 @@ public class SimpleDebuggerWorkFlow {
 		SimpleDebuggerLogger.info("DEBUGGER STARTED");
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.RUNNING);
 		openDebugWindow();
-		targetVmRepresentation.getVirtualMachine().resume();
+		targetVirtualMachineRepresentation.getVirtualMachine().resume();
 
 		while (DebuggerContext.context().isRunning()) {
-			targetAppRepresentation
-					.refreshReferencesToClassesOfTargetApplication(targetVmRepresentation.getVirtualMachine());
-			targetAppRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakpoints();
+			targetApplicationRepresentation
+					.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+			targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakpoints();
 
 			EventSet eventSet = null;
 			try {
-				eventSet = targetVmRepresentation.getVirtualMachine().eventQueue().remove();
+				eventSet = targetVirtualMachineRepresentation.getVirtualMachine().eventQueue().remove();
 			} catch (InterruptedException ignored) {
 			} catch (com.sun.jdi.VMDisconnectedException e) {
 				SimpleDebuggerLogger.info("VM disconnected, exiting debug loop.");
@@ -109,10 +133,10 @@ public class SimpleDebuggerWorkFlow {
 			for (Event event : eventSet) {
 				if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.STOPPED)) break;
 				if (event instanceof ClassPrepareEvent classPrepareEvent) {
-					targetAppRepresentation.getTargetApplicationBreakepointRepresentation()
+					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
 							.onClassPrepared(classPrepareEvent.referenceType());
 				} else if (event instanceof BreakpointEvent) {
-					DebugSession debugSession = new DebugSessionImpl(targetVmRepresentation, targetAppRepresentation,
+					DebugSession debugSession = new DebugSessionImpl(targetVirtualMachineRepresentation, targetApplicationRepresentation,
 							eventSet, highlighter);
 					Thread sessionThread = new Thread(debugSession);
 					sessionThread.setDaemon(true);
@@ -131,7 +155,7 @@ public class SimpleDebuggerWorkFlow {
 		SimpleDebuggerLogger.info("Debug preparation...");
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.PREPARING);
 		openDebugWindow();
-		EventRequestManager eventRequestManager = targetVmRepresentation.getVirtualMachine().eventRequestManager();
+		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
 		ClassPrepareRequest classPrepareRequest = eventRequestManager.createClassPrepareRequest();
 		classPrepareRequest.addClassFilter(mainClassName);
 		classPrepareRequest.enable();
