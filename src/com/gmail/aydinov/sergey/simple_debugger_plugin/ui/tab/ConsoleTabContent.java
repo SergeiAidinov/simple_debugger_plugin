@@ -8,6 +8,11 @@ import org.eclipse.swt.widgets.Text;
 /**
  * UI component for the Console tab in the debugger window.
  * Displays text output from the debugger and allows appending or clearing lines.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class ConsoleTabContent {
 

@@ -36,6 +36,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.VariablesTabConten
 
 /**
  * Main debugger window displaying variables, fields, stack trace, evaluation, and console.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class DebugWindow {
 

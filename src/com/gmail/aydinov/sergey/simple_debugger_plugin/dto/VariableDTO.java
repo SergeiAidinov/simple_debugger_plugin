@@ -3,6 +3,11 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 /**
  * DTO representing a variable in the target application.
  * Stores the variable's name, type, and value as strings.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class VariableDTO {
 

@@ -10,6 +10,11 @@ import com.sun.jdi.request.BreakpointRequest;
 /**
  * Wrapper for Eclipse IBreakpoint and JDI BreakpointRequest, with associated
  * path and line information.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class BreakpointWrapper {
 

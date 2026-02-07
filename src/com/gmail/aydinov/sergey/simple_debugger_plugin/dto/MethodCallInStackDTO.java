@@ -2,6 +2,11 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 /**
  * Represents a single method call in a thread's stack trace.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class MethodCallInStackDTO {
 

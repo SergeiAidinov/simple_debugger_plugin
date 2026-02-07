@@ -20,6 +20,11 @@ import java.util.Objects;
 /**
  * Controller for the "Evaluate" tab in the debugger window.
  * Allows selecting classes and methods, entering arguments, invoking methods, and displaying results.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class EvaluateTabController {
 

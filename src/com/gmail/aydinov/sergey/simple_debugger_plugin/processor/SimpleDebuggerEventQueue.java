@@ -10,6 +10,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
 /**
  * Singleton queue for handling UI and Debug events in the Simple Debugger.
  * Supports multiple producers (UI or Debug threads) and consumers (Worker threads).
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEventCollector {
 
@@ -67,10 +72,8 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
     }
 
     /**
-     * Retrieves and removes the next UI event, or returns null if none is available.
-     *
-     * @return the next UI event, or null if queue is empty
-     * @throws InterruptedException ignored here because poll() is non-blocking
+     * Polls the event queue and returns the next event if available.
+     * Non-blocking operation.
      */
     @Override
     public AbstractUIEvent pollUiEvent() {

@@ -25,6 +25,11 @@ import com.sun.jdi.request.EventRequestManager;
  *
  * • single collection • pending = BreakpointRequest == null • proper VM cleanup
  * • ClassPrepareEvent support
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class TargetApplicationBreakpointRepresentation implements BreakpointSubscriber {
 

@@ -5,6 +5,11 @@ import java.util.Objects;
 /**
  * Represents a UI event where a user changes a field of an object.
  * Stores the field name, type, and the new value assigned by the user.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class UserChangedFieldEvent extends AbstractUIEvent {
 

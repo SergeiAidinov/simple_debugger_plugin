@@ -23,6 +23,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerE
  * 
  * Displays all fields of the current context, allows editing their values,
  * and safely propagates changes to the debugger backend.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class FieldsTabContent {
 

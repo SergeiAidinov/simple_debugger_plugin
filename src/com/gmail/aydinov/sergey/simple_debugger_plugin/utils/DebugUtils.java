@@ -30,6 +30,11 @@ import com.sun.jdi.VirtualMachine;
 
 /**
  * Utility class for JDI (Java Debug Interface) operations
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class DebugUtils {
 
@@ -190,7 +195,10 @@ public class DebugUtils {
 	}
 
 	/**
-	 * Converts Map<Field, Value> to List<VariableDTO>
+	 * Converts {@code Map<Field, Value>} to {@code List<VariableDTO>}.
+	 *
+	 * @param fields the map of fields and their values
+	 * @return list of VariableDTO representing fields
 	 */
 	public static List<VariableDTO> mapFields(Map<Field, Value> fields) {
 		if (Objects.isNull(fields))
@@ -201,7 +209,10 @@ public class DebugUtils {
 	}
 
 	/**
-	 * Converts Map<LocalVariable, Value> to List<VariableDTO>
+	 * Converts {@code Map<LocalVariable, Value>} to {@code List<VariableDTO>}.
+	 *
+	 * @param locals the map of local variables and their values
+	 * @return list of VariableDTO representing local variables
 	 */
 	public static List<VariableDTO> mapLocals(Map<LocalVariable, Value> locals) {
 		if (Objects.isNull(locals))

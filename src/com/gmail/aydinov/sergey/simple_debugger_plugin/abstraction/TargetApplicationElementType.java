@@ -3,6 +3,11 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 /**
  * Type of a target application element.
  * Can be either a class or an interface.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public enum TargetApplicationElementType {
     

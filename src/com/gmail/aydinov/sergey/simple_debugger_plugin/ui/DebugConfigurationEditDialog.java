@@ -18,6 +18,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
 
 /**
  * Dialog for editing debug configuration parameters such as main class, VM options, and port.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class DebugConfigurationEditDialog extends TitleAreaDialog {
 

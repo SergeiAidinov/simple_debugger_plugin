@@ -3,6 +3,11 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event;
 /**
  * DTO representing a user-initiated change of a variable in the UI.
  * Contains the variable's name, type, and the new value entered by the user.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class UserChangedVariableEvent extends AbstractUIEvent {
 

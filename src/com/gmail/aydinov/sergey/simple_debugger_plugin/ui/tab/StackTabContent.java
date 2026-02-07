@@ -14,6 +14,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 
 /**
  * Manages the "Stack" tab in the debugger UI, showing the current call stack.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public class StackTabContent {
 

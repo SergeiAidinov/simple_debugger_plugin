@@ -5,6 +5,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
 /**
  * Interface for collecting UI events produced by the user interface.
  * Implementations typically store events in a queue for later processing by worker threads.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
  */
 public interface UiEventCollector {
 
