@@ -116,15 +116,16 @@ public class DebuggerContext {
     }
     
     /**
-     * Returns whether the debugger is in a non-terminal state.
+     * Checks whether the debugger has reached a terminal state.
      * <p>
-     * This method returns {@code true} if the debugger has not yet reached
-     * an unchangeable (terminal) state such as {@link SimpleDebuggerStatus#STOPPED}
-     * or {@link SimpleDebuggerStatus#WILL_NOT_START}.
+     * A terminal state is a status from which the debugger cannot transition
+     * to a running or startable state. This includes
+     * {@link SimpleDebuggerStatus#STOPPED} and
+     * {@link SimpleDebuggerStatus#WILL_NOT_START}.
      * </p>
      *
-     * @return {@code true} if the debugger can still change its state,
-     *         {@code false} if it is already stopped or cannot be started
+     * @return {@code true} if the debugger is in a terminal state and cannot be started or resumed,
+     *         {@code false} if the debugger can still transition to another state.
      */
     public boolean isInTerminalState() {
         lock.lock();
