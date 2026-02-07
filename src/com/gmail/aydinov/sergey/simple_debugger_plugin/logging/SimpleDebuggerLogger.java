@@ -20,7 +20,7 @@ import org.osgi.framework.Bundle;
  */
 public class SimpleDebuggerLogger {
 
-    private static final String PLUGIN_ID = "com.gmail.aydinov.sergey.simpledebugger";
+    private static final String PLUGIN_ID = "com.gmail.aydinov.sergey.simple_debugger_plugin.simpleDebug";
     private static volatile ILog LOG = null;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
