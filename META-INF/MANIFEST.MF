@@ -1,6 +1,6 @@
 Bundle-ManifestVersion: 2
 Bundle-Name: Simple Debugger Plugin
-Bundle-SymbolicName: com.gmail.aydinov.sergey.simpledebugger;singleton:=true
+Bundle-SymbolicName: com.gmail.aydinov.sergey.simple_debugger_plugin.simpleDebug;singleton:=true
 Require-Bundle: 
  org.eclipse.core.runtime,
  org.eclipse.debug.core,
