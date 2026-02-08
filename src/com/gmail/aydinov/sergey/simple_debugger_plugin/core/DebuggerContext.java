@@ -1,64 +1,152 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
+
+/**
+ * Singleton context holding the current state of the debugger.
+ * Provides thread-safe access and status management.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
+ */
 public class DebuggerContext {
 
+    /**
+     * Represents the possible states of the debugger.
+     */
     public enum SimpleDebuggerStatus {
+        WILL_NOT_START,
         STARTING,
         VM_AWAITING_CONNECTION,
-        VM_CONNECTED
-    }
-
-    public enum TargetApplicationStatus {
-        STARTING,
+        VM_CONNECTED,
+        PREPARING,
+        PREPARED,
         RUNNING,
-        STOPPED_AT_BREAKPOINT,
-        STOPPING
+        SESSION_STARTED,
+        SESSION_FINISHED,
+        STOPPED
     }
 
-	private static final DebuggerContext INSTANCE = new DebuggerContext();
-
-    private final AtomicBoolean running = new AtomicBoolean(false);
-    private volatile SimpleDebuggerStatus simpleDebuggerStatus;
-    private volatile TargetApplicationStatus targetApplicationStatus;
+    private static final DebuggerContext INSTANCE = new DebuggerContext();
+    private final ReentrantLock lock = new ReentrantLock(true); // fair lock
+    private volatile SimpleDebuggerStatus status;
+    private static final Set<SimpleDebuggerStatus> RUNNING_STATES = EnumSet.of(
+            SimpleDebuggerStatus.RUNNING,
+            SimpleDebuggerStatus.SESSION_STARTED,
+            SimpleDebuggerStatus.SESSION_FINISHED
+    );
+    private static final Set<SimpleDebuggerStatus> TERMINAL_STATES = EnumSet.of(
+            SimpleDebuggerStatus.WILL_NOT_START,
+            SimpleDebuggerStatus.STOPPED
+    );
 
     private DebuggerContext() {
-        simpleDebuggerStatus = SimpleDebuggerStatus.STARTING;
-        targetApplicationStatus = TargetApplicationStatus.STARTING;
+        status = SimpleDebuggerStatus.STARTING;
     }
 
+    /**
+     * Returns the singleton instance of DebuggerContext.
+     *
+     * @return the DebuggerContext instance
+     */
     public static DebuggerContext context() {
         return INSTANCE;
     }
 
     // -----------------------
-    // Running flag
+    // Status API
+
+    /**
+     * Returns the current status of the debugger.
+     *
+     * @return the current SimpleDebuggerStatus
+     */
+    public SimpleDebuggerStatus getStatus() {
+        lock.lock();
+        try {
+            return status;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Updates the debugger status in a thread-safe manner.
+     * Logs state transitions if the status actually changes.
+     *
+     * @param newStatus the new status to set
+     */
+    public boolean setStatus(SimpleDebuggerStatus newStatus) {
+        lock.lock();
+        try {
+        	if (TERMINAL_STATES.contains(status)) return false;
+            if (this.status != newStatus) {
+                SimpleDebuggerLogger.info(
+                        "Debugger state changed: " + this.status + " -> " + newStatus
+                );
+                this.status = newStatus;
+            }
+        } finally {
+            lock.unlock();
+        }
+		return true;
+    }
+
+    // -----------------------
+    // Derived state
+
+    /**
+     * Returns true if the debugger is in a running state.
+     *
+     * @return true if debugger is running or session is active/finished
+     */
     public boolean isRunning() {
-        return running.get();
+        lock.lock();
+        try {
+            return RUNNING_STATES.contains(status);
+        } finally {
+            lock.unlock();
+        }
+    }
+    
+    /**
+     * Checks whether the debugger has reached a terminal state.
+     * <p>
+     * A terminal state is a status from which the debugger cannot transition
+     * to a running or startable state. This includes
+     * {@link SimpleDebuggerStatus#STOPPED} and
+     * {@link SimpleDebuggerStatus#WILL_NOT_START}.
+     * </p>
+     *
+     * @return {@code true} if the debugger is in a terminal state and cannot be started or resumed,
+     *         {@code false} if the debugger can still transition to another state.
+     */
+    public boolean isInTerminalState() {
+        lock.lock();
+        try {
+            return TERMINAL_STATES.contains(status);
+        } finally {
+            lock.unlock();
+        }
     }
 
-    public void setRunning(boolean value) {
-        running.set(value);
-    }
-
-    // -----------------------
-    // SimpleDebuggerStatus
-    public SimpleDebuggerStatus getSimpleDebuggerStatus() {
-        return simpleDebuggerStatus;
-    }
-
-    public void setSimpleDebuggerStatus(SimpleDebuggerStatus status) {
-        this.simpleDebuggerStatus = status;
-    }
-
-    // -----------------------
-    // TargetApplicationStatus
-    public TargetApplicationStatus getTargetApplicationStatus() {
-        return targetApplicationStatus;
-    }
-
-    public void setTargetApplicationStatus(TargetApplicationStatus status) {
-        this.targetApplicationStatus = status;
+    /**
+     * Returns true if a debugger session is currently active.
+     *
+     * @return true if the debugger session has started
+     */
+    public boolean isSessionActive() {
+        lock.lock();
+        try {
+            return status.equals(SimpleDebuggerStatus.SESSION_STARTED);
+        } finally {
+            lock.unlock();
+        }
     }
 }

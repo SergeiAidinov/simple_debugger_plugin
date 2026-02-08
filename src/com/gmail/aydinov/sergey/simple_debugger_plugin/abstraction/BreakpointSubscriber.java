@@ -4,10 +4,10 @@ import org.eclipse.debug.core.model.IBreakpoint;
 
 public interface BreakpointSubscriber {
 
-	void addBreakepoint(IBreakpoint breakpoint);
+    void addBreakepoint(IBreakpoint iBreakpoint);
 
-	void deleteBreakepoint(IBreakpoint breakpoint);
+    void deleteBreakepoint(IBreakpoint iBreakpoint);
 
-	void changeBreakpoint(IBreakpoint breakpoint);
+    void changeBreakpoint(IBreakpoint iBreakpoint);
 
 }

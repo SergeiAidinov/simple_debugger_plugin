@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -25,167 +26,172 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.TargetApplicationStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.SimpleDebuggerWorkFlowFactory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugConfigurationEditDialog;
 
+/**
+ * Handler for starting the Simple Debugger plugin from Eclipse UI. Launches the
+ * target application in debug mode and starts the workflow.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
+ */
 public class SimpleDebuggerPluginStarter extends AbstractHandler {
 
-    @Override
-    public Object execute(ExecutionEvent event) throws ExecutionException {
+	@Override
+	public Object execute(ExecutionEvent event) throws ExecutionException {
 
-        Shell shell = HandlerUtil.getActiveShell(event);
+		Shell shell = HandlerUtil.getActiveShell(event);
 
-        try {
-            // ----------------------------
-            // 1️⃣ Выбор конфигурации
-            // ----------------------------
-            ILaunchConfiguration[] configs = DebugPlugin.getDefault()
-                    .getLaunchManager()
-                    .getLaunchConfigurations();
+		try {
+			// Launch configuration selection
+			ILaunchConfiguration[] iLaunchConfigurations = DebugPlugin.getDefault().getLaunchManager()
+					.getLaunchConfigurations();
 
-            ElementListSelectionDialog selectionDialog = new ElementListSelectionDialog(shell, new LabelProvider() {
-                @Override
-                public String getText(Object element) {
-                    if (element instanceof ILaunchConfiguration) {
-                        return ((ILaunchConfiguration) element).getName();
-                    }
-                    return super.getText(element);
-                }
-            });
+			ElementListSelectionDialog selectionDialog = new ElementListSelectionDialog(shell, new LabelProvider() {
+				@Override
+				public String getText(Object element) {
+					if (element instanceof ILaunchConfiguration) {
+						return ((ILaunchConfiguration) element).getName();
+					}
+					return super.getText(element);
+				}
+			});
 
-            selectionDialog.setTitle("Select Java Launch Configuration");
-            selectionDialog.setMessage("Select the target application for debugging:");
-            selectionDialog.setElements(configs);
-            selectionDialog.setMultipleSelection(false);
+			selectionDialog.setTitle("Select Java Launch Configuration");
+			selectionDialog.setMessage("Select the target application for debugging:");
+			selectionDialog.setElements(iLaunchConfigurations);
+			selectionDialog.setMultipleSelection(false);
 
-            if (selectionDialog.open() != Window.OK) {
-                return null; // пользователь отменил
-            }
+			if (selectionDialog.open() != Window.OK) {
+				return null;
+			}
 
-            ILaunchConfiguration selectedConfig = (ILaunchConfiguration) selectionDialog.getFirstResult();
+			ILaunchConfiguration selectedConfiguration = (ILaunchConfiguration) selectionDialog.getFirstResult();
 
-            // ----------------------------
-            // 2️⃣ Строим DebugConfiguration
-            // ----------------------------
-            DebugConfiguration debugConfiguration = buildDebugConfiguration(selectedConfig);
-            System.out.println(debugConfiguration.prettyPrint());
+			// Build DebugConfiguration
+			DebugConfiguration debugConfiguration = buildDebugConfiguration(selectedConfiguration);
 
-            // ----------------------------
-            // 3️⃣ Диалог редактирования VM options и порта
-            // ----------------------------
-            DebugConfigurationEditDialog editDialog =
-                    new DebugConfigurationEditDialog(Display.getDefault().getActiveShell(), debugConfiguration);
+			// Edit VM options and port
+			DebugConfigurationEditDialog editDialog = new DebugConfigurationEditDialog(
+					Display.getDefault().getActiveShell(), debugConfiguration);
 
-            if (editDialog.open() != Window.OK) {
-                System.out.println("Debug launch cancelled by user.");
-                return null;
-            }
+			if (editDialog.open() != Window.OK) {
+				SimpleDebuggerLogger.info("Debug launch cancelled by user.");
+				return null;
+			}
 
-            // ----------------------------
-            // 4️⃣ Запуск workflow с обновлённой конфигурацией
-            // ----------------------------
-            SimpleDebuggerWorkFlowFactory.createWorkFlow(debugConfiguration, workflow -> {
-                DebuggerContext.context().setTargetApplicationStatus(TargetApplicationStatus.STARTING);
-                new Thread(() -> {
-                    try {
-                        System.out.println("Starting workflow...");
-                        DebuggerContext.context().setRunning(true);
-                        workflow.debug(debugConfiguration.getMainClassName());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }, "Workflow-Thread").start();
-            });
+			// Start workflow with updated configuration
+			SimpleDebuggerWorkFlowFactory.createWorkflow(debugConfiguration, workflow -> new Thread(() -> {
+				try {
+					SimpleDebuggerLogger.info("Starting workflow...");
+					workflow.debug(debugConfiguration.getMainClassName());
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+			}, "Workflow-Thread").start());
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 
-        return shell;
-    }
+		return shell;
+	}
 
-    // ===========================
-    // Методы buildDebugConfiguration и getPortFromConfigurationOrSetDefault оставляем как есть
-    // ===========================
+	/**
+	 * Builds a DebugConfiguration object from the selected Eclipse launch
+	 * configuration.
+	 *
+	 * @param selectedConfig selected ILaunchConfiguration
+	 * @return DebugConfiguration
+	 * @throws Exception if project or main class cannot be resolved
+	 */
+	private DebugConfiguration buildDebugConfiguration(ILaunchConfiguration selectedConfig) throws Exception {
 
-    private DebugConfiguration buildDebugConfiguration(ILaunchConfiguration selectedConfig) throws Exception {
+		// VM arguments and debug port
+		String virtualMachineArgs = selectedConfig.getAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS,
+				"");
+		int port = extractPortFromVmArgsOrDefault(virtualMachineArgs);
 
-        // 1️⃣ VM arguments и порт
-        String vmArgs = selectedConfig.getAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, "");
-        int port = getPortFromConfigurationOrSetDefault(vmArgs);
+		ILaunchConfigurationWorkingCopy launchConfigurationCopy = selectedConfig.getWorkingCopy();
 
-        ILaunchConfigurationWorkingCopy wc = selectedConfig.getWorkingCopy();
-        if (!vmArgs.contains("-agentlib:jdwp")) {
-            if (!vmArgs.isEmpty()) vmArgs += " ";
-            vmArgs += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=" + port;
-            wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, vmArgs);
-            wc.doSave();
-        }
+		if (!virtualMachineArgs.contains("-agentlib:jdwp")) {
+			if (!virtualMachineArgs.isEmpty()) {
+				virtualMachineArgs += " ";
+			}
+			virtualMachineArgs += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=" + port;
+			launchConfigurationCopy.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS,
+					virtualMachineArgs);
+			launchConfigurationCopy.doSave();
+		}
 
-        List<String> options = Arrays.stream(vmArgs.split("\\s+"))
-                                     .filter(s -> !s.isBlank())
-                                     .toList();
+		List<String> options = Arrays.stream(virtualMachineArgs.split("\\s+")).filter(s -> !s.isBlank()).toList();
 
-        // 2️⃣ Main класс
-        String mainClassName = selectedConfig.getAttribute(
-                IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME, "<null>"
-        );
+		// Main class
+		String mainClassName = selectedConfig.getAttribute(IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME,
+				"<null>");
 
-        // 3️⃣ Проект
-        IJavaProject javaProject = JavaRuntime.getJavaProject(selectedConfig);
-        IType mainType = javaProject.findType(mainClassName);
+		// Project paths
+		IJavaProject javaProject = JavaRuntime.getJavaProject(selectedConfig);
+		IType mainType = javaProject.findType(mainClassName);
 
-        Path workingDirPath = null;
-        Path outputFolderPath = null;
-        List<Path> additionalClasspath = new ArrayList<>();
+		Path workingDirPath = null;
+		Path outputFolderPath = null;
+		List<Path> additionalClasspath = new ArrayList<>();
 
-        if (mainType != null && mainType.getCompilationUnit() != null) {
-            IProject project = mainType.getCompilationUnit().getResource().getProject();
+		if (Objects.nonNull(mainType) && Objects.nonNull(mainType.getCompilationUnit())) {
 
-            // Рабочая директория — корень проекта
-            workingDirPath = project.getLocation().toFile().toPath();
+			IProject project = mainType.getCompilationUnit().getResource().getProject();
 
-            // Output folder — только bin
-            outputFolderPath = workingDirPath.resolve("bin");
+			// Working directory is the project root
+			workingDirPath = project.getLocation().toFile().toPath();
 
-            // JAR зависимости
-            for (IClasspathEntry entry : javaProject.getRawClasspath()) {
-                if (entry.getEntryKind() == IClasspathEntry.CPE_LIBRARY) {
-                    IPath path = entry.getPath();
-                    if (path.toFile().exists()) {
-                        additionalClasspath.add(path.toFile().toPath());
-                    }
-                }
-            }
-        }
+			// Output folder (bin)
+			outputFolderPath = workingDirPath.resolve("bin");
 
-        // 4️⃣ Создаём DebugConfiguration
-        return new DebugConfiguration(
-                mainClassName,
-                options,
-                port,
-                workingDirPath,
-                outputFolderPath,
-                additionalClasspath
-        );
-    }
+			// Additional JAR dependencies
+			for (IClasspathEntry entry : javaProject.getRawClasspath()) {
+				if (entry.getEntryKind() == IClasspathEntry.CPE_LIBRARY) {
+					IPath path = entry.getPath();
+					if (path.toFile().exists()) {
+						additionalClasspath.add(path.toFile().toPath());
+					}
+				}
+			}
+		}
 
-    private Integer getPortFromConfigurationOrSetDefault(String vmArgs) {
-        Integer port = 5005;
-        if (vmArgs == null || vmArgs.isEmpty())
-            return port;
-        String[] parts = vmArgs.split(",");
-        for (String part : parts) {
-            part = part.trim();
-            if (part.startsWith("address=")) {
-                try {
-                    port = Integer.parseInt(part.substring("address=".length()));
-                } catch (NumberFormatException e) {
-                }
-            }
-        }
-        return port;
-    }
+		// Create DebugConfiguration
+		return new DebugConfiguration(mainClassName, options, port, workingDirPath, outputFolderPath,
+				additionalClasspath);
+	}
+
+	/**
+	 * Extracts debug port from VM arguments or returns default (5005).
+	 *
+	 * @param vmArgs VM arguments string
+	 * @return port number
+	 */
+	private int extractPortFromVmArgsOrDefault(String vmArgs) {
+		int port = 5005;
+
+		if (Objects.isNull(vmArgs) || vmArgs.isEmpty()) {
+			return port;
+		}
+
+		String[] parts = vmArgs.split(",");
+
+		for (String part : parts) {
+			part = part.trim();
+			if (part.startsWith("address=")) {
+				try {
+					port = Integer.parseInt(part.substring("address=".length()));
+				} catch (NumberFormatException ignored) {
+				}
+			}
+		}
+		return port;
+	}
 }
