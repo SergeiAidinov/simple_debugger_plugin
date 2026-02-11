@@ -1,3 +1,14 @@
+# Simple Debugger
+
+![License](https://img.shields.io/badge/license-MIT-green)
+![Language](https://img.shields.io/badge/language-Java-orange)
+![Platform](https://img.shields.io/badge/platform-Eclipse-blue)
+![Version](https://img.shields.io/badge/version-1.0.0.202602112043-blue)
+
+A lightweight Eclipse plugin that simplifies debugging Java applications with enhanced logging and step control.
+
+
+
 Target-application:
 
 
