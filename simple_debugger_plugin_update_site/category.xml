@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+    <!-- Define the category for the update site -->
+    <category-def
+        name="simple-debugger"
+        label="Simple Debugger"/>
+</site>
