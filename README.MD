@@ -23,6 +23,14 @@ When launched, the plugin automatically sets a breakpoint at the first line of e
 
 Further development of the plugin is planned, and additional functionality will be introduced in future versions.
 
+## Table of Contents
+
+- [Project Description](#project-description)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Documentation](https://sergeiaidinov.github.io/simple_debugger_plugin/docs/)
+- [License](#license)
+
 ## Installation
 
 The plugin can be installed directly from the GitHub Pages update site.
@@ -50,20 +58,45 @@ https://sergeiaidinov.github.io/simple_debugger_plugin/simple_debugger_plugin_up
 
 4. Restart Eclipse if prompted to complete the installation.
 
+## Usage
 
+After installation, the plugin can be launched from:
 
+**Run → Simple Debugger**
 
+The plugin provides basic debugging functionality. Follow these steps:
 
-Target-application:
+1. **Select the debug configuration**  
+   Choose which target application to debug.
 
+   ![Select debug configuration](screenshots/usage_select_configuration.png)
 
-Plugin:
-	  VM-args: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000	
-	  
-JavaDoc: javadoc -d docs -sourcepath src -subpackages com.gmail.aydinov.sergey.simple_debugger_plugin -classpath "/opt/eclipse-commiters/eclipse/plugins/*" -author -version -windowtitle "Simple Debugger Plugin API" -doctitle "Simple Debugger Plugin Documentation"
+2. **Edit configuration parameters**  
+   Modify startup parameters, if necessary.
 
+   ![Edit configuration parameters](screenshots/usage_edit_parameters.png)
 
-Docs: https://sergeiaidinov.github.io/simple_debugger_plugin/docs/
+3. **Breakpoint at the first line**  
+   When launched, the plugin automatically sets a breakpoint at the first line of executable code.
 
-Install: https://sergeiaidinov.github.io/simple_debugger_plugin/simple_debugger_plugin_update_site/
+   ![First line breakpoint](screenshots/usage_first_line_breakpoint.png)
+
+4. **Breakpoint at a previously set point**  
+   The plugin stops at user-defined breakpoints as well.
+
+   ![Previously set breakpoint](screenshots/usage_existing_breakpoint.png)
+
+5. **Confirm closing the debugger window**  
+   When stopping the debugger, confirm any prompts to close the window.
+
+   ![Confirm closing window](screenshots/usage_confirm_close.png)
+
+6. **Debugger disabled notification**  
+   After stopping, the plugin notifies that the debugger is disabled and the Java virtual machine continues running.
+
+   ![Debugger disabled notification](screenshots/usage_debugger_disabled.png)
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
 
