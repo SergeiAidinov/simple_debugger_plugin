@@ -36,13 +36,13 @@ https://sergeiaidinov.github.io/simple_debugger_plugin/simple_debugger_plugin_up
 
 ![Add update site](screenshots/install_add_site.png)
 
-2. After confirming the update site, select **Simple Debugger** from the list and click **Finish**.
+2. After confirming the update site, select **Simple Debugger** from the list and click **Finish**:
 
 <!-- Screenshot: Finish button -->
 
 ![Finish installation](screenshots/install_finish.png)
 
-3. When prompted by Eclipse, confirm the installation by clicking **Trust Selected**.
+3. When prompted by Eclipse, confirm the installation by clicking **Trust Selected**:
 
 <!-- Screenshot: Trust Selected dialog -->
 
