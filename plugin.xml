@@ -1,14 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?eclipse version="3.4"?>
-<plugin>
+<plugin id="com.gmail.aydinov.sergey.simple_debugger_plugin">
 
-   <extension
-         id="com.example.app.lifecycle.fragment"
-         point="org.eclipse.e4.workbench.model">
-      <fragment
-            apply="notexists"
-            uri="fragment.e4xmi">
-      </fragment>
-   </extension>
+    <extension point="org.eclipse.ui.commands">
+        <command
+            id="com.gmail.aydinov.sergey.simple_debugger_plugin.simpleDebug"
+            name="Simple Debugger"
+            description="Start Simple Debugger"/>
+    </extension>
+
+    <extension point="org.eclipse.ui.handlers">
+        <handler
+            commandId="com.gmail.aydinov.sergey.simple_debugger_plugin.simpleDebug"
+            class="com.gmail.aydinov.sergey.simple_debugger_plugin.SimpleDebuggerPluginStarter"/>
+    </extension>
+
+    <extension point="org.eclipse.ui.menus">
+        <menuContribution locationURI="menu:org.eclipse.ui.run?after=additions">
+            <command
+                commandId="com.gmail.aydinov.sergey.simple_debugger_plugin.simpleDebug"
+                label="Simple Debugger"
+                style="push"/>
+        </menuContribution>
+    </extension>
 
 </plugin>
