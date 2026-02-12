@@ -86,8 +86,8 @@ The plugin provides basic debugging functionality. Follow these steps:
 
    ![Previously set breakpoint](screenshots/usage_existing_breakpoint.png)
 
-5. **Confirm closing the debugger window**  
-   When stopping the debugger, confirm any prompts to close the window.
+5. **Close the debugger window**  
+   To stop the debugger, simply close the debugger window by clicking the **X** in the corner.
 
    ![Confirm closing window](screenshots/usage_confirm_close.png)
 
