@@ -51,5 +51,9 @@ public class FieldOrVariableDTO {
 		return fieldOrVariableType;
 	}
 
-    
+	@Override
+	public String toString() {
+		return "FieldOrVariableDTO [name=" + name + ", type=" + type + ", value=" + value + ", fieldOrVariableType="
+				+ fieldOrVariableType + "]";
+	}
 }
