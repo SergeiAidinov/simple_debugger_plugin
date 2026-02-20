@@ -23,7 +23,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollecto
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 
 /**
- * Fields tab with "inspect" icon for collections in the Value column.
+ * Fields tab with "inspect" icon for any Iterable.
+ * Works dynamically for all existing and future Iterable classes.
  */
 public class FieldsTabContent {
 
@@ -33,7 +34,6 @@ public class FieldsTabContent {
     private final List<VariableDTO> entries = new ArrayList<>();
     private final UiEventCollector uiEventCollector;
 
-    // Иконка для коллекций
     private Image inspectIcon;
 
     public FieldsTabContent(Composite parent) {
@@ -47,19 +47,7 @@ public class FieldsTabContent {
         table.setLinesVisible(true);
         table.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        // Загрузка иконки (пусть будет в папке icons/inspect.png)
-        // inspectIcon = new Image(table.getDisplay(), "/icons/inspect.png");
-        try (InputStream is = getClass().getResourceAsStream("/icons/inspect.png")) {
-            if (is != null) {
-                inspectIcon = new Image(Display.getDefault(), is);
-                System.out.println("======>" + inspectIcon);
-            } else {
-                SimpleDebuggerLogger.error("Icon not found: /icons/inspect.png", null);
-                inspectIcon = null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        loadInspectIcon();
 
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
@@ -69,8 +57,34 @@ public class FieldsTabContent {
         setupClickListener();
     }
 
+    /** Загружаем иконку inspect */
+    private void loadInspectIcon() {
+        try (InputStream is = getClass().getResourceAsStream("/icons/inspect.png")) {
+            if (is != null) {
+                inspectIcon = new Image(Display.getDefault(), is);
+            } else {
+                SimpleDebuggerLogger.error("Icon not found: /icons/inspect.png", null);
+                inspectIcon = null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Проверка, реализует ли тип Iterable (динамически через Reflection) */
+    private boolean isInspectableCollection(VariableDTO dto) {
+        if (dto == null || dto.getType() == null) return false;
+        try {
+            Class<?> klass = Class.forName(dto.getType());
+            return Iterable.class.isAssignableFrom(klass);
+        } catch (ClassNotFoundException e) {
+            // Класс не найден — считаем, что это не коллекция
+            return false;
+        }
+    }
+
     private void setupColumns() {
-        // Column: Field
+        // Field column
         TableViewerColumn nameColumn = new TableViewerColumn(viewer, SWT.NONE);
         nameColumn.getColumn().setText("Field");
         nameColumn.getColumn().setWidth(200);
@@ -84,7 +98,7 @@ public class FieldsTabContent {
             }
         });
 
-        // Column: Type
+        // Type column
         TableViewerColumn typeColumn = new TableViewerColumn(viewer, SWT.NONE);
         typeColumn.getColumn().setText("Type");
         typeColumn.getColumn().setWidth(100);
@@ -98,7 +112,7 @@ public class FieldsTabContent {
             }
         });
 
-        // Column: Value (с иконкой для коллекций)
+        // Value column (текст или иконка inspect)
         TableViewerColumn valueColumn = new TableViewerColumn(viewer, SWT.NONE);
         valueColumn.getColumn().setText("Value");
         valueColumn.getColumn().setWidth(200);
@@ -106,9 +120,8 @@ public class FieldsTabContent {
             @Override
             public String getText(Object element) {
                 if (element instanceof VariableDTO dto) {
-                    // Если это коллекция, текста нет, будет иконка
-                    if (dto.getType().startsWith("java.util.List")) {
-                        return "";
+                    if (isInspectableCollection(dto)) {
+                        return ""; // для коллекции текста нет
                     }
                     return Objects.toString(dto.getValue(), "");
                 }
@@ -118,7 +131,7 @@ public class FieldsTabContent {
             @Override
             public Image getImage(Object element) {
                 if (element instanceof VariableDTO dto) {
-                    if (dto.getType().startsWith("java.util.List")) {
+                    if (isInspectableCollection(dto)) {
                         return inspectIcon;
                     }
                 }
@@ -135,7 +148,7 @@ public class FieldsTabContent {
             @Override
             public boolean canModify(Object element, String property) {
                 return "value".equals(property) && !(element instanceof VariableDTO dto &&
-                        dto.getType().startsWith("java.util.List"));
+                        isInspectableCollection(dto));
             }
 
             @Override
@@ -177,7 +190,7 @@ public class FieldsTabContent {
             // Value column
             if (columnIndex == 2) {
                 VariableDTO dto = (VariableDTO) item.getData();
-                if (dto.getType().startsWith("java.util.List")) {
+                if (isInspectableCollection(dto)) {
                     inspectCollection(dto);
                 }
             }
