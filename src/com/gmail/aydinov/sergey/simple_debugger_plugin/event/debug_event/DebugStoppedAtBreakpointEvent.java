@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 
 /**
@@ -22,8 +22,8 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 	private final String className;
 	private final String methodName;
 	private final int lineNumber;
-	private final List<VariableDTO> locals;
-	private final List<VariableDTO> fields;
+	private final List<FieldOrVariableDTO> locals;
+	private final List<FieldOrVariableDTO> fields;
 	private final String stackTrace;
 	private final List<TargetApplicationElementRepresentation> targetApplicationElements;
 	private final String resultOfMethodInvocation;
@@ -45,8 +45,8 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 	 * @param methodCallInStacks        list of method calls in the stack
 	 * @param resultOfMethodInvocation  result of any invoked method (if applicable)
 	 */
-	public DebugStoppedAtBreakpointEvent(SimpleDebuggerEventType type, String className, String methodName,
-			int lineNumber, List<VariableDTO> fields, List<VariableDTO> locals, String stackTrace,
+	private DebugStoppedAtBreakpointEvent(SimpleDebuggerEventType type, String className, String methodName,
+			int lineNumber, List<FieldOrVariableDTO> fields, List<FieldOrVariableDTO> locals, String stackTrace,
 			List<TargetApplicationElementRepresentation> targetApplicationElements,
 			List<MethodCallInStackDTO> methodCallInStacks, String resultOfMethodInvocation) {
 		super(type);
@@ -75,11 +75,11 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 		return lineNumber;
 	}
 
-	public List<VariableDTO> getLocals() {
+	public List<FieldOrVariableDTO> getLocals() {
 		return locals;
 	}
 
-	public List<VariableDTO> getFields() {
+	public List<FieldOrVariableDTO> getFields() {
 		return fields;
 	}
 
@@ -106,8 +106,8 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 		private String className;
 		private String methodName;
 		private int lineNumber;
-		private List<VariableDTO> locals;
-		private List<VariableDTO> fields;
+		private List<FieldOrVariableDTO> locals;
+		private List<FieldOrVariableDTO> fields;
 		private String stackTrace;
 		private List<TargetApplicationElementRepresentation> targetApplicationElements;
 		private List<MethodCallInStackDTO> methodCallInStacks;
@@ -133,12 +133,12 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 			return this;
 		}
 
-		public Builder locals(List<VariableDTO> locals) {
+		public Builder locals(List<FieldOrVariableDTO> locals) {
 			this.locals = locals;
 			return this;
 		}
 
-		public Builder fields(List<VariableDTO> fields) {
+		public Builder fields(List<FieldOrVariableDTO> fields) {
 			this.fields = fields;
 			return this;
 		}

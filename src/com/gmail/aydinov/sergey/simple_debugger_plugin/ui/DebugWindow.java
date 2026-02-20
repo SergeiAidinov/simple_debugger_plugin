@@ -15,7 +15,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
@@ -86,7 +86,7 @@ public class DebugWindow {
         // Объединённая вкладка: Variables + Fields
         variablesFieldsTabContent = new VariablesFieldsTabContent(tabFolder);
         CTabItem varsFieldsTabItem = new CTabItem(tabFolder, SWT.NONE);
-        varsFieldsTabItem.setText("Variables & Fields");
+        varsFieldsTabItem.setText("Fields and Variables");
         varsFieldsTabItem.setControl(variablesFieldsTabContent.getControl());
 
         // Stack tab
