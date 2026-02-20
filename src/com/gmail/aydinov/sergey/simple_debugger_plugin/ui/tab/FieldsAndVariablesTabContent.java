@@ -258,7 +258,7 @@ public class FieldsAndVariablesTabContent {
     }
 
     private void inspectCollection(FieldOrVariableDTO dto) {
-        System.out.println("Inspect collection: " + dto.getName());
+        System.out.println("Inspect collection: " + dto.toString());
     }
 
     public void updateVariablesAndFields(List<FieldOrVariableDTO> variables, List<FieldOrVariableDTO> fields) {
