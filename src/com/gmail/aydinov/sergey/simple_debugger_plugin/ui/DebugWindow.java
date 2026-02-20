@@ -30,7 +30,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollecto
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabController;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.VariablesFieldsTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldsAndVariablesTabContent;
 
 /**
  * Main debugger window displaying combined Variables + Fields tab, stack trace, evaluation, and console.
@@ -46,7 +46,7 @@ public class DebugWindow {
     private CTabFolder tabFolder;
 
     // Combined Variables + Fields tab
-    private VariablesFieldsTabContent variablesFieldsTabContent;
+    private FieldsAndVariablesTabContent variablesFieldsTabContent;
     private StackTabContent stackTabContent;
     private EvaluateTabController evaluateTabController;
     private ConsoleTabContent consoleTabContent;
@@ -95,7 +95,7 @@ public class DebugWindow {
         tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         // Combined Variables + Fields tab
-        variablesFieldsTabContent = new VariablesFieldsTabContent(tabFolder);
+        variablesFieldsTabContent = new FieldsAndVariablesTabContent(tabFolder);
         CTabItem varsFieldsTabItem = new CTabItem(tabFolder, SWT.NONE);
         varsFieldsTabItem.setText("Fields and Variables");
         varsFieldsTabItem.setControl(variablesFieldsTabContent.getControl());
