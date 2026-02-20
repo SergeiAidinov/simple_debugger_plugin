@@ -2,10 +2,12 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jface.viewers.*;
+import org.eclipse.jface.window.ToolTip;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -28,6 +30,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerE
 /**
  * Combined tab for object fields and local variables.
  * Supports "inspect" for any Iterable collections.
+ * Shows type icons and tooltips for icons.
  */
 public class FieldsAndVariablesTabContent {
 
@@ -57,52 +60,28 @@ public class FieldsAndVariablesTabContent {
         table.setLinesVisible(true);
         table.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        loadIcons(); // Load inspect, variable, field icons
+        loadIcons();
 
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
+        ColumnViewerToolTipSupport.enableFor(viewer, ToolTip.NO_RECREATE);
 
         setupColumns();
         setupCellModifier();
         setupClickListener();
     }
 
-    /** Loads all required icons from resources and scales them to 16x16 */
+    /** Loads the inspect, variable, and field icons from resources */
     private void loadIcons() {
-        try {
-            // Inspect icon
-            try (InputStream is = getClass().getResourceAsStream("/icons/inspect.png")) {
-                if (is != null) {
-                    Image original = new Image(Display.getDefault(), is);
-                    inspectIcon = new Image(Display.getDefault(), original.getImageData().scaledTo(16, 16));
-                    original.dispose();
-                } else {
-                    SimpleDebuggerLogger.error("Icon not found: /icons/inspect.png", null);
-                    inspectIcon = null;
-                }
-            }
+        try (InputStream is = getClass().getResourceAsStream("/icons/inspect.png");
+             InputStream varIs = getClass().getResourceAsStream("/icons/variable.png");
+             InputStream fieldIs = getClass().getResourceAsStream("/icons/field.png")) {
 
-            // Variable icon
-            try (InputStream varIs = getClass().getResourceAsStream("/icons/variable.png")) {
-                if (varIs != null) {
-                    Image original = new Image(Display.getDefault(), varIs);
-                    variableIcon = new Image(Display.getDefault(), original.getImageData().scaledTo(16, 16));
-                    original.dispose();
-                } else {
-                    variableIcon = null;
-                }
-            }
+            if (is != null) inspectIcon = new Image(Display.getDefault(), is);
+            else SimpleDebuggerLogger.error("Icon not found: /icons/inspect.png", null);
 
-            // Field icon
-            try (InputStream fieldIs = getClass().getResourceAsStream("/icons/field.png")) {
-                if (fieldIs != null) {
-                    Image original = new Image(Display.getDefault(), fieldIs);
-                    fieldIcon = new Image(Display.getDefault(), original.getImageData().scaledTo(16, 16));
-                    original.dispose();
-                } else {
-                    fieldIcon = null;
-                }
-            }
+            if (varIs != null) variableIcon = new Image(Display.getDefault(), varIs);
+            if (fieldIs != null) fieldIcon = new Image(Display.getDefault(), fieldIs);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -129,8 +108,36 @@ public class FieldsAndVariablesTabContent {
         }
     }
 
-    /** Sets up table columns: Name, Type (with icon), Value */
+    /** Sets up table columns: Icon, Name, Type, Value */
     private void setupColumns() {
+        // Icon column (field or variable)
+        TableViewerColumn iconColumn = new TableViewerColumn(viewer, SWT.NONE);
+        iconColumn.getColumn().setText("");
+        iconColumn.getColumn().setWidth(24);
+        iconColumn.setLabelProvider(new ColumnLabelProvider() {
+            @Override
+            public Image getImage(Object element) {
+                if (element instanceof FieldOrVariableDTO dto) {
+                    return switch (dto.getFieldOrVariableType()) {
+                        case VARIABLE -> variableIcon;
+                        case FIELD -> fieldIcon;
+                    };
+                }
+                return null;
+            }
+
+            @Override
+            public String getToolTipText(Object element) {
+                if (element instanceof FieldOrVariableDTO dto) {
+                    return switch (dto.getFieldOrVariableType()) {
+                        case VARIABLE -> "Variable";
+                        case FIELD -> "Field";
+                    };
+                }
+                return null;
+            }
+        });
+
         // Name column
         TableViewerColumn nameColumn = new TableViewerColumn(viewer, SWT.NONE);
         nameColumn.getColumn().setText("Name");
@@ -143,26 +150,15 @@ public class FieldsAndVariablesTabContent {
             }
         });
 
-        // Type column with icon
+        // Type column
         TableViewerColumn typeColumn = new TableViewerColumn(viewer, SWT.NONE);
         typeColumn.getColumn().setText("Type");
-        typeColumn.getColumn().setWidth(140);
+        typeColumn.getColumn().setWidth(120);
         typeColumn.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
                 if (element instanceof FieldOrVariableDTO dto) return Objects.toString(dto.getType(), "");
                 return "";
-            }
-
-            @Override
-            public Image getImage(Object element) {
-                if (element instanceof FieldOrVariableDTO dto) {
-                    switch (dto.getFieldOrVariableType()) {
-                        case VARIABLE -> { return variableIcon; }
-                        case FIELD -> { return fieldIcon; }
-                    }
-                }
-                return null;
             }
         });
 
@@ -187,10 +183,18 @@ public class FieldsAndVariablesTabContent {
                 }
                 return null;
             }
+
+            @Override
+            public String getToolTipText(Object element) {
+                if (element instanceof FieldOrVariableDTO dto && isInspectableCollection(dto)) {
+                    return "Inspect collection";
+                }
+                return null;
+            }
         });
 
-        viewer.setColumnProperties(new String[]{"name", "type", "value"});
-        viewer.setCellEditors(new CellEditor[]{null, null, new TextCellEditor(table)});
+        viewer.setColumnProperties(new String[]{"icon", "name", "type", "value"});
+        viewer.setCellEditors(new CellEditor[]{null, null, null, new TextCellEditor(table)});
     }
 
     /** Sets up editing behavior for the Value column */
@@ -217,7 +221,7 @@ public class FieldsAndVariablesTabContent {
 
                 String newValStr = newValue.toString();
 
-                // Generate the correct event depending on whether it's a variable or field
+                // Generate correct event depending on type
                 switch (oldEntry.getFieldOrVariableType()) {
                     case VARIABLE -> {
                         UserChangedVariableEvent dto = new UserChangedVariableEvent(
@@ -267,7 +271,7 @@ public class FieldsAndVariablesTabContent {
             if (item == null) return;
 
             for (int i = 0; i < table.getColumnCount(); i++) {
-                if (item.getBounds(i).contains(pt) && i == 2) { // Value column
+                if (item.getBounds(i).contains(pt) && i == 3) { // Value column
                     FieldOrVariableDTO dto = (FieldOrVariableDTO) item.getData();
                     if (isInspectableCollection(dto)) {
                         inspectCollection(dto);
@@ -289,7 +293,7 @@ public class FieldsAndVariablesTabContent {
     }
 
     /**
-     * Updates the table with new variables and fields
+     * Updates the table with new variables and fields, sorting by type then name
      *
      * @param variables list of local variables
      * @param fields list of object fields
@@ -299,6 +303,11 @@ public class FieldsAndVariablesTabContent {
         entries.clear();
         if (variables != null) entries.addAll(variables);
         if (fields != null) entries.addAll(fields);
+
+        // Sort by FieldOrVariableType ordinal, then by name
+        entries.sort(Comparator
+                .comparing((FieldOrVariableDTO dto) -> dto.getFieldOrVariableType().ordinal())
+                .thenComparing(dto -> dto.getName(), String.CASE_INSENSITIVE_ORDER));
 
         viewer.setInput(entries);
         viewer.refresh();
