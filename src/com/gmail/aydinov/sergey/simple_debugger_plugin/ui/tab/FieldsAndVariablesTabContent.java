@@ -143,7 +143,7 @@ public class FieldsAndVariablesTabContent {
                 if (element instanceof FieldOrVariableDTO dto) {
                     return switch (dto.getFieldOrVariableType()) {
                         case VARIABLE -> variableIcon;
-                        case FIELD -> fieldIcon;
+                        case NON_STATIC_FIELD -> fieldIcon;
                     };
                 }
                 return null;
@@ -153,8 +153,8 @@ public class FieldsAndVariablesTabContent {
             public String getToolTipText(Object element) {
                 if (element instanceof FieldOrVariableDTO dto) {
                     return switch (dto.getFieldOrVariableType()) {
-                        case VARIABLE -> "Variable";
-                        case FIELD -> "Field";
+                        case VARIABLE -> "Local variable";
+                        case NON_STATIC_FIELD -> "Non-static field";
                     };
                 }
                 return null;
@@ -222,7 +222,7 @@ public class FieldsAndVariablesTabContent {
                 switch (oldEntry.getFieldOrVariableType()) {
                     case VARIABLE -> uiEventCollector.collectUiEvent(new UserChangedVariableEvent(
                             oldEntry.getName(), oldEntry.getType(), newValStr));
-                    case FIELD -> uiEventCollector.collectUiEvent(new UserChangedFieldEvent(
+                    case NON_STATIC_FIELD -> uiEventCollector.collectUiEvent(new UserChangedFieldEvent(
                             oldEntry.getName(), oldEntry.getType(), newValStr));
                 }
 
