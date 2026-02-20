@@ -19,6 +19,7 @@ import org.eclipse.jface.viewers.TextCellEditor;
 import org.eclipse.jface.viewers.CellEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
@@ -161,16 +162,35 @@ public class VariablesFieldsTabContent {
 
                 String newValStr = newValue.toString();
 
-                UserChangedVariableEvent dto = new UserChangedVariableEvent(
-                        oldEntry.getName(),
-                        oldEntry.getType(),
-                        newValStr
-                );
-                uiEventCollector.collectUiEvent(dto);
+                // Generate the correct event based on type
+                switch (oldEntry.getFieldOrVariableType()) {
+                    case VARIABLE -> {
+                        UserChangedVariableEvent dto = new UserChangedVariableEvent(
+                                oldEntry.getName(),
+                                oldEntry.getType(),
+                                newValStr
+                        );
+                        uiEventCollector.collectUiEvent(dto);
+                    }
+                    case FIELD -> {
+                        UserChangedFieldEvent dto = new UserChangedFieldEvent(
+                                oldEntry.getName(),
+                                oldEntry.getType(),
+                                newValStr
+                        );
+                        uiEventCollector.collectUiEvent(dto);
+                    }
+                }
 
+                // Update the table model
                 int index = entries.indexOf(oldEntry);
                 if (index >= 0) {
-                    FieldOrVariableDTO updated = new FieldOrVariableDTO(oldEntry.getName(), oldEntry.getType(), newValStr, oldEntry.getFieldOrVariableType());
+                    FieldOrVariableDTO updated = new FieldOrVariableDTO(
+                            oldEntry.getName(),
+                            oldEntry.getType(),
+                            newValStr,
+                            oldEntry.getFieldOrVariableType()
+                    );
                     entries.set(index, updated);
                     viewer.update(updated, null);
                 }
