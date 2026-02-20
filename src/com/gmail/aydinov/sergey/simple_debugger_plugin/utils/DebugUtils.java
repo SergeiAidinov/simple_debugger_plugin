@@ -182,17 +182,17 @@ public class DebugUtils {
 		throw new RuntimeException("No suitable constructor found for boxed type: " + classType.name());
 	}
 
-	private static VariableDTO mapField(Map.Entry<Field, Value> entry) {
-		Field field = entry.getKey();
-		Value value = entry.getValue();
-		return new VariableDTO(field.name(), field.typeName(), valueToString(value));
-	}
+//	private static VariableDTO mapField(Map.Entry<Field, Value> entry) {
+//		Field field = entry.getKey();
+//		Value value = entry.getValue();
+//		return new VariableDTO(field.name(), field.typeName(), valueToString(value));
+//	}
 
-	private static VariableDTO mapLocal(Map.Entry<LocalVariable, Value> entry) {
-		LocalVariable localVariable = entry.getKey();
-		Value value = entry.getValue();
-		return new VariableDTO(localVariable.name(), localVariable.typeName(), valueToString(value));
-	}
+//	private static VariableDTO mapLocal(Map.Entry<LocalVariable, Value> entry) {
+//		LocalVariable localVariable = entry.getKey();
+//		Value value = entry.getValue();
+//		return new VariableDTO(localVariable.name(), localVariable.typeName(), valueToString(value));
+//	}
 
 	/**
 	 * Converts {@code Map<Field, Value>} to {@code List<VariableDTO>}.
