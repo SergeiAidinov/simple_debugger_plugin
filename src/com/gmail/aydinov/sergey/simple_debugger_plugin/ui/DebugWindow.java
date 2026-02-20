@@ -3,11 +3,9 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 import java.io.InputStream;
 import java.util.Objects;
 
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -17,6 +15,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
@@ -30,26 +29,16 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerE
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabController;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldsTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.VariablesTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.VariablesFieldsTabContent;
 
-/**
- * Main debugger window displaying variables, fields, stack trace, evaluation, and console.
- * <p>
- * Author: Sergei Aidinov
- * <br>
- * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
- * </p>
- */
 public class DebugWindow {
 
     private Shell shell;
     private CTabFolder tabFolder;
 
-    // Tab contents
-    private VariablesTabContent variablesTabContent;
-    private FieldsTabContent fieldsTabContent;
+    // Объединённая вкладка
+    private VariablesFieldsTabContent variablesFieldsTabContent;
     private StackTabContent stackTabContent;
     private EvaluateTabController evaluateTabController;
     private ConsoleTabContent consoleTabContent;
@@ -60,9 +49,6 @@ public class DebugWindow {
     private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
     private final String STOP_INFO = "Stopped at: ";
 
-    /**
-     * Constructs and initializes the debugger window.
-     */
     public DebugWindow() {
         Display display = Display.getDefault();
         shell = new Shell(display);
@@ -97,17 +83,11 @@ public class DebugWindow {
         tabFolder.setSimple(false);
         tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        // Variables tab
-        variablesTabContent = new VariablesTabContent(tabFolder, uiEventCollector);
-        CTabItem variablesTabItem = new CTabItem(tabFolder, SWT.NONE);
-        variablesTabItem.setText("Variables");
-        variablesTabItem.setControl(variablesTabContent.getControl());
-
-        // Fields tab
-        fieldsTabContent = new FieldsTabContent(tabFolder);
-        CTabItem fieldsTabItem = new CTabItem(tabFolder, SWT.NONE);
-        fieldsTabItem.setText("Fields");
-        fieldsTabItem.setControl(fieldsTabContent.getControl());
+        // Объединённая вкладка: Variables + Fields
+        variablesFieldsTabContent = new VariablesFieldsTabContent(tabFolder);
+        CTabItem varsFieldsTabItem = new CTabItem(tabFolder, SWT.NONE);
+        varsFieldsTabItem.setText("Variables & Fields");
+        varsFieldsTabItem.setControl(variablesFieldsTabContent.getControl());
 
         // Stack tab
         stackTabContent = new StackTabContent(tabFolder);
@@ -140,13 +120,7 @@ public class DebugWindow {
         processorThread.start();
     }
 
-    public Shell getShell() {
-        return shell;
-    }
-
-    /**
-     * Hook close event (click on cross)
-     */
+    // ----------------- Event hooks -----------------
     private void hookCross() {
         shell.addListener(SWT.Close, event -> {
             event.doit = false;
@@ -154,101 +128,61 @@ public class DebugWindow {
         });
     }
 
-    /**
-     * Handles window close event, asks confirmation and sends UserClosedWindowUiEvent
-     * @return true if window is allowed to close
-     */
     private boolean handleWindowClose() {
         MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO);
         messageBox.setText("Confirmation");
         messageBox.setMessage("Close the debugger window?");
         int response = messageBox.open();
-        if (response == SWT.NO) {
-            return false; // cancel closing
-        }
-        // close window
-        SimpleDebuggerLogger.info("Debug window closed");
-        showVmStoppedMessage();
+        if (response == SWT.NO) return false;
+
         shell.dispose();
         uiEventCollector.collectUiEvent(new UserClosedWindowUiEvent());
         return true;
     }
 
-    /**
-     * Shows a message that the VM has been detached
-     */
-    private void showVmStoppedMessage() {
-        MessageDialog.openInformation(shell, "Debugger", "Debugger detached. Target VM continues running");
-    }
-
-    /**
-     * Hook Resume button
-     */
     private void hookResumeButton() {
-        resumeButton.addListener(SWT.Selection, e -> pressResumeButton());
+        resumeButton.addListener(SWT.Selection, e -> uiEventCollector.collectUiEvent(new UserPressedResumeUiEvent()));
     }
 
-    private void pressResumeButton() {
-        uiEventCollector.collectUiEvent(new UserPressedResumeUiEvent());
+    public Shell getShell() {
+        return shell;
     }
 
-    /**
-     * Opens the debugger window and sets icon
-     */
     public void open() {
-        final Image[] iconHolder = new Image[1];
-        try (InputStream is = getClass().getResourceAsStream("/icons/icon.png")) {
-            if (Objects.nonNull(is)) {
-                iconHolder[0] = new Image(Display.getDefault(), is);
-                shell.setImage(iconHolder[0]);
-            } else {
-                SimpleDebuggerLogger.error("Icon not found: /icons/icon.png", null);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         shell.open();
-        // Dispose icon on window dispose
-        shell.addListener(SWT.Dispose, event -> {
-            if (Objects.nonNull(iconHolder[0]) && !iconHolder[0].isDisposed()) {
-                iconHolder[0].dispose();
-            }
-        });
     }
 
     public boolean isOpen() {
         return Objects.nonNull(shell) && !shell.isDisposed();
     }
 
-    /**
-     * Handles incoming debug events
-     * @param event debug event
-     */
+    // ----------------- Debug events -----------------
     public void handleDebugEvent(AbstractSimpleDebugEvent event) {
         Display.getDefault().asyncExec(() -> {
             if (shell.isDisposed()) return;
+
             if (event.getType().equals(SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT)) {
-                refreshDataAtBreakepoint((DebugStoppedAtBreakpointEvent) event);
+                refreshDataAtBreakpoint((DebugStoppedAtBreakpointEvent) event);
             } else if (event.getType().equals(SimpleDebuggerEventType.REFRESH_CONSOLE)) {
                 ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
                 consoleTabContent.appendLine(consoleEvent.getText());
             } else if (event.getType().equals(SimpleDebuggerEventType.METHOD_INVOKE)) {
-                BackendMethodExecutedEvent methodInvokedEvent = (BackendMethodExecutedEvent) event;
+                BackendMethodExecutedEvent methodEvent = (BackendMethodExecutedEvent) event;
                 evaluateTabController.clearResult();
-                evaluateTabController.showResult(methodInvokedEvent.getResultOfInvocation());
+                evaluateTabController.showResult(methodEvent.getResultOfInvocation());
             }
         });
     }
 
-    /**
-     * Refreshes UI when stopped at breakpoint
-     */
-    private void refreshDataAtBreakepoint(DebugStoppedAtBreakpointEvent event) {
-        if (Objects.isNull(event)) return;
+    private void refreshDataAtBreakpoint(DebugStoppedAtBreakpointEvent event) {
+        if (event == null) return;
+
         locationLabel.setText(STOP_INFO + event.getClassName() + "." + event.getMethodName() + " line:" + event.getLineNumber());
         resumeButton.setEnabled(true);
-        variablesTabContent.updateVariables(event.getLocals());
-        fieldsTabContent.updateFields(event.getFields());
+
+        // Обновление объединённой вкладки
+        variablesFieldsTabContent.updateVariablesAndFields(event.getLocals(), event.getFields());
+
         stackTabContent.updateStack(event.getMethodCallInStacks());
         evaluateTabController.updateFromEvent(event);
     }
@@ -256,21 +190,7 @@ public class DebugWindow {
     public void appendConsoleLine(String line) {
         consoleTabContent.appendLine(line);
     }
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) return true;
-        if (Objects.isNull(object)) return false;
-        if (!(object instanceof DebugWindow)) return false;
-        DebugWindow other = (DebugWindow) object;
-        return Objects.nonNull(shell) && shell.equals(other.shell);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.nonNull(shell) ? shell.hashCode() : 0;
-    }
-
+    
     /**
      * Shows an error dialog to the user
      * @param title dialog title
