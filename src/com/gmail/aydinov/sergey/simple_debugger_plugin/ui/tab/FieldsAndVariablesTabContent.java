@@ -29,7 +29,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerE
  * Combined tab for object fields and local variables.
  * Supports "inspect" for any Iterable collections.
  */
-public class VariablesFieldsTabContent {
+public class FieldsAndVariablesTabContent {
 
     private final Composite root;
     private final Table table;
@@ -38,13 +38,15 @@ public class VariablesFieldsTabContent {
     private final UiEventCollector uiEventCollector;
 
     private Image inspectIcon;
+    private Image variableIcon;
+    private Image fieldIcon;
 
     /**
      * Constructs the combined tab UI.
      *
      * @param parent the parent composite
      */
-    public VariablesFieldsTabContent(Composite parent) {
+    public FieldsAndVariablesTabContent(Composite parent) {
         this.uiEventCollector = SimpleDebuggerEventQueue.instance();
 
         root = new Composite(parent, SWT.NONE);
@@ -55,7 +57,7 @@ public class VariablesFieldsTabContent {
         table.setLinesVisible(true);
         table.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        loadInspectIcon();
+        loadIcons(); // Load inspect, variable, field icons
 
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
@@ -65,17 +67,48 @@ public class VariablesFieldsTabContent {
         setupClickListener();
     }
 
-    /** Loads the "inspect" icon from resources */
-    private void loadInspectIcon() {
-        try (InputStream is = getClass().getResourceAsStream("/icons/inspect.png")) {
-            if (is != null) {
-                inspectIcon = new Image(Display.getDefault(), is);
-            } else {
-                SimpleDebuggerLogger.error("Icon not found: /icons/inspect.png", null);
-                inspectIcon = null;
+    /** Loads all required icons from resources and scales them to 16x16 */
+    private void loadIcons() {
+        try {
+            // Inspect icon
+            try (InputStream is = getClass().getResourceAsStream("/icons/inspect.png")) {
+                if (is != null) {
+                    Image original = new Image(Display.getDefault(), is);
+                    inspectIcon = new Image(Display.getDefault(), original.getImageData().scaledTo(16, 16));
+                    original.dispose();
+                } else {
+                    SimpleDebuggerLogger.error("Icon not found: /icons/inspect.png", null);
+                    inspectIcon = null;
+                }
             }
+
+            // Variable icon
+            try (InputStream varIs = getClass().getResourceAsStream("/icons/variable.png")) {
+                if (varIs != null) {
+                    Image original = new Image(Display.getDefault(), varIs);
+                    variableIcon = new Image(Display.getDefault(), original.getImageData().scaledTo(16, 16));
+                    original.dispose();
+                } else {
+                    variableIcon = null;
+                }
+            }
+
+            // Field icon
+            try (InputStream fieldIs = getClass().getResourceAsStream("/icons/field.png")) {
+                if (fieldIs != null) {
+                    Image original = new Image(Display.getDefault(), fieldIs);
+                    fieldIcon = new Image(Display.getDefault(), original.getImageData().scaledTo(16, 16));
+                    original.dispose();
+                } else {
+                    fieldIcon = null;
+                }
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
+            inspectIcon = null;
+            variableIcon = null;
+            fieldIcon = null;
         }
     }
 
@@ -96,7 +129,7 @@ public class VariablesFieldsTabContent {
         }
     }
 
-    /** Sets up table columns: Name, Type, Value */
+    /** Sets up table columns: Name, Type (with icon), Value */
     private void setupColumns() {
         // Name column
         TableViewerColumn nameColumn = new TableViewerColumn(viewer, SWT.NONE);
@@ -110,15 +143,26 @@ public class VariablesFieldsTabContent {
             }
         });
 
-        // Type column
+        // Type column with icon
         TableViewerColumn typeColumn = new TableViewerColumn(viewer, SWT.NONE);
         typeColumn.getColumn().setText("Type");
-        typeColumn.getColumn().setWidth(120);
+        typeColumn.getColumn().setWidth(140);
         typeColumn.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
                 if (element instanceof FieldOrVariableDTO dto) return Objects.toString(dto.getType(), "");
                 return "";
+            }
+
+            @Override
+            public Image getImage(Object element) {
+                if (element instanceof FieldOrVariableDTO dto) {
+                    switch (dto.getFieldOrVariableType()) {
+                        case VARIABLE -> { return variableIcon; }
+                        case FIELD -> { return fieldIcon; }
+                    }
+                }
+                return null;
             }
         });
 
