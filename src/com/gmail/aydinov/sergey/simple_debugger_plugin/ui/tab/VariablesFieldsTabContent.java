@@ -18,7 +18,7 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.jface.viewers.TextCellEditor;
 import org.eclipse.jface.viewers.CellEditor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
@@ -33,7 +33,7 @@ public class VariablesFieldsTabContent {
     private final Composite root;
     private final Table table;
     private final TableViewer viewer;
-    private final List<VariableDTO> entries = new ArrayList<>();
+    private final List<FieldOrVariableDTO> entries = new ArrayList<>();
     private final UiEventCollector uiEventCollector;
 
     private Image inspectIcon;
@@ -74,7 +74,7 @@ public class VariablesFieldsTabContent {
     }
 
     /** Проверка: коллекция, которую можно inspect */
-    private boolean isInspectableCollection(VariableDTO dto) {
+    private boolean isInspectableCollection(FieldOrVariableDTO dto) {
         if (dto == null || dto.getType() == null) return false;
         try {
             Class<?> klass = Class.forName(dto.getType());
@@ -93,7 +93,7 @@ public class VariablesFieldsTabContent {
         nameColumn.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
-                if (element instanceof VariableDTO dto) return Objects.toString(dto.getName(), "");
+                if (element instanceof FieldOrVariableDTO dto) return Objects.toString(dto.getName(), "");
                 return "";
             }
         });
@@ -105,7 +105,7 @@ public class VariablesFieldsTabContent {
         typeColumn.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
-                if (element instanceof VariableDTO dto) return Objects.toString(dto.getType(), "");
+                if (element instanceof FieldOrVariableDTO dto) return Objects.toString(dto.getType(), "");
                 return "";
             }
         });
@@ -117,7 +117,7 @@ public class VariablesFieldsTabContent {
         valueColumn.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
-                if (element instanceof VariableDTO dto) {
+                if (element instanceof FieldOrVariableDTO dto) {
                     if (isInspectableCollection(dto)) return "";
                     return Objects.toString(dto.getValue(), "");
                 }
@@ -126,7 +126,7 @@ public class VariablesFieldsTabContent {
 
             @Override
             public Image getImage(Object element) {
-                if (element instanceof VariableDTO dto && isInspectableCollection(dto)) {
+                if (element instanceof FieldOrVariableDTO dto && isInspectableCollection(dto)) {
                     return inspectIcon;
                 }
                 return null;
@@ -142,13 +142,13 @@ public class VariablesFieldsTabContent {
         viewer.setCellModifier(new ICellModifier() {
             @Override
             public boolean canModify(Object element, String property) {
-                return "value".equals(property) && !(element instanceof VariableDTO dto &&
+                return "value".equals(property) && !(element instanceof FieldOrVariableDTO dto &&
                         isInspectableCollection(dto));
             }
 
             @Override
             public Object getValue(Object element, String property) {
-                if (element instanceof VariableDTO dto) return dto.getValue();
+                if (element instanceof FieldOrVariableDTO dto) return dto.getValue();
                 return null;
             }
 
@@ -156,7 +156,7 @@ public class VariablesFieldsTabContent {
             public void modify(Object element, String property, Object newValue) {
                 if (!(element instanceof TableItem item)) return;
 
-                VariableDTO oldEntry = (VariableDTO) item.getData();
+                FieldOrVariableDTO oldEntry = (FieldOrVariableDTO) item.getData();
                 if (Objects.isNull(oldEntry) || Objects.isNull(newValue)) return;
 
                 String newValStr = newValue.toString();
@@ -170,7 +170,7 @@ public class VariablesFieldsTabContent {
 
                 int index = entries.indexOf(oldEntry);
                 if (index >= 0) {
-                    VariableDTO updated = new VariableDTO(oldEntry.getName(), oldEntry.getType(), newValStr);
+                    FieldOrVariableDTO updated = new FieldOrVariableDTO(oldEntry.getName(), oldEntry.getType(), newValStr, oldEntry.getFieldOrVariableType());
                     entries.set(index, updated);
                     viewer.update(updated, null);
                 }
@@ -187,7 +187,7 @@ public class VariablesFieldsTabContent {
 
             for (int i = 0; i < table.getColumnCount(); i++) {
                 if (item.getBounds(i).contains(pt) && i == 2) { // Value column
-                    VariableDTO dto = (VariableDTO) item.getData();
+                    FieldOrVariableDTO dto = (FieldOrVariableDTO) item.getData();
                     if (isInspectableCollection(dto)) {
                         inspectCollection(dto);
                     }
@@ -198,13 +198,13 @@ public class VariablesFieldsTabContent {
     }
 
     /** Обработчик inspect */
-    private void inspectCollection(VariableDTO dto) {
+    private void inspectCollection(FieldOrVariableDTO dto) {
         // TODO: реализовать просмотр коллекции
         System.out.println("Inspect collection: " + dto.getName());
     }
 
     /** Обновление списка (поля + локальные переменные) */
-    public void updateVariablesAndFields(List<VariableDTO> variables, List<VariableDTO> fields) {
+    public void updateVariablesAndFields(List<FieldOrVariableDTO> variables, List<FieldOrVariableDTO> fields) {
         if (table.isDisposed()) return;
         entries.clear();
         if (variables != null) entries.addAll(variables);

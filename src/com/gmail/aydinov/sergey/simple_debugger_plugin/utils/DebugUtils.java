@@ -9,7 +9,8 @@ import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.FieldOrVariableType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassNotLoadedException;
@@ -31,8 +32,7 @@ import com.sun.jdi.VirtualMachine;
 /**
  * Utility class for JDI (Java Debug Interface) operations
  * <p>
- * Author: Sergei Aidinov
- * <br>
+ * Author: Sergei Aidinov <br>
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
@@ -68,10 +68,10 @@ public class DebugUtils {
 	/**
 	 * Creates a JDI Value from a string to set it to a local variable or field.
 	 *
-	 * @param virtualMachine        Target process VirtualMachine
-	 * @param varType   Variable type (LocalVariable.type() or Field.type())
-	 * @param textValue String value from UI
-	 * @param threadReference    Thread where boxed objects are created
+	 * @param virtualMachine  Target process VirtualMachine
+	 * @param varType         Variable type (LocalVariable.type() or Field.type())
+	 * @param textValue       String value from UI
+	 * @param threadReference Thread where boxed objects are created
 	 */
 	public static Value createJdiObjectFromString(VirtualMachine virtualMachine, Type varType, String textValue,
 			ThreadReference threadReference) {
@@ -126,15 +126,20 @@ public class DebugUtils {
 		// 4. Boxing types
 		switch (typeName) {
 		case "java.lang.Integer":
-			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Integer.parseInt(trimmed)), threadReference);
+			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Integer.parseInt(trimmed)),
+					threadReference);
 		case "java.lang.Long":
-			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Long.parseLong(trimmed)), threadReference);
+			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Long.parseLong(trimmed)),
+					threadReference);
 		case "java.lang.Boolean":
-			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Boolean.parseBoolean(trimmed)), threadReference);
+			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Boolean.parseBoolean(trimmed)),
+					threadReference);
 		case "java.lang.Double":
-			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Double.parseDouble(trimmed)), threadReference);
+			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Double.parseDouble(trimmed)),
+					threadReference);
 		case "java.lang.Float":
-			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Float.parseFloat(trimmed)), threadReference);
+			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Float.parseFloat(trimmed)),
+					threadReference);
 		case "java.lang.Character":
 			char c = trimmed.length() == 1 ? trimmed.charAt(0) : trimmed.charAt(1);
 			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(c), threadReference);
@@ -171,7 +176,8 @@ public class DebugUtils {
 				}
 				if (Objects.nonNull(args) && args.size() == 1) {
 					try {
-						return classType.newInstance(thread, method, List.of(primitive), ObjectReference.INVOKE_SINGLE_THREADED);
+						return classType.newInstance(thread, method, List.of(primitive),
+								ObjectReference.INVOKE_SINGLE_THREADED);
 					} catch (Exception e) {
 						throw new RuntimeException("Error creating boxed " + classType.name(), e);
 					}
@@ -200,12 +206,14 @@ public class DebugUtils {
 	 * @param fields the map of fields and their values
 	 * @return list of VariableDTO representing fields
 	 */
-	public static List<VariableDTO> mapFields(Map<Field, Value> fields) {
+	public static List<FieldOrVariableDTO> mapFields(Map<Field, Value> fields) {
 		if (Objects.isNull(fields))
 			return List.of();
 
-		return fields.entrySet().stream().map(entry -> new VariableDTO(entry.getKey().name(), entry.getKey().typeName(),
-				valueToString(entry.getValue()))).collect(Collectors.toList());
+		return fields
+				.entrySet().stream().map(entry -> new FieldOrVariableDTO(entry.getKey().name(),
+						entry.getKey().typeName(), valueToString(entry.getValue()), FieldOrVariableType.FIELD))
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -214,12 +222,14 @@ public class DebugUtils {
 	 * @param locals the map of local variables and their values
 	 * @return list of VariableDTO representing local variables
 	 */
-	public static List<VariableDTO> mapLocals(Map<LocalVariable, Value> locals) {
+	public static List<FieldOrVariableDTO> mapLocals(Map<LocalVariable, Value> locals) {
 		if (Objects.isNull(locals))
 			return List.of();
 
-		return locals.entrySet().stream().map(entry -> new VariableDTO(entry.getKey().name(), entry.getKey().typeName(),
-				valueToString(entry.getValue()))).collect(Collectors.toList());
+		return locals
+				.entrySet().stream().map(entry -> new FieldOrVariableDTO(entry.getKey().name(),
+						entry.getKey().typeName(), valueToString(entry.getValue()), FieldOrVariableType.VARIABLE))
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -232,7 +242,8 @@ public class DebugUtils {
 	/**
 	 * Converts argumentsText to a list of JDI values for method invocation
 	 */
-	public static List<Value> parseArguments(VirtualMachine virtualMachine, UserInvokedMethodEvent userInvokedMethodEvent) {
+	public static List<Value> parseArguments(VirtualMachine virtualMachine,
+			UserInvokedMethodEvent userInvokedMethodEvent) {
 		List<Value> values = new ArrayList<>();
 		String argsText = userInvokedMethodEvent.getArgumentsText().trim();
 		// Remove parentheses if method specified as method(arg1, arg2)
@@ -273,7 +284,8 @@ public class DebugUtils {
 		return values;
 	}
 
-	private static Value convertStringToValue(String argument, String typeName, VirtualMachine virtualMachine) throws Exception {
+	private static Value convertStringToValue(String argument, String typeName, VirtualMachine virtualMachine)
+			throws Exception {
 		switch (typeName) {
 		case "int":
 			return virtualMachine.mirrorOf(Integer.parseInt(argument));
@@ -333,7 +345,8 @@ public class DebugUtils {
 			try {
 				Location location = frame.location();
 				if (Objects.nonNull(location)) {
-					String className = Objects.nonNull(location.declaringType()) ? location.declaringType().name() : "Unknown";
+					String className = Objects.nonNull(location.declaringType()) ? location.declaringType().name()
+							: "Unknown";
 					String methodName = Objects.nonNull(location.method()) ? location.method().name() : "unknown";
 					int line = location.lineNumber();
 

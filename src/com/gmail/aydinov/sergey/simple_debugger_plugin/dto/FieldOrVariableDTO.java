@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.FieldOrVariableType;
+
 /**
  * DTO representing a variable in the target application.
  * Stores the variable's name, type, and value as strings.
@@ -9,11 +11,12 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
-public class VariableDTO {
+public class FieldOrVariableDTO {
 
     private final String name;   // the variable name
     private final String type;   // the variable type
     private final String value;  // the variable value
+    private final FieldOrVariableType fieldOrVariableType;
 
     /**
      * Constructs a VariableDTO.
@@ -22,10 +25,11 @@ public class VariableDTO {
      * @param type  the type of the variable
      * @param value the string representation of the variable's value
      */
-    public VariableDTO(String name, String type, String value) {
+    public FieldOrVariableDTO(String name, String type, String value, FieldOrVariableType fieldOrVariableType) {
         this.name = name;
         this.type = type;
         this.value = value;
+        this.fieldOrVariableType = fieldOrVariableType;
     }
 
     /** @return the variable name */
@@ -43,8 +47,9 @@ public class VariableDTO {
         return value;
     }
 
-    @Override
-    public String toString() {
-        return name + ": " + type + " = " + value;
-    }
+	public FieldOrVariableType getFieldOrVariableType() {
+		return fieldOrVariableType;
+	}
+
+    
 }
