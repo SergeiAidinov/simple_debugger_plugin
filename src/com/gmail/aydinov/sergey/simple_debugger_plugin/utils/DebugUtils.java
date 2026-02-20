@@ -212,7 +212,7 @@ public class DebugUtils {
 
 		return fields
 				.entrySet().stream().map(entry -> new FieldOrVariableDTO(entry.getKey().name(),
-						entry.getKey().typeName(), valueToString(entry.getValue()), FieldOrVariableType.FIELD))
+						entry.getKey().typeName(), valueToString(entry.getValue()), FieldOrVariableType.NON_STATIC_FIELD))
 				.collect(Collectors.toList());
 	}
 

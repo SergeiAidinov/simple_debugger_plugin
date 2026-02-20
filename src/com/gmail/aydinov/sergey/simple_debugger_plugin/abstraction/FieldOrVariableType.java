@@ -7,5 +7,5 @@ public enum FieldOrVariableType {
 	/** Local variable */
 	VARIABLE,
 	/** Field of an instance */
-	FIELD
+	NON_STATIC_FIELD
 }
