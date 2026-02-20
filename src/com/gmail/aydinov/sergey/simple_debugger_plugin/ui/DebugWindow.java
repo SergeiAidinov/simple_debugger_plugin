@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -15,7 +16,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
@@ -32,12 +32,20 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabControl
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.VariablesFieldsTabContent;
 
+/**
+ * Main debugger window displaying combined Variables + Fields tab, stack trace, evaluation, and console.
+ * <p>
+ * Author: Sergei Aidinov
+ * <br>
+ * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
+ * </p>
+ */
 public class DebugWindow {
 
     private Shell shell;
     private CTabFolder tabFolder;
 
-    // Объединённая вкладка
+    // Combined Variables + Fields tab
     private VariablesFieldsTabContent variablesFieldsTabContent;
     private StackTabContent stackTabContent;
     private EvaluateTabController evaluateTabController;
@@ -49,6 +57,9 @@ public class DebugWindow {
     private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
     private final String STOP_INFO = "Stopped at: ";
 
+    /**
+     * Constructs and initializes the debugger window.
+     */
     public DebugWindow() {
         Display display = Display.getDefault();
         shell = new Shell(display);
@@ -83,7 +94,7 @@ public class DebugWindow {
         tabFolder.setSimple(false);
         tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        // Объединённая вкладка: Variables + Fields
+        // Combined Variables + Fields tab
         variablesFieldsTabContent = new VariablesFieldsTabContent(tabFolder);
         CTabItem varsFieldsTabItem = new CTabItem(tabFolder, SWT.NONE);
         varsFieldsTabItem.setText("Fields and Variables");
@@ -113,7 +124,7 @@ public class DebugWindow {
         hookResumeButton();
         hookCross();
 
-        // Start event processor
+        // Start debug event processor in daemon thread
         SimpleDebugEventProcessor simpleDebugEventProcessor = new SimpleDebugEventProcessor(this);
         Thread processorThread = new Thread(simpleDebugEventProcessor);
         processorThread.setDaemon(true);
@@ -148,8 +159,31 @@ public class DebugWindow {
         return shell;
     }
 
+    /**
+     * Opens the debugger window and sets the window icon.
+     */
     public void open() {
+        // Load window icon
+        final Image[] iconHolder = new Image[1];
+        try (InputStream is = getClass().getResourceAsStream("/icons/icon.png")) {
+            if (Objects.nonNull(is)) {
+                iconHolder[0] = new Image(Display.getDefault(), is);
+                shell.setImage(iconHolder[0]); // Set icon for the window
+            } else {
+                SimpleDebuggerLogger.error("Icon not found: /icons/icon.png", null);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         shell.open();
+
+        // Dispose icon when shell is disposed
+        shell.addListener(SWT.Dispose, event -> {
+            if (Objects.nonNull(iconHolder[0]) && !iconHolder[0].isDisposed()) {
+                iconHolder[0].dispose();
+            }
+        });
     }
 
     public boolean isOpen() {
@@ -161,12 +195,12 @@ public class DebugWindow {
         Display.getDefault().asyncExec(() -> {
             if (shell.isDisposed()) return;
 
-            if (event.getType().equals(SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT)) {
+            if (Objects.equals(event.getType(), SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT)) {
                 refreshDataAtBreakpoint((DebugStoppedAtBreakpointEvent) event);
-            } else if (event.getType().equals(SimpleDebuggerEventType.REFRESH_CONSOLE)) {
+            } else if (Objects.equals(event.getType(), SimpleDebuggerEventType.REFRESH_CONSOLE)) {
                 ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
                 consoleTabContent.appendLine(consoleEvent.getText());
-            } else if (event.getType().equals(SimpleDebuggerEventType.METHOD_INVOKE)) {
+            } else if (Objects.equals(event.getType(), SimpleDebuggerEventType.METHOD_INVOKE)) {
                 BackendMethodExecutedEvent methodEvent = (BackendMethodExecutedEvent) event;
                 evaluateTabController.clearResult();
                 evaluateTabController.showResult(methodEvent.getResultOfInvocation());
@@ -180,9 +214,7 @@ public class DebugWindow {
         locationLabel.setText(STOP_INFO + event.getClassName() + "." + event.getMethodName() + " line:" + event.getLineNumber());
         resumeButton.setEnabled(true);
 
-        // Обновление объединённой вкладки
         variablesFieldsTabContent.updateVariablesAndFields(event.getLocals(), event.getFields());
-
         stackTabContent.updateStack(event.getMethodCallInStacks());
         evaluateTabController.updateFromEvent(event);
     }
@@ -190,10 +222,25 @@ public class DebugWindow {
     public void appendConsoleLine(String line) {
         consoleTabContent.appendLine(line);
     }
-    
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (Objects.isNull(object)) return false;
+        if (!(object instanceof DebugWindow)) return false;
+        DebugWindow other = (DebugWindow) object;
+        return Objects.nonNull(shell) && shell.equals(other.shell);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.nonNull(shell) ? shell.hashCode() : 0;
+    }
+
     /**
-     * Shows an error dialog to the user
-     * @param title dialog title
+     * Shows an error dialog to the user.
+     *
+     * @param title   dialog title
      * @param message error message
      */
     public void showError(String title, String message) {

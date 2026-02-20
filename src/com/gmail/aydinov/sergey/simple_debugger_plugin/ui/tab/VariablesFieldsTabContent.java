@@ -26,8 +26,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollecto
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 
 /**
- * Объединённая вкладка: поля + локальные переменные.
- * Поддерживает inspect для всех Iterable коллекций.
+ * Combined tab for object fields and local variables.
+ * Supports "inspect" for any Iterable collections.
  */
 public class VariablesFieldsTabContent {
 
@@ -39,6 +39,11 @@ public class VariablesFieldsTabContent {
 
     private Image inspectIcon;
 
+    /**
+     * Constructs the combined tab UI.
+     *
+     * @param parent the parent composite
+     */
     public VariablesFieldsTabContent(Composite parent) {
         this.uiEventCollector = SimpleDebuggerEventQueue.instance();
 
@@ -60,7 +65,7 @@ public class VariablesFieldsTabContent {
         setupClickListener();
     }
 
-    /** Загрузка иконки inspect */
+    /** Loads the "inspect" icon from resources */
     private void loadInspectIcon() {
         try (InputStream is = getClass().getResourceAsStream("/icons/inspect.png")) {
             if (is != null) {
@@ -74,7 +79,13 @@ public class VariablesFieldsTabContent {
         }
     }
 
-    /** Проверка: коллекция, которую можно inspect */
+    /**
+     * Determines whether the given DTO represents a collection
+     * that can be inspected.
+     *
+     * @param dto the field or variable DTO
+     * @return true if the DTO type implements Iterable
+     */
     private boolean isInspectableCollection(FieldOrVariableDTO dto) {
         if (dto == null || dto.getType() == null) return false;
         try {
@@ -85,9 +96,9 @@ public class VariablesFieldsTabContent {
         }
     }
 
-    /** Настройка колонок: Name, Type, Value */
+    /** Sets up table columns: Name, Type, Value */
     private void setupColumns() {
-        // Name
+        // Name column
         TableViewerColumn nameColumn = new TableViewerColumn(viewer, SWT.NONE);
         nameColumn.getColumn().setText("Name");
         nameColumn.getColumn().setWidth(200);
@@ -99,7 +110,7 @@ public class VariablesFieldsTabContent {
             }
         });
 
-        // Type
+        // Type column
         TableViewerColumn typeColumn = new TableViewerColumn(viewer, SWT.NONE);
         typeColumn.getColumn().setText("Type");
         typeColumn.getColumn().setWidth(120);
@@ -111,7 +122,7 @@ public class VariablesFieldsTabContent {
             }
         });
 
-        // Value (текст или иконка inspect)
+        // Value column (text or inspect icon)
         TableViewerColumn valueColumn = new TableViewerColumn(viewer, SWT.NONE);
         valueColumn.getColumn().setText("Value");
         valueColumn.getColumn().setWidth(200);
@@ -138,7 +149,7 @@ public class VariablesFieldsTabContent {
         viewer.setCellEditors(new CellEditor[]{null, null, new TextCellEditor(table)});
     }
 
-    /** Настройка редактирования значений */
+    /** Sets up editing behavior for the Value column */
     private void setupCellModifier() {
         viewer.setCellModifier(new ICellModifier() {
             @Override
@@ -162,7 +173,7 @@ public class VariablesFieldsTabContent {
 
                 String newValStr = newValue.toString();
 
-                // Generate the correct event based on type
+                // Generate the correct event depending on whether it's a variable or field
                 switch (oldEntry.getFieldOrVariableType()) {
                     case VARIABLE -> {
                         UserChangedVariableEvent dto = new UserChangedVariableEvent(
@@ -183,7 +194,13 @@ public class VariablesFieldsTabContent {
                 }
 
                 // Update the table model
-                int index = entries.indexOf(oldEntry);
+                int index = -1;
+                for (int i = 0; i < entries.size(); i++) {
+                    if (Objects.equals(entries.get(i), oldEntry)) {
+                        index = i;
+                        break;
+                    }
+                }
                 if (index >= 0) {
                     FieldOrVariableDTO updated = new FieldOrVariableDTO(
                             oldEntry.getName(),
@@ -198,7 +215,7 @@ public class VariablesFieldsTabContent {
         });
     }
 
-    /** Клик по иконке inspect */
+    /** Sets up click listener for inspect icons */
     private void setupClickListener() {
         table.addListener(SWT.MouseDown, event -> {
             Point pt = new Point(event.x, event.y);
@@ -217,13 +234,22 @@ public class VariablesFieldsTabContent {
         });
     }
 
-    /** Обработчик inspect */
+    /**
+     * Handles inspect action for collections
+     *
+     * @param dto the field or variable representing a collection
+     */
     private void inspectCollection(FieldOrVariableDTO dto) {
-        // TODO: реализовать просмотр коллекции
+        // TODO: implement collection inspection logic
         System.out.println("Inspect collection: " + dto.getName());
     }
 
-    /** Обновление списка (поля + локальные переменные) */
+    /**
+     * Updates the table with new variables and fields
+     *
+     * @param variables list of local variables
+     * @param fields list of object fields
+     */
     public void updateVariablesAndFields(List<FieldOrVariableDTO> variables, List<FieldOrVariableDTO> fields) {
         if (table.isDisposed()) return;
         entries.clear();
@@ -234,7 +260,11 @@ public class VariablesFieldsTabContent {
         viewer.refresh();
     }
 
-    /** Возвращает root Composite */
+    /**
+     * Returns the root composite of this tab
+     *
+     * @return the root SWT Composite
+     */
     public Composite getControl() {
         return root;
     }
