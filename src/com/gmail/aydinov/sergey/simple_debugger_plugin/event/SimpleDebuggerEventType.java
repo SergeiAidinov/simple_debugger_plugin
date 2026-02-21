@@ -15,6 +15,8 @@ public enum SimpleDebuggerEventType {
 
     /** Event triggered to refresh the debugger console */
     REFRESH_CONSOLE,
+    
+    SET_RESUME_BUTTON_STATE,
 
     /** Event triggered when a method is invoked in the target application */
     METHOD_INVOKE

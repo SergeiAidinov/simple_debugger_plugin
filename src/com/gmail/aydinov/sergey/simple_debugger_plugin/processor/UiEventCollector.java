@@ -28,5 +28,7 @@ public interface UiEventCollector {
      * @return the next UI event, or null if none is available
      * @throws InterruptedException if the operation is interrupted while waiting
      */
-    AbstractUIEvent pollUiEvent() throws InterruptedException;
+    AbstractUIEvent pollUiEvent();
+    
+    AbstractUIEvent takeUiEvent() throws InterruptedException;
 }

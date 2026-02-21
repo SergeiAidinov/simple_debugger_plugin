@@ -8,6 +8,7 @@ import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserEndedInspectionSessionForElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
@@ -33,6 +34,10 @@ public class InspectWindow {
         shell.setText("Inspect Object");
         shell.setSize(1400, 800); // альбомный формат
         shell.setLayout(new GridLayout(1, false));
+        shell.addListener(SWT.Close, e -> {
+            System.out.println("InspectWindow: user clicked X, closing session");
+            uiEventCollector.collectUiEvent(new UserEndedInspectionSessionForElement());
+        });
 
         // ----------------- Top panel -----------------
         Composite topPanel = new Composite(shell, SWT.NONE);
