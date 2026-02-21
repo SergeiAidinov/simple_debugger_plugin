@@ -392,5 +392,19 @@ public class DebugUtils {
 		}
 		return localVariables;
 	}
+	
+	/** Determines if the DTO can be inspected (non-primitive, non-String, non-null) */
+    public static boolean isInspectable(FieldOrVariableDTO dto) {
+        if (dto == null || dto.getType() == null || dto.getValue() == null) return false;
+
+        switch (dto.getType()) {
+            case "int", "long", "double", "float",
+                 "boolean", "byte", "short", "char":
+                return false;
+        }
+        if ("java.lang.String".equals(dto.getType())) return false;
+
+        return true;
+    }
 
 }
