@@ -12,25 +12,24 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 /**
  * Inspect window showing a single table with two columns (type/key + value)
  * and a top panel for object name + breadcrumb history.
+ * No tabs or "petals" are used.
  */
 public class InspectWindow {
 
-    private Shell shell;
-    private Composite topPanel;
-    private Label objectLabel;
-    private Composite breadcrumbComposite;
-    private Table table;
-    private Deque<FieldOrVariableDTO> history = new ArrayDeque<>();
+    private final Shell shell;
+    private final Label objectLabel;
+    private final Composite breadcrumbComposite;
+    private final Table table;
+    private final Deque<FieldOrVariableDTO> history = new ArrayDeque<>();
 
     public InspectWindow() {
-        // Shell
         shell = new Shell(Display.getDefault());
         shell.setText("Inspect Object");
         shell.setSize(1400, 800); // альбомный формат
         shell.setLayout(new GridLayout(1, false));
 
         // ----------------- Top panel -----------------
-        topPanel = new Composite(shell, SWT.NONE);
+        Composite topPanel = new Composite(shell, SWT.NONE);
         topPanel.setLayout(new GridLayout(2, false));
         topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
@@ -59,6 +58,7 @@ public class InspectWindow {
 
     /** Opens the shell */
     public void open() {
+    	shell.setImage(DebugWindowManager.instance().icons.get("debugger"));
         shell.open();
     }
 
@@ -67,10 +67,9 @@ public class InspectWindow {
         return !shell.isDisposed();
     }
 
-    /** Closes the window and clears history */
+    /** Closes the window */
     public void close() {
         if (isOpen()) {
-            // Выполнить закрытие синхронно в UI-потоке
             Display.getDefault().syncExec(() -> {
                 if (!shell.isDisposed()) {
                     shell.close();
@@ -84,8 +83,6 @@ public class InspectWindow {
         if (dto == null || shell.isDisposed()) return;
 
         objectLabel.setText("Object: " + dto.getName());
-
-        // Добавляем в историю
         history.push(dto);
 
         renderBreadcrumb();

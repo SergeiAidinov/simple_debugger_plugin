@@ -1,11 +1,17 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import org.eclipse.jface.viewers.*;
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.CellEditor;
+import org.eclipse.jface.viewers.ColumnLabelProvider;
+import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
+import org.eclipse.jface.viewers.ICellModifier;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.jface.viewers.TextCellEditor;
 import org.eclipse.jface.window.ToolTip;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
@@ -16,16 +22,12 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.jface.viewers.TextCellEditor;
-import org.eclipse.jface.viewers.CellEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.InspectWindow;
 
@@ -41,10 +43,6 @@ public class FieldsAndVariablesTabContent {
     private final List<FieldOrVariableDTO> entries = new ArrayList<>();
     private final UiEventCollector uiEventCollector;
 
-    private Image inspectIcon;
-    private Image variableIcon;
-    private Image fieldIcon;
-
     public FieldsAndVariablesTabContent(Composite parent) {
         this.uiEventCollector = SimpleDebuggerEventQueue.instance();
 
@@ -56,8 +54,6 @@ public class FieldsAndVariablesTabContent {
         table.setLinesVisible(true);
         table.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        loadIcons();
-
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
         ColumnViewerToolTipSupport.enableFor(viewer, ToolTip.NO_RECREATE);
@@ -65,32 +61,6 @@ public class FieldsAndVariablesTabContent {
         setupColumns();
         setupCellModifier();
         setupClickListener();
-    }
-
-    /** Loads all icons and scales to 16x16 */
-    private void loadIcons() {
-        try {
-            inspectIcon = loadIcon("/icons/inspect.png");
-            variableIcon = loadIcon("/icons/variable.png");
-            fieldIcon = loadIcon("/icons/field.png");
-        } catch (Exception e) {
-            e.printStackTrace();
-            inspectIcon = variableIcon = fieldIcon = null;
-        }
-    }
-
-    private Image loadIcon(String path) throws Exception {
-        try (InputStream is = getClass().getResourceAsStream(path)) {
-            if (is != null) {
-                Image original = new Image(Display.getDefault(), is);
-                Image scaled = new Image(Display.getDefault(), original.getImageData().scaledTo(16, 16));
-                original.dispose();
-                return scaled;
-            } else {
-                SimpleDebuggerLogger.error("Icon not found: " + path, null);
-                return null;
-            }
-        }
     }
 
     /** Determines if the DTO can be inspected (non-primitive, non-String, non-null) */
@@ -135,8 +105,8 @@ public class FieldsAndVariablesTabContent {
             public Image getImage(Object element) {
                 if (element instanceof FieldOrVariableDTO dto) {
                     return switch (dto.getFieldOrVariableType()) {
-                        case VARIABLE -> variableIcon;
-                        case NON_STATIC_FIELD -> fieldIcon;
+                        case VARIABLE -> DebugWindowManager.instance().icons.get("variableIcon");
+                        case NON_STATIC_FIELD -> DebugWindowManager.instance().icons.get("fieldIcon"); 
                     };
                 }
                 return null;
@@ -171,7 +141,7 @@ public class FieldsAndVariablesTabContent {
             @Override
             public Image getImage(Object element) {
                 if (element instanceof FieldOrVariableDTO dto && isInspectable(dto)) {
-                    return inspectIcon;
+                    return  DebugWindowManager.instance().icons.get("inspectIcon");
                 }
                 return null;
             }
