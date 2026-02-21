@@ -26,6 +26,7 @@ import org.eclipse.swt.widgets.TableItem;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
@@ -41,10 +42,8 @@ public class FieldsAndVariablesTabContent {
     private final Table table;
     private final TableViewer viewer;
     private final List<FieldOrVariableDTO> entries = new ArrayList<>();
-    private final UiEventCollector uiEventCollector;
 
     public FieldsAndVariablesTabContent(Composite parent) {
-        this.uiEventCollector = SimpleDebuggerEventQueue.instance();
 
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(1, false));
@@ -183,9 +182,9 @@ public class FieldsAndVariablesTabContent {
                 String newValStr = newValue.toString();
 
                 switch (oldEntry.getFieldOrVariableType()) {
-                    case VARIABLE -> uiEventCollector.collectUiEvent(new UserChangedVariableEvent(
+                    case VARIABLE -> SimpleDebuggerEventQueue.instance().collectUiEvent(new UserChangedVariableEvent(
                             oldEntry.getName(), oldEntry.getType(), newValStr));
-                    case NON_STATIC_FIELD -> uiEventCollector.collectUiEvent(new UserChangedFieldEvent(
+                    case NON_STATIC_FIELD -> SimpleDebuggerEventQueue.instance().collectUiEvent(new UserChangedFieldEvent(
                             oldEntry.getName(), oldEntry.getType(), newValStr));
                 }
 
@@ -227,7 +226,6 @@ public class FieldsAndVariablesTabContent {
             System.err.println("Debug session is not running, cannot inspect object.");
             return;
         }
-
         Display.getDefault().asyncExec(() -> window.showInspectableNode(dto));
     }
 

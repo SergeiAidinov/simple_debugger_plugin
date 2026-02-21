@@ -8,6 +8,9 @@ import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 
 /**
  * Inspect window showing a single table with two columns (type/key + value)
@@ -20,6 +23,8 @@ public class InspectWindow {
     private final Label objectLabel;
     private final Composite breadcrumbComposite;
     private final Table table;
+    private Button backButton;
+    private Button forwardButton;
     private final Deque<FieldOrVariableDTO> history = new ArrayDeque<>();
 
     public InspectWindow() {
@@ -32,9 +37,19 @@ public class InspectWindow {
         Composite topPanel = new Composite(shell, SWT.NONE);
         topPanel.setLayout(new GridLayout(2, false));
         topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+        
+        backButton = new Button(topPanel, SWT.PUSH);
+        backButton.setText("◀ Back");
+        backButton.setEnabled(false); // изначально нельзя
+        backButton.addListener(SWT.Selection, e -> navigateBack());
+
+        forwardButton = new Button(topPanel, SWT.PUSH);
+        forwardButton.setText("Forward ▶");
+        forwardButton.setEnabled(false);
+        forwardButton.addListener(SWT.Selection, e -> navigateForward());
 
         objectLabel = new Label(topPanel, SWT.NONE);
-        objectLabel.setText("Object: ");
+        objectLabel.setText("Inspecting instance: ... " );
         objectLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         breadcrumbComposite = new Composite(topPanel, SWT.NONE);
@@ -56,7 +71,41 @@ public class InspectWindow {
         rightCol.setWidth(800);
     }
 
-    /** Opens the shell */
+    private void navigateBack() {
+        if (history.size() <= 1) return;
+
+        FieldOrVariableDTO current = history.pop();
+        history.push(current);
+
+        FieldOrVariableDTO previous = history.peek();
+        if (previous != null) {
+            objectLabel.setText("Object: " + previous.getName());
+            refreshContent(previous);
+            renderBreadcrumb();
+        }
+
+        updateNavigationButtons();
+    }
+    
+    private void updateNavigationButtons() {
+        backButton.setEnabled(history.size() > 1);
+        forwardButton.setEnabled(!history.isEmpty());
+    }
+
+    private void navigateForward() {
+        if (history.isEmpty()) return;
+
+        FieldOrVariableDTO next = history.pop();
+        history.push(next);
+
+        objectLabel.setText("Inspecting instance: " + next.getName() + " (" + next.getType() + ")");
+        refreshContent(next);
+        renderBreadcrumb();
+
+        updateNavigationButtons();
+    }
+
+	/** Opens the shell */
     public void open() {
     	shell.setImage(DebugWindowManager.instance().icons.get("debugger"));
         shell.open();
@@ -82,29 +131,18 @@ public class InspectWindow {
     public void showInspectableNode(FieldOrVariableDTO dto) {
         if (dto == null || shell.isDisposed()) return;
 
-        objectLabel.setText("Object: " + dto.getName());
+        objectLabel.setText("Inspecting instance: " + dto.getName() + " (" + dto.getType() + ")");
         history.push(dto);
 
         renderBreadcrumb();
         refreshContent(dto);
+        SimpleDebuggerEventQueue.instance().collectUiEvent(new UserStartedInspectionSessionForElement(dto));
+        System.out.println("===> Inspecting instance: " + dto.getName() + " (" + dto.getType() + ")");
     }
 
     /** Renders breadcrumb buttons */
     private void renderBreadcrumb() {
-        for (Control child : breadcrumbComposite.getChildren()) {
-            child.dispose();
-        }
-
-        FieldOrVariableDTO[] items = history.toArray(new FieldOrVariableDTO[0]);
-        for (int i = items.length - 1; i >= 0; i--) {
-            FieldOrVariableDTO dto = items[i];
-            Button btn = new Button(breadcrumbComposite, SWT.PUSH);
-            btn.setText(dto.getName());
-            final int index = i;
-            btn.addListener(SWT.Selection, e -> navigateTo(index));
-        }
-
-        breadcrumbComposite.layout();
+       
     }
 
     /** Navigate to a previous object in the breadcrumb */
@@ -117,7 +155,7 @@ public class InspectWindow {
 
         FieldOrVariableDTO dto = history.peek();
         if (dto != null) {
-            objectLabel.setText("Object: " + dto.getName());
+            objectLabel.setText("Inspecting instance: " + dto.getName() + " (" + dto.getType() + ")");
             refreshContent(dto);
             renderBreadcrumb();
         }

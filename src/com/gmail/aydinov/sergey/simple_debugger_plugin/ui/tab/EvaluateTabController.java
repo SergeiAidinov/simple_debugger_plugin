@@ -12,6 +12,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 
 import java.util.List;
@@ -35,14 +36,14 @@ public class EvaluateTabController {
     private final Button invokeButton;
     private final Text methodInput;
     private final Text resultField;
-    private final UiEventCollector uiEventCollector;
+   // private final UiEventCollector uiEventCollector;
     private TableViewer stackTableViewer;
 
     /** Last selected method */
     private TargetApplicationMethodDTO lastMethod;
 
-    public EvaluateTabController(Composite parent, UiEventCollector uiEventCollector) {
-        this.uiEventCollector = uiEventCollector;
+    public EvaluateTabController(Composite parent) {
+       // this.uiEventCollector = uiEventCollector;
 
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(2, false));
@@ -243,7 +244,7 @@ public class EvaluateTabController {
 
         if (Objects.nonNull(clazz)) {
             UserInvokedMethodEvent invokeMethodEvent = new UserInvokedMethodEvent(clazz, lastMethod, argsText);
-            uiEventCollector.collectUiEvent(invokeMethodEvent);
+            SimpleDebuggerEventQueue.instance().collectUiEvent(invokeMethodEvent);
         } else {
             resultField.setText("No class selected to invoke method.");
         }
