@@ -5,7 +5,6 @@ import java.util.Objects;
 import org.eclipse.swt.widgets.Display;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 
 /**
  * Singleton managing the debugger window. Provides access to the current window
@@ -66,11 +65,14 @@ public class DebugWindowManager {
 		if (!DebuggerContext.context().isRunning())
 			return null;
 		// Создаём окно, если его нет или оно закрыто
+		if (Objects.nonNull(inspectWindow) && inspectWindow.isOpen())
+			inspectWindow.close();
 		if (Objects.isNull(inspectWindow) || !inspectWindow.isOpen()) {
 			inspectWindow = new InspectWindow();
 			// Open window in the UI thread
 			Display.getDefault().asyncExec(() -> inspectWindow.open());
 		}
 		return inspectWindow;
+
 	}
 }

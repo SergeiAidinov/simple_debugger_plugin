@@ -2,7 +2,6 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.List;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.*;
@@ -12,11 +11,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 
 /**
  * Inspect window showing a single table with two columns (type/key + value)
- * and breadcrumb history. The table occupies the full content area.
+ * and a top panel for object name + breadcrumb history.
  */
 public class InspectWindow {
 
     private Shell shell;
+    private Composite topPanel;
+    private Label objectLabel;
     private Composite breadcrumbComposite;
     private Table table;
     private Deque<FieldOrVariableDTO> history = new ArrayDeque<>();
@@ -28,18 +29,25 @@ public class InspectWindow {
         shell.setSize(1400, 800); // альбомный формат
         shell.setLayout(new GridLayout(1, false));
 
-        // Breadcrumb сверху
-        breadcrumbComposite = new Composite(shell, SWT.NONE);
-        breadcrumbComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-        breadcrumbComposite.setLayout(new GridLayout(10, false));
+        // ----------------- Top panel -----------------
+        topPanel = new Composite(shell, SWT.NONE);
+        topPanel.setLayout(new GridLayout(2, false));
+        topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-        // Таблица занимает весь оставшийся контент
+        objectLabel = new Label(topPanel, SWT.NONE);
+        objectLabel.setText("Object: ");
+        objectLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        breadcrumbComposite = new Composite(topPanel, SWT.NONE);
+        breadcrumbComposite.setLayout(new GridLayout(10, false));
+        breadcrumbComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        // ----------------- Table -----------------
         table = new Table(shell, SWT.BORDER | SWT.FULL_SELECTION);
         table.setHeaderVisible(true);
         table.setLinesVisible(true);
         table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        // Две колонки
         TableColumn leftCol = new TableColumn(table, SWT.NONE);
         leftCol.setText("Type / Key");
         leftCol.setWidth(400);
@@ -59,23 +67,28 @@ public class InspectWindow {
         return !shell.isDisposed();
     }
 
-    /**
-     * Shows an inspectable object in the window.
-     * Maintains history for breadcrumb/back navigation.
-     */
+    /** Closes the window and clears history */
+    public void close() {
+        if (isOpen()) {
+            // Выполнить закрытие синхронно в UI-потоке
+            Display.getDefault().syncExec(() -> {
+                if (!shell.isDisposed()) {
+                    shell.close();
+                }
+            });
+        }
+    }
+
+    /** Shows an inspectable object */
     public void showInspectableNode(FieldOrVariableDTO dto) {
         if (dto == null || shell.isDisposed()) return;
 
-        // Заголовок окна
-        shell.setText("Inspect: " + dto.getName());
+        objectLabel.setText("Object: " + dto.getName());
 
         // Добавляем в историю
         history.push(dto);
 
-        // Breadcrumb
         renderBreadcrumb();
-
-        // Таблица
         refreshContent(dto);
     }
 
@@ -107,7 +120,7 @@ public class InspectWindow {
 
         FieldOrVariableDTO dto = history.peek();
         if (dto != null) {
-            shell.setText("Inspect: " + dto.getName());
+            objectLabel.setText("Object: " + dto.getName());
             refreshContent(dto);
             renderBreadcrumb();
         }
@@ -116,12 +129,17 @@ public class InspectWindow {
     /** Updates the table content for a DTO */
     private void refreshContent(FieldOrVariableDTO dto) {
         table.removeAll();
-
         if (dto == null) return;
 
-        // Для простоты: одна строка для самого объекта
         TableItem item = new TableItem(table, SWT.NONE);
-        item.setText(new String[]{dto.getType(), dto.getValue() != null ? dto.getValue() : ""});
+        item.setText(new String[]{
+            dto.getType() != null ? dto.getType() : "",
+            dto.getValue() != null ? dto.getValue() : ""
+        });
+
+        for (TableColumn col : table.getColumns()) {
+            col.pack();
+        }
 
         table.layout();
     }
