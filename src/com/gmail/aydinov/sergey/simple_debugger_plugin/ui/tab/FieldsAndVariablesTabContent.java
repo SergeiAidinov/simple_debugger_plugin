@@ -25,10 +25,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChange
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.InspectWindow;
 
 /**
- * Combined tab for object fields and local variables.
- * Supports "inspect" for collections and reference-type objects.
+ * Tab for displaying object fields and local variables.
+ * Supports universal "inspect" for objects and collections.
  */
 public class FieldsAndVariablesTabContent {
 
@@ -64,7 +67,7 @@ public class FieldsAndVariablesTabContent {
         setupClickListener();
     }
 
-    /** Loads all required icons and scales to 16x16 */
+    /** Loads all icons and scales to 16x16 */
     private void loadIcons() {
         try {
             inspectIcon = loadIcon("/icons/inspect.png");
@@ -90,10 +93,7 @@ public class FieldsAndVariablesTabContent {
         }
     }
 
-    /**
-     * Determines if the DTO represents an object that can be inspected.
-     * Returns true for reference types (non-primitive, non-null, non-String)
-     */
+    /** Determines if the DTO can be inspected (non-primitive, non-String, non-null) */
     private boolean isInspectable(FieldOrVariableDTO dto) {
         if (dto == null || dto.getType() == null || dto.getValue() == null) return false;
 
@@ -108,7 +108,6 @@ public class FieldsAndVariablesTabContent {
     }
 
     private void setupColumns() {
-
         // Name column
         TableViewerColumn nameColumn = new TableViewerColumn(viewer, SWT.NONE);
         nameColumn.getColumn().setText("Name");
@@ -251,9 +250,15 @@ public class FieldsAndVariablesTabContent {
         });
     }
 
+    /** Delegates opening the inspection window to DebugWindowManager */
     private void inspectNode(FieldOrVariableDTO dto) {
-        System.out.println("Inspect object: " + dto.toString());
-        // Здесь позже можно вызвать NavigationManager или открыть панель инспекции
+       InspectWindow window = DebugWindowManager.instance().openInspectWindow();
+        if (window == null) {
+            System.err.println("Debug session is not running, cannot inspect object.");
+            return;
+        }
+
+        Display.getDefault().asyncExec(() -> window.showInspectableNode(dto));
     }
 
     public void updateVariablesAndFields(List<FieldOrVariableDTO> variables, List<FieldOrVariableDTO> fields) {
