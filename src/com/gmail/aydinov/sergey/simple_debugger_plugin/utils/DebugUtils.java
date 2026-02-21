@@ -210,9 +210,9 @@ public class DebugUtils {
 		if (Objects.isNull(fields))
 			return List.of();
 
-		return fields
-				.entrySet().stream().map(entry -> new FieldOrVariableDTO(entry.getKey().name(),
-						entry.getKey().typeName(), valueToString(entry.getValue()), FieldOrVariableType.NON_STATIC_FIELD))
+		return fields.entrySet().stream()
+				.map(entry -> new FieldOrVariableDTO(entry.getKey().name(), entry.getKey().typeName(),
+						valueToString(entry.getValue()), FieldOrVariableType.NON_STATIC_FIELD))
 				.collect(Collectors.toList());
 	}
 
@@ -392,19 +392,27 @@ public class DebugUtils {
 		}
 		return localVariables;
 	}
+
+	/**
+	 * Determines if the DTO can be inspected (non-primitive, non-String, non-null)
+	 */
+	public static boolean isInspectable(FieldOrVariableDTO dto) {
+		if (dto == null || dto.getType() == null || dto.getValue() == null)
+			return false;
+
+		switch (dto.getType()) {
+		case "int", "long", "double", "float", "boolean", "byte", "short", "char":
+			return false;
+		}
+		if ("java.lang.String".equals(dto.getType()))
+			return false;
+
+		return true;
+	}
 	
-	/** Determines if the DTO can be inspected (non-primitive, non-String, non-null) */
-    public static boolean isInspectable(FieldOrVariableDTO dto) {
-        if (dto == null || dto.getType() == null || dto.getValue() == null) return false;
-
-        switch (dto.getType()) {
-            case "int", "long", "double", "float",
-                 "boolean", "byte", "short", "char":
-                return false;
-        }
-        if ("java.lang.String".equals(dto.getType())) return false;
-
-        return true;
-    }
+	public static boolean isStandardJavaCollection(Object object) {
+	    if (Objects.isNull(object)) return false;
+	    return object instanceof java.util.Collection || object instanceof java.util.Map;
+	}
 
 }

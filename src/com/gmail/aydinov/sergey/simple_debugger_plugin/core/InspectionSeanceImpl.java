@@ -24,12 +24,15 @@ public class InspectionSeanceImpl implements InspectionSeance {
 	public void run() {
 		System.out.println(Thread.currentThread() + " started for " + anchor.toString());
 		try {
-			uiEventCollector.takeUiEvent();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			startInspectionSeanceForAnchor(anchor);
+		} finally {
+			System.out.println("===> Inspection finished");
 		}
-		System.out.println("===> Inspection finished");
+	}
+
+	private void startInspectionSeanceForAnchor(FieldOrVariableDTO anchor2) {
+		
+		
 	}
 
 }

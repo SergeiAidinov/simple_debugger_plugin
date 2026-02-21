@@ -4,6 +4,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -155,6 +156,7 @@ public class DebugSessionImpl implements DebugSession {
 		}
 
 		try {
+			targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
 			handleSingleUiEvent(uiEvent, breakpointEvent);
 		} catch (Throwable exception) {
 			logError("Breakpoint handler error", exception);
@@ -186,6 +188,10 @@ public class DebugSessionImpl implements DebugSession {
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
 			} else if (uiEvent instanceof UserStartedInspectionSessionForElement userStartedInspectionSessionForElement) {
 				System.out.println("COUGHT: " + uiEvent);
+				targetApplicationRepresentation.getTargetApplicationElements().stream().forEach(e -> System.out.println(e.getTargetApplicationElementName()));
+				 Optional<TargetApplicationElementRepresentation> qq = targetApplicationRepresentation.getTargetApplicationElements().stream()
+				.filter(e -> e.getTargetApplicationElementName().equals(userStartedInspectionSessionForElement.getFieldOrVariableDTO().getType())).findAny();
+				System.out.println("FOUND: " + qq.get());
 				simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(false));
 				InspectionSeance inspectionSession = new InspectionSeanceImpl(userStartedInspectionSessionForElement.getFieldOrVariableDTO());
 				Thread inspectionSessionThread = new Thread(inspectionSession);
