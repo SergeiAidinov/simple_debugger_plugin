@@ -30,6 +30,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerE
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.InspectWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 
 /**
  * Tab for displaying object fields and local variables.
@@ -60,20 +61,6 @@ public class FieldsAndVariablesTabContent {
         setupColumns();
         setupCellModifier();
         setupClickListener();
-    }
-
-    /** Determines if the DTO can be inspected (non-primitive, non-String, non-null) */
-    private boolean isInspectable(FieldOrVariableDTO dto) {
-        if (dto == null || dto.getType() == null || dto.getValue() == null) return false;
-
-        switch (dto.getType()) {
-            case "int", "long", "double", "float",
-                 "boolean", "byte", "short", "char":
-                return false;
-        }
-        if ("java.lang.String".equals(dto.getType())) return false;
-
-        return true;
     }
 
     private void setupColumns() {
@@ -131,7 +118,7 @@ public class FieldsAndVariablesTabContent {
             @Override
             public String getText(Object element) {
                 if (element instanceof FieldOrVariableDTO dto) {
-                    if (isInspectable(dto)) return "";
+                    if (DebugUtils.isInspectable(dto)) return "";
                     return Objects.toString(dto.getValue(), "");
                 }
                 return "";
@@ -139,7 +126,7 @@ public class FieldsAndVariablesTabContent {
 
             @Override
             public Image getImage(Object element) {
-                if (element instanceof FieldOrVariableDTO dto && isInspectable(dto)) {
+                if (element instanceof FieldOrVariableDTO dto && DebugUtils.isInspectable(dto)) {
                     return  DebugWindowManager.instance().icons.get("inspectIcon");
                 }
                 return null;
@@ -147,7 +134,7 @@ public class FieldsAndVariablesTabContent {
 
             @Override
             public String getToolTipText(Object element) {
-                if (element instanceof FieldOrVariableDTO dto && isInspectable(dto)) {
+                if (element instanceof FieldOrVariableDTO dto && DebugUtils.isInspectable(dto)) {
                     return "Inspect object";
                 }
                 return null;
@@ -163,7 +150,7 @@ public class FieldsAndVariablesTabContent {
             @Override
             public boolean canModify(Object element, String property) {
                 return "value".equals(property) && !(element instanceof FieldOrVariableDTO dto &&
-                        isInspectable(dto));
+                		DebugUtils.isInspectable(dto));
             }
 
             @Override
@@ -212,7 +199,7 @@ public class FieldsAndVariablesTabContent {
             for (int i = 0; i < table.getColumnCount(); i++) {
                 if (item.getBounds(i).contains(pt) && i == 2) { // Value column
                     FieldOrVariableDTO dto = (FieldOrVariableDTO) item.getData();
-                    if (isInspectable(dto)) inspectNode(dto);
+                    if (DebugUtils.isInspectable(dto)) inspectNode(dto);
                     break;
                 }
             }
