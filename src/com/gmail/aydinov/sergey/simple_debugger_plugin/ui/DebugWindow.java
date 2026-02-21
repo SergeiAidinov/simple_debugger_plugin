@@ -104,7 +104,7 @@ public class DebugWindow {
         stackTabItem.setControl(stackTabContent.getControl());
 
         // Evaluate tab
-        evaluateTabController = new EvaluateTabController(tabFolder, uiEventCollector);
+        evaluateTabController = new EvaluateTabController(tabFolder);
         CTabItem evaluateTabItem = new CTabItem(tabFolder, SWT.NONE);
         evaluateTabItem.setText("Evaluate");
         evaluateTabItem.setControl(evaluateTabController.getControl());
