@@ -186,7 +186,7 @@ public class DebugWindow {
                 evaluateTabController.showResult(methodEvent.getResultOfInvocation());
             } else if (Objects.equals(event.getType(), SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE)) {
             	SetResumeButtonEnabled setResumeButtonEnabled =  (SetResumeButtonEnabled) event;
-            	resumeButton.setEnabled(setResumeButtonEnabled.setButtonStatus());
+            	resumeButton.setEnabled(setResumeButtonEnabled.shouldBeEnabled());
             }
         });
     }
