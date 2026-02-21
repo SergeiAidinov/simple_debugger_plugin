@@ -1,12 +1,10 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
-import java.io.InputStream;
 import java.util.Objects;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -18,19 +16,18 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.BackendMethodExecutedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.BackendMethodExecutedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventProcessor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabController;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldsAndVariablesTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
 
 /**
  * Main debugger window displaying combined Variables + Fields tab, stack trace, evaluation, and console.
@@ -164,26 +161,8 @@ public class DebugWindow {
      */
     public void open() {
         // Load window icon
-        final Image[] iconHolder = new Image[1];
-        try (InputStream is = getClass().getResourceAsStream("/icons/icon.png")) {
-            if (Objects.nonNull(is)) {
-                iconHolder[0] = new Image(Display.getDefault(), is);
-                shell.setImage(iconHolder[0]); // Set icon for the window
-            } else {
-                SimpleDebuggerLogger.error("Icon not found: /icons/icon.png", null);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+    	shell.setImage(DebugWindowManager.instance().icons.get("debugger")); // Set icon for the window
         shell.open();
-
-        // Dispose icon when shell is disposed
-        shell.addListener(SWT.Dispose, event -> {
-            if (Objects.nonNull(iconHolder[0]) && !iconHolder[0].isDisposed()) {
-                iconHolder[0].dispose();
-            }
-        });
     }
 
     public boolean isOpen() {
