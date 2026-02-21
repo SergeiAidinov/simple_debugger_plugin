@@ -19,6 +19,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.Abstrac
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.BackendMethodExecutedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetResumeButtonEnabled;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventProcessor;
@@ -183,6 +184,9 @@ public class DebugWindow {
                 BackendMethodExecutedEvent methodEvent = (BackendMethodExecutedEvent) event;
                 evaluateTabController.clearResult();
                 evaluateTabController.showResult(methodEvent.getResultOfInvocation());
+            } else if (Objects.equals(event.getType(), SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE)) {
+            	SetResumeButtonEnabled setResumeButtonEnabled =  (SetResumeButtonEnabled) event;
+            	resumeButton.setEnabled(setResumeButtonEnabled.setButtonStatus());
             }
         });
     }

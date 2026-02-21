@@ -79,4 +79,8 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
     public AbstractUIEvent pollUiEvent() {
         return uiEventQueue.poll();
     }
+    
+    public AbstractUIEvent takeUiEvent() throws InterruptedException {
+        return uiEventQueue.take();
+    }
 }

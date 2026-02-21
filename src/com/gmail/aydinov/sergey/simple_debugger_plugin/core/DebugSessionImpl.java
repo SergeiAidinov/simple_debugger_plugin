@@ -28,6 +28,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSess
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetResumeButtonEnabled;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.BackendMethodExecutedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
@@ -37,7 +38,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosed
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
@@ -60,8 +64,7 @@ import com.sun.jdi.event.VMDisconnectEvent;
  * breakpoints, updates UI, and allows variable/field modification and method
  * invocation in the target application.
  * <p>
- * Author: Sergei Aidinov
- * <br>
+ * Author: Sergei Aidinov <br>
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
@@ -72,6 +75,8 @@ public class DebugSessionImpl implements DebugSession {
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	private final EventSet eventSet;
 	private final CurrentLineHighlighter currentLineHighlighter;
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
+	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 
 	public DebugSessionImpl(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			TargetApplicationRepresentation targetApplicationRepresentation, EventSet eventSet,
@@ -111,7 +116,7 @@ public class DebugSessionImpl implements DebugSession {
 				updateUI(breakpointEvent);
 
 				while (DebuggerContext.context().isSessionActive()) {
-					AbstractUIEvent uiEvent = SimpleDebuggerEventQueue.instance().pollUiEvent();
+					AbstractUIEvent uiEvent = uiEventCollector.pollUiEvent();
 					if (Objects.isNull(uiEvent))
 						continue;
 					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
@@ -179,10 +184,16 @@ public class DebugSessionImpl implements DebugSession {
 				SimpleDebuggerLogger.info("User closed debug window → stopping debug session");
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.STOPPED);
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
-			} else if (uiEvent instanceof UserStartedInspectionSessionForElement) {
+			} else if (uiEvent instanceof UserStartedInspectionSessionForElement userStartedInspectionSessionForElement) {
 				System.out.println("COUGHT: " + uiEvent);
-			}
-			else {
+				simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(false));
+				InspectionSeance inspectionSession = new InspectionSeanceImpl(userStartedInspectionSessionForElement.getFieldOrVariableDTO());
+				Thread inspectionSessionThread = new Thread(inspectionSession);
+				inspectionSessionThread.setDaemon(true);
+				inspectionSessionThread.start();
+				inspectionSessionThread.join();
+				simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(true));
+			} else {
 				SimpleDebuggerLogger.info("Unhandled UI event: " + uiEvent.getClass().getSimpleName());
 			}
 		} catch (Exception exception) {
@@ -224,7 +235,8 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void invokeMethod(UserInvokedMethodEvent invokeEvent, BreakpointEvent breakpointEvent, StackFrame currentFrame) {
+	private void invokeMethod(UserInvokedMethodEvent invokeEvent, BreakpointEvent breakpointEvent,
+			StackFrame currentFrame) {
 		try {
 			List<Value> methodArguments = DebugUtils
 					.parseArguments(targetVirtualMachineRepresentation.getVirtualMachine(), invokeEvent);
@@ -243,8 +255,8 @@ public class DebugSessionImpl implements DebugSession {
 							methodArguments, ClassType.INVOKE_SINGLE_THREADED);
 
 			methodInvocationResult.set(String.valueOf(result));
-			SimpleDebuggerEventQueue.instance().collectDebugEvent(
-					new BackendMethodExecutedEvent(SimpleDebuggerEventType.METHOD_INVOKE, methodInvocationResult.get()));
+			simpleDebugEventCollector.collectDebugEvent(new BackendMethodExecutedEvent(
+					SimpleDebuggerEventType.METHOD_INVOKE, methodInvocationResult.get()));
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}
@@ -279,7 +291,7 @@ public class DebugSessionImpl implements DebugSession {
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
 				.resultOfMethodInvocation(methodInvocationResult.get()).build();
 
-		SimpleDebuggerEventQueue.instance().collectDebugEvent(debugEvent);
+		simpleDebugEventCollector.collectDebugEvent(debugEvent);
 
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
