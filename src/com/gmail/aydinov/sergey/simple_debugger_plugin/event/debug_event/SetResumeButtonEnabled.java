@@ -11,7 +11,7 @@ public class SetResumeButtonEnabled extends AbstractSimpleDebugEvent {
 		this.enable = enable;
 	}
 
-	public boolean setButtonStatus() {
+	public boolean shouldBeEnabled() {
 		return enable;
 	}
 }
