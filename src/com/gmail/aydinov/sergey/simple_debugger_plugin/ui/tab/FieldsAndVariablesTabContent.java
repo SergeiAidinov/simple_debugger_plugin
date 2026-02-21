@@ -28,8 +28,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerE
 
 /**
  * Combined tab for object fields and local variables.
- * Supports "inspect" for Iterable collections.
- * Type column includes icons with hover hints.
+ * Supports "inspect" for collections and reference-type objects.
  */
 public class FieldsAndVariablesTabContent {
 
@@ -68,49 +67,44 @@ public class FieldsAndVariablesTabContent {
     /** Loads all required icons and scales to 16x16 */
     private void loadIcons() {
         try {
-            try (InputStream is = getClass().getResourceAsStream("/icons/inspect.png")) {
-                if (is != null) {
-                    Image original = new Image(Display.getDefault(), is);
-                    inspectIcon = new Image(Display.getDefault(), original.getImageData().scaledTo(16, 16));
-                    original.dispose();
-                } else {
-                    SimpleDebuggerLogger.error("Icon not found: /icons/inspect.png", null);
-                    inspectIcon = null;
-                }
-            }
-
-            try (InputStream varIs = getClass().getResourceAsStream("/icons/variable.png")) {
-                if (varIs != null) {
-                    Image original = new Image(Display.getDefault(), varIs);
-                    variableIcon = new Image(Display.getDefault(), original.getImageData().scaledTo(16, 16));
-                    original.dispose();
-                } else variableIcon = null;
-            }
-
-            try (InputStream fieldIs = getClass().getResourceAsStream("/icons/field.png")) {
-                if (fieldIs != null) {
-                    Image original = new Image(Display.getDefault(), fieldIs);
-                    fieldIcon = new Image(Display.getDefault(), original.getImageData().scaledTo(16, 16));
-                    original.dispose();
-                } else fieldIcon = null;
-            }
-
+            inspectIcon = loadIcon("/icons/inspect.png");
+            variableIcon = loadIcon("/icons/variable.png");
+            fieldIcon = loadIcon("/icons/field.png");
         } catch (Exception e) {
             e.printStackTrace();
-            inspectIcon = null;
-            variableIcon = null;
-            fieldIcon = null;
+            inspectIcon = variableIcon = fieldIcon = null;
         }
     }
 
-    private boolean isInspectableCollection(FieldOrVariableDTO dto) {
-        if (dto == null || dto.getType() == null) return false;
-        try {
-            Class<?> klass = Class.forName(dto.getType());
-            return Iterable.class.isAssignableFrom(klass);
-        } catch (ClassNotFoundException e) {
-            return false;
+    private Image loadIcon(String path) throws Exception {
+        try (InputStream is = getClass().getResourceAsStream(path)) {
+            if (is != null) {
+                Image original = new Image(Display.getDefault(), is);
+                Image scaled = new Image(Display.getDefault(), original.getImageData().scaledTo(16, 16));
+                original.dispose();
+                return scaled;
+            } else {
+                SimpleDebuggerLogger.error("Icon not found: " + path, null);
+                return null;
+            }
         }
+    }
+
+    /**
+     * Determines if the DTO represents an object that can be inspected.
+     * Returns true for reference types (non-primitive, non-null, non-String)
+     */
+    private boolean isInspectable(FieldOrVariableDTO dto) {
+        if (dto == null || dto.getType() == null || dto.getValue() == null) return false;
+
+        switch (dto.getType()) {
+            case "int", "long", "double", "float",
+                 "boolean", "byte", "short", "char":
+                return false;
+        }
+        if ("java.lang.String".equals(dto.getType())) return false;
+
+        return true;
     }
 
     private void setupColumns() {
@@ -169,7 +163,7 @@ public class FieldsAndVariablesTabContent {
             @Override
             public String getText(Object element) {
                 if (element instanceof FieldOrVariableDTO dto) {
-                    if (isInspectableCollection(dto)) return "";
+                    if (isInspectable(dto)) return "";
                     return Objects.toString(dto.getValue(), "");
                 }
                 return "";
@@ -177,7 +171,7 @@ public class FieldsAndVariablesTabContent {
 
             @Override
             public Image getImage(Object element) {
-                if (element instanceof FieldOrVariableDTO dto && isInspectableCollection(dto)) {
+                if (element instanceof FieldOrVariableDTO dto && isInspectable(dto)) {
                     return inspectIcon;
                 }
                 return null;
@@ -185,8 +179,8 @@ public class FieldsAndVariablesTabContent {
 
             @Override
             public String getToolTipText(Object element) {
-                if (element instanceof FieldOrVariableDTO dto && isInspectableCollection(dto)) {
-                    return "Inspect collection";
+                if (element instanceof FieldOrVariableDTO dto && isInspectable(dto)) {
+                    return "Inspect object";
                 }
                 return null;
             }
@@ -201,7 +195,7 @@ public class FieldsAndVariablesTabContent {
             @Override
             public boolean canModify(Object element, String property) {
                 return "value".equals(property) && !(element instanceof FieldOrVariableDTO dto &&
-                        isInspectableCollection(dto));
+                        isInspectable(dto));
             }
 
             @Override
@@ -250,15 +244,16 @@ public class FieldsAndVariablesTabContent {
             for (int i = 0; i < table.getColumnCount(); i++) {
                 if (item.getBounds(i).contains(pt) && i == 2) { // Value column
                     FieldOrVariableDTO dto = (FieldOrVariableDTO) item.getData();
-                    if (isInspectableCollection(dto)) inspectCollection(dto);
+                    if (isInspectable(dto)) inspectNode(dto);
                     break;
                 }
             }
         });
     }
 
-    private void inspectCollection(FieldOrVariableDTO dto) {
-        System.out.println("Inspect collection: " + dto.toString());
+    private void inspectNode(FieldOrVariableDTO dto) {
+        System.out.println("Inspect object: " + dto.toString());
+        // Здесь позже можно вызвать NavigationManager или открыть панель инспекции
     }
 
     public void updateVariablesAndFields(List<FieldOrVariableDTO> variables, List<FieldOrVariableDTO> fields) {
