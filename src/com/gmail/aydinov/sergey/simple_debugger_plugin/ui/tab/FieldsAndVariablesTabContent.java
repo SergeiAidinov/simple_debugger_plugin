@@ -26,7 +26,6 @@ import org.eclipse.swt.widgets.TableItem;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
@@ -42,6 +41,7 @@ public class FieldsAndVariablesTabContent {
     private final Table table;
     private final TableViewer viewer;
     private final List<FieldOrVariableDTO> entries = new ArrayList<>();
+    UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
 
     public FieldsAndVariablesTabContent(Composite parent) {
 
@@ -182,9 +182,9 @@ public class FieldsAndVariablesTabContent {
                 String newValStr = newValue.toString();
 
                 switch (oldEntry.getFieldOrVariableType()) {
-                    case VARIABLE -> SimpleDebuggerEventQueue.instance().collectUiEvent(new UserChangedVariableEvent(
+                    case VARIABLE -> uiEventCollector.collectUiEvent(new UserChangedVariableEvent(
                             oldEntry.getName(), oldEntry.getType(), newValStr));
-                    case NON_STATIC_FIELD -> SimpleDebuggerEventQueue.instance().collectUiEvent(new UserChangedFieldEvent(
+                    case NON_STATIC_FIELD -> uiEventCollector.collectUiEvent(new UserChangedFieldEvent(
                             oldEntry.getName(), oldEntry.getType(), newValStr));
                 }
 
