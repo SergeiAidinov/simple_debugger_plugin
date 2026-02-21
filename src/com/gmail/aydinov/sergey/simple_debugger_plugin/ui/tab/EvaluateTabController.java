@@ -19,275 +19,297 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Controller for the "Evaluate" tab in the debugger window.
- * Allows selecting classes and methods, entering arguments, invoking methods, and displaying results.
+ * Controller for the "Evaluate" tab in the debugger window. Allows selecting
+ * classes and methods, entering arguments, invoking methods, and displaying
+ * results.
  * <p>
- * Author: Sergei Aidinov
- * <br>
+ * Author: Sergei Aidinov <br>
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
 public class EvaluateTabController {
 
-    private final Composite root;
-    private final Combo classCombo;
-    private final Combo methodCombo;
-    private final Button selectButton;
-    private final Button invokeButton;
-    private final Text methodInput;
-    private final Text resultField;
-   // private final UiEventCollector uiEventCollector;
-    private TableViewer stackTableViewer;
+	private final Composite root;
+	private final Combo classCombo;
+	private final Combo methodCombo;
+	private final Button selectButton;
+	private final Button invokeButton;
+	private final Text methodInput;
+	private final Text resultField;
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
+	private TableViewer stackTableViewer;
 
-    /** Last selected method */
-    private TargetApplicationMethodDTO lastMethod;
+	/** Last selected method */
+	private TargetApplicationMethodDTO lastMethod;
 
-    public EvaluateTabController(Composite parent) {
-       // this.uiEventCollector = uiEventCollector;
+	public EvaluateTabController(Composite parent) {
+		// this.uiEventCollector = uiEventCollector;
 
-        root = new Composite(parent, SWT.NONE);
-        root.setLayout(new GridLayout(2, false));
+		root = new Composite(parent, SWT.NONE);
+		root.setLayout(new GridLayout(2, false));
 
-        // ====== Class selection ======
-        Label typeLabel = new Label(root, SWT.NONE);
-        typeLabel.setText("Type:");
-        typeLabel.setToolTipText("Class or Interface");
+		// ====== Class selection ======
+		Label typeLabel = new Label(root, SWT.NONE);
+		typeLabel.setText("Type:");
+		typeLabel.setToolTipText("Class or Interface");
 
-        classCombo = new Combo(root, SWT.DROP_DOWN | SWT.READ_ONLY);
-        classCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        classCombo.setToolTipText("Select a Class or Interface to invoke methods on");
+		classCombo = new Combo(root, SWT.DROP_DOWN | SWT.READ_ONLY);
+		classCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		classCombo.setToolTipText("Select a Class or Interface to invoke methods on");
 
-        // ====== Method selection ======
-        Label methodLabel = new Label(root, SWT.NONE);
-        methodLabel.setText("Method:");
-        methodLabel.setToolTipText("Select a method to move to Arguments field");
+		// ====== Method selection ======
+		Label methodLabel = new Label(root, SWT.NONE);
+		methodLabel.setText("Method:");
+		methodLabel.setToolTipText("Select a method to move to Arguments field");
 
-        methodCombo = new Combo(root, SWT.DROP_DOWN | SWT.READ_ONLY);
-        methodCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        methodCombo.setToolTipText("Select a method");
+		methodCombo = new Combo(root, SWT.DROP_DOWN | SWT.READ_ONLY);
+		methodCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		methodCombo.setToolTipText("Select a method");
 
-        // ====== Select button ======
-        selectButton = new Button(root, SWT.PUSH);
-        selectButton.setText("Select");
-        GridData selectGD = new GridData();
-        selectGD.horizontalSpan = 2;
-        selectGD.horizontalAlignment = SWT.CENTER;
-        selectButton.setLayoutData(selectGD);
+		// ====== Select button ======
+		selectButton = new Button(root, SWT.PUSH);
+		selectButton.setText("Select");
+		GridData selectGD = new GridData();
+		selectGD.horizontalSpan = 2;
+		selectGD.horizontalAlignment = SWT.CENTER;
+		selectButton.setLayoutData(selectGD);
 
-        // ====== Arguments input ======
-        methodInput = new Text(root, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
-        GridData inputGD = new GridData(GridData.FILL_HORIZONTAL);
-        inputGD.horizontalSpan = 2;
-        inputGD.heightHint = 3 * 20;
-        methodInput.setLayoutData(inputGD);
-        methodInput.setToolTipText("Edit method arguments here");
+		// ====== Arguments input ======
+		methodInput = new Text(root, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
+		GridData inputGD = new GridData(GridData.FILL_HORIZONTAL);
+		inputGD.horizontalSpan = 2;
+		inputGD.heightHint = 3 * 20;
+		methodInput.setLayoutData(inputGD);
+		methodInput.setToolTipText("Edit method arguments here");
 
-        // ====== Invoke button ======
-        invokeButton = new Button(root, SWT.PUSH);
-        invokeButton.setText("Invoke");
-        GridData invokeGD = new GridData();
-        invokeGD.horizontalSpan = 2;
-        invokeGD.horizontalAlignment = SWT.CENTER;
-        invokeButton.setLayoutData(invokeGD);
+		// ====== Invoke button ======
+		invokeButton = new Button(root, SWT.PUSH);
+		invokeButton.setText("Invoke");
+		GridData invokeGD = new GridData();
+		invokeGD.horizontalSpan = 2;
+		invokeGD.horizontalAlignment = SWT.CENTER;
+		invokeButton.setLayoutData(invokeGD);
 
-        // ====== Result field ======
-        resultField = new Text(root, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.WRAP | SWT.READ_ONLY);
-        GridData gd = new GridData(GridData.FILL_BOTH);
-        gd.horizontalSpan = 2;
-        resultField.setLayoutData(gd);
-        resultField.setToolTipText("Method invocation result");
+		// ====== Result field ======
+		resultField = new Text(root, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.WRAP | SWT.READ_ONLY);
+		GridData gd = new GridData(GridData.FILL_BOTH);
+		gd.horizontalSpan = 2;
+		resultField.setLayoutData(gd);
+		resultField.setToolTipText("Method invocation result");
 
-        // ====== Listeners ======
-        classCombo.addListener(SWT.Selection, e -> updateMethods());
-        selectButton.addListener(SWT.Selection, e -> onSelectMethod());
-        invokeButton.addListener(SWT.Selection, e -> onInvokeMethod());
-    }
+		// ====== Listeners ======
+		classCombo.addListener(SWT.Selection, e -> updateMethods());
+		selectButton.addListener(SWT.Selection, e -> onSelectMethod());
+		invokeButton.addListener(SWT.Selection, e -> onInvokeMethod());
+	}
 
-    public Composite getControl() {
-        return root;
-    }
+	public Composite getControl() {
+		return root;
+	}
 
-    // ----------------- Stack Viewer -----------------
-    public void createStackViewer(Composite parent) {
-        stackTableViewer = new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
-        Table table = stackTableViewer.getTable();
-        table.setHeaderVisible(true);
-        table.setLinesVisible(true);
-        table.setLayoutData(new GridData(GridData.FILL_BOTH));
+	// ----------------- Stack Viewer -----------------
+	public void createStackViewer(Composite parent) {
+		stackTableViewer = new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+		Table table = stackTableViewer.getTable();
+		table.setHeaderVisible(true);
+		table.setLinesVisible(true);
+		table.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-        String[] titles = {"Class", "Method", "Source"};
-        int[] bounds = {200, 150, 150};
+		String[] titles = { "Class", "Method", "Source" };
+		int[] bounds = { 200, 150, 150 };
 
-        for (int i = 0; i < titles.length; i++) {
-            TableViewerColumn tableViewerColumn = new TableViewerColumn(stackTableViewer, SWT.NONE);
-            tableViewerColumn.getColumn().setText(titles[i]);
-            tableViewerColumn.getColumn().setWidth(bounds[i]);
-            tableViewerColumn.getColumn().setResizable(true);
-        }
+		for (int i = 0; i < titles.length; i++) {
+			TableViewerColumn tableViewerColumn = new TableViewerColumn(stackTableViewer, SWT.NONE);
+			tableViewerColumn.getColumn().setText(titles[i]);
+			tableViewerColumn.getColumn().setWidth(bounds[i]);
+			tableViewerColumn.getColumn().setResizable(true);
+		}
 
-        stackTableViewer.setContentProvider(ArrayContentProvider.getInstance());
-        stackTableViewer.setLabelProvider(new ITableLabelProvider() {
-            public String getColumnText(Object element, int columnIndex) {
-                if (!(element instanceof MethodCallInStackDTO methodCallInStackDTO)) return "";
-                return switch (columnIndex) {
-                    case 0 -> methodCallInStackDTO.getClassName();
-                    case 1 -> methodCallInStackDTO.getMethodName();
-                    case 2 -> methodCallInStackDTO.getSourceInfo();
-                    default -> "";
-                };
-            }
-            public Image getColumnImage(Object element, int columnIndex) { return null; }
-            public void addListener(ILabelProviderListener listener) {}
-            public void dispose() {}
-            public boolean isLabelProperty(Object element, String property) { return false; }
-            public void removeListener(ILabelProviderListener listener) {}
-        });
-    }
+		stackTableViewer.setContentProvider(ArrayContentProvider.getInstance());
+		stackTableViewer.setLabelProvider(new ITableLabelProvider() {
+			public String getColumnText(Object element, int columnIndex) {
+				if (!(element instanceof MethodCallInStackDTO methodCallInStackDTO))
+					return "";
+				return switch (columnIndex) {
+				case 0 -> methodCallInStackDTO.getClassName();
+				case 1 -> methodCallInStackDTO.getMethodName();
+				case 2 -> methodCallInStackDTO.getSourceInfo();
+				default -> "";
+				};
+			}
 
-    public void updateFromEvent(DebugStoppedAtBreakpointEvent debugStoppedAtBreakpointEvent) {
-        Display.getDefault().asyncExec(() -> {
-            if (root.isDisposed()) return;
-            classCombo.removeAll();
-            for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : debugStoppedAtBreakpointEvent.getTargetApplicationElements()) {
-                if (targetApplicationElementRepresentation instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
-                    String nameAndType = clazz.getTargetApplicationElementName() + " (" + targetApplicationElementRepresentation.getTargetApplicationElementType() + ")";
-                    classCombo.add(nameAndType);
-                    classCombo.setData(nameAndType, clazz);
-                }
-            }
+			public Image getColumnImage(Object element, int columnIndex) {
+				return null;
+			}
 
-            if (classCombo.getItemCount() > 0) {
-                classCombo.select(0);
-                updateMethods();
-            }
+			public void addListener(ILabelProviderListener listener) {
+			}
 
-            // Updating resultField with a safe null replacement
-            resultField.setText(Objects.requireNonNullElse(debugStoppedAtBreakpointEvent.getResultOfMethodInvocation(), ""));
-        });
-    }
+			public void dispose() {
+			}
 
-    public void updateStack(List<MethodCallInStackDTO> stack) {
-        if (Objects.nonNull(stackTableViewer) && !stackTableViewer.getTable().isDisposed()) {
-            stackTableViewer.setInput(stack);
-        }
-    }
+			public boolean isLabelProperty(Object element, String property) {
+				return false;
+			}
 
-    // ----------------- Method/Arguments -----------------
-    private void updateMethods() {
-        methodCombo.removeAll();
+			public void removeListener(ILabelProviderListener listener) {
+			}
+		});
+	}
 
-        String className = classCombo.getText();
-        if (className.isBlank()) return;
+	public void updateFromEvent(DebugStoppedAtBreakpointEvent debugStoppedAtBreakpointEvent) {
+		Display.getDefault().asyncExec(() -> {
+			if (root.isDisposed())
+				return;
+			classCombo.removeAll();
+			for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : debugStoppedAtBreakpointEvent
+					.getTargetApplicationElements()) {
+				if (targetApplicationElementRepresentation instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
+					String nameAndType = clazz.getTargetApplicationElementName() + " ("
+							+ targetApplicationElementRepresentation.getTargetApplicationElementType() + ")";
+					classCombo.add(nameAndType);
+					classCombo.setData(nameAndType, clazz);
+				}
+			}
 
-        TargetApplicationClassOrInterfaceRepresentation clazz =
-                (TargetApplicationClassOrInterfaceRepresentation) classCombo.getData(className);
-        if (Objects.isNull(clazz)) return;
+			if (classCombo.getItemCount() > 0) {
+				classCombo.select(0);
+				updateMethods();
+			}
 
-        TargetApplicationMethodDTO methodToSelect = null;
+			// Updating resultField with a safe null replacement
+			resultField.setText(
+					Objects.requireNonNullElse(debugStoppedAtBreakpointEvent.getResultOfMethodInvocation(), ""));
+		});
+	}
 
-        for (TargetApplicationMethodDTO targetApplicationMethodDTO : clazz.getMethods()) {
-            String displayStr = buildMethodDisplay(targetApplicationMethodDTO);
-            methodCombo.add(displayStr);
-            methodCombo.setData(displayStr, targetApplicationMethodDTO);
+	public void updateStack(List<MethodCallInStackDTO> stack) {
+		if (Objects.nonNull(stackTableViewer) && !stackTableViewer.getTable().isDisposed()) {
+			stackTableViewer.setInput(stack);
+		}
+	}
 
-            if (Objects.equals(lastMethod, targetApplicationMethodDTO)) {
-                methodToSelect = targetApplicationMethodDTO;
-            }
-        }
+	// ----------------- Method/Arguments -----------------
+	private void updateMethods() {
+		methodCombo.removeAll();
 
-        if (Objects.nonNull(methodToSelect)) {
-            methodCombo.setText(buildMethodDisplay(methodToSelect));
-        } else if (methodCombo.getItemCount() > 0) {
-            methodCombo.select(0);
-            lastMethod = getSelectedMethod();
-        }
-    }
+		String className = classCombo.getText();
+		if (className.isBlank())
+			return;
 
-    private String buildMethodDisplay(TargetApplicationMethodDTO targetApplicationMethodDTO) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(targetApplicationMethodDTO.getMethodName()).append("(");
-        List<TargetApplicationMethodParameterDTO> params = targetApplicationMethodDTO.getParameters();
-        for (int i = 0; i < params.size(); i++) {
-            TargetApplicationMethodParameterDTO p = params.get(i);
-            sb.append(p.getName()).append(": ").append(cleanTypeName(p.getTypeName()));
-            if (i < params.size() - 1) sb.append(", ");
-        }
-        sb.append(") : ").append(cleanTypeName(targetApplicationMethodDTO.getReturnType()));
-        return sb.toString();
-    }
+		TargetApplicationClassOrInterfaceRepresentation clazz = (TargetApplicationClassOrInterfaceRepresentation) classCombo
+				.getData(className);
+		if (Objects.isNull(clazz))
+			return;
 
-    private String cleanTypeName(String typeName) {
-        if (Objects.isNull(typeName)) return "";
-        return typeName.replace(" (no class loader)", "");
-    }
+		TargetApplicationMethodDTO methodToSelect = null;
 
-    private void onSelectMethod() {
-        TargetApplicationMethodDTO selectedMethod = getSelectedMethod();
-        if (Objects.isNull(selectedMethod)) return;
+		for (TargetApplicationMethodDTO targetApplicationMethodDTO : clazz.getMethods()) {
+			String displayStr = buildMethodDisplay(targetApplicationMethodDTO);
+			methodCombo.add(displayStr);
+			methodCombo.setData(displayStr, targetApplicationMethodDTO);
 
-        lastMethod = selectedMethod;
-        methodInput.setText(buildMethodDisplay(selectedMethod));
-        methodInput.setSelection(selectedMethod.getMethodName().length() + 1);
-        methodInput.setFocus();
-    }
+			if (Objects.equals(lastMethod, targetApplicationMethodDTO)) {
+				methodToSelect = targetApplicationMethodDTO;
+			}
+		}
 
-    private void onInvokeMethod() {
-        clearResult();
+		if (Objects.nonNull(methodToSelect)) {
+			methodCombo.setText(buildMethodDisplay(methodToSelect));
+		} else if (methodCombo.getItemCount() > 0) {
+			methodCombo.select(0);
+			lastMethod = getSelectedMethod();
+		}
+	}
 
-        if (Objects.isNull(lastMethod)) {
-            resultField.setText("No method selected to invoke.");
-            return;
-        }
+	private String buildMethodDisplay(TargetApplicationMethodDTO targetApplicationMethodDTO) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(targetApplicationMethodDTO.getMethodName()).append("(");
+		List<TargetApplicationMethodParameterDTO> params = targetApplicationMethodDTO.getParameters();
+		for (int i = 0; i < params.size(); i++) {
+			TargetApplicationMethodParameterDTO p = params.get(i);
+			sb.append(p.getName()).append(": ").append(cleanTypeName(p.getTypeName()));
+			if (i < params.size() - 1)
+				sb.append(", ");
+		}
+		sb.append(") : ").append(cleanTypeName(targetApplicationMethodDTO.getReturnType()));
+		return sb.toString();
+	}
 
-        TargetApplicationClassOrInterfaceRepresentation clazz = getSelectedClass();
-        String argsText = methodInput.getText();
+	private String cleanTypeName(String typeName) {
+		if (Objects.isNull(typeName))
+			return "";
+		return typeName.replace(" (no class loader)", "");
+	}
 
-        if (Objects.nonNull(clazz)) {
-            UserInvokedMethodEvent invokeMethodEvent = new UserInvokedMethodEvent(clazz, lastMethod, argsText);
-            SimpleDebuggerEventQueue.instance().collectUiEvent(invokeMethodEvent);
-        } else {
-            resultField.setText("No class selected to invoke method.");
-        }
-    }
+	private void onSelectMethod() {
+		TargetApplicationMethodDTO selectedMethod = getSelectedMethod();
+		if (Objects.isNull(selectedMethod))
+			return;
 
-    // ----------------- Public helpers -----------------
-    public TargetApplicationClassOrInterfaceRepresentation getSelectedClass() {
-        return (TargetApplicationClassOrInterfaceRepresentation) classCombo.getData(classCombo.getText());
-    }
+		lastMethod = selectedMethod;
+		methodInput.setText(buildMethodDisplay(selectedMethod));
+		methodInput.setSelection(selectedMethod.getMethodName().length() + 1);
+		methodInput.setFocus();
+	}
 
-    public TargetApplicationMethodDTO getSelectedMethod() {
-        return (TargetApplicationMethodDTO) methodCombo.getData(methodCombo.getText());
-    }
+	private void onInvokeMethod() {
+		clearResult();
 
-    public void clearResult() {
-        Display.getDefault().asyncExec(() -> {
-            if (Objects.nonNull(resultField) && !resultField.isDisposed()) {
-                resultField.setText("");
-            }
-        });
-    }
+		if (Objects.isNull(lastMethod)) {
+			resultField.setText("No method selected to invoke.");
+			return;
+		}
 
-    public void showResult(String text) {
-        Display.getDefault().asyncExec(() -> {
-            if (Objects.nonNull(resultField) && !resultField.isDisposed()) {
-                resultField.setText(text);
-            }
-        });
-    }
+		TargetApplicationClassOrInterfaceRepresentation clazz = getSelectedClass();
+		String argsText = methodInput.getText();
 
-    public Button getSelectButton() {
-        return selectButton;
-    }
+		if (Objects.nonNull(clazz)) {
+			UserInvokedMethodEvent invokeMethodEvent = new UserInvokedMethodEvent(clazz, lastMethod, argsText);
+			uiEventCollector.collectUiEvent(invokeMethodEvent);
+		} else {
+			resultField.setText("No class selected to invoke method.");
+		}
+	}
 
-    public Button getInvokeButton() {
-        return invokeButton;
-    }
+	// ----------------- Public helpers -----------------
+	public TargetApplicationClassOrInterfaceRepresentation getSelectedClass() {
+		return (TargetApplicationClassOrInterfaceRepresentation) classCombo.getData(classCombo.getText());
+	}
 
-    public Text getMethodInput() {
-        return methodInput;
-    }
+	public TargetApplicationMethodDTO getSelectedMethod() {
+		return (TargetApplicationMethodDTO) methodCombo.getData(methodCombo.getText());
+	}
 
-    public Text getResultField() {
-        return resultField;
-    }
+	public void clearResult() {
+		Display.getDefault().asyncExec(() -> {
+			if (Objects.nonNull(resultField) && !resultField.isDisposed()) {
+				resultField.setText("");
+			}
+		});
+	}
+
+	public void showResult(String text) {
+		Display.getDefault().asyncExec(() -> {
+			if (Objects.nonNull(resultField) && !resultField.isDisposed()) {
+				resultField.setText(text);
+			}
+		});
+	}
+
+	public Button getSelectButton() {
+		return selectButton;
+	}
+
+	public Button getInvokeButton() {
+		return invokeButton;
+	}
+
+	public Text getMethodInput() {
+		return methodInput;
+	}
+
+	public Text getResultField() {
+		return resultField;
+	}
 }

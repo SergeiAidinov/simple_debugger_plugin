@@ -26,6 +26,7 @@ public class InspectWindow {
     private Button backButton;
     private Button forwardButton;
     private final Deque<FieldOrVariableDTO> history = new ArrayDeque<>();
+    private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
 
     public InspectWindow() {
         shell = new Shell(Display.getDefault());
@@ -136,7 +137,7 @@ public class InspectWindow {
 
         renderBreadcrumb();
         refreshContent(dto);
-        SimpleDebuggerEventQueue.instance().collectUiEvent(new UserStartedInspectionSessionForElement(dto));
+        uiEventCollector.collectUiEvent(new UserStartedInspectionSessionForElement(dto));
         System.out.println("===> Inspecting instance: " + dto.getName() + " (" + dto.getType() + ")");
     }
 
