@@ -29,7 +29,7 @@ public class InspectWindow {
     /** Флаг для программного закрытия */
     private boolean programmaticClose = false;
 
-    public InspectWindow() {
+    protected InspectWindow() {
         shell = new Shell(Display.getDefault());
         shell.setText("Inspect Object");
         shell.setSize(1400, 800);
@@ -84,18 +84,18 @@ public class InspectWindow {
     }
 
     /** Opens the shell */
-    public void open() {
+    protected void open() {
         shell.setImage(DebugWindowsManager.instance().icons.get("debugger"));
         shell.open();
     }
 
     /** Returns true if shell is open */
-    public boolean isOpen() {
+    protected boolean isOpen() {
         return !shell.isDisposed();
     }
 
     /** Closes the window programmatically */
-    public void close() {
+    protected void close() {
         if (isOpen()) {
             Display.getDefault().syncExec(() -> {
                 programmaticClose = true;
@@ -108,7 +108,7 @@ public class InspectWindow {
     }
 
     /** Shows an inspectable object */
-    public void showInspectableNode(FieldOrVariableDTO dto) {
+    protected void showInspectableNode(FieldOrVariableDTO dto) {
         if (dto == null || shell.isDisposed()) return;
 
         Display.getDefault().asyncExec(() -> {

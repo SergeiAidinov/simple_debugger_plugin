@@ -25,7 +25,7 @@ public class SimpleDebuggerEventTypes {
 	    /** Event triggered when a method is invoked in the target application */
 	    METHOD_INVOKE,
 	    
-	    INSPECTION_WINDOW_SHOW
+	    INSPECTION_WINDOW_SHOW 
 
 	}
 	
