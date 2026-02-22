@@ -212,7 +212,7 @@ public class DebugSessionImpl implements DebugSession {
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTED);
 		simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(false));
 		simpleDebugEventCollector.collectDebugEvent(new SetInspectionWindowStatus(true));
-		InspectionSeance inspectionSession = new InspectionSeanceImpl(event.getFieldOrVariableDTO());
+		InspectionSeance inspectionSession = new InspectionSeanceImpl(anchorOptional.get(), targetApplicationRepresentation);
 		Thread inspectionSessionThread = new Thread(inspectionSession);
 		inspectionSessionThread.setDaemon(true);
 		inspectionSessionThread.start();
