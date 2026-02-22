@@ -13,6 +13,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetInspectionWindowStatus;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ShowAnchorElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
@@ -121,6 +122,9 @@ public class DebugWindowsManager implements Runnable {
                             inspectWindow.close();
                         }
                     });
+                } else if (event.getType().equals(SimpleDebuggerEventTypes.EventType.SHOW_ANCHOR_ELEMENT) /*&& (Objects.nonNull(inspectWindow) && inspectWindow.isOpen())*/) {
+                	ShowAnchorElement showAnchorElement = (ShowAnchorElement) event;
+                	inspectWindow.showElementStructure(showAnchorElement.getAnchorElement());
                 }
                 
             } catch (InterruptedException e) {

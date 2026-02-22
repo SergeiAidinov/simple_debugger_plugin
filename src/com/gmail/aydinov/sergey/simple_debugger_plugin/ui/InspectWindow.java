@@ -8,46 +8,63 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserEndedInspectionSessionForElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
+/**
+ * Inspect window with left Tree (element structure) and right Table (object values)
+ */
 public class InspectWindow {
 
     private final Shell shell;
+    private final Tree elementTree;          // Левая панель: структура класса
+    private final Table table;               // Правая панель: значения полей объекта
     private final Label objectLabel;
+    private final Button backButton;
+    private final Button forwardButton;
     private final Composite breadcrumbComposite;
-    private final Table table;
-    private Button backButton;
-    private Button forwardButton;
     private final Deque<FieldOrVariableDTO> history = new ArrayDeque<>();
     private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
-
-    /** Флаг для программного закрытия */
     private boolean programmaticClose = false;
 
     protected InspectWindow() {
         shell = new Shell(Display.getDefault());
         shell.setText("Inspect Object");
         shell.setSize(1400, 800);
-        shell.setLayout(new GridLayout(1, false));
+        shell.setLayout(new GridLayout(2, true)); // 2 колонки: Tree | Table
 
-        // Обработчик крестика
+        // ----------------- Обработчик крестика -----------------
         shell.addListener(SWT.Close, e -> {
             if (!programmaticClose) {
-                // Пользователь нажал X → генерируем событие
-                System.out.println("InspectWindow: user clicked X, generating event");
-                e.doit = false; // блокируем закрытие окна
+                e.doit = false; // блокируем закрытие
                 uiEventCollector.collectUiEvent(new UserEndedInspectionSessionForElement());
             }
         });
 
-        // ----------------- Top panel -----------------
-        Composite topPanel = new Composite(shell, SWT.NONE);
-        topPanel.setLayout(new GridLayout(2, false));
+        // ----------------- Левая панель: Tree -----------------
+        elementTree = new Tree(shell, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
+        elementTree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+        TreeColumn nameCol = new TreeColumn(elementTree, SWT.NONE);
+        nameCol.setText("Name / Type");
+        nameCol.setWidth(300);
+
+        TreeColumn valueCol = new TreeColumn(elementTree, SWT.NONE);
+        valueCol.setText("Value / Signature");
+        valueCol.setWidth(200);
+
+        // ----------------- Правая панель: Table -----------------
+        Composite rightPanel = new Composite(shell, SWT.NONE);
+        rightPanel.setLayout(new GridLayout(1, false));
+        rightPanel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+        // Навигация и хлебные крошки
+        Composite topPanel = new Composite(rightPanel, SWT.NONE);
+        topPanel.setLayout(new GridLayout(4, false));
         topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
         backButton = new Button(topPanel, SWT.PUSH);
@@ -61,31 +78,29 @@ public class InspectWindow {
         forwardButton.addListener(SWT.Selection, e -> navigateForward());
 
         objectLabel = new Label(topPanel, SWT.NONE);
-        objectLabel.setText("Inspecting instance: ... ");
+        objectLabel.setText("Inspecting instance: ...");
         objectLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         breadcrumbComposite = new Composite(topPanel, SWT.NONE);
         breadcrumbComposite.setLayout(new GridLayout(10, false));
         breadcrumbComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        // ----------------- Table -----------------
-        table = new Table(shell, SWT.BORDER | SWT.FULL_SELECTION);
+        table = new Table(rightPanel, SWT.BORDER | SWT.FULL_SELECTION);
         table.setHeaderVisible(true);
         table.setLinesVisible(true);
         table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         TableColumn leftCol = new TableColumn(table, SWT.NONE);
         leftCol.setText("Type / Key");
-        leftCol.setWidth(400);
+        leftCol.setWidth(300);
 
         TableColumn rightCol = new TableColumn(table, SWT.NONE);
         rightCol.setText("Value");
-        rightCol.setWidth(800);
+        rightCol.setWidth(500);
     }
 
     /** Opens the shell */
     protected void open() {
-        shell.setImage(DebugWindowsManager.instance().icons.get("debugger"));
         shell.open();
     }
 
@@ -99,27 +114,73 @@ public class InspectWindow {
         if (isOpen()) {
             Display.getDefault().syncExec(() -> {
                 programmaticClose = true;
-                if (!shell.isDisposed()) {
-                    shell.close();
-                }
+                if (!shell.isDisposed()) shell.close();
                 programmaticClose = false;
             });
         }
     }
 
-    /** Shows an inspectable object */
+    /** Отображает структуру TargetApplicationElementRepresentation в дереве */
+    protected void showElementStructure(TargetApplicationElementRepresentation element) {
+        if (element == null || shell.isDisposed()) return;
+
+        Display.getDefault().asyncExec(() -> {
+            elementTree.removeAll();
+
+            TreeItem root = new TreeItem(elementTree, SWT.NONE);
+            root.setText(new String[]{
+                element.getTargetApplicationElementName(),
+                element.getTargetApplicationElementType().name()
+            });
+            root.setExpanded(true);
+
+            // Поля
+            if (element.getFields() != null) {
+                element.getFields().forEach(f -> {
+                    TreeItem fieldItem = new TreeItem(root, SWT.NONE);
+                    fieldItem.setText(new String[]{f.name(), f.typeName()});
+                });
+            }
+
+            // Методы
+            if (element.getMethods() != null) {
+                element.getMethods().forEach(m -> {
+                    TreeItem methodItem = new TreeItem(root, SWT.NONE);
+                    methodItem.setText(new String[]{m.getMethodName() + "()", ""});
+                });
+            }
+
+            elementTree.layout();
+        });
+    }
+
+    /** Отображает объект в правой панели */
     protected void showInspectableNode(FieldOrVariableDTO dto) {
         if (dto == null || shell.isDisposed()) return;
 
+        history.push(dto);
+
         Display.getDefault().asyncExec(() -> {
             objectLabel.setText("Inspecting instance: " + dto.getName() + " (" + dto.getType() + ")");
-            history.push(dto);
-            renderBreadcrumb();
             refreshContent(dto);
+            renderBreadcrumb();
         });
 
         uiEventCollector.collectUiEvent(new UserStartedInspectionSessionForElement(dto));
-        System.out.println("===> Inspecting instance: " + dto.getName() + " (" + dto.getType() + ")");
+    }
+
+    private void refreshContent(FieldOrVariableDTO dto) {
+        if (dto == null || table.isDisposed()) return;
+
+        table.removeAll();
+        TableItem item = new TableItem(table, SWT.NONE);
+        item.setText(new String[]{
+            dto.getType() != null ? dto.getType() : "",
+            dto.getValue() != null ? dto.getValue() : ""
+        });
+
+        for (TableColumn col : table.getColumns()) col.pack();
+        table.layout();
     }
 
     private void navigateBack() {
@@ -130,11 +191,12 @@ public class InspectWindow {
         FieldOrVariableDTO previous = history.peek();
         if (previous != null) {
             Display.getDefault().asyncExec(() -> {
-                objectLabel.setText("Object: " + previous.getName());
+                objectLabel.setText("Inspecting instance: " + previous.getName() + " (" + previous.getType() + ")");
                 refreshContent(previous);
                 renderBreadcrumb();
             });
         }
+
         updateNavigationButtons();
     }
 
@@ -157,26 +219,8 @@ public class InspectWindow {
         forwardButton.setEnabled(!history.isEmpty());
     }
 
-    /** Renders breadcrumb buttons */
+    /** Рендер хлебных крошек */
     private void renderBreadcrumb() {
-        // TODO: реализация хлебных крошек
-    }
-
-    /** Updates the table content for a DTO */
-    private void refreshContent(FieldOrVariableDTO dto) {
-        if (dto == null || table.isDisposed()) return;
-
-        Display.getDefault().asyncExec(() -> {
-            table.removeAll();
-            TableItem item = new TableItem(table, SWT.NONE);
-            item.setText(new String[]{
-                dto.getType() != null ? dto.getType() : "",
-                dto.getValue() != null ? dto.getValue() : ""
-            });
-            for (TableColumn col : table.getColumns()) {
-                col.pack();
-            }
-            table.layout();
-        });
+        // TODO: добавить кнопки для каждого элемента истории
     }
 }
