@@ -28,8 +28,10 @@ public class DebuggerContext {
         PREPARING,
         PREPARED,
         RUNNING,
-        SESSION_STARTED,
-        SESSION_FINISHED,
+        DEBUG_SESSION_STARTED,
+        INSPECTION_SEANCE_STARTED,
+        INSPECTION_SEANCE_CLOSING,
+        DEBUG_SESSION_FINISHED,
         STOPPED
     }
 
@@ -38,12 +40,19 @@ public class DebuggerContext {
     private volatile SimpleDebuggerStatus status;
     private static final Set<SimpleDebuggerStatus> RUNNING_STATES = EnumSet.of(
             SimpleDebuggerStatus.RUNNING,
-            SimpleDebuggerStatus.SESSION_STARTED,
-            SimpleDebuggerStatus.SESSION_FINISHED
+            SimpleDebuggerStatus.DEBUG_SESSION_STARTED,
+            SimpleDebuggerStatus.INSPECTION_SEANCE_STARTED,
+            SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING,
+            SimpleDebuggerStatus.DEBUG_SESSION_FINISHED
     );
     private static final Set<SimpleDebuggerStatus> TERMINAL_STATES = EnumSet.of(
             SimpleDebuggerStatus.WILL_NOT_START,
             SimpleDebuggerStatus.STOPPED
+    );
+    
+    private static final Set<SimpleDebuggerStatus> INSPECTION_SEANCE_STATES = EnumSet.of(
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_STARTED,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING
     );
 
     private DebuggerContext() {
@@ -144,7 +153,16 @@ public class DebuggerContext {
     public boolean isSessionActive() {
         lock.lock();
         try {
-            return status.equals(SimpleDebuggerStatus.SESSION_STARTED);
+            return status.equals(SimpleDebuggerStatus.DEBUG_SESSION_STARTED);
+        } finally {
+            lock.unlock();
+        }
+    }
+    
+    public boolean isSeanceActive() {
+        lock.lock();
+        try {
+            return INSPECTION_SEANCE_STATES.contains(status);
         } finally {
             lock.unlock();
         }

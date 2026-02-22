@@ -10,6 +10,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
 public class DebugWindowManager {
 
@@ -40,7 +41,7 @@ public class DebugWindowManager {
 	/**
 	 * Возвращает или создаёт главное окно
 	 */
-	public DebugWindow getOrCreateWindow() {
+	public DebugWindow getOrCreateDebugWindow() {
 		if (!DebuggerContext.context().isRunning())
 			return null;
 
@@ -54,14 +55,12 @@ public class DebugWindowManager {
 	/**
 	 * Открывает или обновляет InspectWindow
 	 */
-	public InspectWindow openInspectWindow() {
+	public InspectWindow openNewInspectWindow() {
 		if (!DebuggerContext.context().isRunning())
 			return null;
-
 		if (Objects.nonNull(inspectWindow) && inspectWindow.isOpen()) {
 			inspectWindow.close();
 		}
-
 		inspectWindow = new InspectWindow();
 		Display.getDefault().asyncExec(() -> inspectWindow.open());
 		return inspectWindow;
@@ -76,7 +75,7 @@ public class DebugWindowManager {
 			if (is != null) {
 				image = new Image(Display.getDefault(), is);
 			} else {
-				System.err.println("Icon not found: " + path);
+				SimpleDebuggerLogger.warn("Icon not found: " + path);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

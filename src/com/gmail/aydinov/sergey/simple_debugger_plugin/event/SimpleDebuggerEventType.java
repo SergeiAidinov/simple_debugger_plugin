@@ -19,6 +19,8 @@ public enum SimpleDebuggerEventType {
     SET_RESUME_BUTTON_STATE,
 
     /** Event triggered when a method is invoked in the target application */
-    METHOD_INVOKE
+    METHOD_INVOKE,
+    
+    INSPECTION_WINDOW_SHOW
 
 }

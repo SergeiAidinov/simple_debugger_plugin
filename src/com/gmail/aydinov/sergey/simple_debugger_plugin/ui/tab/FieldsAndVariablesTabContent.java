@@ -26,6 +26,7 @@ import org.eclipse.swt.widgets.TableItem;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
@@ -207,13 +208,14 @@ public class FieldsAndVariablesTabContent {
     }
 
     /** Delegates opening the inspection window to DebugWindowManager */
-    private void inspectNode(FieldOrVariableDTO dto) {
-       InspectWindow window = DebugWindowManager.instance().openInspectWindow();
-        if (window == null) {
-            System.err.println("Debug session is not running, cannot inspect object.");
-            return;
-        }
-        Display.getDefault().asyncExec(() -> window.showInspectableNode(dto));
+    private void inspectNode(FieldOrVariableDTO fieldOrVariableDTO) {
+//       InspectWindow window = DebugWindowManager.instance().openNewInspectWindow();
+//        if (window == null) {
+//            System.err.println("Debug session is not running, cannot inspect object.");
+//            return;
+//        }
+       // Display.getDefault().asyncExec(() -> window.showInspectableNode(dto));
+        uiEventCollector.collectUiEvent(new UserStartedInspectionSessionForElement(fieldOrVariableDTO));
     }
 
     public void updateVariablesAndFields(List<FieldOrVariableDTO> variables, List<FieldOrVariableDTO> fields) {
