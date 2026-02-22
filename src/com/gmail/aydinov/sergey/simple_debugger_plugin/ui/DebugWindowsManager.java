@@ -112,10 +112,10 @@ public class DebugWindowsManager implements Runnable {
                 if (event.getType().equals(SimpleDebuggerEventTypes.EventType.INSPECTION_WINDOW_SHOW)) {
                     SetInspectionWindowStatus setInspectionWindowStatus = (SetInspectionWindowStatus) event;
                     Display.getDefault().asyncExec(() -> {
-                        if (setInspectionWindowStatus.shouldBeShown() && (inspectWindow == null || !inspectWindow.isOpen())) {
+                        if (setInspectionWindowStatus.shouldBeShown() && (Objects.isNull(inspectWindow) || !inspectWindow.isOpen())) {
                             inspectWindow = new InspectWindow();
                             inspectWindow.open();
-                        } else if (!setInspectionWindowStatus.shouldBeShown() && inspectWindow != null && inspectWindow.isOpen()) {
+                        } else if (!setInspectionWindowStatus.shouldBeShown() && Objects.nonNull(inspectWindow) && inspectWindow.isOpen()) {
                             inspectWindow.close();
                         }
                     });

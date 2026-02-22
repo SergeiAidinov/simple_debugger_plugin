@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Objects;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.*;
@@ -10,14 +11,10 @@ import org.eclipse.swt.widgets.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserEndedInspectionSessionForElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
-/**
- * Inspect window showing a single table with two columns (type/key + value)
- * and a top panel for object name + breadcrumb history.
- * No tabs or "petals" are used.
- */
 public class InspectWindow {
 
     private final Shell shell;
@@ -29,24 +26,33 @@ public class InspectWindow {
     private final Deque<FieldOrVariableDTO> history = new ArrayDeque<>();
     private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
 
+    /** Флаг для программного закрытия */
+    private boolean programmaticClose = false;
+
     public InspectWindow() {
         shell = new Shell(Display.getDefault());
         shell.setText("Inspect Object");
-        shell.setSize(1400, 800); // альбомный формат
+        shell.setSize(1400, 800);
         shell.setLayout(new GridLayout(1, false));
+
+        // Обработчик крестика
         shell.addListener(SWT.Close, e -> {
-            System.out.println("InspectWindow: user clicked X, closing session");
-            uiEventCollector.collectUiEvent(new UserEndedInspectionSessionForElement());
+            if (!programmaticClose) {
+                // Пользователь нажал X → генерируем событие
+                System.out.println("InspectWindow: user clicked X, generating event");
+                e.doit = false; // блокируем закрытие окна
+                uiEventCollector.collectUiEvent(new UserEndedInspectionSessionForElement());
+            }
         });
 
         // ----------------- Top panel -----------------
         Composite topPanel = new Composite(shell, SWT.NONE);
         topPanel.setLayout(new GridLayout(2, false));
         topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-        
+
         backButton = new Button(topPanel, SWT.PUSH);
         backButton.setText("◀ Back");
-        backButton.setEnabled(false); // изначально нельзя
+        backButton.setEnabled(false);
         backButton.addListener(SWT.Selection, e -> navigateBack());
 
         forwardButton = new Button(topPanel, SWT.PUSH);
@@ -55,7 +61,7 @@ public class InspectWindow {
         forwardButton.addListener(SWT.Selection, e -> navigateForward());
 
         objectLabel = new Label(topPanel, SWT.NONE);
-        objectLabel.setText("Inspecting instance: ... " );
+        objectLabel.setText("Inspecting instance: ... ");
         objectLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         breadcrumbComposite = new Composite(topPanel, SWT.NONE);
@@ -77,43 +83,9 @@ public class InspectWindow {
         rightCol.setWidth(800);
     }
 
-    private void navigateBack() {
-        if (history.size() <= 1) return;
-
-        FieldOrVariableDTO current = history.pop();
-        history.push(current);
-
-        FieldOrVariableDTO previous = history.peek();
-        if (previous != null) {
-            objectLabel.setText("Object: " + previous.getName());
-            refreshContent(previous);
-            renderBreadcrumb();
-        }
-
-        updateNavigationButtons();
-    }
-    
-    private void updateNavigationButtons() {
-        backButton.setEnabled(history.size() > 1);
-        forwardButton.setEnabled(!history.isEmpty());
-    }
-
-    private void navigateForward() {
-        if (history.isEmpty()) return;
-
-        FieldOrVariableDTO next = history.pop();
-        history.push(next);
-
-        objectLabel.setText("Inspecting instance: " + next.getName() + " (" + next.getType() + ")");
-        refreshContent(next);
-        renderBreadcrumb();
-
-        updateNavigationButtons();
-    }
-
-	/** Opens the shell */
+    /** Opens the shell */
     public void open() {
-    	shell.setImage(DebugWindowsManager.instance().icons.get("debugger"));
+        shell.setImage(DebugWindowsManager.instance().icons.get("debugger"));
         shell.open();
     }
 
@@ -122,13 +94,15 @@ public class InspectWindow {
         return !shell.isDisposed();
     }
 
-    /** Closes the window */
+    /** Closes the window programmatically */
     public void close() {
         if (isOpen()) {
             Display.getDefault().syncExec(() -> {
+                programmaticClose = true;
                 if (!shell.isDisposed()) {
                     shell.close();
                 }
+                programmaticClose = false;
             });
         }
     }
@@ -137,51 +111,72 @@ public class InspectWindow {
     public void showInspectableNode(FieldOrVariableDTO dto) {
         if (dto == null || shell.isDisposed()) return;
 
-        objectLabel.setText("Inspecting instance: " + dto.getName() + " (" + dto.getType() + ")");
-        history.push(dto);
+        Display.getDefault().asyncExec(() -> {
+            objectLabel.setText("Inspecting instance: " + dto.getName() + " (" + dto.getType() + ")");
+            history.push(dto);
+            renderBreadcrumb();
+            refreshContent(dto);
+        });
 
-        renderBreadcrumb();
-        refreshContent(dto);
         uiEventCollector.collectUiEvent(new UserStartedInspectionSessionForElement(dto));
         System.out.println("===> Inspecting instance: " + dto.getName() + " (" + dto.getType() + ")");
     }
 
-    /** Renders breadcrumb buttons */
-    private void renderBreadcrumb() {
-       
+    private void navigateBack() {
+        if (history.size() <= 1) return;
+        FieldOrVariableDTO current = history.pop();
+        history.push(current);
+
+        FieldOrVariableDTO previous = history.peek();
+        if (previous != null) {
+            Display.getDefault().asyncExec(() -> {
+                objectLabel.setText("Object: " + previous.getName());
+                refreshContent(previous);
+                renderBreadcrumb();
+            });
+        }
+        updateNavigationButtons();
     }
 
-    /** Navigate to a previous object in the breadcrumb */
-    private void navigateTo(int indexFromTop) {
-        if (indexFromTop < 0 || indexFromTop >= history.size()) return;
+    private void navigateForward() {
+        if (history.isEmpty()) return;
+        FieldOrVariableDTO next = history.pop();
+        history.push(next);
 
-        while (history.size() > indexFromTop + 1) {
-            history.pop();
-        }
-
-        FieldOrVariableDTO dto = history.peek();
-        if (dto != null) {
-            objectLabel.setText("Inspecting instance: " + dto.getName() + " (" + dto.getType() + ")");
-            refreshContent(dto);
+        Display.getDefault().asyncExec(() -> {
+            objectLabel.setText("Inspecting instance: " + next.getName() + " (" + next.getType() + ")");
+            refreshContent(next);
             renderBreadcrumb();
-        }
+        });
+
+        updateNavigationButtons();
+    }
+
+    private void updateNavigationButtons() {
+        backButton.setEnabled(history.size() > 1);
+        forwardButton.setEnabled(!history.isEmpty());
+    }
+
+    /** Renders breadcrumb buttons */
+    private void renderBreadcrumb() {
+        // TODO: реализация хлебных крошек
     }
 
     /** Updates the table content for a DTO */
     private void refreshContent(FieldOrVariableDTO dto) {
-        table.removeAll();
-        if (dto == null) return;
+        if (dto == null || table.isDisposed()) return;
 
-        TableItem item = new TableItem(table, SWT.NONE);
-        item.setText(new String[]{
-            dto.getType() != null ? dto.getType() : "",
-            dto.getValue() != null ? dto.getValue() : ""
+        Display.getDefault().asyncExec(() -> {
+            table.removeAll();
+            TableItem item = new TableItem(table, SWT.NONE);
+            item.setText(new String[]{
+                dto.getType() != null ? dto.getType() : "",
+                dto.getValue() != null ? dto.getValue() : ""
+            });
+            for (TableColumn col : table.getColumns()) {
+                col.pack();
+            }
+            table.layout();
         });
-
-        for (TableColumn col : table.getColumns()) {
-            col.pack();
-        }
-
-        table.layout();
     }
 }
