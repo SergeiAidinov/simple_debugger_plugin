@@ -205,7 +205,7 @@ public class SimpleDebuggerWorkFlow {
 
 	private void openDebugWindow() {
 		Display.getDefault().asyncExec(() -> {
-			DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateWindow();
+			DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateDebugWindow();
 			if (Objects.nonNull(debugWindow) && !debugWindow.isOpen())
 				debugWindow.open();
 		});
@@ -299,7 +299,7 @@ public class SimpleDebuggerWorkFlow {
 			} catch (Exception ex) {
 				SimpleDebuggerLogger.error("Cannot launch VM", ex);
 				Display.getDefault().asyncExec(() -> {
-					DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateWindow();
+					DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateDebugWindow();
 					debugWindow.showError("Cannot launch VM", ex.getMessage());
 				});
 			}
