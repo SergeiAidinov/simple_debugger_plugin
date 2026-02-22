@@ -21,7 +21,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSess
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.Location;
@@ -205,7 +205,7 @@ public class SimpleDebuggerWorkFlow {
 
 	private void openDebugWindow() {
 		Display.getDefault().asyncExec(() -> {
-			DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateDebugWindow();
+			DebugWindow debugWindow = DebugWindowsManager.instance().getOrCreateDebugWindow();
 			if (Objects.nonNull(debugWindow) && !debugWindow.isOpen())
 				debugWindow.open();
 		});
@@ -299,7 +299,7 @@ public class SimpleDebuggerWorkFlow {
 			} catch (Exception ex) {
 				SimpleDebuggerLogger.error("Cannot launch VM", ex);
 				Display.getDefault().asyncExec(() -> {
-					DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateDebugWindow();
+					DebugWindow debugWindow = DebugWindowsManager.instance().getOrCreateDebugWindow();
 					debugWindow.showError("Cannot launch VM", ex.getMessage());
 				});
 			}

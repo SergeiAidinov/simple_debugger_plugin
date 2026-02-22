@@ -1,6 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 
 /**
  * Event representing an update to the debugger console output.
@@ -21,7 +21,7 @@ public class ConsoleUpdateDebugEvent extends AbstractSimpleDebugEvent {
      * @param type the type of debugger event (e.g., REFRESH_CONSOLE)
      * @param text the text content to update in the console
      */
-    public ConsoleUpdateDebugEvent(SimpleDebuggerEventType type, String text) {
+    public ConsoleUpdateDebugEvent(SimpleDebuggerEventTypes.EventType type, String text) {
         super(type);
         this.text = text;
     }

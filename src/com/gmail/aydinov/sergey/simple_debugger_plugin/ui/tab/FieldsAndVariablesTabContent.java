@@ -27,9 +27,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.InspectWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 
@@ -92,8 +92,8 @@ public class FieldsAndVariablesTabContent {
             public Image getImage(Object element) {
                 if (element instanceof FieldOrVariableDTO dto) {
                     return switch (dto.getFieldOrVariableType()) {
-                        case VARIABLE -> DebugWindowManager.instance().icons.get("variableIcon");
-                        case NON_STATIC_FIELD -> DebugWindowManager.instance().icons.get("fieldIcon"); 
+                        case VARIABLE -> DebugWindowsManager.instance().icons.get("variableIcon");
+                        case NON_STATIC_FIELD -> DebugWindowsManager.instance().icons.get("fieldIcon"); 
                     };
                 }
                 return null;
@@ -128,7 +128,7 @@ public class FieldsAndVariablesTabContent {
             @Override
             public Image getImage(Object element) {
                 if (element instanceof FieldOrVariableDTO dto && DebugUtils.isInspectable(dto)) {
-                    return  DebugWindowManager.instance().icons.get("inspectIcon");
+                    return  DebugWindowsManager.instance().icons.get("inspectIcon");
                 }
                 return null;
             }

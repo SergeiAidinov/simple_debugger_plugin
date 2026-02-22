@@ -10,11 +10,13 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
-public class DebugWindowManager {
+public class DebugWindowsManager implements Runnable {
 
-	private static DebugWindowManager INSTANCE;
+	private static DebugWindowsManager INSTANCE;
 
 	private DebugWindow debugWindow;
 	private InspectWindow inspectWindow;
@@ -22,7 +24,7 @@ public class DebugWindowManager {
 	/** Минимальный ресурсный источник: карта с изображениями */
 	public final Map<String, Image> icons;
 
-	private DebugWindowManager() {
+	private DebugWindowsManager() {
 		Map<String, Image> iconsTemp = new HashMap<>();
 		List<PairDTO<String, String>> namesAndPaths = List.of(PairDTO.of("debugger", "/icons/icon.png"),
 				PairDTO.of("inspectIcon", "/icons/inspect.png"), PairDTO.of("variableIcon", "/icons/variable.png"),
@@ -31,9 +33,12 @@ public class DebugWindowManager {
 		icons = Map.copyOf(iconsTemp);
 	}
 
-	public static synchronized DebugWindowManager instance() {
+	public static synchronized DebugWindowsManager instance() {
 		if (Objects.isNull(INSTANCE)) {
-			INSTANCE = new DebugWindowManager();
+			INSTANCE = new DebugWindowsManager();
+			Thread debugWindowsmanagerThread = new Thread(INSTANCE);
+			debugWindowsmanagerThread.setDaemon(true);
+			debugWindowsmanagerThread.start();
 		}
 		return INSTANCE;
 	}
@@ -82,4 +87,22 @@ public class DebugWindowManager {
 		}
 		return image;
 	}
+	
+	/**
+     * Continuously processes debug events from the global event queue.
+     * This method blocks when no events are available and will only stop if the thread is interrupted.
+     */
+    @Override
+    public void run() {
+        while (!DebuggerContext.context().isInTerminalState()) {
+            try {
+                AbstractSimpleDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
+                SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
+                debugWindow.handleDebugEvent(event);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break; // exit loop if interrupted
+            }
+        }
+    }
 }

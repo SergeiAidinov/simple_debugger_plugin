@@ -12,8 +12,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
 
 import java.util.List;
 import java.util.Objects;

@@ -26,24 +26,25 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.EventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.BackendMethodExecutedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetInspectionWindowStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetResumeButtonEnabled;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.BackendMethodExecutedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebugEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
@@ -279,7 +280,7 @@ public class DebugSessionImpl implements DebugSession {
 
 			methodInvocationResult.set(String.valueOf(result));
 			simpleDebugEventCollector.collectDebugEvent(new BackendMethodExecutedEvent(
-					SimpleDebuggerEventType.METHOD_INVOKE, methodInvocationResult.get()));
+					SimpleDebuggerEventTypes.EventType.METHOD_INVOKE, methodInvocationResult.get()));
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}
@@ -304,7 +305,7 @@ public class DebugSessionImpl implements DebugSession {
 		Location location = breakpointEvent.location();
 
 		DebugStoppedAtBreakpointEvent debugEvent = new DebugStoppedAtBreakpointEvent.Builder()
-				.type(SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT).className(location.declaringType().name())
+				.type(EventType.STOPPED_AT_BREAKPOINT).className(location.declaringType().name())
 				.methodName(location.method().name()).lineNumber(location.lineNumber())
 				.fields(DebugUtils.mapFields(DebugUtils.compileFields(currentFrame)))
 				.locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(currentFrame)))

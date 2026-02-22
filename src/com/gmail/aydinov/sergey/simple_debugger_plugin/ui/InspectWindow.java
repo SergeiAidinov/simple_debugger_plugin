@@ -10,8 +10,8 @@ import org.eclipse.swt.widgets.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserEndedInspectionSessionForElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
 
 /**
  * Inspect window showing a single table with two columns (type/key + value)
@@ -113,7 +113,7 @@ public class InspectWindow {
 
 	/** Opens the shell */
     public void open() {
-    	shell.setImage(DebugWindowManager.instance().icons.get("debugger"));
+    	shell.setImage(DebugWindowsManager.instance().icons.get("debugger"));
         shell.open();
     }
 
