@@ -10,7 +10,9 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetInspectionWindowStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
@@ -42,6 +44,11 @@ public class DebugWindowsManager implements Runnable {
 		}
 		return INSTANCE;
 	}
+	
+	@Override
+    public void run() {
+        windowsManaging();
+    }
 
 	/**
 	 * Возвращает или создаёт главное окно
@@ -60,7 +67,7 @@ public class DebugWindowsManager implements Runnable {
 	/**
 	 * Открывает или обновляет InspectWindow
 	 */
-	public InspectWindow openNewInspectWindow() {
+	private InspectWindow openNewInspectWindow() {
 		if (!DebuggerContext.context().isRunning())
 			return null;
 		if (Objects.nonNull(inspectWindow) && inspectWindow.isOpen()) {
@@ -92,13 +99,28 @@ public class DebugWindowsManager implements Runnable {
      * Continuously processes debug events from the global event queue.
      * This method blocks when no events are available and will only stop if the thread is interrupted.
      */
-    @Override
-    public void run() {
-        while (!DebuggerContext.context().isInTerminalState()) {
+    private void windowsManaging() {
+    	while (!DebuggerContext.context().isInTerminalState()) {
             try {
-                AbstractSimpleDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
+            	AbstractSimpleDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
                 SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
-                debugWindow.handleDebugEvent(event);
+                if (SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType()) && Objects.nonNull(debugWindow)) {
+                	debugWindow.handleDebugEvent(event);
+                	continue;
+                } 
+                // handling inspection windows events
+                if (event.getType().equals(SimpleDebuggerEventTypes.EventType.INSPECTION_WINDOW_SHOW)) {
+                    SetInspectionWindowStatus setInspectionWindowStatus = (SetInspectionWindowStatus) event;
+                    Display.getDefault().asyncExec(() -> {
+                        if (setInspectionWindowStatus.shouldBeShown() && (inspectWindow == null || !inspectWindow.isOpen())) {
+                            inspectWindow = new InspectWindow();
+                            inspectWindow.open();
+                        } else if (!setInspectionWindowStatus.shouldBeShown() && inspectWindow != null && inspectWindow.isOpen()) {
+                            inspectWindow.close();
+                        }
+                    });
+                }
+                
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break; // exit loop if interrupted
