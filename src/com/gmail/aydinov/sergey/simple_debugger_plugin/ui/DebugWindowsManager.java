@@ -54,14 +54,16 @@ public class DebugWindowsManager implements Runnable {
 	 * Возвращает или создаёт главное окно
 	 */
 	public DebugWindow getOrCreateDebugWindow() {
-		if (!DebuggerContext.context().isRunning())
-			return null;
+	    if (DebuggerContext.context().isInTerminalState())
+	        return null;
 
-		if (Objects.isNull(debugWindow) || !debugWindow.isOpen()) {
-			debugWindow = new DebugWindow();
-			Display.getDefault().asyncExec(() -> debugWindow.open());
-		}
-		return debugWindow;
+	    if (Objects.isNull(debugWindow) || !debugWindow.isOpen()) {
+	        Display.getDefault().syncExec(() -> {
+	            debugWindow = new DebugWindow(); // теперь создается в UI-потоке
+	            debugWindow.open();
+	        });
+	    }
+	    return debugWindow;
 	}
 
 	/**

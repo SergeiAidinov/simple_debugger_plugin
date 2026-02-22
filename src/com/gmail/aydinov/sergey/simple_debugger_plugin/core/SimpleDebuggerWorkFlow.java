@@ -113,7 +113,6 @@ public class SimpleDebuggerWorkFlow {
 		}
 		SimpleDebuggerLogger.info("DEBUGGER STARTED");
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.RUNNING);
-		openDebugWindow();
 		targetVirtualMachineRepresentation.getVirtualMachine().resume();
 
 		while (DebuggerContext.context().isRunning()) {
@@ -157,7 +156,7 @@ public class SimpleDebuggerWorkFlow {
 	private void prepareDebug(EventQueue queue, String mainClassName) {
 		SimpleDebuggerLogger.info("Debug preparation...");
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.PREPARING);
-		openDebugWindow();
+		DebugWindowsManager.instance().getOrCreateDebugWindow();
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
 		ClassPrepareRequest classPrepareRequest = eventRequestManager.createClassPrepareRequest();
 		classPrepareRequest.addClassFilter(mainClassName);
@@ -201,14 +200,6 @@ public class SimpleDebuggerWorkFlow {
 			SimpleDebuggerLogger.info("Debug preparation complete");
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.PREPARED);
 		}
-	}
-
-	private void openDebugWindow() {
-		Display.getDefault().asyncExec(() -> {
-			DebugWindow debugWindow = DebugWindowsManager.instance().getOrCreateDebugWindow();
-			if (Objects.nonNull(debugWindow) && !debugWindow.isOpen())
-				debugWindow.open();
-		});
 	}
 
 	/** Factory for creating a debug workflow asynchronously */

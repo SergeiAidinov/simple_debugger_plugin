@@ -15,7 +15,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
-public class OpenDebugWindowHandler extends AbstractHandler {
+public class OpenDebugWindowHandler /*extends AbstractHandler */{
 
     /** Singleton instance of the debug window */
     private static DebugWindow window;
@@ -27,18 +27,18 @@ public class OpenDebugWindowHandler extends AbstractHandler {
      * @return null
      * @throws ExecutionException if execution fails
      */
-    @Override
-    public Object execute(ExecutionEvent event) throws ExecutionException {
-
-        // If the window does not exist or has been disposed, create a new one
-        if (Objects.isNull(window) || window.getShell().isDisposed()) {
-            window = new DebugWindow();
-            window.open();
-        } else {
-            // Bring existing window to the front
-            window.getShell().setActive();
-        }
-
-        return null;
-    }
+//    @Override
+//    public Object execute(ExecutionEvent event) throws ExecutionException {
+//
+//        // If the window does not exist or has been disposed, create a new one
+//        if (Objects.isNull(window) || window.getShell().isDisposed()) {
+//            window = new DebugWindow();
+//            window.open();
+//        } else {
+//            // Bring existing window to the front
+//            window.getShell().setActive();
+//        }
+//
+//        return null;
+//    }
 }
