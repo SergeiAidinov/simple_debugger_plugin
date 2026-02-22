@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetInspectionWindowStatus;
@@ -15,29 +17,30 @@ public class InspectionSeanceImpl implements InspectionSeance {
 	
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
 	private final SimpleDebugEventCollector debugCollector = SimpleDebuggerEventQueue.instance();
-	private final FieldOrVariableDTO anchor;
+	private final TargetApplicationElementRepresentation anchorElement;
+	private final TargetApplicationRepresentation targetApplicationRepresentation;
 
-	public InspectionSeanceImpl(FieldOrVariableDTO anchor) {
+	public InspectionSeanceImpl(TargetApplicationElementRepresentation targetApplicationElementRepresentation, TargetApplicationRepresentation targetApplicationRepresentation) {
 		super();
-		this.anchor = anchor;
+		this.anchorElement = targetApplicationElementRepresentation;
+		this.targetApplicationRepresentation = targetApplicationRepresentation;
 	}
 	
-	public FieldOrVariableDTO getAnchor() {
-		return anchor;
+	public TargetApplicationElementRepresentation getAnchor() {
+		return anchorElement;
 	}
-
 
 	@Override
 	public void run() {
-		System.out.println(Thread.currentThread() + " started for " + anchor.toString());
+		System.out.println(Thread.currentThread() + " started for " + anchorElement.toString());
 		try {
-			startInspectionSeanceForAnchor(anchor);
+			startInspectionSeanceForAnchor(anchorElement);
 		} finally {
 			System.out.println("===> Inspection finished");
 		}
 	}
 
-	private void startInspectionSeanceForAnchor(FieldOrVariableDTO anchor) {
+	private void startInspectionSeanceForAnchor(TargetApplicationElementRepresentation anchorElement2) {
 		AbstractUIEvent uiEvent = null;
 		try {
 			uiEvent = uiEventCollector.takeUiEvent();
