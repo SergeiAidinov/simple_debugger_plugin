@@ -5,7 +5,7 @@ import java.util.List;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 
 /**
  * Event representing that the debugger has stopped at a breakpoint. Contains
@@ -45,7 +45,7 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 	 * @param methodCallInStacks        list of method calls in the stack
 	 * @param resultOfMethodInvocation  result of any invoked method (if applicable)
 	 */
-	private DebugStoppedAtBreakpointEvent(SimpleDebuggerEventType type, String className, String methodName,
+	private DebugStoppedAtBreakpointEvent(SimpleDebuggerEventTypes.EventType type, String className, String methodName,
 			int lineNumber, List<FieldOrVariableDTO> fields, List<FieldOrVariableDTO> locals, String stackTrace,
 			List<TargetApplicationElementRepresentation> targetApplicationElements,
 			List<MethodCallInStackDTO> methodCallInStacks, String resultOfMethodInvocation) {
@@ -102,7 +102,7 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 	// ---------------- BUILDER ----------------
 
 	public static class Builder {
-		private SimpleDebuggerEventType type;
+		private SimpleDebuggerEventTypes.EventType type;
 		private String className;
 		private String methodName;
 		private int lineNumber;
@@ -113,7 +113,7 @@ public class DebugStoppedAtBreakpointEvent extends AbstractSimpleDebugEvent {
 		private List<MethodCallInStackDTO> methodCallInStacks;
 		private String resultOfMethodInvocation;
 
-		public Builder type(SimpleDebuggerEventType type) {
+		public Builder type(SimpleDebuggerEventTypes.EventType type) {
 			this.type = type;
 			return this;
 		}

@@ -14,7 +14,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.BackendMethodExecutedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
@@ -22,9 +22,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugSt
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetResumeButtonEnabled;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebugEventProcessor;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.SimpleDebuggerEventQueue;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.processor.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabController;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldsAndVariablesTabContent;
@@ -123,10 +122,10 @@ public class DebugWindow {
         hookCross();
 
         // Start debug event processor in daemon thread
-        SimpleDebugEventProcessor simpleDebugEventProcessor = new SimpleDebugEventProcessor(this);
-        Thread processorThread = new Thread(simpleDebugEventProcessor);
-        processorThread.setDaemon(true);
-        processorThread.start();
+        //SimpleDebugEventProcessor simpleDebugEventProcessor = new SimpleDebugEventProcessor(this);
+//        Thread processorThread = new Thread(simpleDebugEventProcessor);
+//        processorThread.setDaemon(true);
+//        processorThread.start();
     }
 
     // ----------------- Event hooks -----------------
@@ -162,7 +161,7 @@ public class DebugWindow {
      */
     public void open() {
         // Load window icon
-    	shell.setImage(DebugWindowManager.instance().icons.get("debugger")); // Set icon for the window
+    	shell.setImage(DebugWindowsManager.instance().icons.get("debugger")); // Set icon for the window
         shell.open();
     }
 
@@ -175,16 +174,16 @@ public class DebugWindow {
         Display.getDefault().asyncExec(() -> {
             if (shell.isDisposed()) return;
 
-            if (Objects.equals(event.getType(), SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT)) {
+            if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.STOPPED_AT_BREAKPOINT)) {
                 refreshDataAtBreakpoint((DebugStoppedAtBreakpointEvent) event);
-            } else if (Objects.equals(event.getType(), SimpleDebuggerEventType.REFRESH_CONSOLE)) {
+            } else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.REFRESH_CONSOLE)) {
                 ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
                 consoleTabContent.appendLine(consoleEvent.getText());
-            } else if (Objects.equals(event.getType(), SimpleDebuggerEventType.METHOD_INVOKE)) {
+            } else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.METHOD_INVOKE)) {
                 BackendMethodExecutedEvent methodEvent = (BackendMethodExecutedEvent) event;
                 evaluateTabController.clearResult();
                 evaluateTabController.showResult(methodEvent.getResultOfInvocation());
-            } else if (Objects.equals(event.getType(), SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE)) {
+            } else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.SET_RESUME_BUTTON_STATE)) {
             	SetResumeButtonEnabled setResumeButtonEnabled =  (SetResumeButtonEnabled) event;
             	resumeButton.setEnabled(setResumeButtonEnabled.shouldBeEnabled());
             }

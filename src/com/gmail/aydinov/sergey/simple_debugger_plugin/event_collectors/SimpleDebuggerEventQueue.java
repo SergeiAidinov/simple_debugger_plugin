@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.processor;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors;
 
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
