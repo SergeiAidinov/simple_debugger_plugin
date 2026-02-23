@@ -25,7 +25,7 @@ public final class SimpleDebuggerEventTypes {
         STOPPED_AT_BREAKPOINT(DebugStoppedAtBreakpointEvent.class),
 
         /** Event triggered to refresh the debugger console */
-        REFRESH_CONSOLE(Void.class),
+        REFRESH_CONSOLE(String.class),
 
         SET_RESUME_BUTTON_STATE(Boolean.class),
 
