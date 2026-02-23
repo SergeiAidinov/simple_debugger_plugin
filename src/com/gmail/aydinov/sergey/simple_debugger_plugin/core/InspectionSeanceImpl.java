@@ -46,7 +46,7 @@ public class InspectionSeanceImpl implements InspectionSeance {
 		debugCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.EventType.DISPLAY_INSPECTION_WINDOW, false));
 		debugCollector.collectDebugEvent(new SimpleDebugEvent<TargetApplicationElementRepresentation>(EventType.SHOW_ANCHOR_ELEMENT, anchorElement));
 		try {
-			Thread.currentThread().sleep(2000);
+			Thread.currentThread().sleep(60_000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
