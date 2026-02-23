@@ -17,7 +17,6 @@ import org.eclipse.swt.widgets.Shell;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetResumeButtonEnabled;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
@@ -187,8 +186,9 @@ public class DebugWindow {
 				SimpleDebugEvent<String> simpleDebugEvent = (SimpleDebugEvent<String>) event;
 				evaluateTabController.showResult(simpleDebugEvent.getPayload());
 			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.SET_RESUME_BUTTON_STATE)) {
-				SetResumeButtonEnabled setResumeButtonEnabled = (SetResumeButtonEnabled) event;
-				resumeButton.setEnabled(setResumeButtonEnabled.shouldBeEnabled());
+				SimpleDebugEvent<Boolean> simpleDebugEvent = (SimpleDebugEvent<Boolean>) event;
+				//SetResumeButtonEnabled setResumeButtonEnabled = (SetResumeButtonEnabled) event;
+				resumeButton.setEnabled(simpleDebugEvent.getPayload());
 			}
 		});
 	}
