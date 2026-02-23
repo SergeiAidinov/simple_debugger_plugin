@@ -32,7 +32,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.EventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetInspectionWindowStatus;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetResumeButtonEnabled;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
@@ -210,7 +209,8 @@ public class DebugSessionImpl implements DebugSession {
 		if (anchorOptional.isEmpty())
 			return;
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTED);
-		simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(false));
+		//simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(false));
+		simpleDebugEventCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.EventType.SET_RESUME_BUTTON_STATE, false));
 		simpleDebugEventCollector.collectDebugEvent(new SetInspectionWindowStatus(true));
 		InspectionSeance inspectionSession = new InspectionSeanceImpl(anchorOptional.get(),
 				targetApplicationRepresentation);
@@ -223,7 +223,8 @@ public class DebugSessionImpl implements DebugSession {
 			Thread.currentThread().interrupt();
 		}
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING);
-		simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(true));
+		//simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(true));
+		simpleDebugEventCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.EventType.SET_RESUME_BUTTON_STATE, true));
 	}
 
 	private void updateLocalVariable(UserChangedVariableEvent variableEvent, StackFrame currentFrame) {
