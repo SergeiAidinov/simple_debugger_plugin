@@ -3,21 +3,25 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
+import java.util.Set;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ShowAnchorElement;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.EventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserEndedInspectionSessionForElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
+import com.sun.jdi.Field;
 
 /**
  * Inspect window with left Tree (element structure) and right Table (object values)
@@ -126,11 +130,17 @@ public class InspectWindow {
 
     /** Отображает структуру TargetApplicationElementRepresentation в дереве */
     protected void showElementStructure(TargetApplicationElementRepresentation element) {
+        showAnchorElement(element);
+    }
+
+    /** Новый метод: отображение элемента с полями и методами */
+    protected void showAnchorElement(TargetApplicationElementRepresentation element) {
         if (element == null || shell.isDisposed()) return;
 
         Display.getDefault().asyncExec(() -> {
-            elementTree.removeAll();
+            elementTree.removeAll(); // очищаем Tree перед вставкой
 
+            // --- корневой элемент ---
             TreeItem root = new TreeItem(elementTree, SWT.NONE);
             root.setText(new String[]{
                 element.getTargetApplicationElementName(),
@@ -138,17 +148,19 @@ public class InspectWindow {
             });
             root.setExpanded(true);
 
-            // Поля
-            if (element.getFields() != null) {
-                element.getFields().forEach(f -> {
+            // --- поля ---
+            Set<Field> fields = element.getFields();
+            if (fields != null) {
+                fields.forEach(f -> {
                     TreeItem fieldItem = new TreeItem(root, SWT.NONE);
                     fieldItem.setText(new String[]{f.name(), f.typeName()});
                 });
             }
 
-            // Методы
-            if (element.getMethods() != null) {
-                element.getMethods().forEach(m -> {
+            // --- методы ---
+            Set<TargetApplicationMethodDTO> methods = element.getMethods();
+            if (methods != null) {
+                methods.forEach(m -> {
                     TreeItem methodItem = new TreeItem(root, SWT.NONE);
                     methodItem.setText(new String[]{m.getMethodName() + "()", ""});
                 });
@@ -228,9 +240,13 @@ public class InspectWindow {
         // TODO: добавить кнопки для каждого элемента истории
     }
 
-	public void handleDebugEvent(AbstractSimpleDebugEvent event) {
-		System.out.println("===> " + event.getType());
-            
-		
-	}
+    /** Обработка debug-событий */
+    public void handleDebugEvent(AbstractSimpleDebugEvent event) {
+        System.out.println("===> " + event.getType());
+        if (Objects.equals(event.getType(), EventType.SHOW_ANCHOR_ELEMENT)) {
+        	SimpleDebugEvent<TargetApplicationElementRepresentation> simpleDebugEvent = (SimpleDebugEvent<TargetApplicationElementRepresentation>) event;
+        	showAnchorElement(simpleDebugEvent.getPayload());
+        }
+        // TODO: добавить обработку событий
+    }
 }
