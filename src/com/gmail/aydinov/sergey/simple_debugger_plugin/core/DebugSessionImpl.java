@@ -30,10 +30,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.Inspectio
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.EventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.BackendMethodExecutedEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetInspectionWindowStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetResumeButtonEnabled;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
@@ -212,7 +212,8 @@ public class DebugSessionImpl implements DebugSession {
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTED);
 		simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(false));
 		simpleDebugEventCollector.collectDebugEvent(new SetInspectionWindowStatus(true));
-		InspectionSeance inspectionSession = new InspectionSeanceImpl(anchorOptional.get(), targetApplicationRepresentation);
+		InspectionSeance inspectionSession = new InspectionSeanceImpl(anchorOptional.get(),
+				targetApplicationRepresentation);
 		Thread inspectionSessionThread = new Thread(inspectionSession);
 		inspectionSessionThread.setDaemon(true);
 		inspectionSessionThread.start();
@@ -279,7 +280,9 @@ public class DebugSessionImpl implements DebugSession {
 							methodArguments, ClassType.INVOKE_SINGLE_THREADED);
 
 			methodInvocationResult.set(String.valueOf(result));
-			simpleDebugEventCollector.collectDebugEvent(new BackendMethodExecutedEvent(
+//			simpleDebugEventCollector.collectDebugEvent(new BackendMethodExecutedEvent(
+//					SimpleDebuggerEventTypes.EventType.METHOD_INVOKE, methodInvocationResult.get()));
+			simpleDebugEventCollector.collectDebugEvent(new SimpleDebugEvent<String>(
 					SimpleDebuggerEventTypes.EventType.METHOD_INVOKE, methodInvocationResult.get()));
 		} catch (Exception exception) {
 			exception.printStackTrace();
