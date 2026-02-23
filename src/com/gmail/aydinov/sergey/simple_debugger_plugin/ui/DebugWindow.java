@@ -16,7 +16,6 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ConsoleUpdateDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetResumeButtonEnabled;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
@@ -179,8 +178,9 @@ public class DebugWindow {
 			if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.STOPPED_AT_BREAKPOINT)) {
 				refreshDataAtBreakpoint((DebugStoppedAtBreakpointEvent) event);
 			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.REFRESH_CONSOLE)) {
-				ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
-				consoleTabContent.appendLine(consoleEvent.getText());
+				SimpleDebugEvent<String> simpleDebugEvent = (SimpleDebugEvent<String>) event;
+				//ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
+				consoleTabContent.appendLine(simpleDebugEvent.getPayload());
 			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.METHOD_INVOKE)) {
 				//BackendMethodExecutedEvent methodEvent = (BackendMethodExecutedEvent) event;
 				evaluateTabController.clearResult();
