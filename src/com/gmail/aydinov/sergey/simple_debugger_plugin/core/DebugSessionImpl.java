@@ -27,11 +27,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtual
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.EventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetInspectionWindowStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
@@ -211,7 +210,10 @@ public class DebugSessionImpl implements DebugSession {
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTED);
 		//simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(false));
 		simpleDebugEventCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.EventType.SET_RESUME_BUTTON_STATE, false));
-		simpleDebugEventCollector.collectDebugEvent(new SetInspectionWindowStatus(true));
+		//simpleDebugEventCollector.collectDebugEvent(new SetInspectionWindowStatus(true));
+		
+		simpleDebugEventCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(EventType.DISPLAY_INSPECTION_WINDOW, true));
+		
 		InspectionSeance inspectionSession = new InspectionSeanceImpl(anchorOptional.get(),
 				targetApplicationRepresentation);
 		Thread inspectionSessionThread = new Thread(inspectionSession);
@@ -308,8 +310,9 @@ public class DebugSessionImpl implements DebugSession {
 
 		Location location = breakpointEvent.location();
 
-		DebugStoppedAtBreakpointEvent debugEvent = new DebugStoppedAtBreakpointEvent.Builder()
-				.type(EventType.STOPPED_AT_BREAKPOINT).className(location.declaringType().name())
+		DebugStoppedAtBreakpointDTO debugStoppedAtBreakpointDTO = new DebugStoppedAtBreakpointDTO.Builder()
+				//.type(EventType.STOPPED_AT_BREAKPOINT)
+				.className(location.declaringType().name())
 				.methodName(location.method().name()).lineNumber(location.lineNumber())
 				.fields(DebugUtils.mapFields(DebugUtils.compileFields(currentFrame)))
 				.locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(currentFrame)))
@@ -319,7 +322,7 @@ public class DebugSessionImpl implements DebugSession {
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
 				.resultOfMethodInvocation(methodInvocationResult.get()).build();
 
-		simpleDebugEventCollector.collectDebugEvent(debugEvent);
+		simpleDebugEventCollector.collectDebugEvent(new SimpleDebugEvent<DebugStoppedAtBreakpointDTO>(SimpleDebuggerEventTypes.EventType.STOPPED_AT_BREAKPOINT, debugStoppedAtBreakpointDTO));
 
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {

@@ -3,9 +3,10 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetInspectionWindowStatus;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.EventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ShowAnchorElement;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractInspectionUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserEndedInspectionSessionForElement;
@@ -54,7 +55,9 @@ public class InspectionSeanceImpl implements InspectionSeance {
 			ignoreUiEvent(uiEvent);
 		} else if (uiEvent instanceof UserEndedInspectionSessionForElement userEndedInspectionSessionForElement) {
 			System.out.println("CAUGHT: " + userEndedInspectionSessionForElement);
-			debugCollector.collectDebugEvent(new SetInspectionWindowStatus(false));
+			//debugCollector.collectDebugEvent(new SetInspectionWindowStatus(false));
+			debugCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.EventType.DISPLAY_INSPECTION_WINDOW, false));
+			debugCollector.collectDebugEvent(new SimpleDebugEvent<TargetApplicationElementRepresentation>(EventType.SHOW_ANCHOR_ELEMENT, anchorElement));
 		} 
 		
 	}

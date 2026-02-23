@@ -10,7 +10,6 @@ import org.eclipse.swt.widgets.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.*;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
@@ -157,7 +156,7 @@ public class EvaluateTabController {
 		});
 	}
 
-	public void updateFromEvent(DebugStoppedAtBreakpointEvent debugStoppedAtBreakpointEvent) {
+	public void updateFromEvent(DebugStoppedAtBreakpointDTO debugStoppedAtBreakpointEvent) {
 		Display.getDefault().asyncExec(() -> {
 			if (root.isDisposed())
 				return;

@@ -2,7 +2,8 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 import java.util.Set;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
 
 /**
  * Types of events emitted by the simple debugger.
@@ -22,7 +23,7 @@ public final class SimpleDebuggerEventTypes {
     public enum EventType {
 
         /** Event triggered when the debugger stops at a breakpoint */
-        STOPPED_AT_BREAKPOINT(DebugStoppedAtBreakpointEvent.class),
+        STOPPED_AT_BREAKPOINT(DebugStoppedAtBreakpointDTO.class),
 
         /** Event triggered to refresh the debugger console */
         REFRESH_CONSOLE(String.class),
@@ -32,9 +33,9 @@ public final class SimpleDebuggerEventTypes {
         /** Event triggered when a method is invoked in the target application */
         METHOD_INVOKE(String.class),
 
-        INSPECTION_WINDOW_SHOW(Void.class),
+        DISPLAY_INSPECTION_WINDOW(Boolean.class),
 
-        SHOW_ANCHOR_ELEMENT(Object.class);
+        SHOW_ANCHOR_ELEMENT(TargetApplicationElementRepresentation.class);
 
         private final Class<?> payloadType;
 
@@ -50,7 +51,7 @@ public final class SimpleDebuggerEventTypes {
     // --- Groups of event types ---
 
     private static final Set<EventType> INSPECTION_WINDOW_EVENTS =
-            Set.of(EventType.INSPECTION_WINDOW_SHOW);
+            Set.of(EventType.DISPLAY_INSPECTION_WINDOW);
 
     /**
      * Checks if the event is an inspection window event.
