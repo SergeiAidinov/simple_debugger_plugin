@@ -2,36 +2,67 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 import java.util.Set;
 
-public class SimpleDebuggerEventTypes {
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 
-	/**
-	 * Types of events emitted by the simple debugger.
-	 * <p>
-	 * Author: Sergei Aidinov
-	 * <br>
-	 * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
-	 * </p>
-	 */
-	public enum EventType {
+/**
+ * Types of events emitted by the simple debugger.
+ *
+ * Author: Sergei Aidinov
+ * Email: sergey.aydinov@gmail.com
+ */
+public final class SimpleDebuggerEventTypes {
 
-	    /** Event triggered when the debugger stops at a breakpoint */
-	    STOPPED_AT_BREAKPOINT,
+    private SimpleDebuggerEventTypes() {
+        // Utility class, prevent instantiation
+    }
 
-	    /** Event triggered to refresh the debugger console */
-	    REFRESH_CONSOLE,
-	    
-	    SET_RESUME_BUTTON_STATE,
+    /**
+     * Enum of all event types.
+     */
+    public enum EventType {
 
-	    /** Event triggered when a method is invoked in the target application */
-	    METHOD_INVOKE,
-	    
-	    INSPECTION_WINDOW_SHOW, SHOW_ANCHOR_ELEMENT 
+        /** Event triggered when the debugger stops at a breakpoint */
+        STOPPED_AT_BREAKPOINT(DebugStoppedAtBreakpointEvent.class),
 
-	}
-	
-	private static final Set<EventType> inspectionWindowEvents = Set.of(EventType.INSPECTION_WINDOW_SHOW);
-	
-	public static boolean isDebugWindowEvent(EventType eventType) {
-		return !inspectionWindowEvents.contains(eventType);
-	}
+        /** Event triggered to refresh the debugger console */
+        REFRESH_CONSOLE(Void.class),
+
+        SET_RESUME_BUTTON_STATE(Boolean.class),
+
+        /** Event triggered when a method is invoked in the target application */
+        METHOD_INVOKE(String.class),
+
+        INSPECTION_WINDOW_SHOW(Void.class),
+
+        SHOW_ANCHOR_ELEMENT(Object.class);
+
+        private final Class<?> payloadType;
+
+        EventType(Class<?> payloadType) {
+            this.payloadType = payloadType;
+        }
+
+        public Class<?> getPayloadType() {
+            return payloadType;
+        }
+    }
+
+    // --- Groups of event types ---
+
+    private static final Set<EventType> INSPECTION_WINDOW_EVENTS =
+            Set.of(EventType.INSPECTION_WINDOW_SHOW);
+
+    /**
+     * Checks if the event is an inspection window event.
+     */
+    public static boolean isInspectionWindowEvent(EventType type) {
+        return INSPECTION_WINDOW_EVENTS.contains(type);
+    }
+
+    /**
+     * Checks if the event is a debug window event.
+     */
+    public static boolean isDebugWindowEvent(EventType type) {
+        return !isInspectionWindowEvent(type);
+    }
 }
