@@ -10,10 +10,10 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SetInspectionWindowStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ShowAnchorElement;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
@@ -76,8 +76,11 @@ public class DebugWindowsManager implements Runnable {
 		if (Objects.nonNull(inspectWindow) && inspectWindow.isOpen()) {
 			inspectWindow.close();
 		}
-		inspectWindow = new InspectWindow();
-		Display.getDefault().asyncExec(() -> inspectWindow.open());
+		Display.getDefault().syncExec(() -> {
+			inspectWindow = new InspectWindow();
+			inspectWindow.open();
+			
+		});
 		return inspectWindow;
 	}
 
@@ -107,26 +110,15 @@ public class DebugWindowsManager implements Runnable {
             try {
             	AbstractSimpleDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
                 SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
-                if (SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType()) && Objects.nonNull(debugWindow)) {
+                if (SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType()) && Objects.nonNull(debugWindow) && debugWindow.isOpen()) {
                 	debugWindow.handleDebugEvent(event);
                 	continue;
                 } 
                 // handling inspection windows events
-                if (event.getType().equals(SimpleDebuggerEventTypes.EventType.INSPECTION_WINDOW_SHOW)) {
-                    SetInspectionWindowStatus setInspectionWindowStatus = (SetInspectionWindowStatus) event;
-                    Display.getDefault().asyncExec(() -> {
-                        if (setInspectionWindowStatus.shouldBeShown() && (Objects.isNull(inspectWindow) || !inspectWindow.isOpen())) {
-                            inspectWindow = new InspectWindow();
-                            inspectWindow.open();
-                        } else if (!setInspectionWindowStatus.shouldBeShown() && Objects.nonNull(inspectWindow) && inspectWindow.isOpen()) {
-                            inspectWindow.close();
-                        }
-                    });
-                } else if (event.getType().equals(SimpleDebuggerEventTypes.EventType.SHOW_ANCHOR_ELEMENT) /*&& (Objects.nonNull(inspectWindow) && inspectWindow.isOpen())*/) {
-                	ShowAnchorElement showAnchorElement = (ShowAnchorElement) event;
-                	inspectWindow.showElementStructure(showAnchorElement.getAnchorElement());
+                if (SimpleDebuggerEventTypes.isInspectionWindowEvent(event.getType())) {
+                	if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.DISPLAY_INSPECTION_WINDOW)) openNewInspectWindow();
+                	else if (Objects.nonNull(inspectWindow) && inspectWindow.isOpen()) inspectWindow.handleDebugEvent(event);
                 }
-                
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break; // exit loop if interrupted

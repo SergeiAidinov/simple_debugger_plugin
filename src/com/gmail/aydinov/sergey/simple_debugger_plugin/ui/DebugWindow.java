@@ -14,9 +14,9 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractSimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugStoppedAtBreakpointEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
@@ -175,7 +175,8 @@ public class DebugWindow {
 			if (shell.isDisposed())
 				return;
 			if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.STOPPED_AT_BREAKPOINT)) {
-				refreshDataAtBreakpoint((DebugStoppedAtBreakpointEvent) event);
+				SimpleDebugEvent<DebugStoppedAtBreakpointDTO> simpleDebugEvent = (SimpleDebugEvent<DebugStoppedAtBreakpointDTO>) event;
+				refreshDataAtBreakpoint(simpleDebugEvent.getPayload());
 			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.REFRESH_CONSOLE)) {
 				SimpleDebugEvent<String> simpleDebugEvent = (SimpleDebugEvent<String>) event;
 				//ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
@@ -193,7 +194,7 @@ public class DebugWindow {
 		});
 	}
 
-	private void refreshDataAtBreakpoint(DebugStoppedAtBreakpointEvent event) {
+	private void refreshDataAtBreakpoint(DebugStoppedAtBreakpointDTO event) {
 		if (event == null)
 			return;
 

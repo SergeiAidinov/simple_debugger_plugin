@@ -1,6 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event;
-
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 /**
  * Base class for all events emitted by the simple debugger.
