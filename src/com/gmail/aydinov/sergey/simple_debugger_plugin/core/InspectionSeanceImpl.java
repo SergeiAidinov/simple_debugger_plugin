@@ -43,22 +43,15 @@ public class InspectionSeanceImpl implements InspectionSeance {
 	}
 
 	private void startInspectionSeanceForAnchor(TargetApplicationElementRepresentation anchorElement) {
-		debugCollector.collectDebugEvent(new ShowAnchorElement(anchorElement));
-		AbstractUIEvent uiEvent = null;
+		debugCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.EventType.DISPLAY_INSPECTION_WINDOW, false));
+		debugCollector.collectDebugEvent(new SimpleDebugEvent<TargetApplicationElementRepresentation>(EventType.SHOW_ANCHOR_ELEMENT, anchorElement));
 		try {
-			uiEvent = uiEventCollector.takeUiEvent();
+			Thread.currentThread().sleep(2000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if (!(uiEvent instanceof AbstractInspectionUIEvent)) {
-			ignoreUiEvent(uiEvent);
-		} else if (uiEvent instanceof UserEndedInspectionSessionForElement userEndedInspectionSessionForElement) {
-			System.out.println("CAUGHT: " + userEndedInspectionSessionForElement);
-			//debugCollector.collectDebugEvent(new SetInspectionWindowStatus(false));
-			debugCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.EventType.DISPLAY_INSPECTION_WINDOW, false));
-			debugCollector.collectDebugEvent(new SimpleDebugEvent<TargetApplicationElementRepresentation>(EventType.SHOW_ANCHOR_ELEMENT, anchorElement));
-		} 
+		
 		
 	}
 

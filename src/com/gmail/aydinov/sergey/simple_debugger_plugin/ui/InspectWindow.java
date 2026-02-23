@@ -229,6 +229,7 @@ public class InspectWindow {
     }
 
 	public void handleDebugEvent(AbstractSimpleDebugEvent event) {
+		System.out.println("===> " + event.getType());
             
 		
 	}

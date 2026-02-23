@@ -51,7 +51,7 @@ public final class SimpleDebuggerEventTypes {
     // --- Groups of event types ---
 
     private static final Set<EventType> INSPECTION_WINDOW_EVENTS =
-            Set.of(EventType.DISPLAY_INSPECTION_WINDOW);
+            Set.of(EventType.DISPLAY_INSPECTION_WINDOW, EventType.SHOW_ANCHOR_ELEMENT);
 
     /**
      * Checks if the event is an inspection window event.
