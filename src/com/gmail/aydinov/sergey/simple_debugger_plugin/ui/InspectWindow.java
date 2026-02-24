@@ -15,7 +15,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.EventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.DebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
@@ -243,7 +243,7 @@ public class InspectWindow {
     /** Обработка debug-событий */
     public void handleDebugEvent(AbstractSimpleDebugEvent event) {
         System.out.println("===> " + event.getType());
-        if (Objects.equals(event.getType(), EventType.SHOW_ANCHOR_ELEMENT)) {
+        if (Objects.equals(event.getType(), DebugEventType.SHOW_ANCHOR_ELEMENT)) {
         	SimpleDebugEvent<TargetApplicationElementRepresentation> simpleDebugEvent = (SimpleDebugEvent<TargetApplicationElementRepresentation>) event;
         	showAnchorElement(simpleDebugEvent.getPayload());
         }

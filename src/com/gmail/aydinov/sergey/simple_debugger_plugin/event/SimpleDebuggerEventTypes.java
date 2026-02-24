@@ -20,7 +20,7 @@ public final class SimpleDebuggerEventTypes {
     /**
      * Enum of all event types.
      */
-    public enum EventType {
+    public enum DebugEventType {
 
         /** Event triggered when the debugger stops at a breakpoint */
         STOPPED_AT_BREAKPOINT(DebugStoppedAtBreakpointDTO.class),
@@ -39,7 +39,7 @@ public final class SimpleDebuggerEventTypes {
 
         private final Class<?> payloadType;
 
-        EventType(Class<?> payloadType) {
+        DebugEventType(Class<?> payloadType) {
             this.payloadType = payloadType;
         }
 
@@ -50,20 +50,20 @@ public final class SimpleDebuggerEventTypes {
 
     // --- Groups of event types ---
 
-    private static final Set<EventType> INSPECTION_WINDOW_EVENTS =
-            Set.of(EventType.DISPLAY_INSPECTION_WINDOW, EventType.SHOW_ANCHOR_ELEMENT);
+    private static final Set<DebugEventType> INSPECTION_WINDOW_EVENTS =
+            Set.of(DebugEventType.DISPLAY_INSPECTION_WINDOW, DebugEventType.SHOW_ANCHOR_ELEMENT);
 
     /**
      * Checks if the event is an inspection window event.
      */
-    public static boolean isInspectionWindowEvent(EventType type) {
+    public static boolean isInspectionWindowEvent(DebugEventType type) {
         return INSPECTION_WINDOW_EVENTS.contains(type);
     }
 
     /**
      * Checks if the event is a debug window event.
      */
-    public static boolean isDebugWindowEvent(EventType type) {
+    public static boolean isDebugWindowEvent(DebugEventType type) {
         return !isInspectionWindowEvent(type);
     }
 }

@@ -4,8 +4,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.EventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ShowAnchorElement;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.DebugEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractInspectionUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
@@ -43,8 +42,8 @@ public class InspectionSeanceImpl implements InspectionSeance {
 	}
 
 	private void startInspectionSeanceForAnchor(TargetApplicationElementRepresentation anchorElement) {
-		debugCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.EventType.DISPLAY_INSPECTION_WINDOW, false));
-		debugCollector.collectDebugEvent(new SimpleDebugEvent<TargetApplicationElementRepresentation>(EventType.SHOW_ANCHOR_ELEMENT, anchorElement));
+		debugCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.DebugEventType.DISPLAY_INSPECTION_WINDOW, false));
+		debugCollector.collectDebugEvent(new SimpleDebugEvent<TargetApplicationElementRepresentation>(DebugEventType.SHOW_ANCHOR_ELEMENT, anchorElement));
 		try {
 			Thread.currentThread().sleep(60_000);
 		} catch (InterruptedException e) {
