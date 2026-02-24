@@ -27,7 +27,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
@@ -44,7 +44,7 @@ public class FieldsAndVariablesTabContent {
 	private final Table table;
 	private final TableViewer viewer;
 	private final List<FieldOrVariableDTO> entries = new ArrayList<>();
-	UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
+	UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
 	public FieldsAndVariablesTabContent(Composite parent) {
 

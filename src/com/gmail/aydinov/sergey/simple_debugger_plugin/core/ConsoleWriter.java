@@ -7,7 +7,7 @@ import java.io.InputStreamReader;
 import java.util.Objects;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 
 /**
@@ -51,7 +51,7 @@ public class ConsoleWriter implements Runnable {
 				String text = prefix + line;
 //				SimpleDebuggerEventQueue.instance().collectDebugEvent(new ConsoleUpdateDebugEvent(
 //						SimpleDebuggerEventTypes.EventType.REFRESH_CONSOLE, text));
-				SimpleDebuggerEventQueue.instance().collectDebugEvent(new DebugEvent<String>(SimpleDebuggerEventTypes.SimpleDebuggerEventType.REFRESH_CONSOLE, text));
+				SimpleDebuggerEventCollector.instance().collectDebugEvent(new DebugEvent<String>(SimpleDebuggerEventTypes.SimpleDebuggerEventType.REFRESH_CONSOLE, text));
 			}
 		} catch (IOException exception) {
 			exception.printStackTrace();

@@ -6,16 +6,27 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.*;
-import org.eclipse.swt.widgets.*;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeColumn;
+import org.eclipse.swt.widgets.TreeItem;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
@@ -35,8 +46,7 @@ public class InspectWindow {
     private final Button forwardButton;
     private final Composite breadcrumbComposite;
     private final Deque<FieldOrVariableDTO> history = new ArrayDeque<>();
-    private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
-    private boolean programmaticClose = false;
+    private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
     protected InspectWindow() {
         shell = new Shell(Display.getDefault());
@@ -46,11 +56,12 @@ public class InspectWindow {
 
         // ----------------- Обработчик крестика -----------------
         shell.addListener(SWT.Close, e -> {
-            if (!programmaticClose) {
-                e.doit = false; // блокируем закрытие
+           // if (!programmaticClose) {
+                e.doit = true; // блокируем закрытие
                 uiEventCollector.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT, null));
-                
-            }
+                DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING);
+                System.out.println("CROSS PRESSED <================");
+           // }
         });
 
         // ----------------- Левая панель: Tree -----------------
@@ -109,6 +120,7 @@ public class InspectWindow {
 
     /** Opens the shell */
     protected void open() {
+    	shell.setImage(DebugWindowsManager.instance().icons.get("debugger")); // Set icon for the window
         shell.open();
     }
 
@@ -120,10 +132,8 @@ public class InspectWindow {
     /** Closes the window programmatically */
     protected void close() {
         if (isOpen()) {
-            Display.getDefault().syncExec(() -> {
-                programmaticClose = true;
+            Display.getDefault().asyncExec(() -> {
                 if (!shell.isDisposed()) shell.close();
-                programmaticClose = false;
             });
         }
     }
@@ -181,8 +191,6 @@ public class InspectWindow {
             refreshContent(fieldOrVariableDTO);
             renderBreadcrumb();
         });
-
-        uiEventCollector.collectUiEvent(new UIEvent<FieldOrVariableDTO>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, fieldOrVariableDTO));
     }
 
     private void refreshContent(FieldOrVariableDTO dto) {

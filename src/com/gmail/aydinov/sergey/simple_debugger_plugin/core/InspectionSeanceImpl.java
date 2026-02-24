@@ -1,12 +1,15 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
+import java.util.Objects;
+
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
@@ -14,8 +17,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLog
 
 public class InspectionSeanceImpl implements InspectionSeance {
 	
-	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
-	private final DebugEventCollector debugCollector = SimpleDebuggerEventQueue.instance();
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+	private final DebugEventCollector debugCollector = SimpleDebuggerEventCollector.instance();
 	private final TargetApplicationElementRepresentation anchorElement;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 
@@ -36,20 +39,25 @@ public class InspectionSeanceImpl implements InspectionSeance {
 			startInspectionSeanceForAnchor(anchorElement);
 		} finally {
 			System.out.println("===> Inspection finished");
+			DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_STOPPED);
 		}
 	}
 
 	private void startInspectionSeanceForAnchor(TargetApplicationElementRepresentation anchorElement) {
-		debugCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW, false));
 		debugCollector.collectDebugEvent(new DebugEvent<TargetApplicationElementRepresentation>(SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT, anchorElement));
-		try {
-			Thread.currentThread().sleep(60_000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		while (DebuggerContext.context().isInspectionSeanceActive()) {
+			AbstractUIEvent abstractUIEvent = null;
+			try {
+				abstractUIEvent = uiEventCollector.takeUiEvent();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (Objects.isNull(abstractUIEvent)) continue;
+			if (SimpleDebuggerEventTypes.isDebugWindowEvent(abstractUIEvent.getType())) ignoreUiEvent(abstractUIEvent); 
+			if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING)) break;
+			
 		}
-		
-		
 	}
 
 	private void ignoreUiEvent(AbstractUIEvent uiEvent) {

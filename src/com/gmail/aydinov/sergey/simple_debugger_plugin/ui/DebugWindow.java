@@ -17,7 +17,7 @@ import org.eclipse.swt.widgets.Shell;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
@@ -49,7 +49,7 @@ public class DebugWindow {
 	private Button resumeButton;
 	private Label locationLabel;
 
-	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final String STOP_INFO = "Stopped at: ";
 
 	/**
@@ -119,12 +119,6 @@ public class DebugWindow {
 		hookResumeButton();
 		hookCross();
 
-		// Start debug event processor in daemon thread
-		// SimpleDebugEventProcessor simpleDebugEventProcessor = new
-		// SimpleDebugEventProcessor(this);
-//        Thread processorThread = new Thread(simpleDebugEventProcessor);
-//        processorThread.setDaemon(true);
-//        processorThread.start();
 	}
 
 	// ----------------- Event hooks -----------------

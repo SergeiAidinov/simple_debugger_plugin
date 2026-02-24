@@ -12,7 +12,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
@@ -110,17 +110,17 @@ public class DebugWindowsManager implements Runnable {
 	private void windowsManaging() {
 		while (!DebuggerContext.context().isInTerminalState()) {
 			try {
-				AbstractDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
+				AbstractDebugEvent event = SimpleDebuggerEventCollector.instance().takeDebugEvent();
 				SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
 				
-				if (SimpleDebuggerEventTypes.shouldHandleEventInContextOfDebugWindow(event.getType()) && Objects.equals(
+				if (SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType()) && Objects.equals(
 						event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW)) {
 					openNewInspectWindow();
 					continue;
 				}
 
 				if (Objects.nonNull(debugWindow) && debugWindow.isOpen()
-						&& SimpleDebuggerEventTypes.shouldHandleEventInContextOfDebugWindow(event.getType())
+						&& SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType())
 						&& !Objects.equals(event.getType(),
 								SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW)) {
 					debugWindow.handleDebugEvent(event);
@@ -128,7 +128,7 @@ public class DebugWindowsManager implements Runnable {
 				}
 				
 				// handling inspection windows events
-				if (SimpleDebuggerEventTypes.shouldAddressEventToInspectionWindow(event.getType())
+				if (SimpleDebuggerEventTypes.isInspectionWindowEvent(event.getType())
 						&& (Objects.nonNull(inspectWindow) && inspectWindow.isOpen())) {
 					inspectWindow.handleDebugEvent(event);
 				}

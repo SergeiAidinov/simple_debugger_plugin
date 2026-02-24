@@ -16,21 +16,21 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
-public class SimpleDebuggerEventQueue implements UiEventCollector, DebugEventCollector {
+public class SimpleDebuggerEventCollector implements UiEventCollector, DebugEventCollector {
 
-    private static SimpleDebuggerEventQueue INSTANCE = null;
+    private static SimpleDebuggerEventCollector INSTANCE = null;
 
     /** Private constructor to enforce singleton pattern */
-    private SimpleDebuggerEventQueue() { }
+    private SimpleDebuggerEventCollector() { }
 
     /**
      * Returns the singleton instance of the event queue.
      *
      * @return the single instance of SimpleDebuggerEventQueue
      */
-    public static synchronized SimpleDebuggerEventQueue instance() {
+    public static synchronized SimpleDebuggerEventCollector instance() {
         if (Objects.isNull(INSTANCE)) {
-            INSTANCE = new SimpleDebuggerEventQueue();
+            INSTANCE = new SimpleDebuggerEventCollector();
         }
         return INSTANCE;
     }
