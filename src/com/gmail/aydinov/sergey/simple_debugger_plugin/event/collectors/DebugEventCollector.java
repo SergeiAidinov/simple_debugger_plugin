@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 
