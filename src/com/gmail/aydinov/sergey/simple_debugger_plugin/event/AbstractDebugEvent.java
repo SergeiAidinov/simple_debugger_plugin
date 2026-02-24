@@ -8,17 +8,17 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
-public class AbstractSimpleDebugEvent {
+public class AbstractDebugEvent {
 
     /** Type of this debugger event */
-    private final SimpleDebuggerEventTypes.DebugEventType type;
+    private final SimpleDebuggerEventTypes.SimpleDebuggerEventType type;
 
     /**
      * Creates a new debugger event with the specified type.
      *
      * @param type the type of the debugger event
      */
-    public AbstractSimpleDebugEvent(SimpleDebuggerEventTypes.DebugEventType type) {
+    public AbstractDebugEvent(SimpleDebuggerEventTypes.SimpleDebuggerEventType type) {
         this.type = type;
     }
 
@@ -27,7 +27,7 @@ public class AbstractSimpleDebugEvent {
      *
      * @return the event type
      */
-    public SimpleDebuggerEventTypes.DebugEventType getType() {
+    public SimpleDebuggerEventTypes.SimpleDebuggerEventType getType() {
         return type;
     }
 }

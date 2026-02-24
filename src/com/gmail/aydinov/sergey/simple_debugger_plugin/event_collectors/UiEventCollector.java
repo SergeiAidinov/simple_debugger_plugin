@@ -1,6 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractSimpleDebuggerUIEvent;
 
 /**
  * Interface for collecting UI events produced by the user interface.
@@ -19,7 +19,7 @@ public interface UiEventCollector {
      *
      * @param event the UI event to collect
      */
-    void collectUiEvent(AbstractUIEvent event);
+    void collectUiEvent(AbstractSimpleDebuggerUIEvent event);
 
     /**
      * Retrieves and removes the next UI event from the queue.
@@ -28,7 +28,7 @@ public interface UiEventCollector {
      * @return the next UI event, or null if none is available
      * @throws InterruptedException if the operation is interrupted while waiting
      */
-    AbstractUIEvent pollUiEvent();
+    AbstractSimpleDebuggerUIEvent pollUiEvent();
     
-    AbstractUIEvent takeUiEvent() throws InterruptedException;
+    AbstractSimpleDebuggerUIEvent takeUiEvent() throws InterruptedException;
 }

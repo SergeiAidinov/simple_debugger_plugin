@@ -10,7 +10,9 @@ import org.eclipse.swt.widgets.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.*;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
 
@@ -264,8 +266,9 @@ public class EvaluateTabController {
 		String argsText = methodInput.getText();
 
 		if (Objects.nonNull(clazz)) {
-			UserInvokedMethodEvent invokeMethodEvent = new UserInvokedMethodEvent(clazz, lastMethod, argsText);
-			uiEventCollector.collectUiEvent(invokeMethodEvent);
+			uiEventCollector
+					.collectUiEvent(new UIEvent<UserInvokedMethodEventDTO>(SimpleDebuggerEventType.USER_INVOKED_METHOD,
+							new UserInvokedMethodEventDTO(clazz, lastMethod, argsText)));
 		} else {
 			resultField.setText("No class selected to invoke method.");
 		}

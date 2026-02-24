@@ -4,8 +4,8 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractSimpleDebuggerUIEvent;
 
 /**
  * Singleton queue for handling UI and Debug events in the Simple Debugger.
@@ -35,8 +35,8 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
         return INSTANCE;
     }
 
-    private final BlockingQueue<AbstractUIEvent> uiEventQueue = new LinkedBlockingQueue<>();
-    private final BlockingQueue<AbstractSimpleDebugEvent> debugEventQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<AbstractSimpleDebuggerUIEvent> uiEventQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<AbstractDebugEvent> debugEventQueue = new LinkedBlockingQueue<>();
 
     /**
      * Collects a UI event from the UI thread or other producers.
@@ -45,7 +45,7 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
      * @param event the UI event to add
      */
     @Override
-    public void collectUiEvent(AbstractUIEvent event) {
+    public void collectUiEvent(AbstractSimpleDebuggerUIEvent event) {
         uiEventQueue.offer(event);
     }
 
@@ -56,7 +56,7 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
      * @param event the debug event to add
      */
     @Override
-    public void collectDebugEvent(AbstractSimpleDebugEvent event) {
+    public void collectDebugEvent(AbstractDebugEvent event) {
         debugEventQueue.offer(event);
     }
 
@@ -67,7 +67,7 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
      * @throws InterruptedException if interrupted while waiting
      */
     @Override
-    public AbstractSimpleDebugEvent takeDebugEvent() throws InterruptedException {
+    public AbstractDebugEvent takeDebugEvent() throws InterruptedException {
         return debugEventQueue.take();
     }
 
@@ -76,11 +76,11 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
      * Non-blocking operation.
      */
     @Override
-    public AbstractUIEvent pollUiEvent() {
+    public AbstractSimpleDebuggerUIEvent pollUiEvent() {
         return uiEventQueue.poll();
     }
     
-    public AbstractUIEvent takeUiEvent() throws InterruptedException {
+    public AbstractSimpleDebuggerUIEvent takeUiEvent() throws InterruptedException {
         return uiEventQueue.take();
     }
 }

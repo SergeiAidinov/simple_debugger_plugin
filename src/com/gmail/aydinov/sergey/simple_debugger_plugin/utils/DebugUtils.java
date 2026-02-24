@@ -11,7 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.FieldOrVariableType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserInvokedMethodEventDTO;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -243,9 +243,9 @@ public class DebugUtils {
 	 * Converts argumentsText to a list of JDI values for method invocation
 	 */
 	public static List<Value> parseArguments(VirtualMachine virtualMachine,
-			UserInvokedMethodEvent userInvokedMethodEvent) {
+			UserInvokedMethodEventDTO userInvokedMethodEventDTO) {
 		List<Value> values = new ArrayList<>();
-		String argsText = userInvokedMethodEvent.getArgumentsText().trim();
+		String argsText = userInvokedMethodEventDTO.getArgumentsText().trim();
 		// Remove parentheses if method specified as method(arg1, arg2)
 		int start = argsText.indexOf('(');
 		int end = argsText.lastIndexOf(')');
@@ -255,7 +255,7 @@ public class DebugUtils {
 		if (argsText.isEmpty())
 			return values;
 		String[] argStrings = argsText.split("\\s*,\\s*");
-		List<TargetApplicationMethodParameterDTO> params = userInvokedMethodEvent.getMethod().getParameters();
+		List<TargetApplicationMethodParameterDTO> params = userInvokedMethodEventDTO.getMethod().getParameters();
 		if (argStrings.length != params.size()) {
 			throw new IllegalArgumentException("Argument count does not match method parameter count");
 		}
