@@ -11,7 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 
@@ -36,7 +36,7 @@ public class EvaluateTabController {
 	private final Button invokeButton;
 	private final Text methodInput;
 	private final Text resultField;
-	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private TableViewer stackTableViewer;
 
 	/** Last selected method */

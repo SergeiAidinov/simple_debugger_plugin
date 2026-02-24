@@ -124,6 +124,7 @@ public class TargetApplicationRepresentation {
 	}
 
 	private List<ReferenceType> filterTargetClasses(List<ReferenceType> referenceTypes) {
+		//return referenceTypes;
 	    // Determine the target root package
 	    String targetPackage = debugConfiguration.getTargetRootPackage();
 	    if (targetPackage == null || targetPackage.isBlank()) {

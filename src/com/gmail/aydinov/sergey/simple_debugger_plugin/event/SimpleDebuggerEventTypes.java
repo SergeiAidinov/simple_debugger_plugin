@@ -30,8 +30,6 @@ public final class SimpleDebuggerEventTypes {
         /** Event triggered when the debugger stops at a breakpoint */
         STOPPED_AT_BREAKPOINT(DebugStoppedAtBreakpointDTO.class),
         
-        OPEN_DEBUG_WINDOW(Void.class),
-
         /** Event triggered to refresh the debugger console */
         REFRESH_CONSOLE(String.class),
 
@@ -53,12 +51,6 @@ public final class SimpleDebuggerEventTypes {
         USER_CLOSED_DEBUG_WINDOW(Void.class),
         
         USER_INVOKED_METHOD(UserInvokedMethodEventDTO.class),
-
-
-
-
-
-        
         
       //============= USER INTERFACE INSPECTION WINDOW EVENTS =============
         
@@ -67,8 +59,6 @@ public final class SimpleDebuggerEventTypes {
         USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(FieldOrVariableDTO.class),
         
         USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class)
-
-
         ;
 
         private final Class<?> payloadType;
@@ -90,14 +80,14 @@ public final class SimpleDebuggerEventTypes {
     /**
      * Checks if the event is an inspection window event.
      */
-    public static boolean shouldAddressEventToInspectionWindow(SimpleDebuggerEventType type) {
+    public static boolean isInspectionWindowEvent(SimpleDebuggerEventType type) {
         return INSPECTION_WINDOW_EVENTS.contains(type);
     }
 
     /**
      * Checks if the event is a debug window event.
      */
-    public static boolean shouldHandleEventInContextOfDebugWindow(SimpleDebuggerEventType type) {
-        return !shouldAddressEventToInspectionWindow(type);
+    public static boolean isDebugWindowEvent(SimpleDebuggerEventType type) {
+        return !isInspectionWindowEvent(type);
     }
 }
