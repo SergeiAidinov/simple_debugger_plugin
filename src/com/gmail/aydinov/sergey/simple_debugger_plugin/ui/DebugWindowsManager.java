@@ -11,9 +11,9 @@ import org.eclipse.swt.widgets.Display;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
 public class DebugWindowsManager implements Runnable {

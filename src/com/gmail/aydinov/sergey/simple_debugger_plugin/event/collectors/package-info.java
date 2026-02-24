@@ -26,4 +26,4 @@
  *
  * @since 1.0
  */
-package com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors;
