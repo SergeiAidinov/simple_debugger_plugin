@@ -15,11 +15,11 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleTabContent;
@@ -144,12 +144,12 @@ public class DebugWindow {
 			return false;
 
 		shell.dispose();
-		uiEventCollector.collectUiEvent(new UserClosedWindowUiEvent());
+		uiEventCollector.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_CLOSED_DEBUG_WINDOW, null));
 		return true;
 	}
 
 	private void hookResumeButton() {
-		resumeButton.addListener(SWT.Selection, e -> uiEventCollector.collectUiEvent(new UserPressedResumeUiEvent()));
+		resumeButton.addListener(SWT.Selection, e -> uiEventCollector.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_PRESSED_RESUME_BUTTON, null)));
 	}
 
 	protected Shell getShell() {
@@ -170,24 +170,24 @@ public class DebugWindow {
 
 	// ----------------- Debug events -----------------
 	@SuppressWarnings("unchecked")
-	protected void handleDebugEvent(AbstractSimpleDebugEvent event) {
+	protected void handleDebugEvent(AbstractDebugEvent event) {
 		Display.getDefault().asyncExec(() -> {
 			if (shell.isDisposed())
 				return;
-			if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.DebugEventType.STOPPED_AT_BREAKPOINT)) {
-				SimpleDebugEvent<DebugStoppedAtBreakpointDTO> simpleDebugEvent = (SimpleDebugEvent<DebugStoppedAtBreakpointDTO>) event;
+			if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT)) {
+				DebugEvent<DebugStoppedAtBreakpointDTO> simpleDebugEvent = (DebugEvent<DebugStoppedAtBreakpointDTO>) event;
 				refreshDataAtBreakpoint(simpleDebugEvent.getPayload());
-			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.DebugEventType.REFRESH_CONSOLE)) {
-				SimpleDebugEvent<String> simpleDebugEvent = (SimpleDebugEvent<String>) event;
+			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.REFRESH_CONSOLE)) {
+				DebugEvent<String> simpleDebugEvent = (DebugEvent<String>) event;
 				//ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
 				consoleTabContent.appendLine(simpleDebugEvent.getPayload());
-			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.DebugEventType.METHOD_INVOKE)) {
+			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.METHOD_INVOKE)) {
 				//BackendMethodExecutedEvent methodEvent = (BackendMethodExecutedEvent) event;
 				evaluateTabController.clearResult();
-				SimpleDebugEvent<String> simpleDebugEvent = (SimpleDebugEvent<String>) event;
+				DebugEvent<String> simpleDebugEvent = (DebugEvent<String>) event;
 				evaluateTabController.showResult(simpleDebugEvent.getPayload());
-			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.DebugEventType.SET_RESUME_BUTTON_STATE)) {
-				SimpleDebugEvent<Boolean> simpleDebugEvent = (SimpleDebugEvent<Boolean>) event;
+			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE)) {
+				DebugEvent<Boolean> simpleDebugEvent = (DebugEvent<Boolean>) event;
 				//SetResumeButtonEnabled setResumeButtonEnabled = (SetResumeButtonEnabled) event;
 				resumeButton.setEnabled(simpleDebugEvent.getPayload());
 			}

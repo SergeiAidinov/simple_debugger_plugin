@@ -10,9 +10,9 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
@@ -108,11 +108,11 @@ public class DebugWindowsManager implements Runnable {
 	private void windowsManaging() {
 		while (!DebuggerContext.context().isInTerminalState()) {
 			try {
-				AbstractSimpleDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
+				AbstractDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
 				SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
 				
-				if (SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType()) && Objects.equals(event.getType(),
-						SimpleDebuggerEventTypes.DebugEventType.DISPLAY_INSPECTION_WINDOW)) {
+				if (SimpleDebuggerEventTypes.handleEventInContextOfDebugWindow(event.getType()) && Objects.equals(event.getType(),
+						SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW)) {
 					openNewInspectWindow();
 				} else if (Objects.nonNull(debugWindow) && debugWindow.isOpen()) {
 					debugWindow.handleDebugEvent(event);
@@ -120,9 +120,9 @@ public class DebugWindowsManager implements Runnable {
 				}
 
 				// handling inspection windows events
-				if (SimpleDebuggerEventTypes.isInspectionWindowEvent(event.getType())) {
+				if (SimpleDebuggerEventTypes.addressEventToInspectionWindow(event.getType())) {
 					if (Objects.equals(event.getType(),
-							SimpleDebuggerEventTypes.DebugEventType.DISPLAY_INSPECTION_WINDOW))
+							SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW))
 						openNewInspectWindow();
 					else if (Objects.nonNull(inspectWindow) && inspectWindow.isOpen())
 						inspectWindow.handleDebugEvent(event);

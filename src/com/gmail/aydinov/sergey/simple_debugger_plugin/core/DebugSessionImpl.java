@@ -28,17 +28,16 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.Simp
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.DebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedFieldEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserChangedVariableEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserClosedWindowUiEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserPressedResumeUiEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractSimpleDebuggerUIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserChangedFieldEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserChangedVariableEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
@@ -117,7 +116,7 @@ public class DebugSessionImpl implements DebugSession {
 				updateUI(breakpointEvent);
 
 				while (DebuggerContext.context().isSessionActive()) {
-					AbstractUIEvent uiEvent = uiEventCollector.pollUiEvent();
+					AbstractSimpleDebuggerUIEvent uiEvent = uiEventCollector.pollUiEvent();
 					if (Objects.isNull(uiEvent))
 						continue;
 					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
@@ -139,7 +138,7 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void handleBreakpointEvent(BreakpointEvent breakpointEvent, AbstractUIEvent uiEvent) {
+	private void handleBreakpointEvent(BreakpointEvent breakpointEvent, AbstractSimpleDebuggerUIEvent uiEvent) {
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
 			display.asyncExec(() -> {
@@ -168,51 +167,57 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void handleSingleUiEvent(AbstractUIEvent uiEvent, BreakpointEvent breakpointEvent) {
+	@SuppressWarnings("uncheked")
+	private void handleSingleUiEvent(AbstractSimpleDebuggerUIEvent abstractSimpleDebuggerUIEvent, BreakpointEvent breakpointEvent) {
 		StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
 		if (Objects.isNull(currentFrame))
 			return;
-
 		try {
-			if (uiEvent instanceof UserChangedVariableEvent variableEvent) {
-				updateLocalVariable(variableEvent, currentFrame);
-			} else if (uiEvent instanceof UserChangedFieldEvent fieldEvent) {
-				updateField(fieldEvent, currentFrame);
-			} else if (uiEvent instanceof UserInvokedMethodEvent invokeEvent) {
-				invokeMethod(invokeEvent, breakpointEvent, currentFrame);
-			} else if (uiEvent instanceof UserPressedResumeUiEvent) {
+			if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(), SimpleDebuggerEventType.USER_CHANGED_VARIABLE)) {
+				UIEvent<UserChangedVariableEventDTO> userChangedVariableEvent = (UIEvent<UserChangedVariableEventDTO>) abstractSimpleDebuggerUIEvent;
+				updateLocalVariable(userChangedVariableEvent.getPayload(), currentFrame);
+			} else if(Objects.equals(abstractSimpleDebuggerUIEvent.getType(), SimpleDebuggerEventType.USER_CHANGED_FIELD)) {
+				UIEvent<UserChangedFieldEventDTO> userChangedFieldEvent = (UIEvent<UserChangedFieldEventDTO>) abstractSimpleDebuggerUIEvent;
+				updateField(userChangedFieldEvent.getPayload(), currentFrame);
+			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(), SimpleDebuggerEventType.USER_INVOKED_METHOD)) {
+				UIEvent<UserInvokedMethodEventDTO> userInvokedMethodEvent = (UIEvent<UserInvokedMethodEventDTO>) abstractSimpleDebuggerUIEvent;
+				invokeMethod(userInvokedMethodEvent.getPayload(), breakpointEvent, currentFrame);
+			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(), SimpleDebuggerEventType.USER_PRESSED_RESUME_BUTTON)) {
 				SimpleDebuggerLogger.info("User pressed RESUME");
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_FINISHED);
-			} else if (uiEvent instanceof UserClosedWindowUiEvent) {
+			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(), SimpleDebuggerEventType.USER_CLOSED_DEBUG_WINDOW)) {
 				SimpleDebuggerLogger.info("User closed debug window → stopping debug session");
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.STOPPED);
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
-			} else if (uiEvent instanceof UserStartedInspectionSessionForElement userStartedInspectionSessionForElement) {
-				initiateInspectionSeanceIfPossible(userStartedInspectionSessionForElement);
-				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_STARTED);
+				
+			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(), SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT)) {
+				UIEvent<FieldOrVariableDTO> userStartedInspectionSeanceEvent = (UIEvent<FieldOrVariableDTO>) abstractSimpleDebuggerUIEvent;
+				initiateInspectionSeanceIfPossible(userStartedInspectionSeanceEvent.getPayload());
+				DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTED);
+			
 			} else {
-				SimpleDebuggerLogger.info("Unhandled UI event: " + uiEvent.getClass().getSimpleName());
+				SimpleDebuggerLogger.info("Unhandled UI event: " + abstractSimpleDebuggerUIEvent.getClass().getSimpleName());
 			}
 		} catch (Exception exception) {
 			SimpleDebuggerLogger.error(exception.getMessage(), exception);
 		}
 	}
 
-	private void initiateInspectionSeanceIfPossible(UserStartedInspectionSessionForElement event) {
+	private void initiateInspectionSeanceIfPossible(FieldOrVariableDTO event) {
 		if (DebuggerContext.context().isSeanceActive())
 			return;
 		Optional<TargetApplicationElementRepresentation> anchorOptional = targetApplicationRepresentation
 				.getTargetApplicationElements().stream()
-				.filter(e -> e.getTargetApplicationElementName().equals(event.getFieldOrVariableDTO().getType()))
+				.filter(e -> e.getTargetApplicationElementName().equals(event.getType()))
 				.findAny();
 		if (anchorOptional.isEmpty())
 			return;
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTED);
 		//simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(false));
-		simpleDebugEventCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.DebugEventType.SET_RESUME_BUTTON_STATE, false));
+		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
 		//simpleDebugEventCollector.collectDebugEvent(new SetInspectionWindowStatus(true));
 		
-		simpleDebugEventCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(DebugEventType.DISPLAY_INSPECTION_WINDOW, true));
+		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW, true));
 		
 		InspectionSeance inspectionSession = new InspectionSeanceImpl(anchorOptional.get(),
 				targetApplicationRepresentation);
@@ -226,26 +231,26 @@ public class DebugSessionImpl implements DebugSession {
 		}
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING);
 		//simpleDebugEventCollector.collectDebugEvent(new SetResumeButtonEnabled(true));
-		simpleDebugEventCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.DebugEventType.SET_RESUME_BUTTON_STATE, true));
+		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 	}
 
-	private void updateLocalVariable(UserChangedVariableEvent variableEvent, StackFrame currentFrame) {
+	private void updateLocalVariable(UserChangedVariableEventDTO userChangedVariableEventDTO, StackFrame currentFrame) {
 		try {
 			LocalVariable localVariable = currentFrame.visibleVariables().stream()
-					.filter(v -> v.name().equals(variableEvent.getName())).findFirst().orElse(null);
+					.filter(v -> v.name().equals(userChangedVariableEventDTO.getName())).findFirst().orElse(null);
 
 			if (Objects.isNull(localVariable))
 				return;
 
 			Value value = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
-					localVariable, variableEvent.getNewValue().toString());
+					localVariable, userChangedVariableEventDTO.getNewValue().toString());
 			currentFrame.setValue(localVariable, value);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void updateField(UserChangedFieldEvent fieldEvent, StackFrame currentFrame) throws Exception {
+	private void updateField(UserChangedFieldEventDTO fieldEvent, StackFrame currentFrame) throws Exception {
 		ReferenceType referenceType = Objects.nonNull(currentFrame.thisObject())
 				? currentFrame.thisObject().referenceType()
 				: currentFrame.location().declaringType();
@@ -263,7 +268,7 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void invokeMethod(UserInvokedMethodEvent invokeEvent, BreakpointEvent breakpointEvent,
+	private void invokeMethod(UserInvokedMethodEventDTO invokeEvent, BreakpointEvent breakpointEvent,
 			StackFrame currentFrame) {
 		try {
 			List<Value> methodArguments = DebugUtils
@@ -285,8 +290,8 @@ public class DebugSessionImpl implements DebugSession {
 			methodInvocationResult.set(String.valueOf(result));
 //			simpleDebugEventCollector.collectDebugEvent(new BackendMethodExecutedEvent(
 //					SimpleDebuggerEventTypes.EventType.METHOD_INVOKE, methodInvocationResult.get()));
-			simpleDebugEventCollector.collectDebugEvent(new SimpleDebugEvent<String>(
-					SimpleDebuggerEventTypes.DebugEventType.METHOD_INVOKE, methodInvocationResult.get()));
+			simpleDebugEventCollector.collectDebugEvent(new DebugEvent<String>(
+					SimpleDebuggerEventTypes.SimpleDebuggerEventType.METHOD_INVOKE, methodInvocationResult.get()));
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}
@@ -322,7 +327,7 @@ public class DebugSessionImpl implements DebugSession {
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
 				.resultOfMethodInvocation(methodInvocationResult.get()).build();
 
-		simpleDebugEventCollector.collectDebugEvent(new SimpleDebugEvent<DebugStoppedAtBreakpointDTO>(SimpleDebuggerEventTypes.DebugEventType.STOPPED_AT_BREAKPOINT, debugStoppedAtBreakpointDTO));
+		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugStoppedAtBreakpointDTO>(SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugStoppedAtBreakpointDTO));
 
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {

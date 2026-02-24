@@ -4,11 +4,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.DebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractInspectionUIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserEndedInspectionSessionForElement;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractSimpleDebuggerUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
@@ -42,8 +40,8 @@ public class InspectionSeanceImpl implements InspectionSeance {
 	}
 
 	private void startInspectionSeanceForAnchor(TargetApplicationElementRepresentation anchorElement) {
-		debugCollector.collectDebugEvent(new SimpleDebugEvent<Boolean>(SimpleDebuggerEventTypes.DebugEventType.DISPLAY_INSPECTION_WINDOW, false));
-		debugCollector.collectDebugEvent(new SimpleDebugEvent<TargetApplicationElementRepresentation>(DebugEventType.SHOW_ANCHOR_ELEMENT, anchorElement));
+		debugCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW, false));
+		debugCollector.collectDebugEvent(new DebugEvent<TargetApplicationElementRepresentation>(SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT, anchorElement));
 		try {
 			Thread.currentThread().sleep(60_000);
 		} catch (InterruptedException e) {
@@ -54,7 +52,7 @@ public class InspectionSeanceImpl implements InspectionSeance {
 		
 	}
 
-	private void ignoreUiEvent(AbstractUIEvent uiEvent) {
+	private void ignoreUiEvent(AbstractSimpleDebuggerUIEvent uiEvent) {
 		SimpleDebuggerLogger.info("Ignored UI-event " + uiEvent + " because inspection session has alredy started");
 		
 	}

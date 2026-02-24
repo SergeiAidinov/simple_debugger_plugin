@@ -4,6 +4,10 @@ import java.util.Set;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserChangedFieldEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserChangedVariableEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserInvokedMethodEventDTO;
 
 /**
  * Types of events emitted by the simple debugger.
@@ -20,8 +24,9 @@ public final class SimpleDebuggerEventTypes {
     /**
      * Enum of all event types.
      */
-    public enum DebugEventType {
+    public enum SimpleDebuggerEventType {
 
+    	//============= DEBUG EVENTS =============
         /** Event triggered when the debugger stops at a breakpoint */
         STOPPED_AT_BREAKPOINT(DebugStoppedAtBreakpointDTO.class),
 
@@ -34,12 +39,39 @@ public final class SimpleDebuggerEventTypes {
         METHOD_INVOKE(String.class),
 
         DISPLAY_INSPECTION_WINDOW(Boolean.class),
+        
+      //============= USER INTERFACE DEBUG WINDOW EVENTS =============
+        
+        USER_PRESSED_RESUME_BUTTON(Void.class),
+        
+        USER_CHANGED_FIELD(UserChangedFieldEventDTO.class),
+        
+        USER_CHANGED_VARIABLE(UserChangedVariableEventDTO.class),
+        
+        USER_CLOSED_DEBUG_WINDOW(Void.class),
+        
+        USER_INVOKED_METHOD(UserInvokedMethodEventDTO.class),
 
-        SHOW_ANCHOR_ELEMENT(TargetApplicationElementRepresentation.class);
+
+
+
+
+        
+        
+      //============= USER INTERFACE INSPECTION WINDOW EVENTS =============
+        
+        SHOW_ANCHOR_ELEMENT(TargetApplicationElementRepresentation.class),
+        
+        USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(FieldOrVariableDTO.class),
+        
+        USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class)
+
+
+        ;
 
         private final Class<?> payloadType;
 
-        DebugEventType(Class<?> payloadType) {
+        SimpleDebuggerEventType(Class<?> payloadType) {
             this.payloadType = payloadType;
         }
 
@@ -47,23 +79,23 @@ public final class SimpleDebuggerEventTypes {
             return payloadType;
         }
     }
-
+    
     // --- Groups of event types ---
 
-    private static final Set<DebugEventType> INSPECTION_WINDOW_EVENTS =
-            Set.of(DebugEventType.SHOW_ANCHOR_ELEMENT);
+    private static final Set<SimpleDebuggerEventType> INSPECTION_WINDOW_EVENTS =
+            Set.of(SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT);
 
     /**
      * Checks if the event is an inspection window event.
      */
-    public static boolean isInspectionWindowEvent(DebugEventType type) {
+    public static boolean addressEventToInspectionWindow(SimpleDebuggerEventType type) {
         return INSPECTION_WINDOW_EVENTS.contains(type);
     }
 
     /**
      * Checks if the event is a debug window event.
      */
-    public static boolean isDebugWindowEvent(DebugEventType type) {
-        return !isInspectionWindowEvent(type);
+    public static boolean handleEventInContextOfDebugWindow(SimpleDebuggerEventType type) {
+        return !addressEventToInspectionWindow(type);
     }
 }

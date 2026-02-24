@@ -13,14 +13,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.DebugEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserEndedInspectionSessionForElement;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserStartedInspectionSessionForElement;
 import com.sun.jdi.Field;
 
 /**
@@ -49,7 +48,8 @@ public class InspectWindow {
         shell.addListener(SWT.Close, e -> {
             if (!programmaticClose) {
                 e.doit = false; // блокируем закрытие
-                uiEventCollector.collectUiEvent(new UserEndedInspectionSessionForElement());
+                uiEventCollector.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT, null));
+                
             }
         });
 
@@ -171,18 +171,18 @@ public class InspectWindow {
     }
 
     /** Отображает объект в правой панели */
-    protected void showInspectableNode(FieldOrVariableDTO dto) {
-        if (dto == null || shell.isDisposed()) return;
+    protected void showInspectableNode(FieldOrVariableDTO fieldOrVariableDTO) {
+        if (fieldOrVariableDTO == null || shell.isDisposed()) return;
 
-        history.push(dto);
+        history.push(fieldOrVariableDTO);
 
         Display.getDefault().asyncExec(() -> {
-            objectLabel.setText("Inspecting instance: " + dto.getName() + " (" + dto.getType() + ")");
-            refreshContent(dto);
+            objectLabel.setText("Inspecting instance: " + fieldOrVariableDTO.getName() + " (" + fieldOrVariableDTO.getType() + ")");
+            refreshContent(fieldOrVariableDTO);
             renderBreadcrumb();
         });
 
-        uiEventCollector.collectUiEvent(new UserStartedInspectionSessionForElement(dto));
+        uiEventCollector.collectUiEvent(new UIEvent<FieldOrVariableDTO>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, fieldOrVariableDTO));
     }
 
     private void refreshContent(FieldOrVariableDTO dto) {
@@ -241,10 +241,10 @@ public class InspectWindow {
     }
 
     /** Обработка debug-событий */
-    public void handleDebugEvent(AbstractSimpleDebugEvent event) {
+    public void handleDebugEvent(AbstractDebugEvent event) {
         System.out.println("===> " + event.getType());
-        if (Objects.equals(event.getType(), DebugEventType.SHOW_ANCHOR_ELEMENT)) {
-        	SimpleDebugEvent<TargetApplicationElementRepresentation> simpleDebugEvent = (SimpleDebugEvent<TargetApplicationElementRepresentation>) event;
+        if (Objects.equals(event.getType(), SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT)) {
+        	DebugEvent<TargetApplicationElementRepresentation> simpleDebugEvent = (DebugEvent<TargetApplicationElementRepresentation>) event;
         	showAnchorElement(simpleDebugEvent.getPayload());
         }
         // TODO: добавить обработку событий
