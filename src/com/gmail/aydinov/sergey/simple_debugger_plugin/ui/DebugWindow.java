@@ -174,19 +174,19 @@ public class DebugWindow {
 		Display.getDefault().asyncExec(() -> {
 			if (shell.isDisposed())
 				return;
-			if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.STOPPED_AT_BREAKPOINT)) {
+			if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.DebugEventType.STOPPED_AT_BREAKPOINT)) {
 				SimpleDebugEvent<DebugStoppedAtBreakpointDTO> simpleDebugEvent = (SimpleDebugEvent<DebugStoppedAtBreakpointDTO>) event;
 				refreshDataAtBreakpoint(simpleDebugEvent.getPayload());
-			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.REFRESH_CONSOLE)) {
+			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.DebugEventType.REFRESH_CONSOLE)) {
 				SimpleDebugEvent<String> simpleDebugEvent = (SimpleDebugEvent<String>) event;
 				//ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
 				consoleTabContent.appendLine(simpleDebugEvent.getPayload());
-			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.METHOD_INVOKE)) {
+			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.DebugEventType.METHOD_INVOKE)) {
 				//BackendMethodExecutedEvent methodEvent = (BackendMethodExecutedEvent) event;
 				evaluateTabController.clearResult();
 				SimpleDebugEvent<String> simpleDebugEvent = (SimpleDebugEvent<String>) event;
 				evaluateTabController.showResult(simpleDebugEvent.getPayload());
-			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.SET_RESUME_BUTTON_STATE)) {
+			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.DebugEventType.SET_RESUME_BUTTON_STATE)) {
 				SimpleDebugEvent<Boolean> simpleDebugEvent = (SimpleDebugEvent<Boolean>) event;
 				//SetResumeButtonEnabled setResumeButtonEnabled = (SetResumeButtonEnabled) event;
 				resumeButton.setEnabled(simpleDebugEvent.getPayload());

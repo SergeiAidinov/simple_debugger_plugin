@@ -12,7 +12,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.ShowAnchorElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.SimpleDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
@@ -116,7 +115,7 @@ public class DebugWindowsManager implements Runnable {
                 } 
                 // handling inspection windows events
                 if (SimpleDebuggerEventTypes.isInspectionWindowEvent(event.getType())) {
-                	if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.EventType.DISPLAY_INSPECTION_WINDOW)) openNewInspectWindow();
+                	if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.DebugEventType.DISPLAY_INSPECTION_WINDOW)) openNewInspectWindow();
                 	else if (Objects.nonNull(inspectWindow) && inspectWindow.isOpen()) inspectWindow.handleDebugEvent(event);
                 }
             } catch (InterruptedException e) {

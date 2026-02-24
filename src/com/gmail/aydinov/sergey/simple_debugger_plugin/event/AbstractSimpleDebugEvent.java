@@ -11,14 +11,14 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 public class AbstractSimpleDebugEvent {
 
     /** Type of this debugger event */
-    private final SimpleDebuggerEventTypes.EventType type;
+    private final SimpleDebuggerEventTypes.DebugEventType type;
 
     /**
      * Creates a new debugger event with the specified type.
      *
      * @param type the type of the debugger event
      */
-    public AbstractSimpleDebugEvent(SimpleDebuggerEventTypes.EventType type) {
+    public AbstractSimpleDebugEvent(SimpleDebuggerEventTypes.DebugEventType type) {
         this.type = type;
     }
 
@@ -27,7 +27,7 @@ public class AbstractSimpleDebugEvent {
      *
      * @return the event type
      */
-    public SimpleDebuggerEventTypes.EventType getType() {
+    public SimpleDebuggerEventTypes.DebugEventType getType() {
         return type;
     }
 }

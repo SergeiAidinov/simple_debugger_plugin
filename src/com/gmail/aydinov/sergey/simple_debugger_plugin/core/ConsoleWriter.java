@@ -51,7 +51,7 @@ public class ConsoleWriter implements Runnable {
 				String text = prefix + line;
 //				SimpleDebuggerEventQueue.instance().collectDebugEvent(new ConsoleUpdateDebugEvent(
 //						SimpleDebuggerEventTypes.EventType.REFRESH_CONSOLE, text));
-				SimpleDebuggerEventQueue.instance().collectDebugEvent(new SimpleDebugEvent<String>(SimpleDebuggerEventTypes.EventType.REFRESH_CONSOLE, text));
+				SimpleDebuggerEventQueue.instance().collectDebugEvent(new SimpleDebugEvent<String>(SimpleDebuggerEventTypes.DebugEventType.REFRESH_CONSOLE, text));
 			}
 		} catch (IOException exception) {
 			exception.printStackTrace();
