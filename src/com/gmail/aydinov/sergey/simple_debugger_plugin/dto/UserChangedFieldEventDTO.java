@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import java.util.Objects;
 

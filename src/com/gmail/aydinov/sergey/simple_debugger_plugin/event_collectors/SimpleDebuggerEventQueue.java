@@ -4,8 +4,8 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractDebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractSimpleDebuggerUIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 
 /**
  * Singleton queue for handling UI and Debug events in the Simple Debugger.
@@ -16,7 +16,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractSi
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
-public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEventCollector {
+public class SimpleDebuggerEventQueue implements UiEventCollector, DebugEventCollector {
 
     private static SimpleDebuggerEventQueue INSTANCE = null;
 
@@ -35,7 +35,7 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
         return INSTANCE;
     }
 
-    private final BlockingQueue<AbstractSimpleDebuggerUIEvent> uiEventQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<AbstractUIEvent> uiEventQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<AbstractDebugEvent> debugEventQueue = new LinkedBlockingQueue<>();
 
     /**
@@ -45,7 +45,7 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
      * @param event the UI event to add
      */
     @Override
-    public void collectUiEvent(AbstractSimpleDebuggerUIEvent event) {
+    public void collectUiEvent(AbstractUIEvent event) {
         uiEventQueue.offer(event);
     }
 
@@ -76,11 +76,11 @@ public class SimpleDebuggerEventQueue implements UiEventCollector, SimpleDebugEv
      * Non-blocking operation.
      */
     @Override
-    public AbstractSimpleDebuggerUIEvent pollUiEvent() {
+    public AbstractUIEvent pollUiEvent() {
         return uiEventQueue.poll();
     }
     
-    public AbstractSimpleDebuggerUIEvent takeUiEvent() throws InterruptedException {
+    public AbstractUIEvent takeUiEvent() throws InterruptedException {
         return uiEventQueue.take();
     }
 }

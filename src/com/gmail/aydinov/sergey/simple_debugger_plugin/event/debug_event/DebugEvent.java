@@ -2,7 +2,6 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event;
 
 import java.util.Objects;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 
 public final class DebugEvent<T> extends AbstractDebugEvent {

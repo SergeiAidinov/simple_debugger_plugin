@@ -1,7 +1,6 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 
 public class UserInvokedMethodEventDTO {
 
