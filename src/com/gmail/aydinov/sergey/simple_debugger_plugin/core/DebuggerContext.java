@@ -54,11 +54,10 @@ public class DebuggerContext {
             SimpleDebuggerStatus.DEBUGGER_STOPPED
     );
     
-    private static final Set<SimpleDebuggerStatus> INSPECTION_SEANCE_STATES = EnumSet.of(
+    private static final Set<SimpleDebuggerStatus> INSPECTION_SEANCE_RUNNING_STATES = EnumSet.of(
     		SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING,
     		SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING,
-    		SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING,
-    		SimpleDebuggerStatus.INSPECTION_SEANCE_STOPPED
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING
     );
 
     private DebuggerContext() {
@@ -168,7 +167,7 @@ public class DebuggerContext {
     public boolean isInspectionSeanceActive() {
         lock.lock();
         try {
-            return INSPECTION_SEANCE_STATES.contains(status);
+            return INSPECTION_SEANCE_RUNNING_STATES.contains(status);
         } finally {
             lock.unlock();
         }
