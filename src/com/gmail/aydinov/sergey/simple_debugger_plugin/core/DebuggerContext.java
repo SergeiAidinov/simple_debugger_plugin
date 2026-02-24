@@ -29,8 +29,10 @@ public class DebuggerContext {
         PREPARED,
         RUNNING,
         DEBUG_SESSION_STARTED,
-        INSPECTION_SEANCE_STARTED,
+        INSPECTION_SEANCE_STARTING,
+        INSPECTION_SEANCE_RUNNING,
         INSPECTION_SEANCE_CLOSING,
+        INSPECTION_SEANCE_STOPPED,
         DEBUG_SESSION_FINISHED,
         STOPPED
     }
@@ -39,11 +41,13 @@ public class DebuggerContext {
     private final ReentrantLock lock = new ReentrantLock(true); // fair lock
     private volatile SimpleDebuggerStatus status;
     private static final Set<SimpleDebuggerStatus> RUNNING_STATES = EnumSet.of(
-            SimpleDebuggerStatus.RUNNING,
-            SimpleDebuggerStatus.DEBUG_SESSION_STARTED,
-            SimpleDebuggerStatus.INSPECTION_SEANCE_STARTED,
-            SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING,
-            SimpleDebuggerStatus.DEBUG_SESSION_FINISHED
+    		SimpleDebuggerStatus.RUNNING,
+    		SimpleDebuggerStatus.DEBUG_SESSION_STARTED,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_STOPPED,
+    		SimpleDebuggerStatus.DEBUG_SESSION_FINISHED
     );
     private static final Set<SimpleDebuggerStatus> TERMINAL_STATES = EnumSet.of(
             SimpleDebuggerStatus.WILL_NOT_START,
@@ -51,8 +55,10 @@ public class DebuggerContext {
     );
     
     private static final Set<SimpleDebuggerStatus> INSPECTION_SEANCE_STATES = EnumSet.of(
-    		SimpleDebuggerStatus.INSPECTION_SEANCE_STARTED,
-    		SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_STOPPED
     );
 
     private DebuggerContext() {
@@ -150,7 +156,7 @@ public class DebuggerContext {
      *
      * @return true if the debugger session has started
      */
-    public boolean isSessionActive() {
+    public boolean isDebugSessionActive() {
         lock.lock();
         try {
             return status.equals(SimpleDebuggerStatus.DEBUG_SESSION_STARTED);
@@ -159,7 +165,7 @@ public class DebuggerContext {
         }
     }
     
-    public boolean isSeanceActive() {
+    public boolean isInspectionSeanceActive() {
         lock.lock();
         try {
             return INSPECTION_SEANCE_STATES.contains(status);

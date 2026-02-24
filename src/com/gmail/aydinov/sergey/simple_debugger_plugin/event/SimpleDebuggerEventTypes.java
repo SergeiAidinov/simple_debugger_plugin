@@ -29,6 +29,8 @@ public final class SimpleDebuggerEventTypes {
     	//============= DEBUG EVENTS =============
         /** Event triggered when the debugger stops at a breakpoint */
         STOPPED_AT_BREAKPOINT(DebugStoppedAtBreakpointDTO.class),
+        
+        OPEN_DEBUG_WINDOW(Void.class),
 
         /** Event triggered to refresh the debugger console */
         REFRESH_CONSOLE(String.class),
@@ -88,14 +90,14 @@ public final class SimpleDebuggerEventTypes {
     /**
      * Checks if the event is an inspection window event.
      */
-    public static boolean addressEventToInspectionWindow(SimpleDebuggerEventType type) {
+    public static boolean shouldAddressEventToInspectionWindow(SimpleDebuggerEventType type) {
         return INSPECTION_WINDOW_EVENTS.contains(type);
     }
 
     /**
      * Checks if the event is a debug window event.
      */
-    public static boolean handleEventInContextOfDebugWindow(SimpleDebuggerEventType type) {
-        return !addressEventToInspectionWindow(type);
+    public static boolean shouldHandleEventInContextOfDebugWindow(SimpleDebuggerEventType type) {
+        return !shouldAddressEventToInspectionWindow(type);
     }
 }
