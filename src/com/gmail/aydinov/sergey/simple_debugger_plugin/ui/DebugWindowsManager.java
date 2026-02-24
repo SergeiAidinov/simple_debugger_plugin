@@ -44,26 +44,26 @@ public class DebugWindowsManager implements Runnable {
 		}
 		return INSTANCE;
 	}
-	
+
 	@Override
-    public void run() {
-        windowsManaging();
-    }
+	public void run() {
+		windowsManaging();
+	}
 
 	/**
 	 * Возвращает или создаёт главное окно
 	 */
 	public DebugWindow getOrCreateDebugWindow() {
-	    if (DebuggerContext.context().isInTerminalState())
-	        return null;
+		if (DebuggerContext.context().isInTerminalState())
+			return null;
 
-	    if (Objects.isNull(debugWindow) || !debugWindow.isOpen()) {
-	        Display.getDefault().syncExec(() -> {
-	            debugWindow = new DebugWindow(); // теперь создается в UI-потоке
-	            debugWindow.open();
-	        });
-	    }
-	    return debugWindow;
+		if (Objects.isNull(debugWindow) || !debugWindow.isOpen()) {
+			Display.getDefault().syncExec(() -> {
+				debugWindow = new DebugWindow(); // теперь создается в UI-потоке
+				debugWindow.open();
+			});
+		}
+		return debugWindow;
 	}
 
 	/**
@@ -78,7 +78,7 @@ public class DebugWindowsManager implements Runnable {
 		Display.getDefault().syncExec(() -> {
 			inspectWindow = new InspectWindow();
 			inspectWindow.open();
-			
+
 		});
 		return inspectWindow;
 	}
@@ -99,29 +99,38 @@ public class DebugWindowsManager implements Runnable {
 		}
 		return image;
 	}
-	
+
 	/**
-     * Continuously processes debug events from the global event queue.
-     * This method blocks when no events are available and will only stop if the thread is interrupted.
-     */
-    private void windowsManaging() {
-    	while (!DebuggerContext.context().isInTerminalState()) {
-            try {
-            	AbstractSimpleDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
-                SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
-                if (SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType()) && Objects.nonNull(debugWindow) && debugWindow.isOpen()) {
-                	debugWindow.handleDebugEvent(event);
-                	continue;
-                } 
-                // handling inspection windows events
-                if (SimpleDebuggerEventTypes.isInspectionWindowEvent(event.getType())) {
-                	if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.DebugEventType.DISPLAY_INSPECTION_WINDOW)) openNewInspectWindow();
-                	else if (Objects.nonNull(inspectWindow) && inspectWindow.isOpen()) inspectWindow.handleDebugEvent(event);
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break; // exit loop if interrupted
-            }
-        }
-    }
+	 * Continuously processes debug events from the global event queue. This method
+	 * blocks when no events are available and will only stop if the thread is
+	 * interrupted.
+	 */
+	private void windowsManaging() {
+		while (!DebuggerContext.context().isInTerminalState()) {
+			try {
+				AbstractSimpleDebugEvent event = SimpleDebuggerEventQueue.instance().takeDebugEvent();
+				SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
+				
+				if (SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType()) && Objects.equals(event.getType(),
+						SimpleDebuggerEventTypes.DebugEventType.DISPLAY_INSPECTION_WINDOW)) {
+					openNewInspectWindow();
+				} else if (Objects.nonNull(debugWindow) && debugWindow.isOpen()) {
+					debugWindow.handleDebugEvent(event);
+					continue;
+				}
+
+				// handling inspection windows events
+				if (SimpleDebuggerEventTypes.isInspectionWindowEvent(event.getType())) {
+					if (Objects.equals(event.getType(),
+							SimpleDebuggerEventTypes.DebugEventType.DISPLAY_INSPECTION_WINDOW))
+						openNewInspectWindow();
+					else if (Objects.nonNull(inspectWindow) && inspectWindow.isOpen())
+						inspectWindow.handleDebugEvent(event);
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				break; // exit loop if interrupted
+			}
+		}
+	}
 }
