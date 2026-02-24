@@ -30,15 +30,15 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.Inspectio
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractSimpleDebuggerUIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserChangedFieldEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserChangedVariableEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserInvokedMethodEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebugEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.DebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
@@ -76,7 +76,7 @@ public class DebugSessionImpl implements DebugSession {
 	private final EventSet eventSet;
 	private final CurrentLineHighlighter currentLineHighlighter;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
-	private final SimpleDebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
+	private final DebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventQueue.instance();
 
 	public DebugSessionImpl(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			TargetApplicationRepresentation targetApplicationRepresentation, EventSet eventSet,
@@ -116,7 +116,7 @@ public class DebugSessionImpl implements DebugSession {
 				updateUI(breakpointEvent);
 
 				while (DebuggerContext.context().isSessionActive()) {
-					AbstractSimpleDebuggerUIEvent uiEvent = uiEventCollector.pollUiEvent();
+					AbstractUIEvent uiEvent = uiEventCollector.pollUiEvent();
 					if (Objects.isNull(uiEvent))
 						continue;
 					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
@@ -138,7 +138,7 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void handleBreakpointEvent(BreakpointEvent breakpointEvent, AbstractSimpleDebuggerUIEvent uiEvent) {
+	private void handleBreakpointEvent(BreakpointEvent breakpointEvent, AbstractUIEvent uiEvent) {
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
 			display.asyncExec(() -> {
@@ -168,7 +168,7 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	@SuppressWarnings("uncheked")
-	private void handleSingleUiEvent(AbstractSimpleDebuggerUIEvent abstractSimpleDebuggerUIEvent, BreakpointEvent breakpointEvent) {
+	private void handleSingleUiEvent(AbstractUIEvent abstractSimpleDebuggerUIEvent, BreakpointEvent breakpointEvent) {
 		StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
 		if (Objects.isNull(currentFrame))
 			return;

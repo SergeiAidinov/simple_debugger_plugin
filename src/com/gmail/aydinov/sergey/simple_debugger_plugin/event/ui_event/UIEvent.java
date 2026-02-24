@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 
-public class UIEvent<T> extends AbstractSimpleDebuggerUIEvent{
+public class UIEvent<T> extends AbstractUIEvent{
 	
 	private final T payload;
 

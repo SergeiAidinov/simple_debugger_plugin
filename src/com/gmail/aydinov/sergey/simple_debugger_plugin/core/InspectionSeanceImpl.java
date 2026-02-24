@@ -6,8 +6,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.Inspectio
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractSimpleDebuggerUIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebugEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.DebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.SimpleDebuggerEventQueue;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event_collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
@@ -15,7 +15,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLog
 public class InspectionSeanceImpl implements InspectionSeance {
 	
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventQueue.instance();
-	private final SimpleDebugEventCollector debugCollector = SimpleDebuggerEventQueue.instance();
+	private final DebugEventCollector debugCollector = SimpleDebuggerEventQueue.instance();
 	private final TargetApplicationElementRepresentation anchorElement;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 
@@ -52,7 +52,7 @@ public class InspectionSeanceImpl implements InspectionSeance {
 		
 	}
 
-	private void ignoreUiEvent(AbstractSimpleDebuggerUIEvent uiEvent) {
+	private void ignoreUiEvent(AbstractUIEvent uiEvent) {
 		SimpleDebuggerLogger.info("Ignored UI-event " + uiEvent + " because inspection session has alredy started");
 		
 	}

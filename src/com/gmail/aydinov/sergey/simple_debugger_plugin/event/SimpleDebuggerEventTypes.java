@@ -5,9 +5,9 @@ import java.util.Set;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserChangedFieldEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserChangedVariableEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.dto.UserInvokedMethodEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 
 /**
  * Types of events emitted by the simple debugger.
