@@ -19,6 +19,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.Simp
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventQueue;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
@@ -83,6 +88,7 @@ public class SimpleDebuggerWorkFlow {
 	private final IBreakpointManager breakpointManager; // do NOT remove
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove
 	private final CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
+	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventQueue.instance();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager breakpointManager, BreakpointSubscriberRegistrar breakpointListener,
@@ -293,6 +299,7 @@ public class SimpleDebuggerWorkFlow {
 					DebugWindow debugWindow = DebugWindowsManager.instance().getOrCreateDebugWindow();
 					debugWindow.showError("Cannot launch VM", ex.getMessage());
 				});
+				
 			}
 			return virtualMachine;
 		}
