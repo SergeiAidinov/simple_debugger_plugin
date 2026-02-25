@@ -25,14 +25,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplica
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.sun.jdi.Field;
 
 /**
  * Inspect window with left Tree (element structure) and right Table (object values)
@@ -40,8 +38,8 @@ import com.sun.jdi.Field;
 public class InspectWindow {
 
     private final Shell shell;
-    private final Tree elementTree;          // Левая панель: структура класса
-    private final Table table;               // Правая панель: значения полей объекта
+    private final Tree elementTree;          
+    private final Table table;               
     private final Label objectLabel;
     private final Button backButton;
     private final Button forwardButton;
@@ -53,19 +51,19 @@ public class InspectWindow {
         shell = new Shell(Display.getDefault());
         shell.setText("Inspect Object");
         shell.setSize(1400, 800);
-        shell.setLayout(new GridLayout(2, true)); // 2 колонки: Tree | Table
+        shell.setLayout(new GridLayout(2, true));
 
-        // ----------------- Обработчик крестика -----------------
+        // --- Иконка ---
+        shell.setImage(DebugWindowsManager.instance().icons.get("debugger"));
+
+        // --- Обработчик закрытия окна ---
         shell.addListener(SWT.Close, e -> {
-           // if (!programmaticClose) {
-                e.doit = true; // блокируем закрытие
-                uiEventCollector.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT, null));
-                DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING);
-                System.out.println("CROSS PRESSED <================");
-           // }
+            e.doit = true; // блокируем закрытие
+            uiEventCollector.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT, null));
+            DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING);
         });
 
-        // ----------------- Левая панель: Tree -----------------
+        // --- Левая панель: Tree ---
         elementTree = new Tree(shell, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
         elementTree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
@@ -77,12 +75,12 @@ public class InspectWindow {
         valueCol.setText("Value / Signature");
         valueCol.setWidth(200);
 
-        // ----------------- Правая панель: Table -----------------
+        // --- Правая панель: Table ---
         Composite rightPanel = new Composite(shell, SWT.NONE);
         rightPanel.setLayout(new GridLayout(1, false));
         rightPanel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        // Навигация и хлебные крошки
+        // Навигация
         Composite topPanel = new Composite(rightPanel, SWT.NONE);
         topPanel.setLayout(new GridLayout(4, false));
         topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
@@ -121,7 +119,6 @@ public class InspectWindow {
 
     /** Opens the shell */
     protected void open() {
-    	shell.setImage(DebugWindowsManager.instance().icons.get("debugger")); // Set icon for the window
         shell.open();
     }
 
@@ -138,47 +135,42 @@ public class InspectWindow {
             });
         }
     }
-
-    /** Отображает структуру TargetApplicationElementRepresentation в дереве */
+T
+    /** Показывает структуру top-level элемента */
     protected void showElementStructure(TargetApplicationClassOrInterfaceRepresentation element) {
         showAnchorElement(element);
     }
 
-    /** Новый метод: отображение элемента с полями и методами */
+    /** Отображает элемент с рекурсивным деревом вложенных элементов */
     protected void showAnchorElement(TargetApplicationClassOrInterfaceRepresentation element) {
         if (element == null || shell.isDisposed()) return;
 
         Display.getDefault().asyncExec(() -> {
-            elementTree.removeAll(); // очищаем Tree перед вставкой
+            elementTree.removeAll();
 
-            // --- корневой элемент ---
             TreeItem root = new TreeItem(elementTree, SWT.NONE);
-            root.setText(new String[]{
-                element.getElementName(),
-                element.getElementType().name()
-            });
+            root.setText(new String[]{element.getElementName(), element.getElementType().name()});
             root.setExpanded(true);
 
-            // --- поля ---
-            Set<TargetApplicationInnerElementRepresentation> fields = element.getInnerElements();
-            if (fields != null) {
-                fields.forEach(f -> {
-                    TreeItem fieldItem = new TreeItem(root, SWT.NONE);
-                    fieldItem.setText(new String[]{f.getElementName(), f.getElementType().toString()});
-                });
-            }
-
-            // --- методы ---
-            Set<TargetApplicationInnerElementRepresentation> methods = element.getInnerElements();
-            if (methods != null) {
-                methods.forEach(m -> {
-                    TreeItem methodItem = new TreeItem(root, SWT.NONE);
-                    methodItem.setText(new String[]{m.getElementName() + "()", ""});
-                });
-            }
+            // Рекурсивно добавляем все inner элементы
+            addInnerElementsRecursively(root, element.getInnerElements());
 
             elementTree.layout();
         });
+    }
+
+    /** Рекурсивный метод для отображения inner элементов */
+    private void addInnerElementsRecursively(TreeItem parentItem,
+                                             Set<TargetApplicationInnerElementRepresentation> innerElements) {
+        if (innerElements == null || innerElements.isEmpty()) return;
+
+        for (TargetApplicationInnerElementRepresentation inner : innerElements) {
+            TreeItem item = new TreeItem(parentItem, SWT.NONE);
+            item.setText(new String[]{inner.getElementName(), inner.getElementType().name()});
+            item.setExpanded(true);
+
+            addInnerElementsRecursively(item, inner.getInnerElements());
+        }
     }
 
     /** Отображает объект в правой панели */
@@ -200,8 +192,8 @@ public class InspectWindow {
         table.removeAll();
         TableItem item = new TableItem(table, SWT.NONE);
         item.setText(new String[]{
-            dto.getType() != null ? dto.getType() : "",
-            dto.getValue() != null ? dto.getValue() : ""
+                dto.getType() != null ? dto.getType() : "",
+                dto.getValue() != null ? dto.getValue() : ""
         });
 
         for (TableColumn col : table.getColumns()) col.pack();
@@ -250,12 +242,12 @@ public class InspectWindow {
     }
 
     /** Обработка debug-событий */
+    @SuppressWarnings("unchecked")
     public void handleDebugEvent(AbstractDebugEvent event) {
-        System.out.println("===> " + event.getType());
         if (Objects.equals(event.getType(), SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT)) {
-        	DebugEvent<TargetApplicationClassOrInterfaceRepresentation> simpleDebugEvent = (DebugEvent<TargetApplicationClassOrInterfaceRepresentation>) event;
-        	showAnchorElement(simpleDebugEvent.getPayload());
+            DebugEvent<TargetApplicationClassOrInterfaceRepresentation> simpleDebugEvent =
+                    (DebugEvent<TargetApplicationClassOrInterfaceRepresentation>) event;
+            showAnchorElement(simpleDebugEvent.getPayload());
         }
-        // TODO: добавить обработку событий
     }
 }
