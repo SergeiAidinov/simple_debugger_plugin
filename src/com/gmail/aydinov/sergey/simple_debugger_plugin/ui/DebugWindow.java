@@ -15,6 +15,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -169,7 +170,7 @@ public class DebugWindow {
 			if (shell.isDisposed())
 				return;
 			if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT)) {
-				DebugEvent<DebugStoppedAtBreakpointDTO> simpleDebugEvent = (DebugEvent<DebugStoppedAtBreakpointDTO>) event;
+				DebugEvent<DebugWindowDataDTO> simpleDebugEvent = (DebugEvent<DebugWindowDataDTO>) event;
 				refreshDataAtBreakpoint(simpleDebugEvent.getPayload());
 			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.REFRESH_CONSOLE)) {
 				DebugEvent<String> simpleDebugEvent = (DebugEvent<String>) event;
@@ -188,17 +189,17 @@ public class DebugWindow {
 		});
 	}
 
-	private void refreshDataAtBreakpoint(DebugStoppedAtBreakpointDTO event) {
-		if (event == null)
+	private void refreshDataAtBreakpoint(DebugWindowDataDTO debugWindowDataDTO) {
+		if (debugWindowDataDTO == null)
 			return;
+//
+//		locationLabel.setText(
+//				STOP_INFO + event.getClassName() + "." + event.getMethodName() + " line:" + event.getLineNumber());
+//		resumeButton.setEnabled(true);
 
-		locationLabel.setText(
-				STOP_INFO + event.getClassName() + "." + event.getMethodName() + " line:" + event.getLineNumber());
-		resumeButton.setEnabled(true);
-
-		variablesFieldsTabContent.updateVariablesAndFields(event.getLocals(), event.getFields());
-		stackTabContent.updateStack(event.getMethodCallInStacks());
-		evaluateTabController.updateFromEvent(event);
+		variablesFieldsTabContent.updateClass(debugWindowDataDTO);
+//		stackTabContent.updateStack(event.getMethodCallInStacks());
+//		evaluateTabController.updateFromEvent(event);
 	}
 
 	protected void appendConsoleLine(String line) {
