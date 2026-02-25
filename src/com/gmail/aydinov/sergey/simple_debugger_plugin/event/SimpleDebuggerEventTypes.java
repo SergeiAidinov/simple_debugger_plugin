@@ -4,6 +4,7 @@ import java.util.Set;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
@@ -28,7 +29,7 @@ public final class SimpleDebuggerEventTypes {
 
     	//============= DEBUG EVENTS =============
         /** Event triggered when the debugger stops at a breakpoint */
-        STOPPED_AT_BREAKPOINT(DebugStoppedAtBreakpointDTO.class),
+        STOPPED_AT_BREAKPOINT(DebugWindowDataDTO.class),
         
         /** Event triggered to refresh the debugger console */
         REFRESH_CONSOLE(String.class),

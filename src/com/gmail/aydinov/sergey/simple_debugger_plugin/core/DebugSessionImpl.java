@@ -28,6 +28,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.Simp
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
@@ -119,8 +120,8 @@ public class DebugSessionImpl implements DebugSession {
 					AbstractUIEvent uiEvent = uiEventCollector.pollUiEvent();
 					if (Objects.isNull(uiEvent))
 						continue;
-					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
-							.refreshBreakpoints();
+//					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
+//							.refreshBreakpoints();
 					handleBreakpointEvent(breakpointEvent, uiEvent);
 					if (DebuggerContext.context().isRunning()) {
 						updateUI(breakpointEvent);
@@ -329,19 +330,16 @@ public class DebugSessionImpl implements DebugSession {
 						discardVoidMethods(targetApplicationRepresentation.getTargetApplicationElements()))
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
 				.resultOfMethodInvocation(methodInvocationResult.get()).build();
+		
+		 TargetApplicationClassOrInterfaceRepresentation ee = targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().get(location.declaringType());
+		 DebugWindowDataDTO debugWindowDataDTO = DebugWindowDataDTO.from(ee);
+//		List<TargetApplicationClassOrInterfaceRepresentation> qq = targetApplicationRepresentation
+//				.getTargetApplicationElements();
+//		System.out.println(qq);
 
-//		for (FieldOrVariableDTO targetApplicationField : debugStoppedAtBreakpointDTO.getFields()) {
-//			TargetApplicationElementRepresentation targetApplicationElementRepresentation = new TargetApplicationClassOrInterfaceRepresentation(
-//					targetApplicationField.getName(), TargetApplicationElementType.CLASS, 
-//					tar, 
-//					null);
-//		}
-		List<TargetApplicationClassOrInterfaceRepresentation> qq = targetApplicationRepresentation
-				.getTargetApplicationElements();
-		System.out.println(qq);
-
-		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugStoppedAtBreakpointDTO>(
-				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugStoppedAtBreakpointDTO));
+		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
+				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
+		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
