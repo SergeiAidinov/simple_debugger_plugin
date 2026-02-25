@@ -21,6 +21,7 @@ import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationInnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
@@ -159,22 +160,22 @@ public class InspectWindow {
             root.setExpanded(true);
 
             // --- поля ---
-//            Set<Field> fields = element.getFields();
-//            if (fields != null) {
-//                fields.forEach(f -> {
-//                    TreeItem fieldItem = new TreeItem(root, SWT.NONE);
-//                    fieldItem.setText(new String[]{f.name(), f.typeName()});
-//                });
-//            }
-//
-//            // --- методы ---
-//            Set<TargetApplicationMethodDTO> methods = element.getMethods();
-//            if (methods != null) {
-//                methods.forEach(m -> {
-//                    TreeItem methodItem = new TreeItem(root, SWT.NONE);
-//                    methodItem.setText(new String[]{m.getMethodName() + "()", ""});
-//                });
-//            }
+            Set<TargetApplicationInnerElementRepresentation> fields = element.getInnerElements();
+            if (fields != null) {
+                fields.forEach(f -> {
+                    TreeItem fieldItem = new TreeItem(root, SWT.NONE);
+                    fieldItem.setText(new String[]{f.getElementName(), f.getElementType().toString()});
+                });
+            }
+
+            // --- методы ---
+            Set<TargetApplicationInnerElementRepresentation> methods = element.getInnerElements();
+            if (methods != null) {
+                methods.forEach(m -> {
+                    TreeItem methodItem = new TreeItem(root, SWT.NONE);
+                    methodItem.setText(new String[]{m.getElementName() + "()", ""});
+                });
+            }
 
             elementTree.layout();
         });

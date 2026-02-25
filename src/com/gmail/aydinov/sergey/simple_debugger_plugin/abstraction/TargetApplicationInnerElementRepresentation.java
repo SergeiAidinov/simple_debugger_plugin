@@ -17,4 +17,14 @@ public class TargetApplicationInnerElementRepresentation extends AbstractTargetA
 
 		return new TargetApplicationInnerElementRepresentation(referenceType, elementName, elementType, innerElements);
 	}
+
+	@Override
+	public String toString() {
+		return "TargetApplicationInnerElementRepresentation [getReferenceType()=" + getReferenceType()
+				+ ", getElementName()=" + getElementName() + ", getElementType()=" + getElementType()
+				+ ", getInnerElements()=" + getInnerElements() + ", getClass()=" + getClass() + ", hashCode()="
+				+ hashCode() + ", toString()=" + super.toString() + "]";
+	}
+	
+	
 }
