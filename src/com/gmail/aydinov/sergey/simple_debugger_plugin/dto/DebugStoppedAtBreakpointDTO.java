@@ -2,7 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import java.util.List;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 
 /**
@@ -20,10 +20,10 @@ public class DebugStoppedAtBreakpointDTO {
 	private final String className;
 	private final String methodName;
 	private final int lineNumber;
-	private final List<FieldOrVariableDTO> locals;
-	private final List<FieldOrVariableDTO> fields;
+	private final List<InnerElementDTO> locals;
+	private final List<InnerElementDTO> fields;
 	private final String stackTrace;
-	private final List<TargetApplicationElementRepresentation> targetApplicationElements;
+	private final List<TargetApplicationClassOrInterfaceRepresentation> targetApplicationElements;
 	private final String resultOfMethodInvocation;
 	private final List<MethodCallInStackDTO> methodCallInStacks;
 
@@ -44,8 +44,8 @@ public class DebugStoppedAtBreakpointDTO {
 	 * @param resultOfMethodInvocation  result of any invoked method (if applicable)
 	 */
 	private DebugStoppedAtBreakpointDTO(String className, String methodName,
-			int lineNumber, List<FieldOrVariableDTO> fields, List<FieldOrVariableDTO> locals, String stackTrace,
-			List<TargetApplicationElementRepresentation> targetApplicationElements,
+			int lineNumber, List<InnerElementDTO> fields, List<InnerElementDTO> locals, String stackTrace,
+			List<TargetApplicationClassOrInterfaceRepresentation> targetApplicationElements,
 			List<MethodCallInStackDTO> methodCallInStacks, String resultOfMethodInvocation) {
 		//super(type);
 		this.className = className;
@@ -73,11 +73,11 @@ public class DebugStoppedAtBreakpointDTO {
 		return lineNumber;
 	}
 
-	public List<FieldOrVariableDTO> getLocals() {
+	public List<InnerElementDTO> getLocals() {
 		return locals;
 	}
 
-	public List<FieldOrVariableDTO> getFields() {
+	public List<InnerElementDTO> getFields() {
 		return fields;
 	}
 
@@ -85,7 +85,7 @@ public class DebugStoppedAtBreakpointDTO {
 		return stackTrace;
 	}
 
-	public List<TargetApplicationElementRepresentation> getTargetApplicationElements() {
+	public List<TargetApplicationClassOrInterfaceRepresentation> getTargetApplicationElements() {
 		return targetApplicationElements;
 	}
 
@@ -104,10 +104,10 @@ public class DebugStoppedAtBreakpointDTO {
 		private String className;
 		private String methodName;
 		private int lineNumber;
-		private List<FieldOrVariableDTO> locals;
-		private List<FieldOrVariableDTO> fields;
+		private List<InnerElementDTO> locals;
+		private List<InnerElementDTO> fields;
 		private String stackTrace;
-		private List<TargetApplicationElementRepresentation> targetApplicationElements;
+		private List<TargetApplicationClassOrInterfaceRepresentation> targetApplicationElements;
 		private List<MethodCallInStackDTO> methodCallInStacks;
 		private String resultOfMethodInvocation;
 
@@ -131,12 +131,12 @@ public class DebugStoppedAtBreakpointDTO {
 			return this;
 		}
 
-		public Builder locals(List<FieldOrVariableDTO> locals) {
+		public Builder locals(List<InnerElementDTO> locals) {
 			this.locals = locals;
 			return this;
 		}
 
-		public Builder fields(List<FieldOrVariableDTO> fields) {
+		public Builder fields(List<InnerElementDTO> fields) {
 			this.fields = fields;
 			return this;
 		}
@@ -146,7 +146,7 @@ public class DebugStoppedAtBreakpointDTO {
 			return this;
 		}
 
-		public Builder targetApplicationElements(List<TargetApplicationElementRepresentation> elements) {
+		public Builder targetApplicationElements(List<TargetApplicationClassOrInterfaceRepresentation> elements) {
 			this.targetApplicationElements = elements;
 			return this;
 		}

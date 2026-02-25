@@ -29,6 +29,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMeth
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationElement.TargetApplicationElementType;
 import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -44,7 +45,7 @@ import com.sun.jdi.request.EventRequestManager;
 
 public class TargetApplicationRepresentation {
 
-	private final Map<ReferenceType, TargetApplicationElementRepresentation> referencesAtClassesAndInterfaces = new ConcurrentHashMap<>();
+	private final Map<ReferenceType, TargetApplicationClassOrInterfaceRepresentation> referencesAtClassesAndInterfaces = new ConcurrentHashMap<>();
 	private final TargetApplicationBreakpointRepresentation targetApplicationBreakepointRepresentation;
 	private final VirtualMachine virtualMachine;
 	private final DebugConfiguration debugConfiguration;
@@ -63,48 +64,94 @@ public class TargetApplicationRepresentation {
 		return targetApplicationBreakepointRepresentation;
 	}
 
-	public Map<ReferenceType, TargetApplicationElementRepresentation> getReferencesAtClassesAndInterfaces() {
+	public Map<ReferenceType, TargetApplicationClassOrInterfaceRepresentation> getReferencesAtClassesAndInterfaces() {
 		return referencesAtClassesAndInterfaces;
 	}
 
-	public List<TargetApplicationElementRepresentation> getTargetApplicationElements() {
+	public List<TargetApplicationClassOrInterfaceRepresentation> getTargetApplicationElements() {
 		return referencesAtClassesAndInterfaces.values().stream().collect(Collectors.toList());
 	}
 
 	public void refreshReferencesToClassesOfTargetApplication(VirtualMachine virtualMachine) {
-		referencesAtClassesAndInterfaces.clear();
-		SimpleDebuggerLogger.info("Target classes are not loaded yet. Waiting...");
+	    referencesAtClassesAndInterfaces.clear();
+	    SimpleDebuggerLogger.info("Waiting for target classes to load...");
 
-		// 1. Wait until classes are loaded
-		List<ReferenceType> loadedReferenceTypes = waitUntilClassesAreLoaded(virtualMachine);
+	    // 1. Ждём, пока классы загрузятся
+	    List<ReferenceType> loadedReferenceTypes = waitUntilClassesAreLoaded(virtualMachine);
 
-		// 2. Filter classes containing the word "target"
-		List<ReferenceType> targetClasses = filterTargetClasses(loadedReferenceTypes);
+	    // 2. Фильтруем target-классы
+	    List<ReferenceType> targetClasses = filterTargetClasses(loadedReferenceTypes);
 
-		SimpleDebuggerLogger.info("Loaded " + targetClasses.size() + " classes.");
+	    SimpleDebuggerLogger.info("Loaded " + targetClasses.size() + " classes.");
 
-		// 3. Collect classes defined by class loaders
-		Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
+	    // 3. Собираем классы, определённые class loader'ами
+	    Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
 
-		// 4. Process each class or interface
-		for (ReferenceType referenceType : definedByLoaders) {
+	    // 4. Обрабатываем каждый top-level элемент
+	    for (ReferenceType refType : definedByLoaders) {
+	        TargetApplicationElementType elementType = determineElementType(refType);
+	        if (elementType == null) continue;
 
-			TargetApplicationElementType type = determineElementType(referenceType);
+	        // Создаём top-level элемент через фабрику
+	        TargetApplicationClassOrInterfaceRepresentation topLevelElement =
+	                TargetApplicationClassOrInterfaceRepresentation.createTopLevelElement(
+	                        refType, refType.name(), elementType, new HashSet<>());
 
-			if (Objects.isNull(type)) {
-				continue;
-			}
+	        // Рекурсивно заполняем inner элементы
+	        populateInnerElements(topLevelElement, refType);
 
-			Set<TargetApplicationMethodDTO> methods = buildMethodDTOs(referenceType);
+	        // Добавляем top-level элемент в Map
+	        referencesAtClassesAndInterfaces.put(refType, topLevelElement);
+	    }
 
-			Set<Field> fields = new HashSet<>(referenceType.allFields());
-
-			referencesAtClassesAndInterfaces.put(referenceType,
-					new TargetApplicationClassOrInterfaceRepresentation(referenceType.name(), type, methods, fields));
-		}
-
-		SimpleDebuggerLogger.info("LOADED CLASSES: " + referencesAtClassesAndInterfaces.size());
+	    SimpleDebuggerLogger.info("LOADED CLASSES: " + referencesAtClassesAndInterfaces.size());
 	}
+
+	/**
+	 * Рекурсивно создаёт все внутренние элементы и добавляет их в parentElement.
+	 * Каждый inner элемент также можно добавить в отдельную Map для быстрого поиска по ReferenceType.
+	 */
+	private void populateInnerElements(AbstractTargetAplicationElement parentElement, ReferenceType refType) {
+	    List<ReferenceType> nestedTypes = refType.nestedTypes(); // все внутренние классы
+
+	    for (ReferenceType nestedRef : nestedTypes) {
+	        TargetApplicationElementType nestedType = determineElementType(nestedRef);
+	        if (nestedType == null) continue;
+
+	        // Создаём inner элемент через фабрику
+	        TargetApplicationInnerElementRepresentation innerElement =
+	                TargetApplicationInnerElementRepresentation.createInnerElement(
+	                        nestedRef, nestedRef.name(), nestedType, new HashSet<>());
+
+	        // Добавляем inner элемент в parent
+	        parentElement.getInnerElements().add(innerElement);
+
+	        // Рекурсивно обрабатываем вложенные элементы этого nestedRef
+	        populateInnerElements(innerElement, nestedRef);
+	    }
+	}
+
+//	// Рекурсивный метод для заполнения inner элементов
+//	private void populateInnerElements(AbstractTargetAplicationElement parentElement, ReferenceType refType) {
+//	    // 1. Получаем внутренние ReferenceType (nested types)
+//	    List<ReferenceType> nestedTypes = refType.nestedTypes(); // JDI: все inner classes
+//
+//	    for (ReferenceType nestedRef : nestedTypes) {
+//	        TargetApplicationElementType nestedType = determineElementType(nestedRef);
+//	        if (nestedType == null) continue;
+//
+//	        // Создаём inner элемент
+//	        TargetApplicationInnerElementRepresentation inner =
+//	                TargetApplicationInnerElementRepresentation.createInnerElement(
+//	                        nestedRef, nestedRef.name(), nestedType, parentElement);
+//
+//	        // Добавляем в parentElement
+//	        parentElement.getInnerElements().add(inner);
+//
+//	        // Рекурсивно обходим inner элементы этого nestedRef
+//	        populateInnerElements(inner, nestedRef);
+//	    }
+//	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
 		List<ReferenceType> referenceTypes = new ArrayList<>();
@@ -325,9 +372,9 @@ public class TargetApplicationRepresentation {
 			return null;
 		}
 
-		String className = targetApplicationClassOrInterfaceRepresentation.getTargetApplicationElementName();
+		String className = targetApplicationClassOrInterfaceRepresentation.getElementName();
 
-		for (Map.Entry<ReferenceType, TargetApplicationElementRepresentation> entry : referencesAtClassesAndInterfaces
+		for (Map.Entry<ReferenceType, TargetApplicationClassOrInterfaceRepresentation> entry : referencesAtClassesAndInterfaces
 				.entrySet()) {
 
 			ReferenceType referenceType = entry.getKey();

@@ -2,7 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.util.Objects;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
@@ -19,16 +19,16 @@ public class InspectionSeanceImpl implements InspectionSeance {
 	
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector debugCollector = SimpleDebuggerEventCollector.instance();
-	private final TargetApplicationElementRepresentation anchorElement;
+	private final TargetApplicationClassOrInterfaceRepresentation anchorElement;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 
-	public InspectionSeanceImpl(TargetApplicationElementRepresentation targetApplicationElementRepresentation, TargetApplicationRepresentation targetApplicationRepresentation) {
+	public InspectionSeanceImpl(TargetApplicationClassOrInterfaceRepresentation targetApplicationElementRepresentation, TargetApplicationRepresentation targetApplicationRepresentation) {
 		super();
 		this.anchorElement = targetApplicationElementRepresentation;
 		this.targetApplicationRepresentation = targetApplicationRepresentation;
 	}
 	
-	public TargetApplicationElementRepresentation getAnchor() {
+	public TargetApplicationClassOrInterfaceRepresentation getAnchor() {
 		return anchorElement;
 	}
 
@@ -43,8 +43,8 @@ public class InspectionSeanceImpl implements InspectionSeance {
 		}
 	}
 
-	private void startInspectionSeanceForAnchor(TargetApplicationElementRepresentation anchorElement) {
-		debugCollector.collectDebugEvent(new DebugEvent<TargetApplicationElementRepresentation>(SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT, anchorElement));
+	private void startInspectionSeanceForAnchor(TargetApplicationClassOrInterfaceRepresentation anchorElement) {
+		debugCollector.collectDebugEvent(new DebugEvent<TargetApplicationClassOrInterfaceRepresentation>(SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT, anchorElement));
 		while (DebuggerContext.context().isInspectionSeanceActive()) {
 			AbstractUIEvent abstractUIEvent = null;
 			try {

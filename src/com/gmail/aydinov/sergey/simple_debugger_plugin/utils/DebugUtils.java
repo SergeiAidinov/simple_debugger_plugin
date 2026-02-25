@@ -11,7 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.FieldOrVariableType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -206,12 +206,11 @@ public class DebugUtils {
 	 * @param fields the map of fields and their values
 	 * @return list of VariableDTO representing fields
 	 */
-	public static List<FieldOrVariableDTO> mapFields(Map<Field, Value> fields) {
+	public static List<InnerElementDTO> mapFields(Map<Field, Value> fields) {
 		if (Objects.isNull(fields))
 			return List.of();
-
 		return fields.entrySet().stream()
-				.map(entry -> new FieldOrVariableDTO(entry.getKey().name(), entry.getKey().typeName(),
+				.map(entry -> new InnerElementDTO(entry.getKey().name(), entry.getKey().typeName(),
 						valueToString(entry.getValue()), FieldOrVariableType.NON_STATIC_FIELD))
 				.collect(Collectors.toList());
 	}
@@ -222,12 +221,12 @@ public class DebugUtils {
 	 * @param locals the map of local variables and their values
 	 * @return list of VariableDTO representing local variables
 	 */
-	public static List<FieldOrVariableDTO> mapLocals(Map<LocalVariable, Value> locals) {
+	public static List<InnerElementDTO> mapLocals(Map<LocalVariable, Value> locals) {
 		if (Objects.isNull(locals))
 			return List.of();
 
 		return locals
-				.entrySet().stream().map(entry -> new FieldOrVariableDTO(entry.getKey().name(),
+				.entrySet().stream().map(entry -> new InnerElementDTO(entry.getKey().name(),
 						entry.getKey().typeName(), valueToString(entry.getValue()), FieldOrVariableType.VARIABLE))
 				.collect(Collectors.toList());
 	}
@@ -396,7 +395,7 @@ public class DebugUtils {
 	/**
 	 * Determines if the DTO can be inspected (non-primitive, non-String, non-null)
 	 */
-	public static boolean isInspectable(FieldOrVariableDTO dto) {
+	public static boolean isInspectable(InnerElementDTO dto) {
 		if (dto == null || dto.getType() == null || dto.getValue() == null)
 			return false;
 

@@ -23,7 +23,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -43,7 +43,7 @@ public class FieldsAndVariablesTabContent {
 	private final Composite root;
 	private final Table table;
 	private final TableViewer viewer;
-	private final List<FieldOrVariableDTO> entries = new ArrayList<>();
+	private final List<InnerElementDTO> entries = new ArrayList<>();
 	UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
 	public FieldsAndVariablesTabContent(Composite parent) {
@@ -73,7 +73,7 @@ public class FieldsAndVariablesTabContent {
 		nameColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				if (element instanceof FieldOrVariableDTO dto)
+				if (element instanceof InnerElementDTO dto)
 					return Objects.toString(dto.getName(), "");
 				return "";
 			}
@@ -86,14 +86,14 @@ public class FieldsAndVariablesTabContent {
 		typeColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				if (element instanceof FieldOrVariableDTO dto)
+				if (element instanceof InnerElementDTO dto)
 					return Objects.toString(dto.getType(), "");
 				return "";
 			}
 
 			@Override
 			public Image getImage(Object element) {
-				if (element instanceof FieldOrVariableDTO dto) {
+				if (element instanceof InnerElementDTO dto) {
 					return switch (dto.getFieldOrVariableType()) {
 					case VARIABLE -> DebugWindowsManager.instance().icons.get("variableIcon");
 					case NON_STATIC_FIELD -> DebugWindowsManager.instance().icons.get("fieldIcon");
@@ -104,7 +104,7 @@ public class FieldsAndVariablesTabContent {
 
 			@Override
 			public String getToolTipText(Object element) {
-				if (element instanceof FieldOrVariableDTO dto) {
+				if (element instanceof InnerElementDTO dto) {
 					return switch (dto.getFieldOrVariableType()) {
 					case VARIABLE -> "Local variable";
 					case NON_STATIC_FIELD -> "Non-static field";
@@ -121,7 +121,7 @@ public class FieldsAndVariablesTabContent {
 		valueColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				if (element instanceof FieldOrVariableDTO dto) {
+				if (element instanceof InnerElementDTO dto) {
 					if (DebugUtils.isInspectable(dto))
 						return "";
 					return Objects.toString(dto.getValue(), "");
@@ -131,7 +131,7 @@ public class FieldsAndVariablesTabContent {
 
 			@Override
 			public Image getImage(Object element) {
-				if (element instanceof FieldOrVariableDTO dto && DebugUtils.isInspectable(dto)) {
+				if (element instanceof InnerElementDTO dto && DebugUtils.isInspectable(dto)) {
 					return DebugWindowsManager.instance().icons.get("inspectIcon");
 				}
 				return null;
@@ -139,7 +139,7 @@ public class FieldsAndVariablesTabContent {
 
 			@Override
 			public String getToolTipText(Object element) {
-				if (element instanceof FieldOrVariableDTO dto && DebugUtils.isInspectable(dto)) {
+				if (element instanceof InnerElementDTO dto && DebugUtils.isInspectable(dto)) {
 					return "Inspect object";
 				}
 				return null;
@@ -155,12 +155,12 @@ public class FieldsAndVariablesTabContent {
 			@Override
 			public boolean canModify(Object element, String property) {
 				return "value".equals(property)
-						&& !(element instanceof FieldOrVariableDTO dto && DebugUtils.isInspectable(dto));
+						&& !(element instanceof InnerElementDTO dto && DebugUtils.isInspectable(dto));
 			}
 
 			@Override
 			public Object getValue(Object element, String property) {
-				if (element instanceof FieldOrVariableDTO dto)
+				if (element instanceof InnerElementDTO dto)
 					return dto.getValue();
 				return null;
 			}
@@ -170,7 +170,7 @@ public class FieldsAndVariablesTabContent {
 				if (!(element instanceof TableItem item))
 					return;
 
-				FieldOrVariableDTO oldEntry = (FieldOrVariableDTO) item.getData();
+				InnerElementDTO oldEntry = (InnerElementDTO) item.getData();
 				if (Objects.isNull(oldEntry) || Objects.isNull(newValue))
 					return;
 
@@ -194,7 +194,7 @@ public class FieldsAndVariablesTabContent {
 					}
 				}
 				if (index >= 0) {
-					FieldOrVariableDTO updated = new FieldOrVariableDTO(oldEntry.getName(), oldEntry.getType(),
+					InnerElementDTO updated = new InnerElementDTO(oldEntry.getName(), oldEntry.getType(),
 							newValStr, oldEntry.getFieldOrVariableType());
 					entries.set(index, updated);
 					viewer.update(updated, null);
@@ -212,7 +212,7 @@ public class FieldsAndVariablesTabContent {
 
 			for (int i = 0; i < table.getColumnCount(); i++) {
 				if (item.getBounds(i).contains(pt) && i == 2) { // Value column
-					FieldOrVariableDTO dto = (FieldOrVariableDTO) item.getData();
+					InnerElementDTO dto = (InnerElementDTO) item.getData();
 					if (DebugUtils.isInspectable(dto))
 						inspectNode(dto);
 					break;
@@ -222,17 +222,17 @@ public class FieldsAndVariablesTabContent {
 	}
 
 	/** Delegates opening the inspection window to DebugWindowManager */
-	private void inspectNode(FieldOrVariableDTO fieldOrVariableDTO) {
+	private void inspectNode(InnerElementDTO fieldOrVariableDTO) {
 //       InspectWindow window = DebugWindowManager.instance().openNewInspectWindow();
 //        if (window == null) {
 //            System.err.println("Debug session is not running, cannot inspect object.");
 //            return;
 //        }
 		// Display.getDefault().asyncExec(() -> window.showInspectableNode(dto));
-		uiEventCollector.collectUiEvent(new UIEvent<FieldOrVariableDTO>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, fieldOrVariableDTO));
+		uiEventCollector.collectUiEvent(new UIEvent<InnerElementDTO>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, fieldOrVariableDTO));
 	}
 
-	public void updateVariablesAndFields(List<FieldOrVariableDTO> variables, List<FieldOrVariableDTO> fields) {
+	public void updateVariablesAndFields(List<InnerElementDTO> variables, List<InnerElementDTO> fields) {
 		if (table.isDisposed())
 			return;
 		entries.clear();
