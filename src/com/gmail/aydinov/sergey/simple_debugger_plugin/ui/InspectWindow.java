@@ -135,7 +135,7 @@ public class InspectWindow {
             });
         }
     }
-T
+
     /** Показывает структуру top-level элемента */
     protected void showElementStructure(TargetApplicationClassOrInterfaceRepresentation element) {
         showAnchorElement(element);
