@@ -97,7 +97,7 @@ public class TargetApplicationRepresentation {
 	                TargetApplicationClassOrInterfaceRepresentation.createTopLevelElement(
 	                        refType, refType.name(), elementType, new HashSet<>());
 
-	        // Рекурсивно заполняем inner элементы
+	        // Рекурсивно заполняем поля, методы и inner элементы
 	        populateInnerElements(topLevelElement, refType);
 
 	        // Добавляем top-level элемент в Map
@@ -109,49 +109,44 @@ public class TargetApplicationRepresentation {
 
 	/**
 	 * Рекурсивно создаёт все внутренние элементы и добавляет их в parentElement.
-	 * Каждый inner элемент также можно добавить в отдельную Map для быстрого поиска по ReferenceType.
 	 */
 	private void populateInnerElements(AbstractTargetAplicationElement parentElement, ReferenceType refType) {
-	    List<ReferenceType> nestedTypes = refType.nestedTypes(); // все внутренние классы
+	    Set<TargetApplicationInnerElementRepresentation> innerElements = new HashSet<>();
 
-	    for (ReferenceType nestedRef : nestedTypes) {
+	    // --- поля ---
+	    for (Field field : refType.allFields()) {
+	        TargetApplicationInnerElementRepresentation fieldElement =
+	                TargetApplicationInnerElementRepresentation.createInnerElement(
+	                        refType, field.name(), TargetApplicationElementType.NON_STATIC_FIELD, new HashSet<>());
+	        innerElements.add(fieldElement);
+	    }
+
+	    // --- методы ---
+	    for (Method method : refType.allMethods()) {
+	        if (method.isNative() || "<init>".equals(method.name())) continue;
+	        TargetApplicationInnerElementRepresentation methodElement =
+	                TargetApplicationInnerElementRepresentation.createInnerElement(
+	                        refType, method.name(), TargetApplicationElementType.METHOD, new HashSet<>());
+	        innerElements.add(methodElement);
+	    }
+
+	    // --- внутренние классы ---
+	    for (ReferenceType nestedRef : refType.nestedTypes()) {
 	        TargetApplicationElementType nestedType = determineElementType(nestedRef);
 	        if (nestedType == null) continue;
 
-	        // Создаём inner элемент через фабрику
-	        TargetApplicationInnerElementRepresentation innerElement =
+	        TargetApplicationInnerElementRepresentation nestedElement =
 	                TargetApplicationInnerElementRepresentation.createInnerElement(
 	                        nestedRef, nestedRef.name(), nestedType, new HashSet<>());
 
-	        // Добавляем inner элемент в parent
-	        parentElement.getInnerElements().add(innerElement);
-
-	        // Рекурсивно обрабатываем вложенные элементы этого nestedRef
-	        populateInnerElements(innerElement, nestedRef);
+	        // рекурсивно обрабатываем внутренние элементы этого nestedRef
+	        populateInnerElements(nestedElement, nestedRef);
+	        innerElements.add(nestedElement);
 	    }
-	}
 
-//	// Рекурсивный метод для заполнения inner элементов
-//	private void populateInnerElements(AbstractTargetAplicationElement parentElement, ReferenceType refType) {
-//	    // 1. Получаем внутренние ReferenceType (nested types)
-//	    List<ReferenceType> nestedTypes = refType.nestedTypes(); // JDI: все inner classes
-//
-//	    for (ReferenceType nestedRef : nestedTypes) {
-//	        TargetApplicationElementType nestedType = determineElementType(nestedRef);
-//	        if (nestedType == null) continue;
-//
-//	        // Создаём inner элемент
-//	        TargetApplicationInnerElementRepresentation inner =
-//	                TargetApplicationInnerElementRepresentation.createInnerElement(
-//	                        nestedRef, nestedRef.name(), nestedType, parentElement);
-//
-//	        // Добавляем в parentElement
-//	        parentElement.getInnerElements().add(inner);
-//
-//	        // Рекурсивно обходим inner элементы этого nestedRef
-//	        populateInnerElements(inner, nestedRef);
-//	    }
-//	}
+	    // --- сохраняем во внутренние элементы родителя ---
+	    parentElement.getInnerElements().addAll(innerElements);
+	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
 		List<ReferenceType> referenceTypes = new ArrayList<>();
