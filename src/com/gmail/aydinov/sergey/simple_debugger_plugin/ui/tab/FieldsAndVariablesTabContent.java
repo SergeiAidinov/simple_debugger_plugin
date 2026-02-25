@@ -11,6 +11,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Table;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
@@ -58,15 +59,19 @@ public class FieldsAndVariablesTabContent {
     /**
      * Updates the table to show a single class DTO.
      */
-    public void updateClass(DebugWindowDataDTO classDto) {
-        if (table.isDisposed() || classDto == null)
+    public void showInnerElements(DebugWindowDataDTO classDto) {
+        if (classDto == null)
             return;
-
-        entries.clear();
-        entries.add(classDto);
-
-        viewer.setInput(entries);
-        viewer.refresh();
+        Display.getDefault().asyncExec(() -> {
+            if (table.isDisposed())
+                return;
+            entries.clear();
+            if (classDto.getInnerElements() != null) {
+                entries.addAll(classDto.getInnerElements());
+            }
+            viewer.setInput(entries);
+            viewer.refresh();
+        });
     }
 
     public Composite getControl() {

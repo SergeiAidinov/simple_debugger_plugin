@@ -197,7 +197,7 @@ public class DebugWindow {
 //				STOP_INFO + event.getClassName() + "." + event.getMethodName() + " line:" + event.getLineNumber());
 //		resumeButton.setEnabled(true);
 
-		variablesFieldsTabContent.updateClass(debugWindowDataDTO);
+		variablesFieldsTabContent.showInnerElements(debugWindowDataDTO);
 //		stackTabContent.updateStack(event.getMethodCallInStacks());
 //		evaluateTabController.updateFromEvent(event);
 	}
