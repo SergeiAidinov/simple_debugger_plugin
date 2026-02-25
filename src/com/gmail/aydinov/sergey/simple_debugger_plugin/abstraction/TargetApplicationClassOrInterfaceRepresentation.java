@@ -30,4 +30,14 @@ public class TargetApplicationClassOrInterfaceRepresentation extends AbstractTar
 		}
 	}
 
+	@Override
+	public String toString() {
+		return "TargetApplicationClassOrInterfaceRepresentation [getReferenceType()=" + getReferenceType()
+				+ ", getElementName()=" + getElementName() + ", getElementType()=" + getElementType()
+				+ ", getInnerElements()=" + getInnerElements() + ", getClass()=" + getClass() + ", hashCode()="
+				+ hashCode() + ", toString()=" + super.toString() + "]";
+	}
+	
+	
+
 }
