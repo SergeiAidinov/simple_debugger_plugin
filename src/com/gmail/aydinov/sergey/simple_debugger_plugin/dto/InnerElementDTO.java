@@ -11,7 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.FieldOrVariab
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
-public class FieldOrVariableDTO {
+public class InnerElementDTO {
 
     private final String name;   // the variable name
     private final String type;   // the variable type
@@ -25,7 +25,7 @@ public class FieldOrVariableDTO {
      * @param type  the type of the variable
      * @param value the string representation of the variable's value
      */
-    public FieldOrVariableDTO(String name, String type, String value, FieldOrVariableType fieldOrVariableType) {
+    public InnerElementDTO(String name, String type, String value, FieldOrVariableType fieldOrVariableType) {
         this.name = name;
         this.type = type;
         this.value = value;

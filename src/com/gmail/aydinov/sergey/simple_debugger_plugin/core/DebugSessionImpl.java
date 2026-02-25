@@ -21,14 +21,14 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
@@ -196,7 +196,7 @@ public class DebugSessionImpl implements DebugSession {
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT)) {
-				UIEvent<FieldOrVariableDTO> userStartedInspectionSeanceEvent = (UIEvent<FieldOrVariableDTO>) abstractSimpleDebuggerUIEvent;
+				UIEvent<InnerElementDTO> userStartedInspectionSeanceEvent = (UIEvent<InnerElementDTO>) abstractSimpleDebuggerUIEvent;
 				initiateInspectionSeanceIfPossible(userStartedInspectionSeanceEvent.getPayload());
 			} else {
 				SimpleDebuggerLogger
@@ -207,13 +207,13 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void initiateInspectionSeanceIfPossible(FieldOrVariableDTO event) {
+	private void initiateInspectionSeanceIfPossible(InnerElementDTO event) {
 		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
 				|| DebuggerContext.context().isInspectionSeanceActive())
 			return;
-		Optional<TargetApplicationElementRepresentation> anchorOptional = targetApplicationRepresentation
+		Optional<TargetApplicationClassOrInterfaceRepresentation> anchorOptional = targetApplicationRepresentation
 				.getTargetApplicationElements().stream()
-				.filter(e -> e.getTargetApplicationElementName().equals(event.getType())).findAny();
+				.filter(e -> e.getElementName().equals(event.getType())).findAny();
 		if (anchorOptional.isEmpty()) {
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_STOPPED);
 			return;
@@ -330,6 +330,16 @@ public class DebugSessionImpl implements DebugSession {
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
 				.resultOfMethodInvocation(methodInvocationResult.get()).build();
 
+//		for (FieldOrVariableDTO targetApplicationField : debugStoppedAtBreakpointDTO.getFields()) {
+//			TargetApplicationElementRepresentation targetApplicationElementRepresentation = new TargetApplicationClassOrInterfaceRepresentation(
+//					targetApplicationField.getName(), TargetApplicationElementType.CLASS, 
+//					tar, 
+//					null);
+//		}
+		List<TargetApplicationClassOrInterfaceRepresentation> qq = targetApplicationRepresentation
+				.getTargetApplicationElements();
+		System.out.println(qq);
+
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugStoppedAtBreakpointDTO>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugStoppedAtBreakpointDTO));
 
@@ -351,18 +361,21 @@ public class DebugSessionImpl implements DebugSession {
 		return true;
 	}
 
-	private List<TargetApplicationElementRepresentation> discardVoidMethods(
-			Iterable<TargetApplicationElementRepresentation> targetElements) {
-		List<TargetApplicationElementRepresentation> withoutVoidMethods = new ArrayList<>();
-		for (TargetApplicationElementRepresentation element : targetApplicationRepresentation
-				.getTargetApplicationElements()) {
-			TargetApplicationElementRepresentation copy = element.clone();
-			Set<TargetApplicationMethodDTO> nonVoidMethods = element.getMethods().stream()
-					.filter(m -> !"void".equals(m.getReturnType())).collect(Collectors.toSet());
-			copy.setMethods(nonVoidMethods);
-			withoutVoidMethods.add(copy);
-		}
-		return withoutVoidMethods;
+	private List<TargetApplicationClassOrInterfaceRepresentation> discardVoidMethods(
+			List<TargetApplicationClassOrInterfaceRepresentation> targetElements) {
+		
+		return targetElements;
+//			
+//		List<TargetApplicationClassOrInterfaceRepresentation> withoutVoidMethods = new ArrayList<>();
+//		for (TargetApplicationClassOrInterfaceRepresentation element : targetApplicationRepresentation
+//				.getTargetApplicationElements()) {
+//			TargetApplicationClassOrInterfaceRepresentation copy = element.clone();
+//			Set<TargetApplicationMethodDTO> nonVoidMethods = element.getMethods().stream()
+//					.filter(m -> !"void".equals(m.getReturnType())).collect(Collectors.toSet());
+//			copy.setMethods(nonVoidMethods);
+//			withoutVoidMethods.add(copy);
+//		}
+//		return withoutVoidMethods;
 	}
 
 	private ITextEditor openEditorForLocation(Location location) throws Exception {

@@ -8,7 +8,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -162,11 +162,11 @@ public class EvaluateTabController {
 			if (root.isDisposed())
 				return;
 			classCombo.removeAll();
-			for (TargetApplicationElementRepresentation targetApplicationElementRepresentation : debugStoppedAtBreakpointEvent
+			for (TargetApplicationClassOrInterfaceRepresentation targetApplicationElementRepresentation : debugStoppedAtBreakpointEvent
 					.getTargetApplicationElements()) {
 				if (targetApplicationElementRepresentation instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
-					String nameAndType = clazz.getTargetApplicationElementName() + " ("
-							+ targetApplicationElementRepresentation.getTargetApplicationElementType() + ")";
+					String nameAndType = clazz.getElementName() + " ("
+							+ targetApplicationElementRepresentation.getElementType() + ")";
 					classCombo.add(nameAndType);
 					classCombo.setData(nameAndType, clazz);
 				}
@@ -204,15 +204,15 @@ public class EvaluateTabController {
 
 		TargetApplicationMethodDTO methodToSelect = null;
 
-		for (TargetApplicationMethodDTO targetApplicationMethodDTO : clazz.getMethods()) {
-			String displayStr = buildMethodDisplay(targetApplicationMethodDTO);
-			methodCombo.add(displayStr);
-			methodCombo.setData(displayStr, targetApplicationMethodDTO);
-
-			if (Objects.equals(lastMethod, targetApplicationMethodDTO)) {
-				methodToSelect = targetApplicationMethodDTO;
-			}
-		}
+//		for (TargetApplicationMethodDTO targetApplicationMethodDTO : clazz.getMethods()) {
+//			String displayStr = buildMethodDisplay(targetApplicationMethodDTO);
+//			methodCombo.add(displayStr);
+//			methodCombo.setData(displayStr, targetApplicationMethodDTO);
+//
+//			if (Objects.equals(lastMethod, targetApplicationMethodDTO)) {
+//				methodToSelect = targetApplicationMethodDTO;
+//			}
+//		}
 
 		if (Objects.nonNull(methodToSelect)) {
 			methodCombo.setText(buildMethodDisplay(methodToSelect));

@@ -20,10 +20,10 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.FieldOrVariableDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -45,7 +45,7 @@ public class InspectWindow {
     private final Button backButton;
     private final Button forwardButton;
     private final Composite breadcrumbComposite;
-    private final Deque<FieldOrVariableDTO> history = new ArrayDeque<>();
+    private final Deque<InnerElementDTO> history = new ArrayDeque<>();
     private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
     protected InspectWindow() {
@@ -139,12 +139,12 @@ public class InspectWindow {
     }
 
     /** Отображает структуру TargetApplicationElementRepresentation в дереве */
-    protected void showElementStructure(TargetApplicationElementRepresentation element) {
+    protected void showElementStructure(TargetApplicationClassOrInterfaceRepresentation element) {
         showAnchorElement(element);
     }
 
     /** Новый метод: отображение элемента с полями и методами */
-    protected void showAnchorElement(TargetApplicationElementRepresentation element) {
+    protected void showAnchorElement(TargetApplicationClassOrInterfaceRepresentation element) {
         if (element == null || shell.isDisposed()) return;
 
         Display.getDefault().asyncExec(() -> {
@@ -153,35 +153,35 @@ public class InspectWindow {
             // --- корневой элемент ---
             TreeItem root = new TreeItem(elementTree, SWT.NONE);
             root.setText(new String[]{
-                element.getTargetApplicationElementName(),
-                element.getTargetApplicationElementType().name()
+                element.getElementName(),
+                element.getElementType().name()
             });
             root.setExpanded(true);
 
             // --- поля ---
-            Set<Field> fields = element.getFields();
-            if (fields != null) {
-                fields.forEach(f -> {
-                    TreeItem fieldItem = new TreeItem(root, SWT.NONE);
-                    fieldItem.setText(new String[]{f.name(), f.typeName()});
-                });
-            }
-
-            // --- методы ---
-            Set<TargetApplicationMethodDTO> methods = element.getMethods();
-            if (methods != null) {
-                methods.forEach(m -> {
-                    TreeItem methodItem = new TreeItem(root, SWT.NONE);
-                    methodItem.setText(new String[]{m.getMethodName() + "()", ""});
-                });
-            }
+//            Set<Field> fields = element.getFields();
+//            if (fields != null) {
+//                fields.forEach(f -> {
+//                    TreeItem fieldItem = new TreeItem(root, SWT.NONE);
+//                    fieldItem.setText(new String[]{f.name(), f.typeName()});
+//                });
+//            }
+//
+//            // --- методы ---
+//            Set<TargetApplicationMethodDTO> methods = element.getMethods();
+//            if (methods != null) {
+//                methods.forEach(m -> {
+//                    TreeItem methodItem = new TreeItem(root, SWT.NONE);
+//                    methodItem.setText(new String[]{m.getMethodName() + "()", ""});
+//                });
+//            }
 
             elementTree.layout();
         });
     }
 
     /** Отображает объект в правой панели */
-    protected void showInspectableNode(FieldOrVariableDTO fieldOrVariableDTO) {
+    protected void showInspectableNode(InnerElementDTO fieldOrVariableDTO) {
         if (fieldOrVariableDTO == null || shell.isDisposed()) return;
 
         history.push(fieldOrVariableDTO);
@@ -193,7 +193,7 @@ public class InspectWindow {
         });
     }
 
-    private void refreshContent(FieldOrVariableDTO dto) {
+    private void refreshContent(InnerElementDTO dto) {
         if (dto == null || table.isDisposed()) return;
 
         table.removeAll();
@@ -209,10 +209,10 @@ public class InspectWindow {
 
     private void navigateBack() {
         if (history.size() <= 1) return;
-        FieldOrVariableDTO current = history.pop();
+        InnerElementDTO current = history.pop();
         history.push(current);
 
-        FieldOrVariableDTO previous = history.peek();
+        InnerElementDTO previous = history.peek();
         if (previous != null) {
             Display.getDefault().asyncExec(() -> {
                 objectLabel.setText("Inspecting instance: " + previous.getName() + " (" + previous.getType() + ")");
@@ -226,7 +226,7 @@ public class InspectWindow {
 
     private void navigateForward() {
         if (history.isEmpty()) return;
-        FieldOrVariableDTO next = history.pop();
+        InnerElementDTO next = history.pop();
         history.push(next);
 
         Display.getDefault().asyncExec(() -> {
@@ -252,7 +252,7 @@ public class InspectWindow {
     public void handleDebugEvent(AbstractDebugEvent event) {
         System.out.println("===> " + event.getType());
         if (Objects.equals(event.getType(), SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT)) {
-        	DebugEvent<TargetApplicationElementRepresentation> simpleDebugEvent = (DebugEvent<TargetApplicationElementRepresentation>) event;
+        	DebugEvent<TargetApplicationClassOrInterfaceRepresentation> simpleDebugEvent = (DebugEvent<TargetApplicationClassOrInterfaceRepresentation>) event;
         	showAnchorElement(simpleDebugEvent.getPayload());
         }
         // TODO: добавить обработку событий
