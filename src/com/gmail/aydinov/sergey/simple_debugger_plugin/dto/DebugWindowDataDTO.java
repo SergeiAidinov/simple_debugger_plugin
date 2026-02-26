@@ -13,10 +13,12 @@ public final class DebugWindowDataDTO {
 
 	private final String elementName;
 	private final TargetApplicationElementType elementType;
+	private String value;
 	private final Set<DebugWindowDataDTO> innerElements;
 	private int lineNumber = -1;
 	private List<MethodCallInStackDTO> stackCall;
 	private String methodName = "[NO METHOD]";
+	
 
 	private DebugWindowDataDTO(String elementName, TargetApplicationElementType elementType,
 			Set<DebugWindowDataDTO> innerElements) {
@@ -62,7 +64,11 @@ public final class DebugWindowDataDTO {
 	}
 	
 	public String getElementValue() {
-		return "Value";
+		return value;
+	}
+	
+	public void setElementValue(String value) {
+		this.value = value;
 	}
 
 	/**

@@ -11,6 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.FieldOrVariableType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassNotLoadedException;
@@ -395,15 +396,15 @@ public class DebugUtils {
 	/**
 	 * Determines if the DTO can be inspected (non-primitive, non-String, non-null)
 	 */
-	public static boolean isInspectable(InnerElementDTO dto) {
-		if (dto == null || dto.getType() == null || dto.getValue() == null)
+	public static boolean isInspectable(DebugWindowDataDTO dto) {
+		if (dto == null || dto.getElementType() == null || dto.getElementValue() == null)
 			return false;
 
-		switch (dto.getType()) {
+		switch (dto.getElementType().toString()) {
 		case "int", "long", "double", "float", "boolean", "byte", "short", "char":
 			return false;
 		}
-		if ("java.lang.String".equals(dto.getType()))
+		if ("java.lang.String".equals(dto.getElementType()))
 			return false;
 
 		return true;
