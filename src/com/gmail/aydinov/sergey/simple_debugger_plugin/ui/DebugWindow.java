@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.swt.SWT;
@@ -174,16 +176,13 @@ public class DebugWindow {
 				refreshDataAtBreakpoint(simpleDebugEvent.getPayload());
 			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.REFRESH_CONSOLE)) {
 				DebugEvent<String> simpleDebugEvent = (DebugEvent<String>) event;
-				//ConsoleUpdateDebugEvent consoleEvent = (ConsoleUpdateDebugEvent) event;
 				consoleTabContent.appendLine(simpleDebugEvent.getPayload());
 			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.METHOD_INVOKE)) {
-				//BackendMethodExecutedEvent methodEvent = (BackendMethodExecutedEvent) event;
 				evaluateTabController.clearResult();
 				DebugEvent<String> simpleDebugEvent = (DebugEvent<String>) event;
 				evaluateTabController.showResult(simpleDebugEvent.getPayload());
 			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE)) {
 				DebugEvent<Boolean> simpleDebugEvent = (DebugEvent<Boolean>) event;
-				//SetResumeButtonEnabled setResumeButtonEnabled = (SetResumeButtonEnabled) event;
 				resumeButton.setEnabled(simpleDebugEvent.getPayload());
 			}
 		});
@@ -192,14 +191,11 @@ public class DebugWindow {
 	private void refreshDataAtBreakpoint(DebugWindowDataDTO debugWindowDataDTO) {
 		if (debugWindowDataDTO == null)
 			return;
-//
 		locationLabel.setText(
-				STOP_INFO + debugWindowDataDTO.getElementName() + "." + debugWindowDataDTO.getElementType() + " line: " + debugWindowDataDTO.getLineNumber());
+				STOP_INFO + debugWindowDataDTO.getElementName() + "." + debugWindowDataDTO.getMethodName() + " line: " + debugWindowDataDTO.getLineNumber());
 		resumeButton.setEnabled(true);
-
 		variablesFieldsTabContent.showInnerElements(debugWindowDataDTO);
 		stackTabContent.updateStack(debugWindowDataDTO.getStackCall());
-//		evaluateTabController.updateFromEvent(event);
 	}
 
 	protected void appendConsoleLine(String line) {

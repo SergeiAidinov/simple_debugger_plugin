@@ -14,8 +14,9 @@ public final class DebugWindowDataDTO {
 	private final String elementName;
 	private final TargetApplicationElementType elementType;
 	private final Set<DebugWindowDataDTO> innerElements;
-	private int lineNumber;
+	private int lineNumber = -1;
 	private List<MethodCallInStackDTO> stackCall;
+	private String methodName = "[NO METHOD]";
 
 	private DebugWindowDataDTO(String elementName, TargetApplicationElementType elementType,
 			Set<DebugWindowDataDTO> innerElements) {
@@ -50,6 +51,18 @@ public final class DebugWindowDataDTO {
 
 	public void setStackCall(List<MethodCallInStackDTO> stackCall) {
 		this.stackCall = stackCall;
+	}
+	
+	public String getMethodName() {
+		return methodName;
+	}
+
+	public void setMethodName(String methodName) {
+		this.methodName = methodName;
+	}
+	
+	public String getElementValue() {
+		return "Value";
 	}
 
 	/**

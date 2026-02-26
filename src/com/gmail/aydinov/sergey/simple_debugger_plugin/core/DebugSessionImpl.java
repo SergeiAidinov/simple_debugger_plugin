@@ -335,6 +335,7 @@ public class DebugSessionImpl implements DebugSession {
 		 DebugWindowDataDTO debugWindowDataDTO = DebugWindowDataDTO.from(ee);
 		 debugWindowDataDTO.setLineNumber(location.lineNumber());
 		 debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(breakpointEvent.thread()));
+		 debugWindowDataDTO.setMethodName(location.method().name()+"(..)");
 
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
