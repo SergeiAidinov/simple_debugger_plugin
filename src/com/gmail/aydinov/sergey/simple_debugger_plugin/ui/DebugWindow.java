@@ -193,12 +193,12 @@ public class DebugWindow {
 		if (debugWindowDataDTO == null)
 			return;
 //
-//		locationLabel.setText(
-//				STOP_INFO + event.getClassName() + "." + event.getMethodName() + " line:" + event.getLineNumber());
-//		resumeButton.setEnabled(true);
+		locationLabel.setText(
+				STOP_INFO + debugWindowDataDTO.getElementName() + "." + debugWindowDataDTO.getElementType() + " line: " + debugWindowDataDTO.getLineNumber());
+		resumeButton.setEnabled(true);
 
 		variablesFieldsTabContent.showInnerElements(debugWindowDataDTO);
-//		stackTabContent.updateStack(event.getMethodCallInStacks());
+		stackTabContent.updateStack(debugWindowDataDTO.getStackCall());
 //		evaluateTabController.updateFromEvent(event);
 	}
 

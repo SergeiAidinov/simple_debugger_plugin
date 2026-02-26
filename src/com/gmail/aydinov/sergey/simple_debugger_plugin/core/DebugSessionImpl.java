@@ -333,9 +333,8 @@ public class DebugSessionImpl implements DebugSession {
 		
 		 TargetApplicationClassOrInterfaceRepresentation ee = targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().get(location.declaringType());
 		 DebugWindowDataDTO debugWindowDataDTO = DebugWindowDataDTO.from(ee);
-//		List<TargetApplicationClassOrInterfaceRepresentation> qq = targetApplicationRepresentation
-//				.getTargetApplicationElements();
-//		System.out.println(qq);
+		 debugWindowDataDTO.setLineNumber(location.lineNumber());
+		 debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(breakpointEvent.thread()));
 
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
