@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -10,74 +11,81 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTarge
 
 public final class DebugWindowDataDTO {
 
-    private final String elementName;
-    private final TargetApplicationElementType elementType;
-    private final Set<DebugWindowDataDTO> innerElements;
+	private final String elementName;
+	private final TargetApplicationElementType elementType;
+	private final Set<DebugWindowDataDTO> innerElements;
+	private int lineNumber;
+	private List<MethodCallInStackDTO> stackCall;
 
-    private DebugWindowDataDTO(String elementName,
-                                        TargetApplicationElementType elementType,
-                                        Set<DebugWindowDataDTO> innerElements) {
-        this.elementName = elementName;
-        this.elementType = elementType;
-        this.innerElements = innerElements;
-    }
+	private DebugWindowDataDTO(String elementName, TargetApplicationElementType elementType,
+			Set<DebugWindowDataDTO> innerElements) {
+		this.elementName = elementName;
+		this.elementType = elementType;
+		this.innerElements = innerElements;
+	}
 
-    public String getElementName() {
-        return elementName;
-    }
+	public String getElementName() {
+		return elementName;
+	}
 
-    public TargetApplicationElementType getElementType() {
-        return elementType;
-    }
+	public TargetApplicationElementType getElementType() {
+		return elementType;
+	}
 
-    public Set<DebugWindowDataDTO> getInnerElements() {
-        return innerElements;
-    }
+	public Set<DebugWindowDataDTO> getInnerElements() {
+		return innerElements;
+	}
 
-    /**
-     * Фабричный метод для top-level элемента
-     */
-    public static DebugWindowDataDTO from(
-            TargetApplicationClassOrInterfaceRepresentation source) {
+	public int getLineNumber() {
+		return lineNumber;
+	}
 
-        return buildFromAbstract(source);
-    }
+	public void setLineNumber(int lineNumber) {
+		this.lineNumber = lineNumber;
+	}
 
-    /**
-     * Фабричный метод для inner элемента
-     */
-    public static DebugWindowDataDTO from(
-            TargetApplicationInnerElementRepresentation source) {
+	public List<MethodCallInStackDTO> getStackCall() {
+		return stackCall;
+	}
 
-        return buildFromAbstract(source);
-    }
+	public void setStackCall(List<MethodCallInStackDTO> stackCall) {
+		this.stackCall = stackCall;
+	}
 
-    private static DebugWindowDataDTO buildFromAbstract(
-            AbstractTargetAplicationElement source) {
+	/**
+	 * Фабричный метод для top-level элемента
+	 */
+	public static DebugWindowDataDTO from(TargetApplicationClassOrInterfaceRepresentation source) {
 
-        Set<DebugWindowDataDTO> innerDtos =
-                source.getInnerElements().stream()
-                        .map(DebugWindowDataDTO::fromAny)
-                        .collect(Collectors.toSet());
+		return buildFromAbstract(source);
+	}
 
-        return new DebugWindowDataDTO(
-                source.getElementName(),
-                source.getElementType(),
-                innerDtos
-        );
-    }
+	/**
+	 * Фабричный метод для inner элемента
+	 */
+	public static DebugWindowDataDTO from(TargetApplicationInnerElementRepresentation source) {
 
-    private static DebugWindowDataDTO fromAny(
-            AbstractTargetAplicationElement element) {
+		return buildFromAbstract(source);
+	}
 
-        if (element instanceof TargetApplicationClassOrInterfaceRepresentation top) {
-            return from(top);
-        }
+	private static DebugWindowDataDTO buildFromAbstract(AbstractTargetAplicationElement source) {
 
-        if (element instanceof TargetApplicationInnerElementRepresentation inner) {
-            return from(inner);
-        }
+		Set<DebugWindowDataDTO> innerDtos = source.getInnerElements().stream().map(DebugWindowDataDTO::fromAny)
+				.collect(Collectors.toSet());
 
-        throw new IllegalArgumentException("Unknown element type: " + element.getClass());
-    }
+		return new DebugWindowDataDTO(source.getElementName(), source.getElementType(), innerDtos);
+	}
+
+	private static DebugWindowDataDTO fromAny(AbstractTargetAplicationElement element) {
+
+		if (element instanceof TargetApplicationClassOrInterfaceRepresentation top) {
+			return from(top);
+		}
+
+		if (element instanceof TargetApplicationInnerElementRepresentation inner) {
+			return from(inner);
+		}
+
+		throw new IllegalArgumentException("Unknown element type: " + element.getClass());
+	}
 }
