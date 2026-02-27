@@ -48,7 +48,7 @@ public class FieldsAndVariablesTabContent {
             return type != null ? type.name() : "";
         });
         createColumn("Value", 300,dto -> {
-            String value = dto.getElementValue();
+            String value = dto.getValue();
             return value != null ? value : "";
         });
     }
