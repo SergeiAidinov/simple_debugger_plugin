@@ -1,7 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.swt.SWT;
@@ -16,7 +14,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -67,25 +64,28 @@ public class DebugWindow {
 
 		// ----------------- Top panel -----------------
 		Composite topPanel = new Composite(shell, SWT.NONE);
-		topPanel.setLayout(new GridLayout(3, false));
+		GridLayout topLayout = new GridLayout(2, false); // 2 колонки: label + кнопка
+		topLayout.marginWidth = 0;
+		topLayout.marginHeight = 0;
+		topPanel.setLayout(topLayout);
 		topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
+		// Label слева — занимает всё доступное пространство
 		locationLabel = new Label(topPanel, SWT.NONE);
 		locationLabel.setText(STOP_INFO);
-		locationLabel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+		locationLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-		Composite spacerComposite = new Composite(topPanel, SWT.NONE);
-		spacerComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-
+		// Кнопка Resume справа — не растягивается
 		resumeButton = new Button(topPanel, SWT.PUSH);
 		resumeButton.setText("Resume");
 		resumeButton.setEnabled(false);
-		GridData resumeButtonGridData = new GridData(SWT.RIGHT, SWT.TOP, false, false);
-		resumeButton.setLayoutData(resumeButtonGridData);
+		resumeButton.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false));
 
+		// Опционально: зафиксировать высоту панели по высоте кнопки + небольшой отступ
 		int buttonHeight = resumeButton.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
-		topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-		((GridData) topPanel.getLayoutData()).heightHint = buttonHeight + 10;
+		GridData topPanelGridData = new GridData(SWT.FILL, SWT.TOP, true, false);
+		topPanelGridData.heightHint = buttonHeight + 10;
+		topPanel.setLayoutData(topPanelGridData);
 
 		// ----------------- TAB folder -----------------
 		tabFolder = new CTabFolder(shell, SWT.BORDER);
