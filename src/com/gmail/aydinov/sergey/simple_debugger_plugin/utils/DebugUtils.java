@@ -236,7 +236,7 @@ public class DebugUtils {
 	/**
 	 * Converts Value to string safely handling null
 	 */
-	private static String valueToString(Value value) {
+	public static String valueToString(Value value) {
 		return Objects.isNull(value) ? "null" : value.toString();
 	}
 
