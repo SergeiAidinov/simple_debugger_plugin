@@ -24,6 +24,7 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationElement.TargetApplicationElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationInnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
@@ -340,13 +341,19 @@ public class DebugSessionImpl implements DebugSession {
 		 Set<DebugWindowDataDTO> innerElements = new HashSet<DebugWindowDataDTO>();
 		 Map<Field, Value> qq = DebugUtils.compileFields(currentFrame);
 		 Map<LocalVariable, Value> ww = DebugUtils.compileLocalVariables(currentFrame);
-		 for (TargetApplicationInnerElementRepresentation innerElementRepresentation : anchorElement.getInnerElements()) {
-			 DebugWindowDataDTO innerDebugWindowDataDTO = new DebugWindowDataDTO();
-			 innerDebugWindowDataDTO.setElementName(innerElementRepresentation.getElementName());
-			 innerDebugWindowDataDTO.setElementName(innerElementRepresentation.getElementName());
-			 System.out.println(DebugUtils.detectRuntimeValueKind(null));
-			 innerDebugWindowDataDTO.setValue(null);
-			 innerElements.add(innerDebugWindowDataDTO);
+		 Map<Field, Value> fields = DebugUtils.compileFields(currentFrame);
+
+		 for (Map.Entry<Field, Value> entry : fields.entrySet()) {
+		     Field field = entry.getKey();
+		     Value value = entry.getValue();
+
+		     DebugWindowDataDTO dto = new DebugWindowDataDTO();
+		     dto.setElementName(field.name());
+		     dto.setQualifiedTypeName(field.typeName());
+		     dto.setValue(DebugUtils.valueToString(value)); // ← ВОТ ОТКУДА VALUE
+		     dto.setElementType(TargetApplicationElementType.FIELD);
+
+		     innerElements.add(dto);
 		 }
 		 debugWindowDataDTO.setElementName(anchorElement.getElementName());
 		 debugWindowDataDTO.setElementType(anchorElement.getElementType());
