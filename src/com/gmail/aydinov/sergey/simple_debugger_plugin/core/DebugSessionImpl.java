@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -332,7 +333,12 @@ public class DebugSessionImpl implements DebugSession {
 				.resultOfMethodInvocation(methodInvocationResult.get()).build();
 		
 		 TargetApplicationClassOrInterfaceRepresentation ee = targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().get(location.declaringType());
-		 DebugWindowDataDTO debugWindowDataDTO = DebugWindowDataDTO.from(ee);
+		 DebugWindowDataDTO debugWindowDataDTO =  new DebugWindowDataDTO();
+		 debugWindowDataDTO.setElementName(ee.getElementName());
+		 debugWindowDataDTO.setElementType(ee.getElementType());
+		 debugWindowDataDTO.setQualifiedTypeName(null);
+		 debugWindowDataDTO.setElementValue(null);
+		 debugWindowDataDTO.setInnerElements(Collections.EMPTY_SET);
 		 debugWindowDataDTO.setLineNumber(location.lineNumber());
 		 debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(breakpointEvent.thread()));
 		 debugWindowDataDTO.setMethodName(location.method().name()+"(..)");
