@@ -342,7 +342,8 @@ public class DebugSessionImpl implements DebugSession {
 		 Map<Field, Value> qq = DebugUtils.compileFields(currentFrame);
 		 Map<LocalVariable, Value> ww = DebugUtils.compileLocalVariables(currentFrame);
 		 Map<Field, Value> fields = DebugUtils.compileFields(currentFrame);
-
+		 ReferenceType refType = location.declaringType();
+		 List<Method> methods = refType.methods();
 		 for (Map.Entry<Field, Value> entry : fields.entrySet()) {
 		     Field field = entry.getKey();
 		     Value value = entry.getValue();
@@ -351,7 +352,7 @@ public class DebugSessionImpl implements DebugSession {
 		     dto.setElementName(field.name());
 		     dto.setQualifiedTypeName(field.typeName());
 		     dto.setValue(DebugUtils.valueToString(value)); // ← ВОТ ОТКУДА VALUE
-		     dto.setElementType(TargetApplicationElementType.FIELD);
+		     dto.setElementType(TargetApplicationElementType.NON_STATIC_FIELD);
 
 		     innerElements.add(dto);
 		 }

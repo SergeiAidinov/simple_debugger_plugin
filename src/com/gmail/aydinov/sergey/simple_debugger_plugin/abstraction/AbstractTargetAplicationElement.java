@@ -25,7 +25,7 @@ public abstract class AbstractTargetAplicationElement {
 
 		METHOD,
 
-		VARIABLE, FIELD
+		VARIABLE
 	}
 
 	public static final Set<TargetApplicationElementType> OUTER_TYPES =
