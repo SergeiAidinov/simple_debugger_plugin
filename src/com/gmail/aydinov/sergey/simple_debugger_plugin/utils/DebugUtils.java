@@ -11,6 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.FieldOrVariableType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.RuntimeValueKind;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.sun.jdi.AbsentInformationException;
@@ -397,7 +398,7 @@ public class DebugUtils {
 	 * Determines if the DTO can be inspected (non-primitive, non-String, non-null)
 	 */
 	public static boolean isInspectable(DebugWindowDataDTO dto) {
-		if (dto == null || dto.getElementType() == null || dto.getElementValue() == null)
+		if (dto == null || dto.getElementType() == null || dto.getValue() == null)
 			return false;
 
 		switch (dto.getElementType().toString()) {
@@ -413,6 +414,50 @@ public class DebugUtils {
 	public static boolean isStandardJavaCollection(Object object) {
 	    if (Objects.isNull(object)) return false;
 	    return object instanceof java.util.Collection || object instanceof java.util.Map;
+	}
+	
+	public static RuntimeValueKind detectRuntimeValueKind(Value value) {
+	    if (value == null) {
+	        return RuntimeValueKind.NULL;
+	    }
+
+	    Type type = value.type();
+	    String typeName = type.name();
+
+	    // 1. Primitive
+	    if (type instanceof PrimitiveType) {
+	        return RuntimeValueKind.PRIMITIVE;
+	    }
+
+	    // 2. String
+	    if ("java.lang.String".equals(typeName)) {
+	        return RuntimeValueKind.STRING;
+	    }
+
+	    // 3. Array
+	    if (type instanceof com.sun.jdi.ArrayType) {
+	        return RuntimeValueKind.ARRAY;
+	    }
+
+	    // 4. Object (может быть коллекцией)
+	    if (value instanceof ObjectReference objRef) {
+	        ReferenceType refType = objRef.referenceType();
+
+	        // Проверяем стандартные коллекции
+	        String refName = refType.name();
+	        if (refName.startsWith("java.util.List")
+	            || refName.startsWith("java.util.Set")) {
+	            return RuntimeValueKind.COLLECTION;
+	        }
+
+	        if (refName.startsWith("java.util.Map")) {
+	            return RuntimeValueKind.MAP;
+	        }
+
+	        return RuntimeValueKind.OBJECT;
+	    }
+
+	    return RuntimeValueKind.UNKNOWN;
 	}
 
 }

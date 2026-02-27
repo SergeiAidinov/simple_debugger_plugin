@@ -3,7 +3,9 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -23,6 +25,7 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationInnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
@@ -332,21 +335,32 @@ public class DebugSessionImpl implements DebugSession {
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
 				.resultOfMethodInvocation(methodInvocationResult.get()).build();
 		
-		 TargetApplicationClassOrInterfaceRepresentation ee = targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().get(location.declaringType());
+		 TargetApplicationClassOrInterfaceRepresentation anchorElement = targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().get(location.declaringType());
 		 DebugWindowDataDTO debugWindowDataDTO =  new DebugWindowDataDTO();
-		 debugWindowDataDTO.setElementName(ee.getElementName());
-		 debugWindowDataDTO.setElementType(ee.getElementType());
-		 debugWindowDataDTO.setQualifiedTypeName(null);
-		 debugWindowDataDTO.setElementValue(null);
-		 debugWindowDataDTO.setInnerElements(Collections.EMPTY_SET);
+		 Set<DebugWindowDataDTO> innerElements = new HashSet<DebugWindowDataDTO>();
+		 Map<Field, Value> qq = DebugUtils.compileFields(currentFrame);
+		 Map<LocalVariable, Value> ww = DebugUtils.compileLocalVariables(currentFrame);
+		 for (TargetApplicationInnerElementRepresentation innerElementRepresentation : anchorElement.getInnerElements()) {
+			 DebugWindowDataDTO innerDebugWindowDataDTO = new DebugWindowDataDTO();
+			 innerDebugWindowDataDTO.setElementName(innerElementRepresentation.getElementName());
+			 innerDebugWindowDataDTO.setElementName(innerElementRepresentation.getElementName());
+			 System.out.println(DebugUtils.detectRuntimeValueKind(null));
+			 innerDebugWindowDataDTO.setValue(null);
+			 innerElements.add(innerDebugWindowDataDTO);
+		 }
+		 debugWindowDataDTO.setElementName(anchorElement.getElementName());
+		 debugWindowDataDTO.setElementType(anchorElement.getElementType());
+		 debugWindowDataDTO.setQualifiedTypeName(location.declaringType().name());
+		 debugWindowDataDTO.setValue(null);
+		 debugWindowDataDTO.setInnerElements(innerElements);
 		 debugWindowDataDTO.setLineNumber(location.lineNumber());
 		 debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(breakpointEvent.thread()));
 		 debugWindowDataDTO.setMethodName(location.method().name()+"(..)");
-		 for (DebugWindowDataDTO innerElement : debugWindowDataDTO.getInnerElements()) {
-			 innerElement.setElementValue("default_value");
-		 }
+//		 for (DebugWindowDataDTO innerElement : debugWindowDataDTO.getInnerElements()) {
+//			 innerElement.setValue("default_value");
+//		 }
 		 
-
+		System.out.println(debugWindowDataDTO);
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
