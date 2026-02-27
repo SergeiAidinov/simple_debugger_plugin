@@ -21,12 +21,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
  * Tab content that displays fields or local variables
  * of a selected class or stack frame.
  */
-public class FieldsAndVariablesTabContent {
+public class ClassMembersAtBreakpoint {
 
     private final Composite root;
     private final TableViewer viewer;
 
-    public FieldsAndVariablesTabContent(Composite parent) {
+    public ClassMembersAtBreakpoint(Composite parent) {
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(1, false));
 

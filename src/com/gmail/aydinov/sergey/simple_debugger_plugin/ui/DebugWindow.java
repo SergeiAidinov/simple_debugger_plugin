@@ -24,7 +24,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleTabContent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabController;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.FieldsAndVariablesTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ClassMembersAtBreakpoint;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
 
 /**
@@ -41,7 +41,7 @@ public class DebugWindow {
 	private CTabFolder tabFolder;
 
 	// Combined Variables + Fields tab
-	private FieldsAndVariablesTabContent variablesFieldsTabContent;
+	private ClassMembersAtBreakpoint variablesFieldsTabContent;
 	private StackTabContent stackTabContent;
 	private EvaluateTabController evaluateTabController;
 	private ConsoleTabContent consoleTabContent;
@@ -93,9 +93,9 @@ public class DebugWindow {
 		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		// Combined Variables + Fields tab
-		variablesFieldsTabContent = new FieldsAndVariablesTabContent(tabFolder);
+		variablesFieldsTabContent = new ClassMembersAtBreakpoint(tabFolder);
 		CTabItem varsFieldsTabItem = new CTabItem(tabFolder, SWT.NONE);
-		varsFieldsTabItem.setText("Fields and Variables");
+		varsFieldsTabItem.setText("Class Members at Breakpoint");
 		varsFieldsTabItem.setControl(variablesFieldsTabContent.getControl());
 
 		// Stack tab
