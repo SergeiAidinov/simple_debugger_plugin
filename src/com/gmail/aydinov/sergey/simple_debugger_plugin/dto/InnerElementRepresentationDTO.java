@@ -20,7 +20,15 @@ public class InnerElementRepresentationDTO {
         this.value = original.getValue();
     }
 
-    public String getName() {
+    public InnerElementRepresentationDTO(String name, String typeName, TargetApplicationElementType elementType,
+			String value) {
+		this.name = name;
+		this.typeName = typeName;
+		this.elementType = elementType;
+		this.value = value;
+	}
+
+	public String getName() {
         return name;
     }
 
