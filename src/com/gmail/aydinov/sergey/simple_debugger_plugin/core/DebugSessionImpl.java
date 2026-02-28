@@ -315,16 +315,7 @@ public class DebugSessionImpl implements DebugSession {
 				.getTargetApplicationSnapshot().get(location.declaringType());
 		if (Objects.isNull(anchorElement))
 			return false;
-		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO();
-		debugWindowDataDTO.setElementName(anchorElement.getElementName());
-		debugWindowDataDTO.setElementType(anchorElement.getElementType());
-		debugWindowDataDTO.setQualifiedTypeName(anchorElement.getFullQualifiedName());
-		debugWindowDataDTO.setInnerElements(anchorElement.getInnerElements());
-		debugWindowDataDTO.setLineNumber(location.lineNumber());
-		debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(breakpointEvent.thread()));
-		debugWindowDataDTO.setMethodName(location.method().name() + "(..)");
-
-		System.out.println(debugWindowDataDTO);
+		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(anchorElement, location);
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
 		simpleDebugEventCollector
