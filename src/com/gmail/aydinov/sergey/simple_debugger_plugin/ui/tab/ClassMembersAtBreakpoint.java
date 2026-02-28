@@ -64,11 +64,11 @@ public class ClassMembersAtBreakpoint {
                     TargetApplicationElementType type = element.getElementType();
                     if (type == null) return null;
                     switch (type) {
-                        case INTERFACE: return DebugWindowsManager.instance().icons.get("interface");
-                        case METHOD: return DebugWindowsManager.instance().icons.get("method");
-                        case STATIC_FIELD: return DebugWindowsManager.instance().icons.get("static_field");
-                        case VARIABLE: return DebugWindowsManager.instance().icons.get("variableIcon");
-                        case NON_STATIC_FIELD: return DebugWindowsManager.instance().icons.get("fieldIcon");
+                        case INTERFACE: return DebugWindowsManager.instance().icons.get("interface").getFirst();
+                        case METHOD: return DebugWindowsManager.instance().icons.get("method").getFirst();
+                        case STATIC_FIELD: return DebugWindowsManager.instance().icons.get("static_field").getFirst();
+                        case VARIABLE: return DebugWindowsManager.instance().icons.get("variableIcon").getFirst();
+                        case NON_STATIC_FIELD: return DebugWindowsManager.instance().icons.get("fieldIcon").getFirst();
                         default: return null;
                     }
                 });
