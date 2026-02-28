@@ -1,42 +1,27 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 import com.sun.jdi.ReferenceType;
 
 public abstract class AbstractTargetAplicationTopLevelElement extends AbstractElementRepresentation {
 
-	/**
-	 * Type of a target application element. Can be either a class or an interface.
-	 * <p>
-	 * Author: Sergei Aidinov <br>
-	 * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
-	 * </p>
-	 */
-	public enum TargetApplicationTopLevelElementType {
+	private static final EnumSet<ElementType> ALLOWED_TOP_LEVEL_TYPES = EnumSet.of(ElementType.CLASS,
+			ElementType.INTERFACE, ElementType.ENUM);
 
-		/** Represents an interface in the target application */
-		INTERFACE,
-
-		/** Represents a class in the target application */
-		CLASS,
-		
-		ENUM
-	}
-
-	private final TargetApplicationTopLevelElementType elementType;
 	private final Set<InnerElementRepresentation> innerElements;
 
-	public AbstractTargetAplicationTopLevelElement(ReferenceType referenceType, String elementName,
-			String fullQualifiedName, 
-			TargetApplicationTopLevelElementType elementType, Set<InnerElementRepresentation> innerElements) {
-		super(referenceType, elementName, fullQualifiedName);
-		this.elementType = elementType;
-		this.innerElements = innerElements;
-	}
+	protected AbstractTargetAplicationTopLevelElement(ReferenceType referenceType, String elementName,
+			String fullQualifiedName, ElementType elementType, Set<InnerElementRepresentation> innerElements) {
 
-	public TargetApplicationTopLevelElementType getElementType() {
-		return elementType;
+		super(referenceType, elementName, fullQualifiedName, elementType);
+
+		if (!ALLOWED_TOP_LEVEL_TYPES.contains(elementType)) {
+			throw new IllegalArgumentException("Invalid top-level element type: " + elementType);
+		}
+
+		this.innerElements = innerElements;
 	}
 
 	public Set<InnerElementRepresentation> getInnerElements() {

@@ -2,7 +2,6 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.Set;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationTopLevelElement.TargetApplicationTopLevelElementType;
 import com.sun.jdi.ReferenceType;
 
 /**
@@ -18,7 +17,7 @@ public class TopLevelElementRepresentation extends AbstractTargetAplicationTopLe
 	Set<InnerElementRepresentation> innerElements;
 
 	public TopLevelElementRepresentation(ReferenceType referenceType, String elementName, String fullQualifiedName,
-			TargetApplicationTopLevelElementType elementType, Set<InnerElementRepresentation> innerElements) {
+			ElementType elementType, Set<InnerElementRepresentation> innerElements) {
 		super(referenceType, elementName, fullQualifiedName, elementType, innerElements);
 	}
 
