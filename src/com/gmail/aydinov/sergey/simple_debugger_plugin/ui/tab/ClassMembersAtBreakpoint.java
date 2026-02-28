@@ -80,7 +80,7 @@ public class ClassMembersAtBreakpoint {
         );
 
         // Value (editable)
-        createColumn("Value", 300, InnerElementRepresentationDTO::getValue, dto -> null);
+        createColumn("Value / Info", 300, InnerElementRepresentationDTO::getValue, dto -> null);
     }
 
     private void createColumn(String title, int width,
@@ -183,10 +183,19 @@ public class ClassMembersAtBreakpoint {
         Set<InnerElementRepresentationDTO> innerElementsSet = parentDto.getInnerElements();
         if (innerElementsSet == null || innerElementsSet.isEmpty()) return;
 
-        List<InnerElementRepresentationDTO> innerElements = innerElementsSet.stream().toList();
+        List<InnerElementRepresentationDTO> sorted = innerElementsSet.stream()
+            .sorted((a, b) -> {
+                // сортируем по порядку в энуме
+                int cmp = Integer.compare(a.getElementType().ordinal(), b.getElementType().ordinal());
+                if (cmp != 0) return cmp;
+                // если тип одинаковый — по имени
+                return a.getName().compareTo(b.getName());
+            })
+            .toList();
+
         root.getDisplay().asyncExec(() -> {
             if (viewer.getTable().isDisposed()) return;
-            viewer.setInput(innerElements);
+            viewer.setInput(sorted);
         });
     }
 
