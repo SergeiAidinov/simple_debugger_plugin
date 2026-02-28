@@ -1,16 +1,10 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IStatus;
@@ -24,17 +18,15 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
@@ -124,8 +116,8 @@ public class DebugSessionImpl implements DebugSession {
 					AbstractUIEvent uiEvent = uiEventCollector.pollUiEvent();
 					if (Objects.isNull(uiEvent))
 						continue;
-//					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
-//							.refreshBreakpoints();
+					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
+							.refreshBreakpoints();
 					handleBreakpointEvent(breakpointEvent, uiEvent);
 					if (DebuggerContext.context().isRunning()) {
 						updateUI(breakpointEvent);
@@ -217,9 +209,6 @@ public class DebugSessionImpl implements DebugSession {
 				|| DebuggerContext.context().isInspectionSeanceActive())
 			return;
 		Optional<TopLevelElementRepresentation> anchorOptional = Optional.empty();
-//				targetApplicationRepresentation
-//				.getTargetApplicationSnapshot().values().stream()
-//				.filter(e -> e.getElementName().equals(event.getType())).findAny();
 		if (anchorOptional.isEmpty()) {
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_STOPPED);
 			return;
@@ -298,8 +287,6 @@ public class DebugSessionImpl implements DebugSession {
 							methodArguments, ClassType.INVOKE_SINGLE_THREADED);
 
 			methodInvocationResult.set(String.valueOf(result));
-//			simpleDebugEventCollector.collectDebugEvent(new BackendMethodExecutedEvent(
-//					SimpleDebuggerEventTypes.EventType.METHOD_INVOKE, methodInvocationResult.get()));
 			simpleDebugEventCollector.collectDebugEvent(new DebugEvent<String>(
 					SimpleDebuggerEventTypes.SimpleDebuggerEventType.METHOD_INVOKE, methodInvocationResult.get()));
 		} catch (Exception exception) {
@@ -324,54 +311,24 @@ public class DebugSessionImpl implements DebugSession {
 			return false;
 
 		Location location = breakpointEvent.location();
+		TopLevelElementRepresentation anchorElement = (TopLevelElementRepresentation) targetApplicationRepresentation
+				.getTargetApplicationSnapshot().get(location.declaringType());
+		if (Objects.isNull(anchorElement))
+			return false;
+		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO();
+		debugWindowDataDTO.setElementName(anchorElement.getElementName());
+		debugWindowDataDTO.setElementType(anchorElement.getElementType());
+		debugWindowDataDTO.setQualifiedTypeName(anchorElement.getFullQualifiedName());
+		debugWindowDataDTO.setInnerElements(anchorElement.getInnerElements());
+		debugWindowDataDTO.setLineNumber(location.lineNumber());
+		debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(breakpointEvent.thread()));
+		debugWindowDataDTO.setMethodName(location.method().name() + "(..)");
 
-		DebugStoppedAtBreakpointDTO debugStoppedAtBreakpointDTO = new DebugStoppedAtBreakpointDTO.Builder()
-				// .type(EventType.STOPPED_AT_BREAKPOINT)
-				.className(location.declaringType().name()).methodName(location.method().name())
-				.lineNumber(location.lineNumber()).fields(DebugUtils.mapFields(DebugUtils.compileFields(currentFrame)))
-				.locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(currentFrame)))
-				.stackTrace(methodInvocationResult.get())
-//				.targetApplicationElements(
-//						discardVoidMethods(targetApplicationRepresentation.getTargetApplicationElements()))
-				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
-				.resultOfMethodInvocation(methodInvocationResult.get()).build();
-		
-		 TopLevelElementRepresentation anchorElement = (TopLevelElementRepresentation) targetApplicationRepresentation.getTargetApplicationSnapshot().get(location.declaringType());
-		 if (Objects.isNull(anchorElement)) return false;
-		 DebugWindowDataDTO debugWindowDataDTO =  new DebugWindowDataDTO();
-//		 Set<DebugWindowDataDTO> innerElements = new HashSet<DebugWindowDataDTO>();
-//		 Map<Field, Value> qq = DebugUtils.compileFields(currentFrame);
-//		 Map<LocalVariable, Value> ww = DebugUtils.compileLocalVariables(currentFrame);
-//		 Map<Field, Value> fields = DebugUtils.compileFields(currentFrame);
-//		 ReferenceType refType = location.declaringType();
-//		 List<Method> methods = refType.methods();
-//		 for (Map.Entry<Field, Value> entry : fields.entrySet()) {
-//		     Field field = entry.getKey();
-//		     Value value = entry.getValue();
-//
-//		     DebugWindowDataDTO dto = new DebugWindowDataDTO();
-//		     dto.setElementName(field.name());
-//		     dto.setQualifiedTypeName(field.typeName());
-//		     dto.setValue(DebugUtils.valueToString(value)); // ← ВОТ ОТКУДА VALUE
-//		    // dto.setElementType(TargetApplicationTopLevelElementType.NON_STATIC_FIELD);
-//
-//		     innerElements.add(dto);
-//		 }
-		 debugWindowDataDTO.setElementName(anchorElement.getElementName());
-		 debugWindowDataDTO.setElementType(anchorElement.getElementType());
-		 debugWindowDataDTO.setQualifiedTypeName(anchorElement.getFullQualifiedName());
-		 debugWindowDataDTO.setInnerElements(anchorElement.getInnerElements());
-		 debugWindowDataDTO.setLineNumber(location.lineNumber());
-		 debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(breakpointEvent.thread()));
-		 debugWindowDataDTO.setMethodName(location.method().name()+"(..)");
-//		 for (DebugWindowDataDTO innerElement : debugWindowDataDTO.getInnerElements()) {
-//			 innerElement.setValue("default_value");
-//		 }
-		 
 		System.out.println(debugWindowDataDTO);
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
-		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+		simpleDebugEventCollector
+				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
@@ -391,21 +348,8 @@ public class DebugSessionImpl implements DebugSession {
 		return true;
 	}
 
-	private List<TopLevelElementRepresentation> discardVoidMethods(
-			List<TopLevelElementRepresentation> targetElements) {
-		
+	private List<TopLevelElementRepresentation> discardVoidMethods(List<TopLevelElementRepresentation> targetElements) {
 		return targetElements;
-//			
-//		List<TargetApplicationClassOrInterfaceRepresentation> withoutVoidMethods = new ArrayList<>();
-//		for (TargetApplicationClassOrInterfaceRepresentation element : targetApplicationRepresentation
-//				.getTargetApplicationElements()) {
-//			TargetApplicationClassOrInterfaceRepresentation copy = element.clone();
-//			Set<TargetApplicationMethodDTO> nonVoidMethods = element.getMethods().stream()
-//					.filter(m -> !"void".equals(m.getReturnType())).collect(Collectors.toSet());
-//			copy.setMethods(nonVoidMethods);
-//			withoutVoidMethods.add(copy);
-//		}
-//		return withoutVoidMethods;
 	}
 
 	private ITextEditor openEditorForLocation(Location location) throws Exception {
