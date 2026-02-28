@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,6 +19,8 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.TargetApplicationElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
@@ -27,6 +30,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.Inspectio
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
@@ -42,6 +46,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLog
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
+import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -316,6 +321,29 @@ public class DebugSessionImpl implements DebugSession {
 		if (Objects.isNull(anchorElement))
 			return false;
 		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(anchorElement, location);
+		ThreadReference thread = breakpointEvent.thread();
+		StackFrame frame = null;
+		try {
+			frame = thread.frame(0);
+		} catch (IncompatibleThreadStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
+
+		List<InnerElementRepresentationDTO> localVariables = locals.entrySet().stream().map(entry -> {
+			LocalVariable var = entry.getKey();
+			Value value = entry.getValue();
+			return new InnerElementRepresentationDTO(var.name(), // имя переменной
+					var.typeName(), // тип
+					TargetApplicationElementType.VARIABLE, // вид элемента
+					value != null ? value.toString() : "null" // значение
+			);
+		}).toList();
+
+		if (!localVariables.isEmpty()) {
+			debugWindowDataDTO.getInnerElements().addAll(localVariables);
+		}
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
 		simpleDebugEventCollector
