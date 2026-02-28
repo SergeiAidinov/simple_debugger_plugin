@@ -59,8 +59,13 @@ public class ClassMembersAtBreakpoint {
 
         // 3. Value (temporary default)
         createColumn("Value", 300,
-                element -> "—"
-        );
+        	    element -> {
+        	        if (element instanceof InnerElementRepresentation inner) {
+        	            return inner.getValue(); // берем реальное значение
+        	        }
+        	        return "";
+        	    }
+        	);
     }
 
     private void createColumn(

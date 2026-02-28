@@ -359,7 +359,6 @@ public class DebugSessionImpl implements DebugSession {
 		 debugWindowDataDTO.setElementName(anchorElement.getElementName());
 		 debugWindowDataDTO.setElementType(anchorElement.getElementType());
 		 debugWindowDataDTO.setQualifiedTypeName(anchorElement.getFullQualifiedName());
-		// debugWindowDataDTO.setValue(null);
 		 debugWindowDataDTO.setInnerElements(anchorElement.getInnerElements());
 		 debugWindowDataDTO.setLineNumber(location.lineNumber());
 		 debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(breakpointEvent.thread()));
