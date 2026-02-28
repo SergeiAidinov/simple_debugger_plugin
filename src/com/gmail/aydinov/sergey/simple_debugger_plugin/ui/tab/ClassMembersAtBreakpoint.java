@@ -36,6 +36,17 @@ public class ClassMembersAtBreakpoint {
     private final Composite root;
     private final TableViewer viewer;
     private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+    private static final Set<String> JAVA_STANDARD_TYPES = Set.of(
+    	    "java.lang.String",
+    	    "java.lang.Integer",
+    	    "java.lang.Long",
+    	    "java.lang.Short",
+    	    "java.lang.Byte",
+    	    "java.lang.Float",
+    	    "java.lang.Double",
+    	    "java.lang.Boolean",
+    	    "java.lang.Character"
+    	);
 
     public ClassMembersAtBreakpoint(Composite parent) {
         root = new Composite(parent, SWT.NONE);
@@ -80,7 +91,20 @@ public class ClassMembersAtBreakpoint {
         );
 
         // Value (editable)
-        createColumn("Value / Info", 300, InnerElementRepresentationDTO::getValue, dto -> null);
+        createColumn("Value / Info", 300,
+        	    InnerElementRepresentationDTO::getValue,
+        	    dto -> {
+        	        String typeName = dto.getTypeName();
+        	        if (typeName != null
+        	                && !JAVA_STANDARD_TYPES.contains(typeName)
+        	                && (dto.getElementType() == TargetApplicationElementType.NON_STATIC_FIELD
+        	                    || dto.getElementType() == TargetApplicationElementType.VARIABLE)) {
+        	            // Для пользовательских объектов добавляем значок "inspect"
+        	            return DebugWindowsManager.instance().icons.get("inspectIcon"); // Pair<Image, tooltip>
+        	        }
+        	        return null;
+        	    }
+        	);
     }
 
     private void createColumn(String title, int width,
