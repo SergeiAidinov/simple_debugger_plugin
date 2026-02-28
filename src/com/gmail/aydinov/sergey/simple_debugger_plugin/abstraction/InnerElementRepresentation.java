@@ -51,7 +51,20 @@ public class InnerElementRepresentation extends AbstractInnerElementRepresentati
 				return DebugUtils.valueToString(val);
 			}
 			case METHOD -> {
-				return "[method]";
+			    try {
+			        com.sun.jdi.Method method = referenceType.methodsByName(getElementName())
+			                                                 .stream().findFirst().orElse(null);
+			        if (method == null) return "[method not found]";
+
+			        String params = method.argumentTypes().stream()
+			                              .map(com.sun.jdi.Type::name)
+			                              .reduce((a, b) -> a + ", " + b)
+			                              .orElse("");
+
+			        return method.name() + "(" + params + ")"; // будет в колонке Value / Info
+			    } catch (Exception e) {
+			        return "[error]";
+			    }
 			}
 			}
 		} catch (Exception e) {

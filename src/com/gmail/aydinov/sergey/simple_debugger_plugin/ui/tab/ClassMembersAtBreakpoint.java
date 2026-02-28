@@ -57,10 +57,10 @@ public class ClassMembersAtBreakpoint {
     /** Настройка колонок таблицы */
     private void setupColumns() {
         // Name
-        createColumn("Name", 200, InnerElementRepresentationDTO::getName, dto -> null);
+        createColumn("Name", 120, InnerElementRepresentationDTO::getName, dto -> null);
 
         // Type с иконкой и подсказкой
-        createColumn("Type", 120,
+        createColumn("Type / Return Type", 200,
             InnerElementRepresentationDTO::getTypeName,
             dto -> {
                 TargetApplicationElementType type = dto.getElementType();
