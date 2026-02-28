@@ -41,6 +41,7 @@ import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VMDisconnectedException;
+import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.EventRequestManager;
 
@@ -113,10 +114,27 @@ public class TargetApplicationRepresentation {
 	    Set<InnerElementRepresentation> innerElements = new HashSet<>();
 
 	    // --- поля ---
+	    ObjectReference instance = null;
+	    if (refType instanceof ClassType classType) {
+	        try {
+	            List<ObjectReference> instances = classType.instances(1);
+	            if (!instances.isEmpty()) {
+	                instance = instances.get(0); // первый доступный объект
+	            }
+	        } catch (Exception ignored) {}
+	    }
+
+	    
 	    for (Field field : refType.allFields()) {
+//	    	Value value = null;
+//		    if (instance != null) {
+//		        try {
+//		            value = instance.getValue(field);
+//		        } catch (Exception ignored) {}
+//		    }
 	        InnerElementRepresentation fieldElement =
 	               new InnerElementRepresentation(
-	                        refType, field.name(), field.name(), ElementType.NON_STATIC_FIELD);
+	                        refType, instance, field.name(), field.name(), ElementType.NON_STATIC_FIELD);
 	        innerElements.add(fieldElement);
 	    }
 
@@ -125,7 +143,7 @@ public class TargetApplicationRepresentation {
 	        if (method.isNative() || "<init>".equals(method.name())) continue;
 	        InnerElementRepresentation methodElement =
 	               new InnerElementRepresentation (
-	                        refType, method.name(), method.name(), ElementType.METHOD);
+	                        refType, instance, method.name(), method.name(), ElementType.METHOD);
 	        innerElements.add(methodElement);
 	    }
 
