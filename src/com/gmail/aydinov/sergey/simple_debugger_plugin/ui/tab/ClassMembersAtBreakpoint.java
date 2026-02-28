@@ -8,9 +8,9 @@ import java.util.function.Function;
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.jface.viewers.TextCellEditor;
@@ -20,6 +20,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
@@ -38,48 +39,53 @@ public class ClassMembersAtBreakpoint {
 
     public ClassMembersAtBreakpoint(Composite parent) {
         root = new Composite(parent, SWT.NONE);
-        root.setLayout(new GridLayout(1, false));
+        root.setLayout(new org.eclipse.swt.layout.GridLayout(1, false));
 
         Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION);
         table.setHeaderVisible(true);
         table.setLinesVisible(true);
-        table.setLayoutData(new GridData(GridData.FILL_BOTH));
+        table.setLayoutData(new org.eclipse.swt.layout.GridData(org.eclipse.swt.layout.GridData.FILL_BOTH));
 
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
 
         setupColumns();
         setupCellModifier();
+        setupTooltips(table);
     }
 
     /** Настройка колонок таблицы */
     private void setupColumns() {
         // Name
-        createColumn("Name", 200, InnerElementRepresentationDTO::getName);
+        createColumn("Name", 200, InnerElementRepresentationDTO::getName, dto -> null);
 
-        // Type с иконкой
+        // Type с иконкой и подсказкой
         createColumn("Type", 120,
-                InnerElementRepresentationDTO::getTypeName,
-                element -> {
-                    TargetApplicationElementType type = element.getElementType();
-                    if (type == null) return null;
-                    switch (type) {
-                        case INTERFACE: return DebugWindowsManager.instance().icons.get("interface").getFirst();
-                        case METHOD: return DebugWindowsManager.instance().icons.get("method").getFirst();
-                        case STATIC_FIELD: return DebugWindowsManager.instance().icons.get("static_field").getFirst();
-                        case VARIABLE: return DebugWindowsManager.instance().icons.get("variableIcon").getFirst();
-                        case NON_STATIC_FIELD: return DebugWindowsManager.instance().icons.get("fieldIcon").getFirst();
-                        default: return null;
-                    }
-                });
+            InnerElementRepresentationDTO::getTypeName,
+            dto -> {
+                TargetApplicationElementType type = dto.getElementType();
+                if (type == null) return null;
+
+                String iconKey = switch (type) {
+                    case INTERFACE -> "interface";
+                    case METHOD -> "method";
+                    case STATIC_FIELD -> "static_field";
+                    case VARIABLE -> "variableIcon";
+                    case NON_STATIC_FIELD -> "fieldIcon";
+                    default -> null;
+                };
+                if (iconKey == null) return null;
+                return DebugWindowsManager.instance().icons.get(iconKey); // Pair<Image, tooltip>
+            }
+        );
 
         // Value (editable)
-        createColumn("Value", 300, InnerElementRepresentationDTO::getValue);
+        createColumn("Value", 300, InnerElementRepresentationDTO::getValue, dto -> null);
     }
 
     private void createColumn(String title, int width,
                               Function<InnerElementRepresentationDTO, String> textExtractor,
-                              Function<InnerElementRepresentationDTO, Image> imageExtractor) {
+                              Function<InnerElementRepresentationDTO, PairDTO<Image, String>> imageExtractor) {
 
         TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
         column.getColumn().setText(title);
@@ -99,11 +105,24 @@ public class ClassMembersAtBreakpoint {
             @Override
             public Image getImage(Object element) {
                 if (element instanceof InnerElementRepresentationDTO dto) {
-                    return imageExtractor.apply(dto);
+                    PairDTO<Image, String> pair = imageExtractor.apply(dto);
+                    if (pair != null) {
+                        // сохраняем подсказку в TableItem
+                        TableItem item = findTableItem(dto);
+                        if (item != null) item.setData("tooltip", pair.getSecond());
+                        return pair.getFirst();
+                    }
                 }
                 return null;
             }
         });
+    }
+
+    private TableItem findTableItem(InnerElementRepresentationDTO dto) {
+        for (TableItem item : viewer.getTable().getItems()) {
+            if (item.getData() == dto) return item;
+        }
+        return null;
     }
 
     private void createColumn(String title, int width, Function<InnerElementRepresentationDTO, String> extractor) {
@@ -132,22 +151,15 @@ public class ClassMembersAtBreakpoint {
             @Override
             public void modify(Object element, String property, Object newValue) {
                 if (!(element instanceof TableItem item)) return;
-
                 InnerElementRepresentationDTO dto = (InnerElementRepresentationDTO) item.getData();
-                if (Objects.isNull(dto) || Objects.isNull(newValue)) return;
+                if (dto == null || newValue == null) return;
 
                 String newValStr = newValue.toString();
-
-                // Разделяем поля и локальные переменные
                 switch (dto.getElementType()) {
                     case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, newValStr);
                     case VARIABLE -> updateVariableValue(dto, newValStr);
-                    default -> {
-                        return; // остальные типы редактировать нельзя
-                    }
+                    default -> {}
                 }
-
-               // dto.setValue(newValStr);
                 viewer.update(dto, null);
             }
         });
@@ -155,36 +167,41 @@ public class ClassMembersAtBreakpoint {
 
     /** Обновление значения поля класса */
     private void updateFieldValue(InnerElementRepresentationDTO dto, String newValue) {
-        UserChangedFieldEventDTO eventDTO = new UserChangedFieldEventDTO(
-                dto.getName(),
-                dto.getTypeName(),
-                newValue
-        );
+        UserChangedFieldEventDTO eventDTO = new UserChangedFieldEventDTO(dto.getName(), dto.getTypeName(), newValue);
         uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CHANGED_FIELD, eventDTO));
     }
 
     /** Обновление значения локальной переменной */
     private void updateVariableValue(InnerElementRepresentationDTO dto, String newValue) {
-        UserChangedVariableEventDTO eventDTO = new UserChangedVariableEventDTO(
-                dto.getName(),
-                dto.getTypeName(),
-                newValue
-        );
+        UserChangedVariableEventDTO eventDTO = new UserChangedVariableEventDTO(dto.getName(), dto.getTypeName(), newValue);
         uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CHANGED_VARIABLE, eventDTO));
     }
 
     /** Показывает внутренние элементы DTO в таблице */
     public void showInnerElements(DebugWindowDataDTO parentDto) {
         if (parentDto == null) return;
-
         Set<InnerElementRepresentationDTO> innerElementsSet = parentDto.getInnerElements();
         if (innerElementsSet == null || innerElementsSet.isEmpty()) return;
 
         List<InnerElementRepresentationDTO> innerElements = innerElementsSet.stream().toList();
-
         root.getDisplay().asyncExec(() -> {
             if (viewer.getTable().isDisposed()) return;
             viewer.setInput(innerElements);
+        });
+    }
+
+    /** Настройка отображения подсказок при наведении */
+    private void setupTooltips(Table table) {
+        table.addListener(SWT.MouseHover, new Listener() {
+            @Override
+            public void handleEvent(Event event) {
+                TableItem item = table.getItem(new org.eclipse.swt.graphics.Point(event.x, event.y));
+                if (item != null && item.getData("tooltip") instanceof String tip) {
+                    table.setToolTipText(tip);
+                } else {
+                    table.setToolTipText(null);
+                }
+            }
         });
     }
 
