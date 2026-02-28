@@ -157,7 +157,7 @@ public class DebugWindow {
 	 * Opens the debugger window and sets the window icon.
 	 */
 	protected void open() {
-		shell.setImage(DebugWindowsManager.instance().icons.get("debugger")); // Set icon for the window
+		shell.setImage(DebugWindowsManager.instance().icons.get("debugger").getFirst()); // Set icon for the window
 		shell.open();
 	}
 

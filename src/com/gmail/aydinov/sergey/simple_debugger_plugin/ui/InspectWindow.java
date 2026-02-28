@@ -55,7 +55,7 @@ public class InspectWindow {
         shell.setLayout(new GridLayout(2, true));
 
         // --- Иконка ---
-        shell.setImage(DebugWindowsManager.instance().icons.get("debugger"));
+        shell.setImage(DebugWindowsManager.instance().icons.get("debugger").getFirst());
 
         // --- Обработчик закрытия окна ---
         shell.addListener(SWT.Close, e -> {
