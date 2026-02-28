@@ -7,20 +7,20 @@ import com.sun.jdi.ReferenceType;
 public abstract class AbstractInnerElementRepresentation
         extends AbstractElementRepresentation {
 
-    private static final EnumSet<ElementType> ALLOWED_ELEMENT_TYPES =
+    private static final EnumSet<TargetApplicationElementType> ALLOWED_ELEMENT_TYPES =
             EnumSet.of(
-                    ElementType.STATIC_FIELD,
-                    ElementType.NON_STATIC_FIELD,
-                    ElementType.METHOD
+                    TargetApplicationElementType.STATIC_FIELD,
+                    TargetApplicationElementType.NON_STATIC_FIELD,
+                    TargetApplicationElementType.METHOD
             );
 
-    private final ElementType elementType;
+    private final TargetApplicationElementType elementType;
 
     protected AbstractInnerElementRepresentation(
             ReferenceType outerElementReference,
             String elementName,
             String fullQualifiedName,
-            ElementType elementType) {
+            TargetApplicationElementType elementType) {
 
         super(outerElementReference, elementName, fullQualifiedName, elementType);
 
@@ -34,7 +34,7 @@ public abstract class AbstractInnerElementRepresentation
         this.elementType = elementType;
     }
 
-    public ElementType getElementType() {
+    public TargetApplicationElementType getElementType() {
         return elementType;
     }
 }

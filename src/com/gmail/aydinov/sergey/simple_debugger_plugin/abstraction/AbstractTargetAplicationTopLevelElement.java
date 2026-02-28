@@ -7,13 +7,13 @@ import com.sun.jdi.ReferenceType;
 
 public abstract class AbstractTargetAplicationTopLevelElement extends AbstractElementRepresentation {
 
-	private static final EnumSet<ElementType> ALLOWED_TOP_LEVEL_TYPES = EnumSet.of(ElementType.CLASS,
-			ElementType.INTERFACE, ElementType.ENUM);
+	private static final EnumSet<TargetApplicationElementType> ALLOWED_TOP_LEVEL_TYPES = EnumSet.of(TargetApplicationElementType.CLASS,
+			TargetApplicationElementType.INTERFACE, TargetApplicationElementType.ENUM);
 
 	private final Set<InnerElementRepresentation> innerElements;
 
 	protected AbstractTargetAplicationTopLevelElement(ReferenceType referenceType, String elementName,
-			String fullQualifiedName, ElementType elementType, Set<InnerElementRepresentation> innerElements) {
+			String fullQualifiedName, TargetApplicationElementType elementType, Set<InnerElementRepresentation> innerElements) {
 
 		super(referenceType, elementName, fullQualifiedName, elementType);
 

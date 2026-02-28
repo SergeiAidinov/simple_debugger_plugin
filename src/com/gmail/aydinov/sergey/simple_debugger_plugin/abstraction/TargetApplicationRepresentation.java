@@ -30,7 +30,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMeth
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.ElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.TargetApplicationElementType;
 import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -89,7 +89,7 @@ public class TargetApplicationRepresentation {
 
 	    // 4. Обрабатываем каждый top-level элемент
 	    for (ReferenceType refType : definedByLoaders) {
-	        ElementType elementType = determineElementType(refType);
+	        TargetApplicationElementType elementType = determineElementType(refType);
 	        if (elementType == null) continue;
 
 	        // Создаём top-level элемент через фабрику
@@ -113,53 +113,61 @@ public class TargetApplicationRepresentation {
 	private void populateInnerElements(AbstractTargetAplicationTopLevelElement parentElement, ReferenceType refType) {
 	    Set<InnerElementRepresentation> innerElements = new HashSet<>();
 
-	    // --- поля ---
 	    ObjectReference instance = null;
 	    if (refType instanceof ClassType classType) {
 	        try {
+	            // Берём первый доступный объект для нестатических полей
 	            List<ObjectReference> instances = classType.instances(1);
 	            if (!instances.isEmpty()) {
-	                instance = instances.get(0); // первый доступный объект
+	                instance = instances.get(0);
 	            }
 	        } catch (Exception ignored) {}
 	    }
 
-	    
+	    // --- поля ---
 	    for (Field field : refType.allFields()) {
-//	    	Value value = null;
-//		    if (instance != null) {
-//		        try {
-//		            value = instance.getValue(field);
-//		        } catch (Exception ignored) {}
-//		    }
-	        InnerElementRepresentation fieldElement =
-	               new InnerElementRepresentation(
-	                        refType, instance, field.name(), field.name(), ElementType.NON_STATIC_FIELD);
-	        innerElements.add(fieldElement);
+	        try {
+	            if (field.isSynthetic()) continue;
+
+	            TargetApplicationElementType elementType = field.isStatic() ?
+	                    TargetApplicationElementType.STATIC_FIELD :
+	                    TargetApplicationElementType.NON_STATIC_FIELD;
+
+	            ObjectReference fieldInstance = field.isStatic() ? null : instance;
+	            String valueString = null;
+
+	            // Получаем значение поля
+	            try {
+	                Value value = field.isStatic() ? refType.getValue(field) : (instance != null ? instance.getValue(field) : null);
+	                valueString = value != null ? value.toString() : "—";
+	            } catch (Exception ignored) {}
+
+	            InnerElementRepresentation fieldElement = new InnerElementRepresentation(
+	                    refType,
+	                    fieldInstance,
+	                    field.name(),
+	                    valueString,
+	                    elementType
+	            );
+
+	            innerElements.add(fieldElement);
+	        } catch (Exception ignored) {}
 	    }
 
 	    // --- методы ---
 	    for (Method method : refType.allMethods()) {
-	        if (method.isNative() || "<init>".equals(method.name())) continue;
-	        InnerElementRepresentation methodElement =
-	               new InnerElementRepresentation (
-	                        refType, instance, method.name(), method.name(), ElementType.METHOD);
+	        if (method.isNative() || "<init>".equals(method.name()) || method.isSynthetic()) continue;
+
+	        InnerElementRepresentation methodElement = new InnerElementRepresentation(
+	                refType,
+	                null,
+	                method.name(),
+	                method.name(),
+	                TargetApplicationElementType.METHOD
+	        );
+
 	        innerElements.add(methodElement);
 	    }
-
-	    // --- внутренние классы ---
-//	    for (ReferenceType nestedRef : refType.nestedTypes()) {
-//	        TargetApplicationTopLevelElementType nestedType = determineElementType(nestedRef);
-//	        if (nestedType == null) continue;
-//
-//	        InnerElementRepresentation nestedElement =
-//	               new InnerElementRepresentation (
-//	                        nestedRef, nestedRef.name(), nestedType);
-//
-//	        // рекурсивно обрабатываем внутренние элементы этого nestedRef
-//	        populateInnerElements(nestedElement, nestedRef);
-//	        innerElements.add(nestedElement);
-//	    }
 
 	    // --- сохраняем во внутренние элементы родителя ---
 	    parentElement.getInnerElements().addAll(innerElements);
@@ -219,12 +227,12 @@ public class TargetApplicationRepresentation {
 		return result;
 	}
 
-	private ElementType determineElementType(ReferenceType referenceType) {
+	private TargetApplicationElementType determineElementType(ReferenceType referenceType) {
 		if (referenceType instanceof ClassType) {
-			return ElementType.CLASS;
+			return TargetApplicationElementType.CLASS;
 		}
 		if (referenceType instanceof InterfaceType) {
-			return ElementType.INTERFACE;
+			return TargetApplicationElementType.INTERFACE;
 		}
 		return null;
 	}

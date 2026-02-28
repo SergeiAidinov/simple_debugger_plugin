@@ -17,7 +17,7 @@ public class TopLevelElementRepresentation extends AbstractTargetAplicationTopLe
 	Set<InnerElementRepresentation> innerElements;
 
 	public TopLevelElementRepresentation(ReferenceType referenceType, String elementName, String fullQualifiedName,
-			ElementType elementType, Set<InnerElementRepresentation> innerElements) {
+			TargetApplicationElementType elementType, Set<InnerElementRepresentation> innerElements) {
 		super(referenceType, elementName, fullQualifiedName, elementType, innerElements);
 	}
 

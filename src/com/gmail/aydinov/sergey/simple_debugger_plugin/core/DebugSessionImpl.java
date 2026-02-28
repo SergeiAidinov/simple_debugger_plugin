@@ -337,6 +337,7 @@ public class DebugSessionImpl implements DebugSession {
 				.resultOfMethodInvocation(methodInvocationResult.get()).build();
 		
 		 TopLevelElementRepresentation anchorElement = (TopLevelElementRepresentation) targetApplicationRepresentation.getTargetApplicationSnapshot().get(location.declaringType());
+		 if (Objects.isNull(anchorElement)) return false;
 		 DebugWindowDataDTO debugWindowDataDTO =  new DebugWindowDataDTO();
 //		 Set<DebugWindowDataDTO> innerElements = new HashSet<DebugWindowDataDTO>();
 //		 Map<Field, Value> qq = DebugUtils.compileFields(currentFrame);
