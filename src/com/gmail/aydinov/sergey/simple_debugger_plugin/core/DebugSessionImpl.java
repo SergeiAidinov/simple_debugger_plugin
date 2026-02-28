@@ -24,9 +24,9 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationElement.TargetApplicationElementType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationInnerElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationTopLevelElement.TargetApplicationTopLevelElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
@@ -217,9 +217,10 @@ public class DebugSessionImpl implements DebugSession {
 		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
 				|| DebuggerContext.context().isInspectionSeanceActive())
 			return;
-		Optional<TargetApplicationClassOrInterfaceRepresentation> anchorOptional = targetApplicationRepresentation
-				.getTargetApplicationElements().stream()
-				.filter(e -> e.getElementName().equals(event.getType())).findAny();
+		Optional<TopLevelElementRepresentation> anchorOptional = Optional.empty();
+//				targetApplicationRepresentation
+//				.getTargetApplicationSnapshot().values().stream()
+//				.filter(e -> e.getElementName().equals(event.getType())).findAny();
 		if (anchorOptional.isEmpty()) {
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_STOPPED);
 			return;
@@ -331,36 +332,36 @@ public class DebugSessionImpl implements DebugSession {
 				.lineNumber(location.lineNumber()).fields(DebugUtils.mapFields(DebugUtils.compileFields(currentFrame)))
 				.locals(DebugUtils.mapLocals(DebugUtils.compileLocalVariables(currentFrame)))
 				.stackTrace(methodInvocationResult.get())
-				.targetApplicationElements(
-						discardVoidMethods(targetApplicationRepresentation.getTargetApplicationElements()))
+//				.targetApplicationElements(
+//						discardVoidMethods(targetApplicationRepresentation.getTargetApplicationElements()))
 				.methodCallInStacks(DebugUtils.compileStackInfo(breakpointEvent.thread()))
 				.resultOfMethodInvocation(methodInvocationResult.get()).build();
 		
-		 TargetApplicationClassOrInterfaceRepresentation anchorElement = targetApplicationRepresentation.getReferencesAtClassesAndInterfaces().get(location.declaringType());
+		 TopLevelElementRepresentation anchorElement = (TopLevelElementRepresentation) targetApplicationRepresentation.getTargetApplicationSnapshot().get(location.declaringType());
 		 DebugWindowDataDTO debugWindowDataDTO =  new DebugWindowDataDTO();
-		 Set<DebugWindowDataDTO> innerElements = new HashSet<DebugWindowDataDTO>();
-		 Map<Field, Value> qq = DebugUtils.compileFields(currentFrame);
-		 Map<LocalVariable, Value> ww = DebugUtils.compileLocalVariables(currentFrame);
-		 Map<Field, Value> fields = DebugUtils.compileFields(currentFrame);
-		 ReferenceType refType = location.declaringType();
-		 List<Method> methods = refType.methods();
-		 for (Map.Entry<Field, Value> entry : fields.entrySet()) {
-		     Field field = entry.getKey();
-		     Value value = entry.getValue();
-
-		     DebugWindowDataDTO dto = new DebugWindowDataDTO();
-		     dto.setElementName(field.name());
-		     dto.setQualifiedTypeName(field.typeName());
-		     dto.setValue(DebugUtils.valueToString(value)); // ← ВОТ ОТКУДА VALUE
-		     dto.setElementType(TargetApplicationElementType.NON_STATIC_FIELD);
-
-		     innerElements.add(dto);
-		 }
+//		 Set<DebugWindowDataDTO> innerElements = new HashSet<DebugWindowDataDTO>();
+//		 Map<Field, Value> qq = DebugUtils.compileFields(currentFrame);
+//		 Map<LocalVariable, Value> ww = DebugUtils.compileLocalVariables(currentFrame);
+//		 Map<Field, Value> fields = DebugUtils.compileFields(currentFrame);
+//		 ReferenceType refType = location.declaringType();
+//		 List<Method> methods = refType.methods();
+//		 for (Map.Entry<Field, Value> entry : fields.entrySet()) {
+//		     Field field = entry.getKey();
+//		     Value value = entry.getValue();
+//
+//		     DebugWindowDataDTO dto = new DebugWindowDataDTO();
+//		     dto.setElementName(field.name());
+//		     dto.setQualifiedTypeName(field.typeName());
+//		     dto.setValue(DebugUtils.valueToString(value)); // ← ВОТ ОТКУДА VALUE
+//		    // dto.setElementType(TargetApplicationTopLevelElementType.NON_STATIC_FIELD);
+//
+//		     innerElements.add(dto);
+//		 }
 		 debugWindowDataDTO.setElementName(anchorElement.getElementName());
 		 debugWindowDataDTO.setElementType(anchorElement.getElementType());
-		 debugWindowDataDTO.setQualifiedTypeName(location.declaringType().name());
-		 debugWindowDataDTO.setValue(null);
-		 debugWindowDataDTO.setInnerElements(innerElements);
+		 debugWindowDataDTO.setQualifiedTypeName(anchorElement.getFullQualifiedName());
+		// debugWindowDataDTO.setValue(null);
+		 debugWindowDataDTO.setInnerElements(anchorElement.getInnerElements());
 		 debugWindowDataDTO.setLineNumber(location.lineNumber());
 		 debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(breakpointEvent.thread()));
 		 debugWindowDataDTO.setMethodName(location.method().name()+"(..)");
@@ -391,8 +392,8 @@ public class DebugSessionImpl implements DebugSession {
 		return true;
 	}
 
-	private List<TargetApplicationClassOrInterfaceRepresentation> discardVoidMethods(
-			List<TargetApplicationClassOrInterfaceRepresentation> targetElements) {
+	private List<TopLevelElementRepresentation> discardVoidMethods(
+			List<TopLevelElementRepresentation> targetElements) {
 		
 		return targetElements;
 //			

@@ -1,7 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -14,12 +14,13 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationElement.TargetApplicationElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 
 /**
- * Tab content that displays fields or local variables
- * of a selected class or stack frame.
+ * Tab content that displays inner elements (fields / methods / variables)
+ * at the moment a breakpoint is hit.
  */
 public class ClassMembersAtBreakpoint {
 
@@ -41,22 +42,31 @@ public class ClassMembersAtBreakpoint {
         setupColumns();
     }
 
+    /**
+     * Configures table columns.
+     */
     private void setupColumns() {
-        createColumn("Name", 200, DebugWindowDataDTO::getElementName);
-        createColumn("Type", 200, dto -> {
-            TargetApplicationElementType type = dto.getElementType();
-            return type != null ? type.name() : "";
-        });
-        createColumn("Value", 300,dto -> {
-            String value = dto.getValue();
-            return value != null ? value : "";
-        });
+
+        // 1. Name
+        createColumn("Name", 200,
+                AbstractElementRepresentation::getElementName
+        );
+
+        // 2. Type
+        createColumn("Type", 300,
+                AbstractElementRepresentation::getFullQualifiedName
+        );
+
+        // 3. Value (temporary default)
+        createColumn("Value", 300,
+                element -> "—"
+        );
     }
 
     private void createColumn(
             String title,
             int width,
-            Function<DebugWindowDataDTO, String> extractor) {
+            Function<AbstractElementRepresentation, String> extractor) {
 
         TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
         column.getColumn().setText(title);
@@ -66,8 +76,8 @@ public class ClassMembersAtBreakpoint {
         column.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
-                if (element instanceof DebugWindowDataDTO dto) {
-                    String value = extractor.apply(dto);
+                if (element instanceof AbstractElementRepresentation repr) {
+                    String value = extractor.apply(repr);
                     return value != null ? value : "";
                 }
                 return "";
@@ -76,15 +86,20 @@ public class ClassMembersAtBreakpoint {
     }
 
     /**
-     * Displays inner elements (fields / variables) of the given DTO.
+     * Displays only inner elements of the given DTO.
      */
     public void showInnerElements(DebugWindowDataDTO parentDto) {
         if (parentDto == null)
             return;
 
-        List<DebugWindowDataDTO> innerElements = parentDto.getInnerElements().stream().toList();
-        if (innerElements == null)
+        Set<InnerElementRepresentation> innerElementsSet =
+                parentDto.getInnerElements();
+
+        if (innerElementsSet == null || innerElementsSet.isEmpty())
             return;
+
+        List<InnerElementRepresentation> innerElements =
+                innerElementsSet.stream().toList();
 
         root.getDisplay().asyncExec(() -> {
             if (viewer.getTable().isDisposed())

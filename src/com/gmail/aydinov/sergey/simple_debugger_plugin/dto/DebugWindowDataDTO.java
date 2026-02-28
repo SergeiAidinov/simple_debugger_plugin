@@ -4,20 +4,20 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationElement;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationInnerElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationElement.TargetApplicationElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationTopLevelElement;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationTopLevelElement.TargetApplicationTopLevelElementType;
 import com.sun.jdi.ReferenceType;
 
 public class DebugWindowDataDTO {
 
 	private ReferenceType getReferenceType;
     private String elementName;
-    private TargetApplicationElementType elementType;
+    private TargetApplicationTopLevelElementType elementType;
     private String qualifiedTypeName; // квалифицированное имя типа
-    private String value;
-    private Set<DebugWindowDataDTO> innerElements;
+   // private String value;
+    private Set<InnerElementRepresentation> innerElements;
     private int lineNumber = -1;
     private List<MethodCallInStackDTO> stackCall;
     private String methodName = "[NO METHOD]";
@@ -33,10 +33,10 @@ public class DebugWindowDataDTO {
 	public void setElementName(String elementName) {
 		this.elementName = elementName;
 	}
-	public TargetApplicationElementType getElementType() {
+	public TargetApplicationTopLevelElementType getElementType() {
 		return elementType;
 	}
-	public void setElementType(TargetApplicationElementType elementType) {
+	public void setElementType(TargetApplicationTopLevelElementType elementType) {
 		this.elementType = elementType;
 	}
 	public String getQualifiedTypeName() {
@@ -45,17 +45,17 @@ public class DebugWindowDataDTO {
 	public void setQualifiedTypeName(String qualifiedTypeName) {
 		this.qualifiedTypeName = qualifiedTypeName;
 	}
-	public String getValue() {
-		return value;
-	}
-	public void setValue(String value) {
-		this.value = value;
-	}
-	public Set<DebugWindowDataDTO> getInnerElements() {
+//	public String getValue() {
+//		return value;
+//	}
+//	public void setValue(String value) {
+//		this.value = value;
+//	}
+	public Set<InnerElementRepresentation> getInnerElements() {
 		return innerElements;
 	}
-	public void setInnerElements(Set<DebugWindowDataDTO> innerElements) {
-		this.innerElements = innerElements;
+	public void setInnerElements(Set<InnerElementRepresentation> set) {
+		this.innerElements = set;
 	}
 	public int getLineNumber() {
 		return lineNumber;

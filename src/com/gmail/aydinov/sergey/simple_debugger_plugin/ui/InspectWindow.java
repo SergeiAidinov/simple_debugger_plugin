@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Objects;
 import java.util.Set;
@@ -20,8 +21,8 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationInnerElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
@@ -137,12 +138,12 @@ public class InspectWindow {
     }
 
     /** Показывает структуру top-level элемента */
-    protected void showElementStructure(TargetApplicationClassOrInterfaceRepresentation element) {
+    protected void showElementStructure(TopLevelElementRepresentation element) {
         showAnchorElement(element);
     }
 
     /** Отображает элемент с рекурсивным деревом вложенных элементов */
-    protected void showAnchorElement(TargetApplicationClassOrInterfaceRepresentation element) {
+    protected void showAnchorElement(TopLevelElementRepresentation element) {
         if (element == null || shell.isDisposed()) return;
 
         Display.getDefault().asyncExec(() -> {
@@ -161,15 +162,15 @@ public class InspectWindow {
 
     /** Рекурсивный метод для отображения inner элементов */
     private void addInnerElementsRecursively(TreeItem parentItem,
-                                             Set<TargetApplicationInnerElementRepresentation> innerElements) {
+                                             Set<InnerElementRepresentation> innerElements) {
         if (innerElements == null || innerElements.isEmpty()) return;
 
-        for (TargetApplicationInnerElementRepresentation inner : innerElements) {
+        for (InnerElementRepresentation inner : innerElements) {
             TreeItem item = new TreeItem(parentItem, SWT.NONE);
             item.setText(new String[]{inner.getElementName(), inner.getElementType().name()});
             item.setExpanded(true);
 
-            addInnerElementsRecursively(item, inner.getInnerElements());
+            addInnerElementsRecursively(item, Collections.EMPTY_SET);
         }
     }
 
@@ -245,8 +246,8 @@ public class InspectWindow {
     @SuppressWarnings("unchecked")
     public void handleDebugEvent(AbstractDebugEvent event) {
         if (Objects.equals(event.getType(), SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT)) {
-            DebugEvent<TargetApplicationClassOrInterfaceRepresentation> simpleDebugEvent =
-                    (DebugEvent<TargetApplicationClassOrInterfaceRepresentation>) event;
+            DebugEvent<TopLevelElementRepresentation> simpleDebugEvent =
+                    (DebugEvent<TopLevelElementRepresentation>) event;
             showAnchorElement(simpleDebugEvent.getPayload());
         }
     }

@@ -398,7 +398,7 @@ public class DebugUtils {
 	 * Determines if the DTO can be inspected (non-primitive, non-String, non-null)
 	 */
 	public static boolean isInspectable(DebugWindowDataDTO dto) {
-		if (dto == null || dto.getElementType() == null || dto.getValue() == null)
+		if (dto == null || dto.getElementType() == null /*|| dto.getValue() == null */)
 			return false;
 
 		switch (dto.getElementType().toString()) {
