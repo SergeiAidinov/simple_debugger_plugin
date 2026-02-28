@@ -134,19 +134,16 @@ public class TargetApplicationRepresentation {
 	                    TargetApplicationElementType.NON_STATIC_FIELD;
 
 	            ObjectReference fieldInstance = field.isStatic() ? null : instance;
-	            String valueString = null;
 
-	            // Получаем значение поля
-	            try {
-	                Value value = field.isStatic() ? refType.getValue(field) : (instance != null ? instance.getValue(field) : null);
-	                valueString = value != null ? value.toString() : "—";
-	            } catch (Exception ignored) {}
+	            // Получаем полный тип поля
+	            String typeName = field.typeName(); // <-- полный тип, например "java.lang.String"
 
+	            // Создаём объект
 	            InnerElementRepresentation fieldElement = new InnerElementRepresentation(
 	                    refType,
 	                    fieldInstance,
 	                    field.name(),
-	                    valueString,
+	                    typeName,             // <-- теперь это тип, а не значение
 	                    elementType
 	            );
 
@@ -155,14 +152,18 @@ public class TargetApplicationRepresentation {
 	    }
 
 	    // --- методы ---
+	 // --- методы ---
 	    for (Method method : refType.allMethods()) {
 	        if (method.isNative() || "<init>".equals(method.name()) || method.isSynthetic()) continue;
+
+	        String returnTypeName = method.returnTypeName(); // Type / Return Type
+	        String methodName = method.name();              // Name колонки
 
 	        InnerElementRepresentation methodElement = new InnerElementRepresentation(
 	                refType,
 	                null,
-	                method.name(),
-	                method.name(),
+	                methodName,      // <-- реальное имя метода
+	                returnTypeName,  // <-- Type / Return Type
 	                TargetApplicationElementType.METHOD
 	        );
 
