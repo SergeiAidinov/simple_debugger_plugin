@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -29,7 +30,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMeth
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationElement.TargetApplicationElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractInnerElementRepresentation.InnerElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationTopLevelElement.TargetApplicationTopLevelElementType;
 import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -45,7 +47,7 @@ import com.sun.jdi.request.EventRequestManager;
 
 public class TargetApplicationRepresentation {
 
-	private final Map<ReferenceType, TargetApplicationClassOrInterfaceRepresentation> referencesAtClassesAndInterfaces = new ConcurrentHashMap<>();
+	private final Map<ReferenceType, AbstractElementRepresentation> targetApplicationSnapshot = new ConcurrentHashMap<>();
 	private final TargetApplicationBreakpointRepresentation targetApplicationBreakepointRepresentation;
 	private final VirtualMachine virtualMachine;
 	private final DebugConfiguration debugConfiguration;
@@ -63,17 +65,15 @@ public class TargetApplicationRepresentation {
 	public TargetApplicationBreakpointRepresentation getTargetApplicationBreakepointRepresentation() {
 		return targetApplicationBreakepointRepresentation;
 	}
+	
+	
 
-	public Map<ReferenceType, TargetApplicationClassOrInterfaceRepresentation> getReferencesAtClassesAndInterfaces() {
-		return referencesAtClassesAndInterfaces;
-	}
-
-	public List<TargetApplicationClassOrInterfaceRepresentation> getTargetApplicationElements() {
-		return referencesAtClassesAndInterfaces.values().stream().collect(Collectors.toList());
+	public Map<ReferenceType, AbstractElementRepresentation> getTargetApplicationSnapshot() {
+		return targetApplicationSnapshot;
 	}
 
 	public void refreshReferencesToClassesOfTargetApplication(VirtualMachine virtualMachine) {
-	    referencesAtClassesAndInterfaces.clear();
+	    targetApplicationSnapshot.clear();
 	    SimpleDebuggerLogger.info("Waiting for target classes to load...");
 
 	    // 1. Ждём, пока классы загрузятся
@@ -89,60 +89,60 @@ public class TargetApplicationRepresentation {
 
 	    // 4. Обрабатываем каждый top-level элемент
 	    for (ReferenceType refType : definedByLoaders) {
-	        TargetApplicationElementType elementType = determineElementType(refType);
+	        TargetApplicationTopLevelElementType elementType = determineElementType(refType);
 	        if (elementType == null) continue;
 
 	        // Создаём top-level элемент через фабрику
-	        TargetApplicationClassOrInterfaceRepresentation topLevelElement =
-	                TargetApplicationClassOrInterfaceRepresentation.createTopLevelElement(
-	                        refType, refType.name(), elementType, new HashSet<>());
+	        TopLevelElementRepresentation topLevelElement =
+	                 new TopLevelElementRepresentation(
+	                        refType, refType.name(), refType.name(), elementType, new HashSet<>());
 
 	        // Рекурсивно заполняем поля, методы и inner элементы
 	        populateInnerElements(topLevelElement, refType);
 
 	        // Добавляем top-level элемент в Map
-	        referencesAtClassesAndInterfaces.put(refType, topLevelElement);
+	        targetApplicationSnapshot.put(refType, topLevelElement);
 	    }
 
-	    SimpleDebuggerLogger.info("LOADED CLASSES: " + referencesAtClassesAndInterfaces.size());
+	    SimpleDebuggerLogger.info("LOADED CLASSES: " + targetApplicationSnapshot.size());
 	}
 
 	/**
 	 * Рекурсивно создаёт все внутренние элементы и добавляет их в parentElement.
 	 */
-	private void populateInnerElements(AbstractTargetAplicationElement parentElement, ReferenceType refType) {
-	    Set<TargetApplicationInnerElementRepresentation> innerElements = new HashSet<>();
+	private void populateInnerElements(AbstractTargetAplicationTopLevelElement parentElement, ReferenceType refType) {
+	    Set<InnerElementRepresentation> innerElements = new HashSet<>();
 
 	    // --- поля ---
 	    for (Field field : refType.allFields()) {
-	        TargetApplicationInnerElementRepresentation fieldElement =
-	                TargetApplicationInnerElementRepresentation.createInnerElement(
-	                        refType, field.name(), TargetApplicationElementType.NON_STATIC_FIELD, new HashSet<>());
+	        InnerElementRepresentation fieldElement =
+	               new InnerElementRepresentation(
+	                        refType, field.name(), field.name(), InnerElementType.NON_STATIC_FIELD);
 	        innerElements.add(fieldElement);
 	    }
 
 	    // --- методы ---
 	    for (Method method : refType.allMethods()) {
 	        if (method.isNative() || "<init>".equals(method.name())) continue;
-	        TargetApplicationInnerElementRepresentation methodElement =
-	                TargetApplicationInnerElementRepresentation.createInnerElement(
-	                        refType, method.name(), TargetApplicationElementType.METHOD, new HashSet<>());
+	        InnerElementRepresentation methodElement =
+	               new InnerElementRepresentation (
+	                        refType, method.name(), method.name(), InnerElementType.METHOD);
 	        innerElements.add(methodElement);
 	    }
 
 	    // --- внутренние классы ---
-	    for (ReferenceType nestedRef : refType.nestedTypes()) {
-	        TargetApplicationElementType nestedType = determineElementType(nestedRef);
-	        if (nestedType == null) continue;
-
-	        TargetApplicationInnerElementRepresentation nestedElement =
-	                TargetApplicationInnerElementRepresentation.createInnerElement(
-	                        nestedRef, nestedRef.name(), nestedType, new HashSet<>());
-
-	        // рекурсивно обрабатываем внутренние элементы этого nestedRef
-	        populateInnerElements(nestedElement, nestedRef);
-	        innerElements.add(nestedElement);
-	    }
+//	    for (ReferenceType nestedRef : refType.nestedTypes()) {
+//	        TargetApplicationTopLevelElementType nestedType = determineElementType(nestedRef);
+//	        if (nestedType == null) continue;
+//
+//	        InnerElementRepresentation nestedElement =
+//	               new InnerElementRepresentation (
+//	                        nestedRef, nestedRef.name(), nestedType);
+//
+//	        // рекурсивно обрабатываем внутренние элементы этого nestedRef
+//	        populateInnerElements(nestedElement, nestedRef);
+//	        innerElements.add(nestedElement);
+//	    }
 
 	    // --- сохраняем во внутренние элементы родителя ---
 	    parentElement.getInnerElements().addAll(innerElements);
@@ -202,12 +202,12 @@ public class TargetApplicationRepresentation {
 		return result;
 	}
 
-	private TargetApplicationElementType determineElementType(ReferenceType referenceType) {
+	private TargetApplicationTopLevelElementType determineElementType(ReferenceType referenceType) {
 		if (referenceType instanceof ClassType) {
-			return TargetApplicationElementType.CLASS;
+			return TargetApplicationTopLevelElementType.CLASS;
 		}
 		if (referenceType instanceof InterfaceType) {
-			return TargetApplicationElementType.INTERFACE;
+			return TargetApplicationTopLevelElementType.INTERFACE;
 		}
 		return null;
 	}
@@ -362,14 +362,14 @@ public class TargetApplicationRepresentation {
 	}
 
 	public ReferenceType findReferenceTypeForClass(
-			TargetApplicationClassOrInterfaceRepresentation targetApplicationClassOrInterfaceRepresentation) {
+			TopLevelElementRepresentation targetApplicationClassOrInterfaceRepresentation) {
 		if (Objects.isNull(targetApplicationClassOrInterfaceRepresentation)) {
 			return null;
 		}
 
 		String className = targetApplicationClassOrInterfaceRepresentation.getElementName();
 
-		for (Map.Entry<ReferenceType, TargetApplicationClassOrInterfaceRepresentation> entry : referencesAtClassesAndInterfaces
+		for (Entry<ReferenceType, ? extends AbstractElementRepresentation> entry : targetApplicationSnapshot
 				.entrySet()) {
 
 			ReferenceType referenceType = entry.getKey();

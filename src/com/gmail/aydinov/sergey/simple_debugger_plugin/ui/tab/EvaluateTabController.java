@@ -7,8 +7,8 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.*;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -162,9 +162,9 @@ public class EvaluateTabController {
 			if (root.isDisposed())
 				return;
 			classCombo.removeAll();
-			for (TargetApplicationClassOrInterfaceRepresentation targetApplicationElementRepresentation : debugStoppedAtBreakpointEvent
+			for (TopLevelElementRepresentation targetApplicationElementRepresentation : debugStoppedAtBreakpointEvent
 					.getTargetApplicationElements()) {
-				if (targetApplicationElementRepresentation instanceof TargetApplicationClassOrInterfaceRepresentation clazz) {
+				if (targetApplicationElementRepresentation instanceof TopLevelElementRepresentation clazz) {
 					String nameAndType = clazz.getElementName() + " ("
 							+ targetApplicationElementRepresentation.getElementType() + ")";
 					classCombo.add(nameAndType);
@@ -197,7 +197,7 @@ public class EvaluateTabController {
 		if (className.isBlank())
 			return;
 
-		TargetApplicationClassOrInterfaceRepresentation clazz = (TargetApplicationClassOrInterfaceRepresentation) classCombo
+		TopLevelElementRepresentation clazz = (TopLevelElementRepresentation) classCombo
 				.getData(className);
 		if (Objects.isNull(clazz))
 			return;
@@ -261,7 +261,7 @@ public class EvaluateTabController {
 			return;
 		}
 
-		TargetApplicationClassOrInterfaceRepresentation clazz = getSelectedClass();
+		TopLevelElementRepresentation clazz = getSelectedClass();
 		String argsText = methodInput.getText();
 
 		if (Objects.nonNull(clazz)) {
@@ -274,8 +274,8 @@ public class EvaluateTabController {
 	}
 
 	// ----------------- Public helpers -----------------
-	public TargetApplicationClassOrInterfaceRepresentation getSelectedClass() {
-		return (TargetApplicationClassOrInterfaceRepresentation) classCombo.getData(classCombo.getText());
+	public TopLevelElementRepresentation getSelectedClass() {
+		return (TopLevelElementRepresentation) classCombo.getData(classCombo.getText());
 	}
 
 	public TargetApplicationMethodDTO getSelectedMethod() {

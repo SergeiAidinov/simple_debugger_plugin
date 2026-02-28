@@ -1,6 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationElement.TargetApplicationElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationTopLevelElement.TargetApplicationTopLevelElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 
 /**
@@ -9,7 +9,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 public class DebugWindowDataDTOEntry {
 
     private final String name;
-    private final TargetApplicationElementType elementType;
+    private final TargetApplicationTopLevelElementType elementType;
 
     public DebugWindowDataDTOEntry(DebugWindowDataDTO dto) {
         this.name = dto.getElementName();
@@ -20,7 +20,7 @@ public class DebugWindowDataDTOEntry {
         return name;
     }
 
-    public TargetApplicationElementType getElementType() {
+    public TargetApplicationTopLevelElementType getElementType() {
         return elementType;
     }
 

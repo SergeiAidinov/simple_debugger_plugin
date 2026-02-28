@@ -1,11 +1,11 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
 
 public class UserInvokedMethodEventDTO {
 
     /** Target class or interface where the method will be invoked */
-    private final TargetApplicationClassOrInterfaceRepresentation targetClass;
+    private final TopLevelElementRepresentation targetClass;
 
     /** Method to invoke */
     private final TargetApplicationMethodDTO method;
@@ -14,7 +14,7 @@ public class UserInvokedMethodEventDTO {
     private final String argumentsText;
 
     public UserInvokedMethodEventDTO(
-            TargetApplicationClassOrInterfaceRepresentation targetClass,
+            TopLevelElementRepresentation targetClass,
             TargetApplicationMethodDTO method,
             String argumentsText
     ) {
@@ -23,7 +23,7 @@ public class UserInvokedMethodEventDTO {
         this.argumentsText = argumentsText;
     }
 
-    public TargetApplicationClassOrInterfaceRepresentation getTargetClass() {
+    public TopLevelElementRepresentation getTargetClass() {
         return targetClass;
     }
 

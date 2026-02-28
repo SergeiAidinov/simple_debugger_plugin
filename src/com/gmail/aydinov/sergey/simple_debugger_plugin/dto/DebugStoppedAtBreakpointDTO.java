@@ -2,7 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import java.util.List;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationClassOrInterfaceRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 
 /**
@@ -23,7 +23,7 @@ public class DebugStoppedAtBreakpointDTO {
 	private final List<InnerElementDTO> locals;
 	private final List<InnerElementDTO> fields;
 	private final String stackTrace;
-	private final List<TargetApplicationClassOrInterfaceRepresentation> targetApplicationElements;
+	private final List<TopLevelElementRepresentation> targetApplicationElements;
 	private final String resultOfMethodInvocation;
 	private final List<MethodCallInStackDTO> methodCallInStacks;
 
@@ -45,7 +45,7 @@ public class DebugStoppedAtBreakpointDTO {
 	 */
 	private DebugStoppedAtBreakpointDTO(String className, String methodName,
 			int lineNumber, List<InnerElementDTO> fields, List<InnerElementDTO> locals, String stackTrace,
-			List<TargetApplicationClassOrInterfaceRepresentation> targetApplicationElements,
+			List<TopLevelElementRepresentation> targetApplicationElements,
 			List<MethodCallInStackDTO> methodCallInStacks, String resultOfMethodInvocation) {
 		//super(type);
 		this.className = className;
@@ -85,7 +85,7 @@ public class DebugStoppedAtBreakpointDTO {
 		return stackTrace;
 	}
 
-	public List<TargetApplicationClassOrInterfaceRepresentation> getTargetApplicationElements() {
+	public List<TopLevelElementRepresentation> getTargetApplicationElements() {
 		return targetApplicationElements;
 	}
 
@@ -107,7 +107,7 @@ public class DebugStoppedAtBreakpointDTO {
 		private List<InnerElementDTO> locals;
 		private List<InnerElementDTO> fields;
 		private String stackTrace;
-		private List<TargetApplicationClassOrInterfaceRepresentation> targetApplicationElements;
+		private List<TopLevelElementRepresentation> targetApplicationElements;
 		private List<MethodCallInStackDTO> methodCallInStacks;
 		private String resultOfMethodInvocation;
 
@@ -146,7 +146,7 @@ public class DebugStoppedAtBreakpointDTO {
 			return this;
 		}
 
-		public Builder targetApplicationElements(List<TargetApplicationClassOrInterfaceRepresentation> elements) {
+		public Builder targetApplicationElements(List<TopLevelElementRepresentation> elements) {
 			this.targetApplicationElements = elements;
 			return this;
 		}
