@@ -11,7 +11,7 @@ public abstract class AbstractElementRepresentation {
 		/** Represents a class in the target application */
 		CLASS,
 
-		ENUM, STATIC_FIELD, NON_STATIC_FIELD, METHOD
+		ENUM, STATIC_FIELD, NON_STATIC_FIELD, METHOD, VARIABLE
 	}
 
 	private final ReferenceType referenceType;
