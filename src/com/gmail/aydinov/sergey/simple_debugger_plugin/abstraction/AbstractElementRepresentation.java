@@ -4,7 +4,7 @@ import com.sun.jdi.ReferenceType;
 
 public abstract class AbstractElementRepresentation {
 	
-	public enum ElementType {
+	public enum TargetApplicationElementType {
 		/** Represents an interface in the target application */
 		INTERFACE,
 
@@ -20,8 +20,8 @@ public abstract class AbstractElementRepresentation {
 	private final ReferenceType referenceType;
 	private final String elementName;
 	private final String fullQualifiedName;
-	private final ElementType elementType;
-	public AbstractElementRepresentation(ReferenceType referenceType, String elementName, String fullQualifiedName, ElementType elementType) {
+	private final TargetApplicationElementType elementType;
+	public AbstractElementRepresentation(ReferenceType referenceType, String elementName, String fullQualifiedName, TargetApplicationElementType elementType) {
 		this.referenceType = referenceType;
 		this.elementName = elementName;
 		this.fullQualifiedName = fullQualifiedName;
@@ -37,7 +37,7 @@ public abstract class AbstractElementRepresentation {
 	public String getFullQualifiedName() {
 		return fullQualifiedName;
 	}
-	public ElementType getElementType() {
+	public TargetApplicationElementType getElementType() {
 		return elementType;
 	}
 	

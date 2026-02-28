@@ -21,7 +21,7 @@ public class InnerElementRepresentation extends AbstractInnerElementRepresentati
             ObjectReference objectInstance,
             String elementName,
             String fullQualifiedName,
-            ElementType elementType) {
+            TargetApplicationElementType elementType) {
 
         super(outerElementReference, elementName, fullQualifiedName, elementType);
 
@@ -36,9 +36,9 @@ public class InnerElementRepresentation extends AbstractInnerElementRepresentati
             ReferenceType referenceType,
             ObjectReference objectInstance,
             String fieldName,
-            ElementType elementType) {
+            TargetApplicationElementType elementType) {
     	
-    	if (Objects.isNull(objectInstance)) return "no  value";
+    	//if (Objects.isNull(objectInstance)) return "no  value";
 
         try {
             switch (elementType) {
