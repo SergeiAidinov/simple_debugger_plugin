@@ -4,17 +4,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.ElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationTopLevelElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationTopLevelElement.TargetApplicationTopLevelElementType;
 import com.sun.jdi.ReferenceType;
 
 public class DebugWindowDataDTO {
 
 	private ReferenceType getReferenceType;
     private String elementName;
-    private TargetApplicationTopLevelElementType elementType;
+    private ElementType elementType;
     private String qualifiedTypeName; // квалифицированное имя типа
    // private String value;
     private Set<InnerElementRepresentation> innerElements;
@@ -33,10 +33,10 @@ public class DebugWindowDataDTO {
 	public void setElementName(String elementName) {
 		this.elementName = elementName;
 	}
-	public TargetApplicationTopLevelElementType getElementType() {
+	public ElementType getElementType() {
 		return elementType;
 	}
-	public void setElementType(TargetApplicationTopLevelElementType elementType) {
+	public void setElementType(ElementType elementType) {
 		this.elementType = elementType;
 	}
 	public String getQualifiedTypeName() {

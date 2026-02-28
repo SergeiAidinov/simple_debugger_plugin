@@ -6,7 +6,7 @@ import com.sun.jdi.ReferenceType;
 public class InnerElementRepresentation extends AbstractInnerElementRepresentation {
 	
 	
-	public InnerElementRepresentation(ReferenceType outerElementReference, String elementName, String fullQualifiedName, InnerElementType elementType) {
+	public InnerElementRepresentation(ReferenceType outerElementReference, String elementName, String fullQualifiedName, ElementType elementType) {
 		super(outerElementReference, elementName, fullQualifiedName, elementType);
 	}
 }

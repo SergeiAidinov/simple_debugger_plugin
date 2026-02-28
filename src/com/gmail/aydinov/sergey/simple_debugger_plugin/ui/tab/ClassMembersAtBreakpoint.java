@@ -54,8 +54,8 @@ public class ClassMembersAtBreakpoint {
 
         // 2. Type
         createColumn("Type", 300,
-                AbstractElementRepresentation::getFullQualifiedName
-        );
+        	    element -> element.getElementType().name()
+        	);
 
         // 3. Value (temporary default)
         createColumn("Value", 300,

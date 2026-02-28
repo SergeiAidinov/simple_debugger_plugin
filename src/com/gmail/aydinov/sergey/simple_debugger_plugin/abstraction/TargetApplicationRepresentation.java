@@ -30,8 +30,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMeth
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractInnerElementRepresentation.InnerElementType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractTargetAplicationTopLevelElement.TargetApplicationTopLevelElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.ElementType;
 import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -89,7 +88,7 @@ public class TargetApplicationRepresentation {
 
 	    // 4. Обрабатываем каждый top-level элемент
 	    for (ReferenceType refType : definedByLoaders) {
-	        TargetApplicationTopLevelElementType elementType = determineElementType(refType);
+	        ElementType elementType = determineElementType(refType);
 	        if (elementType == null) continue;
 
 	        // Создаём top-level элемент через фабрику
@@ -117,7 +116,7 @@ public class TargetApplicationRepresentation {
 	    for (Field field : refType.allFields()) {
 	        InnerElementRepresentation fieldElement =
 	               new InnerElementRepresentation(
-	                        refType, field.name(), field.name(), InnerElementType.NON_STATIC_FIELD);
+	                        refType, field.name(), field.name(), ElementType.NON_STATIC_FIELD);
 	        innerElements.add(fieldElement);
 	    }
 
@@ -126,7 +125,7 @@ public class TargetApplicationRepresentation {
 	        if (method.isNative() || "<init>".equals(method.name())) continue;
 	        InnerElementRepresentation methodElement =
 	               new InnerElementRepresentation (
-	                        refType, method.name(), method.name(), InnerElementType.METHOD);
+	                        refType, method.name(), method.name(), ElementType.METHOD);
 	        innerElements.add(methodElement);
 	    }
 
@@ -202,12 +201,12 @@ public class TargetApplicationRepresentation {
 		return result;
 	}
 
-	private TargetApplicationTopLevelElementType determineElementType(ReferenceType referenceType) {
+	private ElementType determineElementType(ReferenceType referenceType) {
 		if (referenceType instanceof ClassType) {
-			return TargetApplicationTopLevelElementType.CLASS;
+			return ElementType.CLASS;
 		}
 		if (referenceType instanceof InterfaceType) {
-			return TargetApplicationTopLevelElementType.INTERFACE;
+			return ElementType.INTERFACE;
 		}
 		return null;
 	}
