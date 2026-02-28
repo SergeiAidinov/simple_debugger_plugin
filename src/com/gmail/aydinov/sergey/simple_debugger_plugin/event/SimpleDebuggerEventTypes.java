@@ -6,6 +6,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelEleme
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
@@ -57,7 +58,7 @@ public final class SimpleDebuggerEventTypes {
         
         SHOW_ANCHOR_ELEMENT(TopLevelElementRepresentation.class),
         
-        USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementDTO.class),
+        USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementRepresentationDTO.class),
         
         USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class)
         ;
