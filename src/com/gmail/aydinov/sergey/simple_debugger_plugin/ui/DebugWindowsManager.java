@@ -29,9 +29,17 @@ public class DebugWindowsManager implements Runnable {
 
 	private DebugWindowsManager() {
 		Map<String, Image> iconsTemp = new HashMap<>();
-		List<PairDTO<String, String>> namesAndPaths = List.of(PairDTO.of("debugger", "/icons/icon.png"),
-				PairDTO.of("inspectIcon", "/icons/inspect.png"), PairDTO.of("variableIcon", "/icons/variable.png"),
-				PairDTO.of("fieldIcon", "/icons/field.png"));
+		List<PairDTO<String, String>> namesAndPaths = List.of(
+				PairDTO.of("enum", "/icons/enum.png"),
+				PairDTO.of("fieldIcon", "/icons/field.png"),
+				PairDTO.of("debugger", "/icons/icon.png"),
+				PairDTO.of("inspectIcon", "/icons/inspect.png"),
+				PairDTO.of("interface", "/icons/method.png"),
+				PairDTO.of("method", "/icons/method.png"),
+				PairDTO.of("static_field", "/icons/static_field.png"),
+				PairDTO.of("static_method", "/icons/static_method.png"),
+				PairDTO.of("variableIcon", "/icons/variable.png")
+				);
 		namesAndPaths.forEach(p -> iconsTemp.put(p.getKey(), loadIcon(p.getValue())));
 		icons = Map.copyOf(iconsTemp);
 	}
