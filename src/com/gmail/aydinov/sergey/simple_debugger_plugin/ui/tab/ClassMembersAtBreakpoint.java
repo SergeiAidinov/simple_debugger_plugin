@@ -3,7 +3,6 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.function.Function;
 
 import org.eclipse.jface.viewers.*;
@@ -19,10 +18,10 @@ import org.eclipse.jface.viewers.CellEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.TargetApplicationElementType;
@@ -35,11 +34,9 @@ public class ClassMembersAtBreakpoint {
 
     private final Composite root;
     private final TableViewer viewer;
-    private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+    private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
     public ClassMembersAtBreakpoint(Composite parent) {
-      
-
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(1, false));
 
@@ -55,29 +52,24 @@ public class ClassMembersAtBreakpoint {
         setupCellModifier();
     }
 
+    /** Настройка колонок таблицы */
     private void setupColumns() {
         // Name
         createColumn("Name", 200, InnerElementRepresentationDTO::getName);
 
-        // Type (с иконкой)
+        // Type с иконкой
         createColumn("Type", 120,
                 InnerElementRepresentationDTO::getTypeName,
                 element -> {
                     TargetApplicationElementType type = element.getElementType();
                     if (type == null) return null;
                     switch (type) {
-                        case INTERFACE:
-                            return DebugWindowsManager.instance().icons.get("interface");
-                        case METHOD:
-                            return DebugWindowsManager.instance().icons.get("method");
-                        case STATIC_FIELD:
-                            return DebugWindowsManager.instance().icons.get("static_field");
-                        case VARIABLE:
-                            return DebugWindowsManager.instance().icons.get("variableIcon");
-                        case NON_STATIC_FIELD:
-                            return DebugWindowsManager.instance().icons.get("fieldIcon");
-                        default:
-                            return null;
+                        case INTERFACE: return DebugWindowsManager.instance().icons.get("interface");
+                        case METHOD: return DebugWindowsManager.instance().icons.get("method");
+                        case STATIC_FIELD: return DebugWindowsManager.instance().icons.get("static_field");
+                        case VARIABLE: return DebugWindowsManager.instance().icons.get("variableIcon");
+                        case NON_STATIC_FIELD: return DebugWindowsManager.instance().icons.get("fieldIcon");
+                        default: return null;
                     }
                 });
 
@@ -118,7 +110,7 @@ public class ClassMembersAtBreakpoint {
         createColumn(title, width, extractor, e -> null);
     }
 
-    /** Настройка редактирования поля Value */
+    /** Настройка редактирования Value */
     private void setupCellModifier() {
         viewer.setColumnProperties(new String[]{"name", "type", "value"});
         viewer.setCellEditors(new CellEditor[]{null, null, new TextCellEditor(viewer.getTable())});
@@ -146,20 +138,39 @@ public class ClassMembersAtBreakpoint {
 
                 String newValStr = newValue.toString();
 
-                // Отправляем событие изменения значения в UiEventCollector
-                UserChangedVariableEventDTO userChangedVariableEventDTO = new UserChangedVariableEventDTO(
-                        dto.getName(),
-                        dto.getTypeName(),
-                        newValStr
-                );
-                
-                uiEventCollector.collectUiEvent(new UIEvent<UserChangedVariableEventDTO>(SimpleDebuggerEventType.USER_CHANGED_VARIABLE, userChangedVariableEventDTO));
+                // Разделяем поля и локальные переменные
+                switch (dto.getElementType()) {
+                    case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, newValStr);
+                    case VARIABLE -> updateVariableValue(dto, newValStr);
+                    default -> {
+                        return; // остальные типы редактировать нельзя
+                    }
+                }
 
-                // Обновляем локальный DTO и таблицу
                // dto.setValue(newValStr);
                 viewer.update(dto, null);
             }
         });
+    }
+
+    /** Обновление значения поля класса */
+    private void updateFieldValue(InnerElementRepresentationDTO dto, String newValue) {
+        UserChangedFieldEventDTO eventDTO = new UserChangedFieldEventDTO(
+                dto.getName(),
+                dto.getTypeName(),
+                newValue
+        );
+        uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CHANGED_FIELD, eventDTO));
+    }
+
+    /** Обновление значения локальной переменной */
+    private void updateVariableValue(InnerElementRepresentationDTO dto, String newValue) {
+        UserChangedVariableEventDTO eventDTO = new UserChangedVariableEventDTO(
+                dto.getName(),
+                dto.getTypeName(),
+                newValue
+        );
+        uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CHANGED_VARIABLE, eventDTO));
     }
 
     /** Показывает внутренние элементы DTO в таблице */
