@@ -44,6 +44,7 @@ import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
+import com.sun.jdi.Type;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
@@ -117,65 +118,114 @@ public class TargetApplicationRepresentation {
 	}
 
 	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
+	    if (parentElement == null || refType == null) {
+	        return;
+	    }
 
-		if (parentElement == null || refType == null) {
-			return;
-		}
+	    UUID parentId = parentElement.getUniqueId();
 
-		ObjectReference instance = null;
+	    // ---------------- Fields ----------------
+	    for (Field field : refType.allFields()) {
+	        try {
+	            if (field.isSynthetic()) continue;
 
-		// Для non-static полей нужен объект
-		if (refType instanceof ClassType classType) {
-			try {
-				List<ObjectReference> instances = classType.instances(1);
-				if (!instances.isEmpty()) {
-					instance = instances.get(0);
-				}
-			} catch (Exception ignored) {
-			}
-		}
+	            UniversalElementRepresentation.UniversalElementType elementType =
+	                    field.isStatic()
+	                        ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
+	                        : UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
 
-		UUID parentId = parentElement.getUniqueId();
+	            UniversalElementRepresentation.CurrentRole role = UniversalElementRepresentation.CurrentRole.INNER;
 
-		// ---------------- Fields ----------------
-		for (Field field : refType.allFields()) {
-			try {
-				if (field.isSynthetic()) {
-					continue;
-				}
+	            UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
+	                    .uniqueId(UUID.randomUUID())
+	                    .parentUniqueId(parentId)
+	                    .referenceType(refType)
+	                    .elementName(field.name())
+	                    .fullQualifiedName(field.typeName())
+	                    .elementType(elementType)
+	                    .currentRole(role)
+	                    .value(null)
+	                    .build();
 
-				UniversalElementRepresentation.UniversalElementType elementType = DebugUtils.determineUniversalElementType(field);
+	            parentElement.getInnerElements().add(fieldElement);
 
-				UniversalElementRepresentation.CurrentRole role = field.isStatic()
-						? UniversalElementRepresentation.CurrentRole.STATIC_FIELD
-						: UniversalElementRepresentation.CurrentRole.NON_STATIC_FIELD;
+	        } catch (Exception ignored) {}
+	    }
 
-				UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
-						.uniqueId(UUID.randomUUID()).parentUniqueId(parentId).referenceType(refType)
-						.elementName(field.name()).fullQualifiedName(field.typeName()).elementType(elementType)
-						.currentRole(role).build();
+	    // ---------------- Methods ----------------
+	    for (Method method : refType.allMethods()) {
+	        try {
+	            if (method.isSynthetic()) continue;
 
-				parentElement.getInnerElements().add(fieldElement);
+	            String methodName = method.name();
+	            // Пропускаем конструкторы и статические инициализаторы
+	            if (methodName.equals("<init>") || methodName.equals("<clinit>")) continue;
 
-			} catch (Exception ignored) {
-			}
-		}
+	            // Пропускаем методы Object, если они не переопределены
+	            if (isObjectMethodUnoverridden(refType, method)) continue;
 
-		// ---------------- Methods ----------------
-		for (Method method : refType.methods()) {
-			if (method.isNative() || method.isSynthetic() || "<init>".equals(method.name())
-					|| "<clinit>".equals(method.name())) {
-				continue;
-			}
+	            String methodArgs = method.argumentTypes().stream()
+	                                    .map(Type::name)      
+	                                    .collect(Collectors.joining(", "));  
+	            UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
+	                    .uniqueId(UUID.randomUUID())
+	                    .parentUniqueId(parentId)
+	                    .referenceType(refType)
+	                    .elementName(methodName)
+	                    .fullQualifiedName(method.returnTypeName())
+	                    .elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
+	                    .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+	                    .value(parentElement.getFullQualifiedName() + "." + methodName + "(" + methodArgs + ")")
+	                    .build();
 
-			UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
-					.uniqueId(UUID.randomUUID()).parentUniqueId(parentId).referenceType(refType)
-					.elementName(method.name()).fullQualifiedName(method.returnTypeName())
-					.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
-					.currentRole(UniversalElementRepresentation.CurrentRole.LOCAL).build();
+	            parentElement.getInnerElements().add(methodElement);
 
-			parentElement.getInnerElements().add(methodElement);
-		}
+	        } catch (Exception ignored) {}
+	    }
+
+	    // ---------------- Class / Interface ----------------
+	    UniversalElementRepresentation.UniversalElementType type;
+	    if (refType instanceof com.sun.jdi.InterfaceType) {
+	        type = UniversalElementRepresentation.UniversalElementType.INTERFACE;
+	    } else {
+	        type = UniversalElementRepresentation.UniversalElementType.CLASS;
+	    }
+
+	    UniversalElementRepresentation classElement = UniversalElementRepresentation.builder()
+	            .uniqueId(UUID.randomUUID())
+	            .parentUniqueId(parentId)
+	            .referenceType(refType)
+	            .elementName(refType.name())
+	            .fullQualifiedName(refType.name())
+	            .elementType(type)
+	            .currentRole(UniversalElementRepresentation.CurrentRole.OUTER)
+	            .value(refType.name())
+	            .build();
+
+	    parentElement.getInnerElements().add(classElement);
+	}
+
+	/**
+	 * Проверяет, является ли метод стандартным методом Object, который не переопределён.
+	 */
+	private boolean isObjectMethodUnoverridden(ReferenceType refType, Method method) {
+	    try {
+	        if (!refType.name().equals("java.lang.Object")) {
+	            // Попытка найти метод с такой сигнатурой в Object
+	            List<ReferenceType> objectTypes = method.virtualMachine().classesByName("java.lang.Object");
+	            if (!objectTypes.isEmpty()) {
+	                ReferenceType objectRef = objectTypes.get(0);
+	                for (Method objMethod : objectRef.allMethods()) {
+	                    if (objMethod.name().equals(method.name()) &&
+	                        objMethod.signature().equals(method.signature())) {
+	                        // Этот метод стандартный Object и не переопределён
+	                        return true;
+	                    }
+	                }
+	            }
+	        }
+	    } catch (Exception ignored) {}
+	    return false;
 	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
