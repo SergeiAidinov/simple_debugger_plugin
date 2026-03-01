@@ -1,9 +1,13 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.Field;
+import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.Value;
@@ -17,10 +21,10 @@ public class InnerElementRepresentation extends AbstractInnerElementRepresentati
 	 * @param objectInstance        - ObjectReference для non-static поля (может
 	 *                              быть null для static)
 	 */
-	public InnerElementRepresentation(ReferenceType outerElementReference, ObjectReference objectInstance,
+	public InnerElementRepresentation(ReferenceType outerElementReference, ReferenceType elementReference, ObjectReference objectInstance,
 			String elementName, String fullQualifiedName, TargetApplicationElementType elementType) {
 
-		super(outerElementReference, elementName, fullQualifiedName, elementType);
+		super(outerElementReference, elementReference, elementName, fullQualifiedName, elementType);
 
 		this.value = computeValue(outerElementReference, objectInstance, elementName, elementType);
 	}
@@ -71,5 +75,20 @@ public class InnerElementRepresentation extends AbstractInnerElementRepresentati
 			return "[error]";
 		}
 		return "[unknown]";
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+	    if (this == o) return true;
+	    if (o == null || getClass() != o.getClass()) return false;
+	    InnerElementRepresentation that = (InnerElementRepresentation) o;
+	    return Objects.equals(getOuterElementReference(), that.getOuterElementReference())
+	            && Objects.equals(getElementName(), that.getElementName())
+	            && Objects.equals(getElementType(), that.getElementType());
+	}
+
+	@Override
+	public int hashCode() {
+	    return Objects.hash(getOuterElementReference(), getElementName(), getElementType());
 	}
 }
