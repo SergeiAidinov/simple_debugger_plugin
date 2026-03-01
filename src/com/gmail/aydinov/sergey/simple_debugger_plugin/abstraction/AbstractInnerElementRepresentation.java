@@ -5,35 +5,35 @@ import java.util.UUID;
 
 import com.sun.jdi.ReferenceType;
 
-public abstract class AbstractInnerElementRepresentation extends AbstractElementRepresentation {
-	
-	private final ReferenceType outerElementReference;
-
-	private static final EnumSet<TargetApplicationElementType> ALLOWED_ELEMENT_TYPES = EnumSet.of(
-			TargetApplicationElementType.STATIC_FIELD, TargetApplicationElementType.NON_STATIC_FIELD,
-			TargetApplicationElementType.METHOD);
-
-	private final TargetApplicationElementType elementType;
-
-	protected AbstractInnerElementRepresentation(UUID uniqueId, ReferenceType outerElementReference, ReferenceType elementReference, String elementName,
-			String fullQualifiedName, TargetApplicationElementType elementType) {
-		super(uniqueId, elementReference, elementName, fullQualifiedName, elementType);
-
-		if (!ALLOWED_ELEMENT_TYPES.contains(elementType)) {
-			throw new IllegalArgumentException("ElementType " + elementType + " is not allowed for inner elements");
-		}
-		
-		this.outerElementReference = outerElementReference;
-		this.elementType = elementType;
-	}
-
-	public TargetApplicationElementType getElementType() {
-		return elementType;
-	}
-
-	public ReferenceType getOuterElementReference() {
-		return outerElementReference;
-	}
+public abstract class AbstractInnerElementRepresentation  /* extends AbstractElementRepresentation */{
+//	
+//	private final ReferenceType outerElementReference;
+//
+//	private static final EnumSet<TargetApplicationElementType> ALLOWED_ELEMENT_TYPES = EnumSet.of(
+//			TargetApplicationElementType.STATIC_FIELD, TargetApplicationElementType.NON_STATIC_FIELD,
+//			TargetApplicationElementType.METHOD);
+//
+//	private final TargetApplicationElementType elementType;
+//
+//	protected AbstractInnerElementRepresentation(UUID uniqueId, ReferenceType outerElementReference, ReferenceType elementReference, String elementName,
+//			String fullQualifiedName, TargetApplicationElementType elementType) {
+//		super(uniqueId, elementReference, elementName, fullQualifiedName, elementType);
+//
+//		if (!ALLOWED_ELEMENT_TYPES.contains(elementType)) {
+//			throw new IllegalArgumentException("ElementType " + elementType + " is not allowed for inner elements");
+//		}
+//		
+//		this.outerElementReference = outerElementReference;
+//		this.elementType = elementType;
+//	}
+//
+//	public TargetApplicationElementType getElementType() {
+//		return elementType;
+//	}
+//
+//	public ReferenceType getOuterElementReference() {
+//		return outerElementReference;
+//	}
 	
 	
 }

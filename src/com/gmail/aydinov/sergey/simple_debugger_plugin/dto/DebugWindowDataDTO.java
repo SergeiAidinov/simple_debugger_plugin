@@ -2,84 +2,81 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.TargetApplicationElementType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.sun.jdi.Location;
 import com.sun.jdi.ReferenceType;
 
 /**
  * DTO для передачи данных в UI без передачи оригинальных JDI-объектов.
+ * Создаётся на основе UniversalElementRepresentation.
  */
 public class DebugWindowDataDTO {
 
-	
-    private ReferenceType referenceType; // оставляем для внутреннего использования
+    private ReferenceType referenceType; // внутреннее использование
     private String elementName;
-    private TargetApplicationElementType elementType;
+    private UniversalElementType elementType;
     private String qualifiedTypeName;
     private Set<InnerElementRepresentationDTO> innerElements;
+
     private int lineNumber = -1;
-    private List<MethodCallInStackDTO> stackCall;
+    private List<MethodCallInStackDTO> stackCall = List.of();
     private String methodName = "[NO METHOD]";
 
-    // Конструктор из anchorElement и Location
-    public DebugWindowDataDTO(TopLevelElementRepresentation anchorElement, Location location) {
-        if (anchorElement != null) {
-            this.referenceType = anchorElement.getReferenceType();
-            this.elementName = anchorElement.getElementName();
-            this.elementType = anchorElement.getElementType();
-            this.qualifiedTypeName = anchorElement.getFullQualifiedName();
-            this.innerElements = anchorElement.getInnerElements() != null
-                    ? anchorElement.getInnerElements().stream()
-                        .map(InnerElementRepresentationDTO::new)
-                        .collect(Collectors.toSet())
-                    : Set.of();
+    // ===== Конструктор =====
+    public DebugWindowDataDTO(UniversalElementRepresentation element, Location location) {
+        if (element != null) {
+            this.referenceType = element.getReferenceType();
+            this.elementName = element.getElementName();
+            this.elementType = element.getElementType();
+            this.qualifiedTypeName = element.getFullQualifiedName();
+
+            this.innerElements = element.getInnerElements() == null
+                    ? Set.of()
+                    : element.getInnerElements().stream()
+                        .filter(DebugWindowDataDTO::isSupportedInnerElement)
+                        .map(DebugWindowDataDTO::toInnerDto)
+                        .collect(Collectors.toSet());
+        } else {
+            this.innerElements = Set.of();
         }
+
         if (location != null) {
             this.lineNumber = location.lineNumber();
             this.methodName = location.method().name() + "(..)";
         }
-        this.stackCall = List.of(); // можно позже заполнить DebugUtils.compileStackInfo()
     }
 
-    public ReferenceType getReferenceType() {
-        return referenceType;
+    // ===== Фильтрация допустимых элементов =====
+    private static boolean isSupportedInnerElement(UniversalElementRepresentation e) {
+        return e.getElementType() == UniversalElementType.METHOD
+            || e.getElementType() == UniversalElementType.STATIC_FIELD
+            || e.getElementType() == UniversalElementType.NON_STATIC_FIELD
+            || e.getElementType() == UniversalElementType.VARIABLE;
     }
 
-    public String getElementName() {
-        return elementName;
+    // ===== Маппинг UniversalElementRepresentation → InnerElementRepresentationDTO =====
+    private static InnerElementRepresentationDTO toInnerDto(UniversalElementRepresentation e) {
+        return new InnerElementRepresentationDTO(
+                e.getUniqueId(),
+                e.getElementName(),
+                e.getFullQualifiedName(),
+                e.getElementType(),  // используем напрямую UniversalElementType
+                e.getValue()
+        );
     }
 
-    public TargetApplicationElementType getElementType() {
-        return elementType;
-    }
+    // ===== Getters =====
+    public ReferenceType getReferenceType() { return referenceType; }
+    public String getElementName() { return elementName; }
+    public UniversalElementType getElementType() { return elementType; }
+    public String getQualifiedTypeName() { return qualifiedTypeName; }
+    public Set<InnerElementRepresentationDTO> getInnerElements() { return innerElements; }
+    public int getLineNumber() { return lineNumber; }
+    public List<MethodCallInStackDTO> getStackCall() { return stackCall; }
+    public String getMethodName() { return methodName; }
 
-    public String getQualifiedTypeName() {
-        return qualifiedTypeName;
-    }
-
-    public Set<InnerElementRepresentationDTO> getInnerElements() {
-        return innerElements;
-    }
-
-    public int getLineNumber() {
-        return lineNumber;
-    }
-
-    public List<MethodCallInStackDTO> getStackCall() {
-        return stackCall;
-    }
-
-    public String getMethodName() {
-        return methodName;
-    }
-
-    // Сеттеры при необходимости
-    public void setStackCall(List<MethodCallInStackDTO> stackCall) {
-        this.stackCall = stackCall;
-    }
+    public void setStackCall(List<MethodCallInStackDTO> stackCall) { this.stackCall = stackCall; }
 }

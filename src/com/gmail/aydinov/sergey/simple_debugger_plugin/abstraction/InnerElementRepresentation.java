@@ -1,95 +1,38 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
-import com.sun.jdi.Field;
-import com.sun.jdi.Method;
-import com.sun.jdi.ObjectReference;
-import com.sun.jdi.ReferenceType;
-import com.sun.jdi.Value;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 
-public class InnerElementRepresentation extends AbstractInnerElementRepresentation {
+/**
+ * Представление внутреннего элемента (поле, метод, локальная переменная) для UI.
+ */
+public class InnerElementRepresentation {
 
-	private String value;
+    private final UUID uniqueId;
+    private final String elementName;
+    private final String fullQualifiedName;
+    private final UniversalElementType elementType;
+    private final String value;
 
-	/**
-	 * @param outerElementReference - ReferenceType для static поля
-	 * @param objectInstance        - ObjectReference для non-static поля (может
-	 *                              быть null для static)
-	 */
-	public InnerElementRepresentation(UUID uniqueId, ReferenceType outerElementReference, ReferenceType elementReference, ObjectReference objectInstance,
-			String elementName, String fullQualifiedName, TargetApplicationElementType elementType) {
+    public InnerElementRepresentation(UUID uniqueId, String elementName, String fullQualifiedName,
+                                      UniversalElementType elementType, String value) {
+        this.uniqueId = uniqueId;
+        this.elementName = elementName;
+        this.fullQualifiedName = fullQualifiedName;
+        this.elementType = elementType;
+        this.value = value;
+    }
 
-		super(uniqueId, outerElementReference, elementReference, elementName, fullQualifiedName, elementType);
+    public UUID getUniqueId() { return uniqueId; }
+    public String getElementName() { return elementName; }
+    public String getFullQualifiedName() { return fullQualifiedName; }
+    public UniversalElementType getElementType() { return elementType; }
+    public String getValue() { return value; }
 
-		this.value = computeValue(outerElementReference, objectInstance, elementName, elementType);
-	}
-
-	public String getValue() {
-		return value;
-	}
-
-	private String computeValue(ReferenceType referenceType, ObjectReference objectInstance, String fieldName,
-			TargetApplicationElementType elementType) {
-
-		try {
-			switch (elementType) {
-			case STATIC_FIELD -> {
-				Field field = referenceType.fieldByName(fieldName);
-				if (field == null)
-					return "[field not found]";
-				Value val = referenceType.getValue(field); // static поля читаем через ReferenceType
-				return DebugUtils.valueToString(val);
-			}
-			case NON_STATIC_FIELD -> {
-				if (objectInstance == null)
-					return "[no instance]";
-				Field field = objectInstance.referenceType().fieldByName(fieldName);
-				if (field == null)
-					return "[field not found]";
-				Value val = objectInstance.getValue(field); // non-static через ObjectReference
-				return DebugUtils.valueToString(val);
-			}
-			case METHOD -> {
-			    try {
-			        com.sun.jdi.Method method = referenceType.methodsByName(getElementName())
-			                                                 .stream().findFirst().orElse(null);
-			        if (method == null) return "[method not found]";
-
-			        String params = method.argumentTypes().stream()
-			                              .map(com.sun.jdi.Type::name)
-			                              .reduce((a, b) -> a + ", " + b)
-			                              .orElse("");
-
-			        return method.name() + "(" + params + ")"; // будет в колонке Value / Info
-			    } catch (Exception e) {
-			        return "[error]";
-			    }
-			}
-			}
-		} catch (Exception e) {
-			return "[error]";
-		}
-		return "[unknown]";
-	}
-	
-	@Override
-	public boolean equals(Object o) {
-	    if (this == o) return true;
-	    if (o == null || getClass() != o.getClass()) return false;
-	    InnerElementRepresentation that = (InnerElementRepresentation) o;
-	    return Objects.equals(getOuterElementReference(), that.getOuterElementReference())
-	            && Objects.equals(getElementName(), that.getElementName())
-	            && Objects.equals(getElementType(), that.getElementType());
-	}
-
-	@Override
-	public int hashCode() {
-	    return Objects.hash(getOuterElementReference(), getElementName(), getElementType());
-	}
+    @Override
+    public String toString() {
+        return "InnerElementRepresentation [name=" + elementName +
+               ", type=" + elementType + ", value=" + value + "]";
+    }
 }

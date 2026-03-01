@@ -2,8 +2,8 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import java.util.UUID;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.TargetApplicationElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 
 /**
  * DTO для внутреннего элемента (поле / метод) для передачи в UI.
@@ -13,10 +13,10 @@ public class InnerElementRepresentationDTO {
 	private final UUID uniqueId;
     private final String name;
     private final String typeName;
-    private final TargetApplicationElementType elementType;
+    private final UniversalElementType elementType;
     private String value;
 
-    public InnerElementRepresentationDTO(InnerElementRepresentation original) {
+    public InnerElementRepresentationDTO(UniversalElementRepresentation original) {
     	this.uniqueId = original.getUniqueId();
         this.name = original.getElementName();
         this.typeName = original.getFullQualifiedName();
@@ -24,7 +24,7 @@ public class InnerElementRepresentationDTO {
         this.value = original.getValue();
     }
 
-    public InnerElementRepresentationDTO(UUID uniqueId, String name, String typeName, TargetApplicationElementType elementType,
+    public InnerElementRepresentationDTO(UUID uniqueId, String name, String typeName, UniversalElementType elementType,
 			String value) {
     	this.uniqueId = uniqueId;
 		this.name = name;
@@ -45,7 +45,7 @@ public class InnerElementRepresentationDTO {
         return typeName;
     }
 
-    public TargetApplicationElementType getElementType() {
+    public UniversalElementType getElementType() {
         return elementType;
     }
 

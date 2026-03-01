@@ -31,8 +31,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.TargetApplicationElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -49,7 +51,7 @@ import com.sun.jdi.request.EventRequestManager;
 
 public class TargetApplicationRepresentation {
 
-	private final Map<UUID, PairDTO<ReferenceType, AbstractElementRepresentation>> targetApplicationSnapshot = new ConcurrentHashMap<>();
+	private final Map<UUID, UniversalElementRepresentation> targetApplicationSnapshot = new ConcurrentHashMap<>();
 	private final TargetApplicationBreakpointRepresentation targetApplicationBreakepointRepresentation;
 	private final VirtualMachine virtualMachine;
 	private final DebugConfiguration debugConfiguration;
@@ -68,7 +70,7 @@ public class TargetApplicationRepresentation {
 		return targetApplicationBreakepointRepresentation;
 	}
 
-	public Map<UUID, PairDTO<ReferenceType, AbstractElementRepresentation>> getTargetApplicationSnapshot() {
+	public Map<UUID, UniversalElementRepresentation> getTargetApplicationSnapshot() {
 		return targetApplicationSnapshot;
 	}
 
@@ -88,35 +90,43 @@ public class TargetApplicationRepresentation {
 		Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
 
 		// 4. Обрабатываем каждый top-level элемент
-		for (ReferenceType refType : definedByLoaders) {
-			TargetApplicationElementType elementType = determineElementType(refType);
+		for (ReferenceType referenceType : definedByLoaders) {
+			UniversalElementType elementType = determineElementType(referenceType);
 			if (elementType == null)
 				continue;
 
 			// Создаём top-level элемент через фабрику
-			TopLevelElementRepresentation topLevelElement = new TopLevelElementRepresentation(UUID.randomUUID(), refType, refType.name(),
-					refType.name(), elementType, new HashSet<>());
-
-			// Рекурсивно заполняем поля, методы и inner элементы
-			populateInnerElements(topLevelElement, refType);
-
-			// Добавляем top-level элемент в Map
-			targetApplicationSnapshot.put(UUID.randomUUID(), PairDTO.of(refType, topLevelElement));
+			UUID topLevelUiid = UUID.randomUUID();
+			UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
+					.uniqueId(topLevelUiid)
+					.parentUniqueId(null)
+					.referenceType(referenceType)
+					.elementName(DebugUtils.extractSimpleName(referenceType.name()))
+					.fullQualifiedName(referenceType.name())
+					.elementType(DebugUtils.determineUniversalElementType(referenceType))
+					.currentRole(CurrentRole.OUTER)
+					.build();
+			targetApplicationSnapshot.put(topLevelUiid, topLevelElement);
+					
 		}
-
-		SimpleDebuggerLogger.info("LOADED CLASSES: " + targetApplicationSnapshot.size());
+		for (UniversalElementRepresentation topLevelElement : targetApplicationSnapshot.values()) {
+			populateInnerElements(topLevelElement, topLevelElement.getReferenceType());
+		}
+			
+		SimpleDebuggerLogger.info("LOADED TOP-LEVEL ELEMENTS: " + targetApplicationSnapshot.size());
 	}
 
-	/**
-	 * Рекурсивно создаёт все внутренние элементы и добавляет их в parentElement.
-	 */
-	private void populateInnerElements(AbstractTargetAplicationTopLevelElement parentElement, ReferenceType refType) {
-		Set<InnerElementRepresentation> innerElements = new HashSet<>();
+	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
+
+		if (parentElement == null || refType == null) {
+			return;
+		}
 
 		ObjectReference instance = null;
+
+		// Для non-static полей нужен объект
 		if (refType instanceof ClassType classType) {
 			try {
-				// Берём первый доступный объект для нестатических полей
 				List<ObjectReference> instances = classType.instances(1);
 				if (!instances.isEmpty()) {
 					instance = instances.get(0);
@@ -125,49 +135,47 @@ public class TargetApplicationRepresentation {
 			}
 		}
 
-		// --- поля ---
+		UUID parentId = parentElement.getUniqueId();
+
+		// ---------------- Fields ----------------
 		for (Field field : refType.allFields()) {
 			try {
-				if (field.isSynthetic())
+				if (field.isSynthetic()) {
 					continue;
+				}
 
-				TargetApplicationElementType elementType = field.isStatic() ? TargetApplicationElementType.STATIC_FIELD
-						: TargetApplicationElementType.NON_STATIC_FIELD;
+				UniversalElementRepresentation.UniversalElementType elementType = DebugUtils.determineUniversalElementType(field);
 
-				ObjectReference fieldInstance = field.isStatic() ? null : instance;
+				UniversalElementRepresentation.CurrentRole role = field.isStatic()
+						? UniversalElementRepresentation.CurrentRole.STATIC_FIELD
+						: UniversalElementRepresentation.CurrentRole.NON_STATIC_FIELD;
 
-				// Получаем полный тип поля
-				String typeName = field.typeName(); // <-- полный тип, например "java.lang.String"
+				UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
+						.uniqueId(UUID.randomUUID()).parentUniqueId(parentId).referenceType(refType)
+						.elementName(field.name()).fullQualifiedName(field.typeName()).elementType(elementType)
+						.currentRole(role).build();
 
-				// Создаём объект
-				InnerElementRepresentation fieldElement = new InnerElementRepresentation(UUID.randomUUID(),
-						parentElement.getReferenceType(), refType, fieldInstance, field.name(), typeName, // <-- теперь
-																											// это тип,
-																											// а не
-																											// значение
-						elementType);
+				parentElement.getInnerElements().add(fieldElement);
 
-				innerElements.add(fieldElement);
 			} catch (Exception ignored) {
 			}
 		}
 
-		// --- методы ---
-		// --- методы ---
+		// ---------------- Methods ----------------
 		for (Method method : refType.methods()) {
-			if (method.isNative() || "<init>".equals(method.name()) || method.isSynthetic()
-					|| method.name().equals("<clinit>"))
+			if (method.isNative() || method.isSynthetic() || "<init>".equals(method.name())
+					|| "<clinit>".equals(method.name())) {
 				continue;
-			String returnTypeName = method.returnTypeName();
-			String methodName = method.name();
-			InnerElementRepresentation methodElement = new InnerElementRepresentation(UUID.randomUUID(), parentElement.getReferenceType(),
-					refType, null, methodName, returnTypeName, TargetApplicationElementType.METHOD);
+			}
 
-			innerElements.add(methodElement);
+			UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
+					.uniqueId(UUID.randomUUID()).parentUniqueId(parentId).referenceType(refType)
+					.elementName(method.name()).fullQualifiedName(method.returnTypeName())
+					.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
+					.currentRole(UniversalElementRepresentation.CurrentRole.LOCAL).build();
+
+			parentElement.getInnerElements().add(methodElement);
 		}
-
-		// --- сохраняем во внутренние элементы родителя ---
-		parentElement.getInnerElements().addAll(innerElements);
 	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
@@ -222,12 +230,12 @@ public class TargetApplicationRepresentation {
 		return result;
 	}
 
-	private TargetApplicationElementType determineElementType(ReferenceType referenceType) {
+	private UniversalElementType determineElementType(ReferenceType referenceType) {
 		if (referenceType instanceof ClassType) {
-			return TargetApplicationElementType.CLASS;
+			return UniversalElementType.CLASS;
 		}
 		if (referenceType instanceof InterfaceType) {
-			return TargetApplicationElementType.INTERFACE;
+			return UniversalElementType.INTERFACE;
 		}
 		return null;
 	}
@@ -382,17 +390,16 @@ public class TargetApplicationRepresentation {
 	}
 
 	public ReferenceType findReferenceTypeForClass(
-			TopLevelElementRepresentation targetApplicationClassOrInterfaceRepresentation) {
-		if (Objects.isNull(targetApplicationClassOrInterfaceRepresentation)) {
+			UniversalElementRepresentation universalElementRepresentation) {
+		if (Objects.isNull(universalElementRepresentation)) {
 			return null;
 		}
 
-		String className = targetApplicationClassOrInterfaceRepresentation.getElementName();
+		String className = universalElementRepresentation.getElementName();
 
-		for (Entry<UUID, PairDTO<ReferenceType, AbstractElementRepresentation>> entry : targetApplicationSnapshot
-				.entrySet()) {
+		for (Entry<UUID, UniversalElementRepresentation> entry : targetApplicationSnapshot.entrySet()) {
 
-			ReferenceType referenceType = entry.getValue().getFirst();
+			ReferenceType referenceType = entry.getValue().getReferenceType();
 
 			if (Objects.nonNull(referenceType) && className.equals(referenceType.name())) {
 				return referenceType;

@@ -264,13 +264,13 @@ public class EvaluateTabController {
 		TopLevelElementRepresentation clazz = getSelectedClass();
 		String argsText = methodInput.getText();
 
-		if (Objects.nonNull(clazz)) {
-			uiEventCollector
-					.collectUiEvent(new UIEvent<UserInvokedMethodEventDTO>(SimpleDebuggerEventType.USER_INVOKED_METHOD,
-							new UserInvokedMethodEventDTO(clazz, lastMethod, argsText)));
-		} else {
-			resultField.setText("No class selected to invoke method.");
-		}
+//		if (Objects.nonNull(clazz)) {
+//			uiEventCollector
+//					.collectUiEvent(new UIEvent<UserInvokedMethodEventDTO>(SimpleDebuggerEventType.USER_INVOKED_METHOD,
+//							new UserInvokedMethodEventDTO(clazz, lastMethod, argsText)));
+//		} else {
+//			resultField.setText("No class selected to invoke method.");
+//		}
 	}
 
 	// ----------------- Public helpers -----------------
