@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.TargetApplicationElementType;
@@ -15,6 +16,7 @@ import com.sun.jdi.ReferenceType;
  */
 public class DebugWindowDataDTO {
 
+	
     private ReferenceType referenceType; // оставляем для внутреннего использования
     private String elementName;
     private TargetApplicationElementType elementType;

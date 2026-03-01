@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
@@ -47,7 +49,7 @@ import com.sun.jdi.request.EventRequestManager;
 
 public class TargetApplicationRepresentation {
 
-	private final Map<ReferenceType, AbstractElementRepresentation> targetApplicationSnapshot = new ConcurrentHashMap<>();
+	private final Map<UUID, PairDTO<ReferenceType, AbstractElementRepresentation>> targetApplicationSnapshot = new ConcurrentHashMap<>();
 	private final TargetApplicationBreakpointRepresentation targetApplicationBreakepointRepresentation;
 	private final VirtualMachine virtualMachine;
 	private final DebugConfiguration debugConfiguration;
@@ -66,7 +68,7 @@ public class TargetApplicationRepresentation {
 		return targetApplicationBreakepointRepresentation;
 	}
 
-	public Map<ReferenceType, AbstractElementRepresentation> getTargetApplicationSnapshot() {
+	public Map<UUID, PairDTO<ReferenceType, AbstractElementRepresentation>> getTargetApplicationSnapshot() {
 		return targetApplicationSnapshot;
 	}
 
@@ -92,14 +94,14 @@ public class TargetApplicationRepresentation {
 				continue;
 
 			// Создаём top-level элемент через фабрику
-			TopLevelElementRepresentation topLevelElement = new TopLevelElementRepresentation(refType, refType.name(),
+			TopLevelElementRepresentation topLevelElement = new TopLevelElementRepresentation(UUID.randomUUID(), refType, refType.name(),
 					refType.name(), elementType, new HashSet<>());
 
 			// Рекурсивно заполняем поля, методы и inner элементы
 			populateInnerElements(topLevelElement, refType);
 
 			// Добавляем top-level элемент в Map
-			targetApplicationSnapshot.put(refType, topLevelElement);
+			targetApplicationSnapshot.put(UUID.randomUUID(), PairDTO.of(refType, topLevelElement));
 		}
 
 		SimpleDebuggerLogger.info("LOADED CLASSES: " + targetApplicationSnapshot.size());
@@ -138,7 +140,7 @@ public class TargetApplicationRepresentation {
 				String typeName = field.typeName(); // <-- полный тип, например "java.lang.String"
 
 				// Создаём объект
-				InnerElementRepresentation fieldElement = new InnerElementRepresentation(
+				InnerElementRepresentation fieldElement = new InnerElementRepresentation(UUID.randomUUID(),
 						parentElement.getReferenceType(), refType, fieldInstance, field.name(), typeName, // <-- теперь
 																											// это тип,
 																											// а не
@@ -158,7 +160,7 @@ public class TargetApplicationRepresentation {
 				continue;
 			String returnTypeName = method.returnTypeName();
 			String methodName = method.name();
-			InnerElementRepresentation methodElement = new InnerElementRepresentation(parentElement.getReferenceType(),
+			InnerElementRepresentation methodElement = new InnerElementRepresentation(UUID.randomUUID(), parentElement.getReferenceType(),
 					refType, null, methodName, returnTypeName, TargetApplicationElementType.METHOD);
 
 			innerElements.add(methodElement);
@@ -387,10 +389,10 @@ public class TargetApplicationRepresentation {
 
 		String className = targetApplicationClassOrInterfaceRepresentation.getElementName();
 
-		for (Entry<ReferenceType, ? extends AbstractElementRepresentation> entry : targetApplicationSnapshot
+		for (Entry<UUID, PairDTO<ReferenceType, AbstractElementRepresentation>> entry : targetApplicationSnapshot
 				.entrySet()) {
 
-			ReferenceType referenceType = entry.getKey();
+			ReferenceType referenceType = entry.getValue().getFirst();
 
 			if (Objects.nonNull(referenceType) && className.equals(referenceType.name())) {
 				return referenceType;

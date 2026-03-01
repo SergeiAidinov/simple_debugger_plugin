@@ -19,6 +19,7 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.TargetApplicationElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
@@ -32,6 +33,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
@@ -320,11 +322,14 @@ public class DebugSessionImpl implements DebugSession {
 			return false;
 
 		Location location = breakpointEvent.location();
-		TopLevelElementRepresentation anchorElement = (TopLevelElementRepresentation) targetApplicationRepresentation
-				.getTargetApplicationSnapshot().get(location.declaringType());
-		if (Objects.isNull(anchorElement))
+		 ReferenceType referenceType = location.declaringType();
+		 AtomicReference<TopLevelElementRepresentation> anchorElementReference = new AtomicReference<TopLevelElementRepresentation>();
+				 targetApplicationRepresentation
+				.getTargetApplicationSnapshot().values().stream().filter(p -> p.getFirst().equals(referenceType)).findAny()
+				.ifPresent(p -> anchorElementReference.set((TopLevelElementRepresentation) p.getSecond()));;
+		if (Objects.isNull(anchorElementReference.get()))
 			return false;
-		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(anchorElement, location);
+		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(anchorElementReference.get(), location);
 		ThreadReference thread = breakpointEvent.thread();
 		StackFrame frame = null;
 		try {
