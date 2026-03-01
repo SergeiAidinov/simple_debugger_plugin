@@ -122,7 +122,7 @@ public class TargetApplicationRepresentation {
 	        return;
 	    }
 
-	    UUID parentId = parentElement.getUniqueId();
+	    UUID parentId = parentElement.getTag().getParentUniqueId();
 
 	    // ---------------- Fields ----------------
 	    for (Field field : refType.allFields()) {
