@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
@@ -17,6 +18,7 @@ import com.sun.jdi.ReferenceType;
 public class DebugWindowDataDTO {
 
     private ReferenceType referenceType; // внутреннее использование
+    private UUID uniqueId;
     private String elementName;
     private UniversalElementType elementType;
     private String qualifiedTypeName;
@@ -30,6 +32,7 @@ public class DebugWindowDataDTO {
     public DebugWindowDataDTO(UniversalElementRepresentation element, Location location) {
         if (element != null) {
             this.referenceType = element.getReferenceType();
+            this.uniqueId = element.getUniqueId();
             this.elementName = element.getElementName();
             this.elementType = element.getElementType();
             this.qualifiedTypeName = element.getFullQualifiedName();
@@ -62,6 +65,7 @@ public class DebugWindowDataDTO {
     private static InnerElementRepresentation toInnerRepresentation(UniversalElementRepresentation e) {
         return new InnerElementRepresentation(
                 e.getUniqueId(),
+                e.getUniqueId(),
                 e.getElementName(),
                 e.getFullQualifiedName(),
                 e.getElementType(),
@@ -71,6 +75,7 @@ public class DebugWindowDataDTO {
 
     // ===== Getters =====
     public ReferenceType getReferenceType() { return referenceType; }
+    public UUID getUniqueId() { return uniqueId;}
     public String getElementName() { return elementName; }
     public UniversalElementType getElementType() { return elementType; }
     public String getQualifiedTypeName() { return qualifiedTypeName; }

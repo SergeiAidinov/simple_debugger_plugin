@@ -28,7 +28,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
@@ -196,7 +195,7 @@ public class DebugSessionImpl implements DebugSession {
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT)) {
-				UIEvent<InnerElementRepresentationDTO> userStartedInspectionSeanceEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
+				UIEvent<InnerElementRepresentation> userStartedInspectionSeanceEvent = (UIEvent<InnerElementRepresentation>) abstractSimpleDebuggerUIEvent;
 				initiateInspectionSeanceIfPossible(userStartedInspectionSeanceEvent.getPayload());
 			} else {
 				SimpleDebuggerLogger
@@ -210,7 +209,7 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {
+	private void initiateInspectionSeanceIfPossible(InnerElementRepresentation innerElementRepresentationDTO) {
 //		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
 //				|| DebuggerContext.context().isInspectionSeanceActive())
 //			return;
@@ -350,6 +349,7 @@ public class DebugSessionImpl implements DebugSession {
 		            Value value = entry.getValue();
 		            return new InnerElementRepresentation(
 		                    UUID.randomUUID(),       // уникальный идентификатор
+		                    debugWindowDataDTO.getUniqueId(),
 		                    var.name(),              // имя переменной
 		                    var.typeName(),          // полное имя типа
 		                    UniversalElementType.VARIABLE, // тип элемента
