@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
+import java.util.UUID;
+
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.TargetApplicationElementType;
 
@@ -8,24 +10,31 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractEleme
  */
 public class InnerElementRepresentationDTO {
 
+	private final UUID uniqueId;
     private final String name;
     private final String typeName;
     private final TargetApplicationElementType elementType;
     private String value;
 
     public InnerElementRepresentationDTO(InnerElementRepresentation original) {
+    	this.uniqueId = original.getUniqueId();
         this.name = original.getElementName();
         this.typeName = original.getFullQualifiedName();
         this.elementType = original.getElementType();
         this.value = original.getValue();
     }
 
-    public InnerElementRepresentationDTO(String name, String typeName, TargetApplicationElementType elementType,
+    public InnerElementRepresentationDTO(UUID uniqueId, String name, String typeName, TargetApplicationElementType elementType,
 			String value) {
+    	this.uniqueId = uniqueId;
 		this.name = name;
 		this.typeName = typeName;
 		this.elementType = elementType;
 		this.value = value;
+	}
+    
+	public UUID getUniqueId() {
+		return uniqueId;
 	}
 
 	public String getName() {
