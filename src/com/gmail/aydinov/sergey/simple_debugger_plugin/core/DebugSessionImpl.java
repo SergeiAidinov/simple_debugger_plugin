@@ -4,6 +4,7 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.resources.IFile;
@@ -18,6 +19,7 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
@@ -342,15 +344,19 @@ public class DebugSessionImpl implements DebugSession {
 		}
 		Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
 
-		List<InnerElementRepresentationDTO> localVariables = locals.entrySet().stream().map(entry -> {
-			LocalVariable var = entry.getKey();
-			Value value = entry.getValue();
-			return new InnerElementRepresentationDTO(null, var.name(), // имя переменной
-					var.typeName(), // тип
-					UniversalElementType.VARIABLE, // вид элемента
-					value != null ? value.toString() : "null" // значение
-			);
-		}).toList();
+		List<InnerElementRepresentation> localVariables = locals.entrySet().stream()
+		        .map(entry -> {
+		            LocalVariable var = entry.getKey();
+		            Value value = entry.getValue();
+		            return new InnerElementRepresentation(
+		                    UUID.randomUUID(),       // уникальный идентификатор
+		                    var.name(),              // имя переменной
+		                    var.typeName(),          // полное имя типа
+		                    UniversalElementType.VARIABLE, // тип элемента
+		                    value != null ? value.toString() : "null" // значение
+		            );
+		        })
+		        .toList();
 
 		if (!localVariables.isEmpty()) {
 			debugWindowDataDTO.getInnerElements().addAll(localVariables);

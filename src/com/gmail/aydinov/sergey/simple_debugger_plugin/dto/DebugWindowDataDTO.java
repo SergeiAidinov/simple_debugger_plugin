@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.sun.jdi.Location;
@@ -19,7 +20,7 @@ public class DebugWindowDataDTO {
     private String elementName;
     private UniversalElementType elementType;
     private String qualifiedTypeName;
-    private Set<InnerElementRepresentationDTO> innerElements;
+    private Set<InnerElementRepresentation> innerElements;
 
     private int lineNumber = -1;
     private List<MethodCallInStackDTO> stackCall = List.of();
@@ -37,7 +38,7 @@ public class DebugWindowDataDTO {
                     ? Set.of()
                     : element.getInnerElements().stream()
                         .filter(DebugWindowDataDTO::isSupportedInnerElement)
-                        .map(DebugWindowDataDTO::toInnerDto)
+                        .map(DebugWindowDataDTO::toInnerRepresentation)
                         .collect(Collectors.toSet());
         } else {
             this.innerElements = Set.of();
@@ -57,13 +58,13 @@ public class DebugWindowDataDTO {
             || e.getElementType() == UniversalElementType.VARIABLE;
     }
 
-    // ===== Маппинг UniversalElementRepresentation → InnerElementRepresentationDTO =====
-    private static InnerElementRepresentationDTO toInnerDto(UniversalElementRepresentation e) {
-        return new InnerElementRepresentationDTO(
+    // ===== Маппинг UniversalElementRepresentation → InnerElementRepresentation =====
+    private static InnerElementRepresentation toInnerRepresentation(UniversalElementRepresentation e) {
+        return new InnerElementRepresentation(
                 e.getUniqueId(),
                 e.getElementName(),
                 e.getFullQualifiedName(),
-                e.getElementType(),  // используем напрямую UniversalElementType
+                e.getElementType(),
                 e.getValue()
         );
     }
@@ -73,7 +74,7 @@ public class DebugWindowDataDTO {
     public String getElementName() { return elementName; }
     public UniversalElementType getElementType() { return elementType; }
     public String getQualifiedTypeName() { return qualifiedTypeName; }
-    public Set<InnerElementRepresentationDTO> getInnerElements() { return innerElements; }
+    public Set<InnerElementRepresentation> getInnerElements() { return innerElements; }
     public int getLineNumber() { return lineNumber; }
     public List<MethodCallInStackDTO> getStackCall() { return stackCall; }
     public String getMethodName() { return methodName; }
