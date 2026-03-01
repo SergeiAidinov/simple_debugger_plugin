@@ -25,7 +25,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
 
 /**
  * Вкладка для отображения полей, методов и переменных
- * с иконками и подсказками.
+ * с иконками и подсказками из DebugWindowsManager.
  */
 public class ClassMembersAtBreakpoint {
 
@@ -60,31 +60,9 @@ public class ClassMembersAtBreakpoint {
 
     private void setupColumns() {
         createColumn("Name", 150, InnerElementRepresentationDTO::getElementName);
-
-        createColumn("Type / Return Type", 200, InnerElementRepresentationDTO::getFullQualifiedName, element -> {
-            UniversalElementType type = element.getElementType();
-            if (type == null) return null;
-
-            String iconKey = switch (type) {
-                case INTERFACE -> "interface";
-                case METHOD -> "method";
-                case STATIC_FIELD -> "static_field";
-                case VARIABLE -> "variableIcon";
-                case NON_STATIC_FIELD -> "fieldIcon";
-                default -> null;
-            };
-            if (iconKey == null) return null;
-            return DebugWindowsManager.instance().icons.get(iconKey).getFirst();
-        });
-
+        createColumn("Type / Return Type", 200, InnerElementRepresentationDTO::getFullQualifiedName,
+                this::getTypeIcon);
         createColumn("Value / Info", 300, InnerElementRepresentationDTO::getValue, this::getInspectIcon);
-    }
-
-    private Image getInspectIcon(InnerElementRepresentationDTO element) {
-        if (shouldShowInspectIcon(element)) {
-            return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
-        }
-        return null;
     }
 
     private void createColumn(String title, int width, Function<InnerElementRepresentationDTO, String> textExtractor) {
@@ -117,8 +95,7 @@ public class ClassMembersAtBreakpoint {
                     if (img != null) {
                         TableItem item = findTableItem(inner);
                         if (item != null) {
-                            // Tooltip с именем и полным типом
-                            item.setData("tooltip", inner.getElementName() + " : " + inner.getFullQualifiedName());
+                            item.setData("tooltip", getTooltip(inner));
                         }
                     }
                     return img;
@@ -136,7 +113,48 @@ public class ClassMembersAtBreakpoint {
         return null;
     }
 
-    // =================== Подсказки ===================
+    // =================== Иконки и подсказки ===================
+
+    private Image getInspectIcon(InnerElementRepresentationDTO element) {
+        if (shouldShowInspectIcon(element)) {
+            return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
+        }
+        return null;
+    }
+
+    private Image getTypeIcon(InnerElementRepresentationDTO element) {
+        String iconKey = switch (element.getElementType()) {
+            case INTERFACE -> "interface";
+            case METHOD -> "method";
+            case STATIC_FIELD -> "static_field";
+            case NON_STATIC_FIELD -> "fieldIcon";
+            case VARIABLE -> "variableIcon";
+            default -> null;
+        };
+        if (iconKey != null && DebugWindowsManager.instance().icons.containsKey(iconKey)) {
+            return DebugWindowsManager.instance().icons.get(iconKey).getFirst();
+        }
+        return null;
+    }
+
+    private String getTooltip(InnerElementRepresentationDTO element) {
+        if (element == null || element.getElementType() == null) return null;
+
+        String iconKey = switch (element.getElementType()) {
+            case INTERFACE -> "interface";
+            case METHOD -> "method";
+            case STATIC_FIELD -> "static_field";
+            case NON_STATIC_FIELD -> "fieldIcon";
+            case VARIABLE -> "variableIcon";
+            default -> null;
+        };
+
+        if (iconKey != null && DebugWindowsManager.instance().icons.containsKey(iconKey)) {
+            return DebugWindowsManager.instance().icons.get(iconKey).getSecond() + ": "
+                    + element.getElementName();
+        }
+        return element.getElementName() + " : " + element.getFullQualifiedName();
+    }
 
     private boolean shouldShowInspectIcon(InnerElementRepresentationDTO element) {
         String typeName = element.getFullQualifiedName();
@@ -167,9 +185,10 @@ public class ClassMembersAtBreakpoint {
 
         List<InnerElementRepresentationDTO> sorted = new ArrayList<>(debugWindowDataDTO.getInnerElements());
         sorted.sort(
-        	    Comparator.comparingInt((InnerElementRepresentationDTO e) -> e.getElementType().ordinal())
-        	              .thenComparing(Comparator.comparing(InnerElementRepresentationDTO::getElementName))
-        	);
+            Comparator.comparingInt((InnerElementRepresentationDTO e) -> e.getElementType().ordinal())
+                      .thenComparing(Comparator.comparing(InnerElementRepresentationDTO::getElementName))
+        );
+
         root.getDisplay().asyncExec(() -> {
             if (viewer.getTable().isDisposed()) return;
             viewer.setInput(sorted);
