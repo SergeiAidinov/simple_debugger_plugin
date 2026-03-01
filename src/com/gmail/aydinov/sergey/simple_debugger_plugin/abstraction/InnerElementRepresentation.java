@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
@@ -21,10 +22,10 @@ public class InnerElementRepresentation extends AbstractInnerElementRepresentati
 	 * @param objectInstance        - ObjectReference для non-static поля (может
 	 *                              быть null для static)
 	 */
-	public InnerElementRepresentation(ReferenceType outerElementReference, ReferenceType elementReference, ObjectReference objectInstance,
+	public InnerElementRepresentation(UUID uniqueId, ReferenceType outerElementReference, ReferenceType elementReference, ObjectReference objectInstance,
 			String elementName, String fullQualifiedName, TargetApplicationElementType elementType) {
 
-		super(outerElementReference, elementReference, elementName, fullQualifiedName, elementType);
+		super(uniqueId, outerElementReference, elementReference, elementName, fullQualifiedName, elementType);
 
 		this.value = computeValue(outerElementReference, objectInstance, elementName, elementType);
 	}

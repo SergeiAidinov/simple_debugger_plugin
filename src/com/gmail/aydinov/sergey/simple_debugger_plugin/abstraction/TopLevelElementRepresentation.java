@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.Set;
+import java.util.UUID;
 
 import com.sun.jdi.ReferenceType;
 
@@ -16,9 +17,9 @@ public class TopLevelElementRepresentation extends AbstractTargetAplicationTopLe
 
 	Set<InnerElementRepresentation> innerElements;
 
-	public TopLevelElementRepresentation(ReferenceType referenceType, String elementName, String fullQualifiedName,
+	public TopLevelElementRepresentation(UUID uniqueId, ReferenceType referenceType, String elementName, String fullQualifiedName,
 			TargetApplicationElementType elementType, Set<InnerElementRepresentation> innerElements) {
-		super(referenceType, elementName, fullQualifiedName, elementType, innerElements);
+		super(uniqueId, referenceType, elementName, fullQualifiedName, elementType, innerElements);
 	}
 
 	@Override

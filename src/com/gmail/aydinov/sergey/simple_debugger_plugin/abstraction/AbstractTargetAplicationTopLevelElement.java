@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.UUID;
 
 import com.sun.jdi.ReferenceType;
 
@@ -13,11 +14,11 @@ public abstract class AbstractTargetAplicationTopLevelElement extends AbstractEl
 
 	private final Set<InnerElementRepresentation> innerElements;
 
-	protected AbstractTargetAplicationTopLevelElement(ReferenceType referenceType, String elementName,
+	protected AbstractTargetAplicationTopLevelElement(UUID uniqueId, ReferenceType referenceType, String elementName,
 			String fullQualifiedName, TargetApplicationElementType elementType,
 			Set<InnerElementRepresentation> innerElements) {
 
-		super(referenceType, elementName, fullQualifiedName, elementType);
+		super(uniqueId, referenceType, elementName, fullQualifiedName, elementType);
 
 		if (!ALLOWED_TOP_LEVEL_TYPES.contains(elementType)) {
 			throw new IllegalArgumentException("Invalid top-level element type: " + elementType);
