@@ -18,9 +18,9 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
 
 /**
@@ -59,9 +59,9 @@ public class ClassMembersAtBreakpoint {
     // =================== Колонки ===================
 
     private void setupColumns() {
-        createColumn("Name", 150, InnerElementRepresentation::getElementName);
+        createColumn("Name", 150, InnerElementRepresentationDTO::getElementName);
 
-        createColumn("Type / Return Type", 200, InnerElementRepresentation::getFullQualifiedName, element -> {
+        createColumn("Type / Return Type", 200, InnerElementRepresentationDTO::getFullQualifiedName, element -> {
             UniversalElementType type = element.getElementType();
             if (type == null) return null;
 
@@ -77,23 +77,23 @@ public class ClassMembersAtBreakpoint {
             return DebugWindowsManager.instance().icons.get(iconKey).getFirst();
         });
 
-        createColumn("Value / Info", 300, InnerElementRepresentation::getValue, this::getInspectIcon);
+        createColumn("Value / Info", 300, InnerElementRepresentationDTO::getValue, this::getInspectIcon);
     }
 
-    private Image getInspectIcon(InnerElementRepresentation element) {
+    private Image getInspectIcon(InnerElementRepresentationDTO element) {
         if (shouldShowInspectIcon(element)) {
             return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
         }
         return null;
     }
 
-    private void createColumn(String title, int width, Function<InnerElementRepresentation, String> textExtractor) {
+    private void createColumn(String title, int width, Function<InnerElementRepresentationDTO, String> textExtractor) {
         createColumn(title, width, textExtractor, e -> null);
     }
 
     private void createColumn(String title, int width,
-                              Function<InnerElementRepresentation, String> textExtractor,
-                              Function<InnerElementRepresentation, Image> imageExtractor) {
+                              Function<InnerElementRepresentationDTO, String> textExtractor,
+                              Function<InnerElementRepresentationDTO, Image> imageExtractor) {
 
         TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
         column.getColumn().setText(title);
@@ -103,7 +103,7 @@ public class ClassMembersAtBreakpoint {
         column.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
-                if (element instanceof InnerElementRepresentation inner) {
+                if (element instanceof InnerElementRepresentationDTO inner) {
                     String value = textExtractor.apply(inner);
                     return value != null ? value : "";
                 }
@@ -112,7 +112,7 @@ public class ClassMembersAtBreakpoint {
 
             @Override
             public Image getImage(Object element) {
-                if (element instanceof InnerElementRepresentation inner) {
+                if (element instanceof InnerElementRepresentationDTO inner) {
                     Image img = imageExtractor.apply(inner);
                     if (img != null) {
                         TableItem item = findTableItem(inner);
@@ -128,7 +128,7 @@ public class ClassMembersAtBreakpoint {
         });
     }
 
-    private TableItem findTableItem(InnerElementRepresentation inner) {
+    private TableItem findTableItem(InnerElementRepresentationDTO inner) {
         for (TableItem item : viewer.getTable().getItems()) {
             if (item.getData() == inner)
                 return item;
@@ -138,7 +138,7 @@ public class ClassMembersAtBreakpoint {
 
     // =================== Подсказки ===================
 
-    private boolean shouldShowInspectIcon(InnerElementRepresentation element) {
+    private boolean shouldShowInspectIcon(InnerElementRepresentationDTO element) {
         String typeName = element.getFullQualifiedName();
         if (typeName == null) return false;
 
@@ -151,7 +151,7 @@ public class ClassMembersAtBreakpoint {
     private void setupTooltips(Table table) {
         table.addListener(SWT.MouseHover, event -> {
             TableItem item = table.getItem(new org.eclipse.swt.graphics.Point(event.x, event.y));
-            if (item != null && item.getData() instanceof InnerElementRepresentation inner) {
+            if (item != null && item.getData() instanceof InnerElementRepresentationDTO inner) {
                 Object tooltip = item.getData("tooltip");
                 table.setToolTipText(tooltip instanceof String ? (String) tooltip : null);
             } else {
@@ -165,10 +165,10 @@ public class ClassMembersAtBreakpoint {
     public void showInnerElements(DebugWindowDataDTO debugWindowDataDTO) {
         if (debugWindowDataDTO == null || debugWindowDataDTO.getInnerElements().isEmpty()) return;
 
-        List<InnerElementRepresentation> sorted = new ArrayList<>(debugWindowDataDTO.getInnerElements());
+        List<InnerElementRepresentationDTO> sorted = new ArrayList<>(debugWindowDataDTO.getInnerElements());
         sorted.sort(
-        	    Comparator.comparingInt((InnerElementRepresentation e) -> e.getElementType().ordinal())
-        	              .thenComparing(Comparator.comparing(InnerElementRepresentation::getElementName))
+        	    Comparator.comparingInt((InnerElementRepresentationDTO e) -> e.getElementType().ordinal())
+        	              .thenComparing(Comparator.comparing(InnerElementRepresentationDTO::getElementName))
         	);
         root.getDisplay().asyncExec(() -> {
             if (viewer.getTable().isDisposed()) return;

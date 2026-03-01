@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.sun.jdi.Location;
@@ -22,7 +21,7 @@ public class DebugWindowDataDTO {
     private String elementName;
     private UniversalElementType elementType;
     private String qualifiedTypeName;
-    private Set<InnerElementRepresentation> innerElements;
+    private Set<InnerElementRepresentationDTO> innerElements;
 
     private int lineNumber = -1;
     private List<MethodCallInStackDTO> stackCall = List.of();
@@ -62,8 +61,8 @@ public class DebugWindowDataDTO {
     }
 
     // ===== Маппинг UniversalElementRepresentation → InnerElementRepresentation =====
-    private static InnerElementRepresentation toInnerRepresentation(UniversalElementRepresentation e) {
-        return new InnerElementRepresentation(
+    private static InnerElementRepresentationDTO toInnerRepresentation(UniversalElementRepresentation e) {
+        return new InnerElementRepresentationDTO(
                 e.getUniqueId(),
                 e.getUniqueId(),
                 e.getElementName(),
@@ -79,7 +78,7 @@ public class DebugWindowDataDTO {
     public String getElementName() { return elementName; }
     public UniversalElementType getElementType() { return elementType; }
     public String getQualifiedTypeName() { return qualifiedTypeName; }
-    public Set<InnerElementRepresentation> getInnerElements() { return innerElements; }
+    public Set<InnerElementRepresentationDTO> getInnerElements() { return innerElements; }
     public int getLineNumber() { return lineNumber; }
     public List<MethodCallInStackDTO> getStackCall() { return stackCall; }
     public String getMethodName() { return methodName; }

@@ -19,15 +19,15 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
@@ -121,9 +121,6 @@ public class DebugSessionImpl implements DebugSession {
 					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
 							.refreshBreakpoints();
 					handleBreakpointEvent(breakpointEvent, uiEvent);
-//					if (DebuggerContext.context().isRunning()) {
-//						updateUI(breakpointEvent);
-//					}
 				}
 			}
 		}
@@ -195,7 +192,7 @@ public class DebugSessionImpl implements DebugSession {
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT)) {
-				UIEvent<InnerElementRepresentation> userStartedInspectionSeanceEvent = (UIEvent<InnerElementRepresentation>) abstractSimpleDebuggerUIEvent;
+				UIEvent<InnerElementRepresentationDTO> userStartedInspectionSeanceEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
 				initiateInspectionSeanceIfPossible(userStartedInspectionSeanceEvent.getPayload());
 			} else {
 				SimpleDebuggerLogger
@@ -209,7 +206,7 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void initiateInspectionSeanceIfPossible(InnerElementRepresentation innerElementRepresentationDTO) {
+	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 //		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
 //				|| DebuggerContext.context().isInspectionSeanceActive())
 //			return;
@@ -343,11 +340,11 @@ public class DebugSessionImpl implements DebugSession {
 		}
 		Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
 
-		List<InnerElementRepresentation> localVariables = locals.entrySet().stream()
+		List<InnerElementRepresentationDTO> localVariables = locals.entrySet().stream()
 		        .map(entry -> {
 		            LocalVariable var = entry.getKey();
 		            Value value = entry.getValue();
-		            return new InnerElementRepresentation(
+		            return new InnerElementRepresentationDTO(
 		                    UUID.randomUUID(),       // уникальный идентификатор
 		                    debugWindowDataDTO.getUniqueId(),
 		                    var.name(),              // имя переменной
@@ -385,7 +382,7 @@ public class DebugSessionImpl implements DebugSession {
 		return true;
 	}
 
-	private List<TopLevelElementRepresentation> discardVoidMethods(List<TopLevelElementRepresentation> targetElements) {
+	private List<TopLevelElementRepresentationDTO> discardVoidMethods(List<TopLevelElementRepresentationDTO> targetElements) {
 		return targetElements;
 	}
 

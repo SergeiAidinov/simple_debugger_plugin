@@ -22,10 +22,10 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
@@ -48,8 +48,8 @@ public class InspectWindow {
     private final Button forwardButton;
     private final Composite breadcrumbComposite;
 
-    private final Deque<InnerElementRepresentation> backHistory = new ArrayDeque<>();
-    private final Deque<InnerElementRepresentation> forwardHistory = new ArrayDeque<>();
+    private final Deque<InnerElementRepresentationDTO> backHistory = new ArrayDeque<>();
+    private final Deque<InnerElementRepresentationDTO> forwardHistory = new ArrayDeque<>();
 
     private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
@@ -135,12 +135,12 @@ public class InspectWindow {
     }
 
     /** Shows top-level element structure */
-    protected void showElementStructure(TopLevelElementRepresentation element) {
+    protected void showElementStructure(TopLevelElementRepresentationDTO element) {
         showAnchorElement(element);
     }
 
     /** Shows element with recursive inner elements */
-    protected void showAnchorElement(TopLevelElementRepresentation element) {
+    protected void showAnchorElement(TopLevelElementRepresentationDTO element) {
         if (element == null || shell.isDisposed()) return;
 
         Display.getDefault().asyncExec(() -> {
@@ -154,9 +154,9 @@ public class InspectWindow {
     }
 
     /** Recursive display of inner elements */
-    private void addInnerElementsRecursively(TreeItem parentItem, Set<InnerElementRepresentation> innerElements) {
+    private void addInnerElementsRecursively(TreeItem parentItem, Set<InnerElementRepresentationDTO> innerElements) {
         if (innerElements == null || innerElements.isEmpty()) return;
-        for (InnerElementRepresentation inner : innerElements) {
+        for (InnerElementRepresentationDTO inner : innerElements) {
             TreeItem item = new TreeItem(parentItem, SWT.NONE);
             item.setText(new String[]{inner.getElementName(), inner.getElementType().name()});
             item.setExpanded(true);
@@ -165,7 +165,7 @@ public class InspectWindow {
     }
 
     /** Show object in right panel and push to history */
-    protected void showInspectableNode(InnerElementRepresentation element) {
+    protected void showInspectableNode(InnerElementRepresentationDTO element) {
         if (element == null || shell.isDisposed()) return;
 
         if (!backHistory.isEmpty() && backHistory.peek() != element) {
@@ -183,7 +183,7 @@ public class InspectWindow {
     }
 
     /** Refresh right table */
-    private void refreshContent(InnerElementRepresentation element) {
+    private void refreshContent(InnerElementRepresentationDTO element) {
         if (element == null || table.isDisposed()) return;
 
         table.removeAll();
@@ -201,10 +201,10 @@ public class InspectWindow {
     private void navigateBack() {
         if (backHistory.size() <= 1) return;
 
-        InnerElementRepresentation current = backHistory.pop();
+        InnerElementRepresentationDTO current = backHistory.pop();
         forwardHistory.push(current);
 
-        InnerElementRepresentation previous = backHistory.peek();
+        InnerElementRepresentationDTO previous = backHistory.peek();
         if (previous != null) {
             Display.getDefault().asyncExec(() -> {
                 objectLabel.setText("Inspecting instance: " + previous.getElementName() + " (" + previous.getElementType().name() + ")");
@@ -219,7 +219,7 @@ public class InspectWindow {
     private void navigateForward() {
         if (forwardHistory.isEmpty()) return;
 
-        InnerElementRepresentation next = forwardHistory.pop();
+        InnerElementRepresentationDTO next = forwardHistory.pop();
         backHistory.push(next);
 
         Display.getDefault().asyncExec(() -> {
@@ -240,9 +240,9 @@ public class InspectWindow {
     private void renderBreadcrumb() {
         for (var child : breadcrumbComposite.getChildren()) child.dispose();
 
-        Iterator<InnerElementRepresentation> it = backHistory.descendingIterator();
+        Iterator<InnerElementRepresentationDTO> it = backHistory.descendingIterator();
         while (it.hasNext()) {
-            InnerElementRepresentation element = it.next();
+            InnerElementRepresentationDTO element = it.next();
             Button crumb = new Button(breadcrumbComposite, SWT.PUSH);
             crumb.setText(element.getElementName());
             crumb.addListener(SWT.Selection, e -> showInspectableNode(element));
@@ -254,8 +254,8 @@ public class InspectWindow {
     @SuppressWarnings("unchecked")
     public void handleDebugEvent(AbstractDebugEvent event) {
         if (Objects.equals(event.getType(), SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT)) {
-            DebugEvent<TopLevelElementRepresentation> simpleDebugEvent =
-                    (DebugEvent<TopLevelElementRepresentation>) event;
+            DebugEvent<TopLevelElementRepresentationDTO> simpleDebugEvent =
+                    (DebugEvent<TopLevelElementRepresentationDTO>) event;
             showAnchorElement(simpleDebugEvent.getPayload());
         }
     }
