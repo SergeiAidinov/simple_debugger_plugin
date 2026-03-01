@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 
@@ -21,31 +22,35 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.InnerElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
 
 /**
  * Inspect window with left Tree (element structure) and right Table (object values)
+ * Fully adapted to InnerElementRepresentation with history and breadcrumb.
  */
 public class InspectWindow {
 
     private final Shell shell;
-    private final Tree elementTree;          
-    private final Table table;               
+    private final Tree elementTree;
+    private final Table table;
     private final Label objectLabel;
     private final Button backButton;
     private final Button forwardButton;
     private final Composite breadcrumbComposite;
-    private final Deque<InnerElementDTO> history = new ArrayDeque<>();
+
+    private final Deque<InnerElementRepresentationDTO> backHistory = new ArrayDeque<>();
+    private final Deque<InnerElementRepresentationDTO> forwardHistory = new ArrayDeque<>();
+
     private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
     protected InspectWindow() {
@@ -54,17 +59,15 @@ public class InspectWindow {
         shell.setSize(1400, 800);
         shell.setLayout(new GridLayout(2, true));
 
-        // --- Иконка ---
         shell.setImage(DebugWindowsManager.instance().icons.get("debugger").getFirst());
 
-        // --- Обработчик закрытия окна ---
         shell.addListener(SWT.Close, e -> {
             e.doit = true; // блокируем закрытие
             uiEventCollector.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT, null));
             DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING);
         });
 
-        // --- Левая панель: Tree ---
+        // --- Tree ---
         elementTree = new Tree(shell, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
         elementTree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
@@ -76,12 +79,12 @@ public class InspectWindow {
         valueCol.setText("Value / Signature");
         valueCol.setWidth(200);
 
-        // --- Правая панель: Table ---
+        // --- Right panel ---
         Composite rightPanel = new Composite(shell, SWT.NONE);
         rightPanel.setLayout(new GridLayout(1, false));
         rightPanel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        // Навигация
+        // Navigation panel
         Composite topPanel = new Composite(rightPanel, SWT.NONE);
         topPanel.setLayout(new GridLayout(4, false));
         topPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
@@ -119,136 +122,144 @@ public class InspectWindow {
     }
 
     /** Opens the shell */
-    protected void open() {
-        shell.open();
-    }
+    protected void open() { shell.open(); }
 
-    /** Returns true if shell is open */
-    protected boolean isOpen() {
-        return !shell.isDisposed();
-    }
+    /** Checks if shell is open */
+    protected boolean isOpen() { return !shell.isDisposed(); }
 
-    /** Closes the window programmatically */
+    /** Closes window */
     protected void close() {
         if (isOpen()) {
-            Display.getDefault().asyncExec(() -> {
-                if (!shell.isDisposed()) shell.close();
-            });
+            Display.getDefault().asyncExec(() -> { if (!shell.isDisposed()) shell.close(); });
         }
     }
 
-    /** Показывает структуру top-level элемента */
-    protected void showElementStructure(TopLevelElementRepresentation element) {
+    /** Shows top-level element structure */
+    protected void showElementStructure(TopLevelElementRepresentationDTO element) {
         showAnchorElement(element);
     }
 
-    /** Отображает элемент с рекурсивным деревом вложенных элементов */
-    protected void showAnchorElement(TopLevelElementRepresentation element) {
+    /** Shows element with recursive inner elements */
+    protected void showAnchorElement(TopLevelElementRepresentationDTO element) {
         if (element == null || shell.isDisposed()) return;
 
         Display.getDefault().asyncExec(() -> {
             elementTree.removeAll();
-
             TreeItem root = new TreeItem(elementTree, SWT.NONE);
             root.setText(new String[]{element.getElementName(), element.getElementType().name()});
             root.setExpanded(true);
-
-            // Рекурсивно добавляем все inner элементы
             addInnerElementsRecursively(root, element.getInnerElements());
-
             elementTree.layout();
         });
     }
 
-    /** Рекурсивный метод для отображения inner элементов */
-    private void addInnerElementsRecursively(TreeItem parentItem,
-                                             Set<InnerElementRepresentation> innerElements) {
+    /** Recursive display of inner elements */
+    private void addInnerElementsRecursively(TreeItem parentItem, Set<InnerElementRepresentationDTO> innerElements) {
         if (innerElements == null || innerElements.isEmpty()) return;
-
-        for (InnerElementRepresentation inner : innerElements) {
+        for (InnerElementRepresentationDTO inner : innerElements) {
             TreeItem item = new TreeItem(parentItem, SWT.NONE);
             item.setText(new String[]{inner.getElementName(), inner.getElementType().name()});
             item.setExpanded(true);
-
-            addInnerElementsRecursively(item, Collections.EMPTY_SET);
+            addInnerElementsRecursively(item, Collections.EMPTY_SET); // no deep recursion for simplicity
         }
     }
 
-    /** Отображает объект в правой панели */
-    protected void showInspectableNode(InnerElementDTO fieldOrVariableDTO) {
-        if (fieldOrVariableDTO == null || shell.isDisposed()) return;
+    /** Show object in right panel and push to history */
+    protected void showInspectableNode(InnerElementRepresentationDTO element) {
+        if (element == null || shell.isDisposed()) return;
 
-        history.push(fieldOrVariableDTO);
+        if (!backHistory.isEmpty() && backHistory.peek() != element) {
+            forwardHistory.clear(); // чистим forward стек при новом элементе
+        }
+
+        backHistory.push(element);
 
         Display.getDefault().asyncExec(() -> {
-            objectLabel.setText("Inspecting instance: " + fieldOrVariableDTO.getName() + " (" + fieldOrVariableDTO.getType() + ")");
-            refreshContent(fieldOrVariableDTO);
+            objectLabel.setText("Inspecting instance: " + element.getElementName() + " (" + element.getElementType().name() + ")");
+            refreshContent(element);
             renderBreadcrumb();
+            updateNavigationButtons();
         });
     }
 
-    private void refreshContent(InnerElementDTO dto) {
-        if (dto == null || table.isDisposed()) return;
+    /** Refresh right table */
+    private void refreshContent(InnerElementRepresentationDTO element) {
+        if (element == null || table.isDisposed()) return;
 
         table.removeAll();
         TableItem item = new TableItem(table, SWT.NONE);
         item.setText(new String[]{
-                dto.getType() != null ? dto.getType() : "",
-                dto.getValue() != null ? dto.getValue() : ""
+                element.getElementType().name(),
+                element.getValue() != null ? element.getValue() : ""
         });
 
         for (TableColumn col : table.getColumns()) col.pack();
         table.layout();
     }
 
+    /** Navigate back */
     private void navigateBack() {
-        if (history.size() <= 1) return;
-        InnerElementDTO current = history.pop();
-        history.push(current);
+        if (backHistory.size() <= 1) return;
 
-        InnerElementDTO previous = history.peek();
+        InnerElementRepresentationDTO current = backHistory.pop();
+        forwardHistory.push(current);
+
+        InnerElementRepresentationDTO previous = backHistory.peek();
         if (previous != null) {
             Display.getDefault().asyncExec(() -> {
-                objectLabel.setText("Inspecting instance: " + previous.getName() + " (" + previous.getType() + ")");
+                objectLabel.setText("Inspecting instance: " + previous.getElementName() + " (" + previous.getElementType().name() + ")");
                 refreshContent(previous);
                 renderBreadcrumb();
             });
         }
-
         updateNavigationButtons();
     }
 
+    /** Navigate forward */
     private void navigateForward() {
-        if (history.isEmpty()) return;
-        InnerElementDTO next = history.pop();
-        history.push(next);
+        if (forwardHistory.isEmpty()) return;
+
+        InnerElementRepresentationDTO next = forwardHistory.pop();
+        backHistory.push(next);
 
         Display.getDefault().asyncExec(() -> {
-            objectLabel.setText("Inspecting instance: " + next.getName() + " (" + next.getType() + ")");
+            objectLabel.setText("Inspecting instance: " + next.getElementName() + " (" + next.getElementType().name() + ")");
             refreshContent(next);
             renderBreadcrumb();
         });
-
         updateNavigationButtons();
     }
 
+    /** Update back/forward buttons */
     private void updateNavigationButtons() {
-        backButton.setEnabled(history.size() > 1);
-        forwardButton.setEnabled(!history.isEmpty());
+        backButton.setEnabled(backHistory.size() > 1);
+        forwardButton.setEnabled(!forwardHistory.isEmpty());
     }
 
-    /** Рендер хлебных крошек */
+    /** Render breadcrumb */
     private void renderBreadcrumb() {
-        // TODO: добавить кнопки для каждого элемента истории
+        for (var child : breadcrumbComposite.getChildren()) child.dispose();
+
+        Iterator<InnerElementRepresentationDTO> it = backHistory.descendingIterator();
+        while (it.hasNext()) {
+            InnerElementRepresentationDTO element = it.next();
+            Button crumb = new Button(breadcrumbComposite, SWT.PUSH);
+            crumb.setText(element.getElementName());
+            crumb.addListener(SWT.Selection, e -> showInspectableNode(element));
+        }
+        breadcrumbComposite.layout();
     }
 
-    /** Обработка debug-событий */
+    /** Handle debug events */
     @SuppressWarnings("unchecked")
     public void handleDebugEvent(AbstractDebugEvent event) {
         if (Objects.equals(event.getType(), SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT)) {
-            DebugEvent<TopLevelElementRepresentation> simpleDebugEvent =
-                    (DebugEvent<TopLevelElementRepresentation>) event;
+            DebugEvent<TopLevelElementRepresentationDTO> simpleDebugEvent =
+                    (DebugEvent<TopLevelElementRepresentationDTO>) event;
             showAnchorElement(simpleDebugEvent.getPayload());
         }
     }
+
+    /** Return root control */
+    public Composite getControl() { return shell; }
 }
