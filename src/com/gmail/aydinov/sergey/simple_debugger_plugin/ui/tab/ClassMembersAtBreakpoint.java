@@ -12,6 +12,7 @@ import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -60,17 +61,16 @@ public class ClassMembersAtBreakpoint {
     // =================== Колонки ===================
 
     private void setupColumns() {
-        createColumn("Name", 150, InnerElementRepresentationDTO::getElementName);
-        createColumn("Type / Return Type", 200, InnerElementRepresentationDTO::getFullQualifiedName,
+        createColumn(0, "Name", 150, InnerElementRepresentationDTO::getElementName, e -> null);
+        createColumn(1, "Type / Return Type", 200,
+                InnerElementRepresentationDTO::getFullQualifiedName,
                 this::getTypeIcon);
-        createColumn("Value / Info", 300, InnerElementRepresentationDTO::getValue, this::getInspectIcon);
+        createColumn(2, "Value / Info", 300,
+                InnerElementRepresentationDTO::getValue,
+                this::getInspectIcon);
     }
 
-    private void createColumn(String title, int width, Function<InnerElementRepresentationDTO, String> textExtractor) {
-        createColumn(title, width, textExtractor, e -> null);
-    }
-
-    private void createColumn(String title, int width,
+    private void createColumn(int index, String title, int width,
                               Function<InnerElementRepresentationDTO, String> textExtractor,
                               Function<InnerElementRepresentationDTO, Image> imageExtractor) {
 
@@ -91,18 +91,27 @@ public class ClassMembersAtBreakpoint {
 
             @Override
             public Image getImage(Object element) {
-                if (element instanceof InnerElementRepresentationDTO inner) {
-                    Image img = imageExtractor.apply(inner);
-                    //Image img =  getTooltip(inner).getFirst();
-                    if (img != null) {
-                        TableItem item = findTableItem(inner);
-                        if (item != null) {
-                            item.setData("tooltip",  getTooltip(inner).getSecond());
+                if (!(element instanceof InnerElementRepresentationDTO inner)) return null;
+
+                Image img = imageExtractor.apply(inner);
+                if (img != null) {
+                    TableItem item = findTableItem(inner);
+                    if (item != null) {
+                        // Сохраняем подсказку по колонке
+                        if (index == 1) { // вторая колонка
+                            PairDTO<Image, String> pair = getTooltip(inner);
+                            if (pair != null) {
+                                item.setData("tooltip_col_" + index, pair.getSecond());
+                            }
+                        } else if (index == 2) { // третья колонка
+                            if (img == getInspectIcon(inner)) {
+                                String tooltipText = DebugWindowsManager.instance().icons.get("inspectIcon").getSecond();
+                                item.setData("tooltip_col_" + index, tooltipText);
+                            }
                         }
                     }
-                    return img;
                 }
-                return null;
+                return img;
             }
         });
     }
@@ -167,16 +176,28 @@ public class ClassMembersAtBreakpoint {
                     || element.getElementType() == UniversalElementType.VARIABLE);
     }
 
+    // =================== Подсказки ===================
+
     private void setupTooltips(Table table) {
         table.addListener(SWT.MouseHover, event -> {
-            TableItem item = table.getItem(new org.eclipse.swt.graphics.Point(event.x, event.y));
-            if (item != null && item.getData() instanceof InnerElementRepresentationDTO inner) {
-                Object tooltip = item.getData("tooltip");
+            TableItem item = table.getItem(new Point(event.x, event.y));
+            if (item != null) {
+                int columnIndex = getColumnIndexAtPoint(table, event.x);
+                Object tooltip = item.getData("tooltip_col_" + columnIndex);
                 table.setToolTipText(tooltip instanceof String ? (String) tooltip : null);
             } else {
                 table.setToolTipText(null);
             }
         });
+    }
+
+    private int getColumnIndexAtPoint(Table table, int x) {
+        int totalWidth = 0;
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            totalWidth += table.getColumn(i).getWidth();
+            if (x < totalWidth) return i;
+        }
+        return table.getColumnCount() - 1;
     }
 
     // =================== Отображение ===================
