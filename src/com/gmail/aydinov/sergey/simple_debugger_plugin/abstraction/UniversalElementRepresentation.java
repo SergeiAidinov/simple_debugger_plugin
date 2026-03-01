@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import com.sun.jdi.ReferenceType;
@@ -11,7 +12,7 @@ public class UniversalElementRepresentation {
         INTERFACE, CLASS, ENUM, STATIC_FIELD, NON_STATIC_FIELD, METHOD, VARIABLE, UNKNOWN
     }
 
-    public enum CurrentRole {OUTER, STATIC_FIELD, NON_STATIC_FIELD, LOCAL}
+    public enum CurrentRole {OUTER, INNER, LOCAL}
 
     private final UUID uniqueId;
     private final UUID parentUniqueId;
@@ -46,8 +47,26 @@ public class UniversalElementRepresentation {
     public UniversalElementType getElementType() { return elementType; }
     public String getValue() {return value;}
     public Set<UniversalElementRepresentation> getInnerElements() { return innerElements; }
+    
+    
 
-    // ----------- Builder -------------
+    @Override
+    public int hashCode() {
+        return Objects.hash(elementName, fullQualifiedName, elementType, parentUniqueId);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        UniversalElementRepresentation other = (UniversalElementRepresentation) obj;
+        return elementType == other.elementType
+                && Objects.equals(elementName, other.elementName)
+                && Objects.equals(fullQualifiedName, other.fullQualifiedName)
+                && Objects.equals(parentUniqueId, other.parentUniqueId);
+    }
+
+	// ----------- Builder -------------
     public static class Builder {
         private UUID uniqueId;
         private UUID parentUniqueId = null;
