@@ -126,9 +126,9 @@ public class ClassMembersAtBreakpoint {
             @Override
             public Object getValue(Object element, String property) {
                 if (element instanceof InnerElementRepresentationDTO dto) {
-                    return dto.getValue();
+                    return dto.getValue() != null ? dto.getValue() : "";
                 }
-                return null;
+                return "";
             }
 
             @Override
@@ -138,12 +138,19 @@ public class ClassMembersAtBreakpoint {
                 if (dto == null || newValue == null) return;
 
                 String newValStr = newValue.toString();
+
+                // Обновляем DTO напрямую
+                dto.setValue(newValStr);
+
+                // Генерируем событие изменения
                 switch (dto.getElementType()) {
                     case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, newValStr);
                     case VARIABLE -> updateVariableValue(dto, newValStr);
                     default -> {}
                 }
-                viewer.update(dto, null);
+
+                // Обновляем только третью колонку, чтобы SWT отобразил новое значение
+                viewer.update(dto, new String[]{"value"});
             }
         });
     }
@@ -245,7 +252,7 @@ public class ClassMembersAtBreakpoint {
             if (!(data instanceof InnerElementRepresentationDTO dto)) return;
 
             int columnIndex = getColumnIndexAtPoint(table, event.x);
-            if (columnIndex != 2) return; // проверяем, что клик был на третьей колонке
+            if (columnIndex != 2) return; // проверяем третью колонку
 
             String typeName = dto.getTypeName();
             if (typeName != null
@@ -253,7 +260,7 @@ public class ClassMembersAtBreakpoint {
                     && (dto.getElementType() == TargetApplicationElementType.NON_STATIC_FIELD
                         || dto.getElementType() == TargetApplicationElementType.VARIABLE)) {
 
-                // передаем инстанс dto именно из третьей колонки
+                // Передаем инстанс DTO из третьей колонки
                 UIEvent<InnerElementRepresentationDTO> inspectEvent =
                         new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto);
                 uiEventCollector.collectUiEvent(inspectEvent);
