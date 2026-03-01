@@ -140,7 +140,8 @@ public class TargetApplicationRepresentation {
 
 	            // Создаём объект
 	            InnerElementRepresentation fieldElement = new InnerElementRepresentation(
-	                    refType,
+	                   parentElement.getReferenceType(),
+	            		refType,
 	                    fieldInstance,
 	                    field.name(),
 	                    typeName,             // <-- теперь это тип, а не значение
@@ -156,14 +157,19 @@ public class TargetApplicationRepresentation {
 	    for (Method method : refType.allMethods()) {
 	        if (method.isNative() || "<init>".equals(method.name()) || method.isSynthetic()) continue;
 
-	        String returnTypeName = method.returnTypeName(); // Type / Return Type
-	        String methodName = method.name();              // Name колонки
+	        String returnTypeName = method.returnTypeName(); 
+	        String methodName = method.name();
+
+	        // Формируем полное имя для отображения в колонке Name
+	        String ownerName = refType.name(); // имя класса или интерфейса
+	        String displayName = ownerName + "." + methodName;
 
 	        InnerElementRepresentation methodElement = new InnerElementRepresentation(
+	        		parentElement.getReferenceType(),
 	                refType,
 	                null,
-	                methodName,      // <-- реальное имя метода
-	                returnTypeName,  // <-- Type / Return Type
+	                methodName,       
+	                returnTypeName,   
 	                TargetApplicationElementType.METHOD
 	        );
 
