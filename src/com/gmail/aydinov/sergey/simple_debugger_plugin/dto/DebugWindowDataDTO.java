@@ -20,7 +20,7 @@ public class DebugWindowDataDTO {
     private UUID uniqueId;
     private String elementName;
     private UniversalElementType elementType;
-    private String qualifiedTypeName;
+    private String additionalInfo;
     private Set<InnerElementRepresentationDTO> innerElements;
     private final boolean isStatic;
 
@@ -35,7 +35,7 @@ public class DebugWindowDataDTO {
             this.uniqueId = element.getTag().getUniqueId();
             this.elementName = element.getElementName();
             this.elementType = element.getElementType();
-            this.qualifiedTypeName = element.getFullQualifiedName();
+            this.additionalInfo = element.getAdditionalInfo();
 
             this.innerElements = element.getInnerElements() == null
                     ? Set.of()
@@ -68,7 +68,7 @@ public class DebugWindowDataDTO {
                 e.getTag().getUniqueId(),
                 e.getTag().getUniqueId(),
                 e.getElementName(),
-                e.getFullQualifiedName(),
+                e.getAdditionalInfo(),
                 e.getElementType(),
                 e.getValue(),
                 e.isStatic()
@@ -80,7 +80,7 @@ public class DebugWindowDataDTO {
     public UUID getUniqueId() { return uniqueId;}
     public String getElementName() { return elementName; }
     public UniversalElementType getElementType() { return elementType; }
-    public String getQualifiedTypeName() { return qualifiedTypeName; }
+    public String getAdditionalInfo() { return additionalInfo; }
     public Set<InnerElementRepresentationDTO> getInnerElements() { return innerElements; }
     public int getLineNumber() { return lineNumber; }
     public List<MethodCallInStackDTO> getStackCall() { return stackCall; }

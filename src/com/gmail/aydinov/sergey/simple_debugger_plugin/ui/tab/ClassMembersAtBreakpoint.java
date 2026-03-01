@@ -90,7 +90,7 @@ public class ClassMembersAtBreakpoint {
                 1,
                 "Type / Return Type",
                 200,
-                InnerElementRepresentationDTO::getFullQualifiedName,
+                InnerElementRepresentationDTO::getAdditionalInfo,
                 this::getTypeIcon
         );
 
@@ -106,7 +106,7 @@ public class ClassMembersAtBreakpoint {
                     // Если поле или статическое поле, показываем тип
                     if (dto.getElementType() == UniversalElementType.STATIC_FIELD ||
                         dto.getElementType() == UniversalElementType.NON_STATIC_FIELD) {
-                        return dto.getFullQualifiedName();
+                        return dto.getAdditionalInfo();
                     }
 
                     return ""; // иначе пусто
@@ -227,7 +227,7 @@ public class ClassMembersAtBreakpoint {
                 && type != UniversalElementType.VARIABLE)
             return false;
 
-        String typeName = dto.getFullQualifiedName();
+        String typeName = dto.getAdditionalInfo();
         if (typeName == null || typeName.isBlank())
             return false;
 
@@ -250,7 +250,7 @@ public class ClassMembersAtBreakpoint {
                 && dto.getElementType() != UniversalElementType.VARIABLE)
             return false;
 
-        return JAVA_STANDARD_TYPES.contains(dto.getFullQualifiedName());
+        return JAVA_STANDARD_TYPES.contains(dto.getAdditionalInfo());
     }
 
     private class ValueEditingSupport extends EditingSupport {
@@ -307,7 +307,7 @@ public class ClassMembersAtBreakpoint {
                         SimpleDebuggerEventType.USER_CHANGED_FIELD,
                         new UserChangedFieldEventDTO(
                                 dto.getElementName(),
-                                dto.getFullQualifiedName(),
+                                dto.getAdditionalInfo(),
                                 newValue
                         )
                 )
@@ -320,7 +320,7 @@ public class ClassMembersAtBreakpoint {
                         SimpleDebuggerEventType.USER_CHANGED_VARIABLE,
                         new UserChangedVariableEventDTO(
                                 dto.getElementName(),
-                                dto.getFullQualifiedName(),
+                                dto.getAdditionalInfo(),
                                 newValue
                         )
                 )

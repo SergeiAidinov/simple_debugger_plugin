@@ -13,7 +13,7 @@ public class InnerElementRepresentationDTO {
     private final UUID uniqueId;
     private final UUID parentUniqueId;
     private final String elementName;
-    private final String fullQualifiedName;
+    private final String additionalInfo;
     private final UniversalElementType elementType;
     private final String value;
     private final boolean isStatic;
@@ -23,7 +23,7 @@ public class InnerElementRepresentationDTO {
         this.uniqueId = uniqueId;
         this.parentUniqueId = parentUniqueId;
         this.elementName = elementName;
-        this.fullQualifiedName = fullQualifiedName;
+        this.additionalInfo = fullQualifiedName;
         this.elementType = elementType;
         this.value = value;
         this.isStatic = isStatic;
@@ -32,7 +32,7 @@ public class InnerElementRepresentationDTO {
     public UUID getUniqueId() { return uniqueId; }
     public UUID getParentUniqueId() {return parentUniqueId;}
     public String getElementName() { return elementName; }
-    public String getFullQualifiedName() { return fullQualifiedName; }
+    public String getAdditionalInfo() { return additionalInfo; }
     public UniversalElementType getElementType() { return elementType; }
     public String getValue() { return value; }
 
