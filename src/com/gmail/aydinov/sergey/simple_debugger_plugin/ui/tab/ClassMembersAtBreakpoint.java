@@ -21,6 +21,7 @@ import org.eclipse.swt.widgets.TableItem;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
 
 /**
@@ -92,10 +93,11 @@ public class ClassMembersAtBreakpoint {
             public Image getImage(Object element) {
                 if (element instanceof InnerElementRepresentationDTO inner) {
                     Image img = imageExtractor.apply(inner);
+                    //Image img =  getTooltip(inner).getFirst();
                     if (img != null) {
                         TableItem item = findTableItem(inner);
                         if (item != null) {
-                            item.setData("tooltip", getTooltip(inner));
+                            item.setData("tooltip",  getTooltip(inner).getSecond());
                         }
                     }
                     return img;
@@ -137,7 +139,7 @@ public class ClassMembersAtBreakpoint {
         return null;
     }
 
-    private String getTooltip(InnerElementRepresentationDTO element) {
+    private PairDTO<Image, String> getTooltip(InnerElementRepresentationDTO element) {
         if (element == null || element.getElementType() == null) return null;
 
         String iconKey = switch (element.getElementType()) {
@@ -150,10 +152,9 @@ public class ClassMembersAtBreakpoint {
         };
 
         if (iconKey != null && DebugWindowsManager.instance().icons.containsKey(iconKey)) {
-            return DebugWindowsManager.instance().icons.get(iconKey).getSecond() + ": "
-                    + element.getElementName();
+            return DebugWindowsManager.instance().icons.get(iconKey);
         }
-        return element.getElementName() + " : " + element.getFullQualifiedName();
+        return null;
     }
 
     private boolean shouldShowInspectIcon(InnerElementRepresentationDTO element) {
