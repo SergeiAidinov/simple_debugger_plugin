@@ -15,11 +15,16 @@ import com.sun.jdi.ReferenceType;
  */
 public class TopLevelElementRepresentation extends AbstractTargetAplicationTopLevelElement {
 
-	Set<InnerElementRepresentation> innerElements;
+	private final Set<InnerElementRepresentation> innerElements;
 
 	public TopLevelElementRepresentation(UUID uniqueId, ReferenceType referenceType, String elementName, String fullQualifiedName,
 			TargetApplicationElementType elementType, Set<InnerElementRepresentation> innerElements) {
 		super(uniqueId, referenceType, elementName, fullQualifiedName, elementType, innerElements);
+		this.innerElements = innerElements;
+	}
+
+	public Set<InnerElementRepresentation> getInnerElements() {
+		return innerElements;
 	}
 
 	@Override
@@ -29,5 +34,7 @@ public class TopLevelElementRepresentation extends AbstractTargetAplicationTopLe
 				+ ", getInnerElements()=" + getInnerElements() + ", getClass()=" + getClass() + ", hashCode()="
 				+ hashCode() + ", toString()=" + super.toString() + "]";
 	}
+	
+	
 
 }
