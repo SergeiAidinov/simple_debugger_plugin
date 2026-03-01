@@ -10,10 +10,8 @@ import java.util.stream.Collectors;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.FieldOrVariableType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -208,14 +206,14 @@ public class DebugUtils {
 	 * @param fields the map of fields and their values
 	 * @return list of VariableDTO representing fields
 	 */
-	public static List<InnerElementDTO> mapFields(Map<Field, Value> fields) {
-		if (Objects.isNull(fields))
-			return List.of();
-		return fields.entrySet().stream()
-				.map(entry -> new InnerElementDTO(entry.getKey().name(), entry.getKey().typeName(),
-						valueToString(entry.getValue()), FieldOrVariableType.NON_STATIC_FIELD))
-				.collect(Collectors.toList());
-	}
+//	public static List<InnerElementDTO> mapFields(Map<Field, Value> fields) {
+//		if (Objects.isNull(fields))
+//			return List.of();
+//		return fields.entrySet().stream()
+//				.map(entry -> new InnerElementDTO(entry.getKey().name(), entry.getKey().typeName(),
+//						valueToString(entry.getValue()), FieldOrVariableType.NON_STATIC_FIELD))
+//				.collect(Collectors.toList());
+//	}
 
 	/**
 	 * Converts {@code Map<LocalVariable, Value>} to {@code List<VariableDTO>}.
@@ -223,14 +221,14 @@ public class DebugUtils {
 	 * @param locals the map of local variables and their values
 	 * @return list of VariableDTO representing local variables
 	 */
-	public static List<InnerElementDTO> mapLocals(Map<LocalVariable, Value> locals) {
-		if (Objects.isNull(locals))
-			return List.of();
-
-		return locals.entrySet().stream().map(entry -> new InnerElementDTO(entry.getKey().name(),
-				entry.getKey().typeName(), valueToString(entry.getValue()), FieldOrVariableType.VARIABLE))
-				.collect(Collectors.toList());
-	}
+//	public static List<InnerElementDTO> mapLocals(Map<LocalVariable, Value> locals) {
+//		if (Objects.isNull(locals))
+//			return List.of();
+//
+//		return locals.entrySet().stream().map(entry -> new InnerElementDTO(entry.getKey().name(),
+//				entry.getKey().typeName(), valueToString(entry.getValue()), FieldOrVariableType.VARIABLE))
+//				.collect(Collectors.toList());
+//	}
 
 	/**
 	 * Converts Value to string safely handling null
