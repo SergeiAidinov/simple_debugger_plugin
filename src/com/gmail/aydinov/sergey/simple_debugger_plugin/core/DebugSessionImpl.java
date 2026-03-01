@@ -219,32 +219,31 @@ public class DebugSessionImpl implements DebugSession {
 		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
 				|| DebuggerContext.context().isInspectionSeanceActive())
 			return;
-		Optional.ofNullable(targetApplicationRepresentation.getTargetApplicationSnapshot()
-				.values().stream().filter(v ->  v.getSecond().getUniqueId().equals(innerElementRepresentationDTO.getUniqueId())))
-				.ifPresentOrElse(topLevelElement -> {
-					simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
-							SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-					simpleDebugEventCollector.collectDebugEvent(
-							new DebugEvent<Boolean>(SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW, true));
-
-					InspectionSeance inspectionSession = new InspectionSeanceImpl(
-							 (TopLevelElementRepresentation) topLevelElement, targetApplicationRepresentation);
-					Thread inspectionSessionThread = new Thread(inspectionSession);
-					inspectionSessionThread.setDaemon(true);
-					inspectionSessionThread.start();
+		Optional.ofNullable(targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+				.filter(v -> v.getSecond().getUniqueId().equals(innerElementRepresentationDTO.getUniqueId())))
+				.ifPresent(topLevelElement -> {
 					try {
+						simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
+								SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
+						simpleDebugEventCollector.collectDebugEvent(
+								new DebugEvent<Boolean>(SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW, true));
+
+						InspectionSeance inspectionSession = new InspectionSeanceImpl(
+								(TopLevelElementRepresentation) topLevelElement, targetApplicationRepresentation);
+						Thread inspectionSessionThread = new Thread(inspectionSession);
+						inspectionSessionThread.setDaemon(true);
+						inspectionSessionThread.start();
+
 						inspectionSessionThread.join();
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
+					} catch (Exception e) {
+						SimpleDebuggerLogger.error("Inspection error", e);
+					} finally {
+						simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
+								SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+						DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 					}
-					simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
-							SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-					DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-
-				}, () -> {
-					simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
-							SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-					DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 				});
 
 //		if (anchorElementReference.isEmpty()) {
