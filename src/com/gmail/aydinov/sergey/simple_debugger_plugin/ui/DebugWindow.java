@@ -23,7 +23,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.Abstrac
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleTabContent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.EvaluateTabController;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ClassMembersAtBreakpoint;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
 
@@ -43,7 +42,6 @@ public class DebugWindow {
 	// Combined Variables + Fields tab
 	private ClassMembersAtBreakpoint variablesFieldsTabContent;
 	private StackTabContent stackTabContent;
-	private EvaluateTabController evaluateTabController;
 	private ConsoleTabContent consoleTabContent;
 
 	private Button resumeButton;
@@ -103,12 +101,6 @@ public class DebugWindow {
 		CTabItem stackTabItem = new CTabItem(tabFolder, SWT.NONE);
 		stackTabItem.setText("Stack");
 		stackTabItem.setControl(stackTabContent.getControl());
-
-		// Evaluate tab
-		evaluateTabController = new EvaluateTabController(tabFolder);
-		CTabItem evaluateTabItem = new CTabItem(tabFolder, SWT.NONE);
-		evaluateTabItem.setText("Evaluate");
-		evaluateTabItem.setControl(evaluateTabController.getControl());
 
 		// Console tab
 		consoleTabContent = new ConsoleTabContent(tabFolder);
@@ -178,9 +170,6 @@ public class DebugWindow {
 				DebugEvent<String> simpleDebugEvent = (DebugEvent<String>) event;
 				consoleTabContent.appendLine(simpleDebugEvent.getPayload());
 			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.METHOD_INVOKE)) {
-				evaluateTabController.clearResult();
-				DebugEvent<String> simpleDebugEvent = (DebugEvent<String>) event;
-				evaluateTabController.showResult(simpleDebugEvent.getPayload());
 			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE)) {
 				DebugEvent<Boolean> simpleDebugEvent = (DebugEvent<Boolean>) event;
 				resumeButton.setEnabled(simpleDebugEvent.getPayload());

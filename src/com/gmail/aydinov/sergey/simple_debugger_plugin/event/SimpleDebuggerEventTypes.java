@@ -2,11 +2,9 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 import java.util.Set;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugStoppedAtBreakpointDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
@@ -56,7 +54,7 @@ public final class SimpleDebuggerEventTypes {
         
       //============= USER INTERFACE INSPECTION WINDOW EVENTS =============
         
-        SHOW_ANCHOR_ELEMENT(TopLevelElementRepresentation.class),
+        SHOW_ANCHOR_ELEMENT(TopLevelElementRepresentationDTO.class),
         
         USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementRepresentationDTO.class),
         

@@ -10,9 +10,8 @@ import java.util.stream.Collectors;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.FieldOrVariableType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementDTO;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -207,14 +206,14 @@ public class DebugUtils {
 	 * @param fields the map of fields and their values
 	 * @return list of VariableDTO representing fields
 	 */
-	public static List<InnerElementDTO> mapFields(Map<Field, Value> fields) {
-		if (Objects.isNull(fields))
-			return List.of();
-		return fields.entrySet().stream()
-				.map(entry -> new InnerElementDTO(entry.getKey().name(), entry.getKey().typeName(),
-						valueToString(entry.getValue()), FieldOrVariableType.NON_STATIC_FIELD))
-				.collect(Collectors.toList());
-	}
+//	public static List<InnerElementDTO> mapFields(Map<Field, Value> fields) {
+//		if (Objects.isNull(fields))
+//			return List.of();
+//		return fields.entrySet().stream()
+//				.map(entry -> new InnerElementDTO(entry.getKey().name(), entry.getKey().typeName(),
+//						valueToString(entry.getValue()), FieldOrVariableType.NON_STATIC_FIELD))
+//				.collect(Collectors.toList());
+//	}
 
 	/**
 	 * Converts {@code Map<LocalVariable, Value>} to {@code List<VariableDTO>}.
@@ -222,15 +221,14 @@ public class DebugUtils {
 	 * @param locals the map of local variables and their values
 	 * @return list of VariableDTO representing local variables
 	 */
-	public static List<InnerElementDTO> mapLocals(Map<LocalVariable, Value> locals) {
-		if (Objects.isNull(locals))
-			return List.of();
-
-		return locals
-				.entrySet().stream().map(entry -> new InnerElementDTO(entry.getKey().name(),
-						entry.getKey().typeName(), valueToString(entry.getValue()), FieldOrVariableType.VARIABLE))
-				.collect(Collectors.toList());
-	}
+//	public static List<InnerElementDTO> mapLocals(Map<LocalVariable, Value> locals) {
+//		if (Objects.isNull(locals))
+//			return List.of();
+//
+//		return locals.entrySet().stream().map(entry -> new InnerElementDTO(entry.getKey().name(),
+//				entry.getKey().typeName(), valueToString(entry.getValue()), FieldOrVariableType.VARIABLE))
+//				.collect(Collectors.toList());
+//	}
 
 	/**
 	 * Converts Value to string safely handling null
@@ -397,7 +395,7 @@ public class DebugUtils {
 	 * Determines if the DTO can be inspected (non-primitive, non-String, non-null)
 	 */
 	public static boolean isInspectable(DebugWindowDataDTO dto) {
-		if (dto == null || dto.getElementType() == null /*|| dto.getValue() == null */)
+		if (dto == null || dto.getElementType() == null /* || dto.getValue() == null */)
 			return false;
 
 		switch (dto.getElementType().toString()) {
@@ -409,10 +407,68 @@ public class DebugUtils {
 
 		return true;
 	}
-	
+
 	public static boolean isStandardJavaCollection(Object object) {
-	    if (Objects.isNull(object)) return false;
-	    return object instanceof java.util.Collection || object instanceof java.util.Map;
+		if (Objects.isNull(object))
+			return false;
+		return object instanceof java.util.Collection || object instanceof java.util.Map;
+	}
+
+	public static UniversalElementRepresentation.UniversalElementType determineUniversalElementType(Object jdiElement) {
+
+	    if (jdiElement == null) {
+	        return null;
+	    }
+
+	    // ---------- Types ----------
+	    if (jdiElement instanceof com.sun.jdi.InterfaceType) {
+	        return UniversalElementRepresentation.UniversalElementType.INTERFACE;
+	    }
+
+	    if (jdiElement instanceof com.sun.jdi.ClassType classType) {
+	        if (classType.isEnum()) {
+	            return UniversalElementRepresentation.UniversalElementType.ENUM;
+	        }
+	        return UniversalElementRepresentation.UniversalElementType.CLASS;
+	    }
+
+	    // ---------- Fields ----------
+	    if (jdiElement instanceof com.sun.jdi.Field field) {
+	        return field.isStatic()
+	                ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
+	                : UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
+	    }
+
+	    // ---------- Methods ----------
+	    if (jdiElement instanceof com.sun.jdi.Method) {
+	        return UniversalElementRepresentation.UniversalElementType.METHOD;
+	    }
+
+	    // ---------- Local variables ----------
+	    if (jdiElement instanceof com.sun.jdi.LocalVariable) {
+	        return UniversalElementRepresentation.UniversalElementType.VARIABLE;
+	    }
+
+	    return null;
 	}
 	
+	public static String extractSimpleName(String fullQualifiedName) {
+	    if (fullQualifiedName == null || fullQualifiedName.isBlank()) {
+	        return "";
+	    }
+
+	    int lastDot = fullQualifiedName.lastIndexOf('.');
+	    String name = (lastDot >= 0)
+	            ? fullQualifiedName.substring(lastDot + 1)
+	            : fullQualifiedName;
+
+	    // Для inner / anonymous классов: Outer$Inner → Inner
+	    int lastDollar = name.lastIndexOf('$');
+	    if (lastDollar >= 0 && lastDollar < name.length() - 1) {
+	        name = name.substring(lastDollar + 1);
+	    }
+
+	    return name;
+	}
+
 }

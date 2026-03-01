@@ -2,10 +2,10 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.util.Objects;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TopLevelElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
@@ -19,16 +19,16 @@ public class InspectionSeanceImpl implements InspectionSeance {
 	
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector debugCollector = SimpleDebuggerEventCollector.instance();
-	private final TopLevelElementRepresentation anchorElement;
+	private final TopLevelElementRepresentationDTO anchorElement;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 
-	public InspectionSeanceImpl(TopLevelElementRepresentation targetApplicationElementRepresentation, TargetApplicationRepresentation targetApplicationRepresentation) {
+	public InspectionSeanceImpl(TopLevelElementRepresentationDTO targetApplicationElementRepresentation, TargetApplicationRepresentation targetApplicationRepresentation) {
 		super();
 		this.anchorElement = targetApplicationElementRepresentation;
 		this.targetApplicationRepresentation = targetApplicationRepresentation;
 	}
 	
-	public TopLevelElementRepresentation getAnchor() {
+	public TopLevelElementRepresentationDTO getAnchor() {
 		return anchorElement;
 	}
 
@@ -43,8 +43,8 @@ public class InspectionSeanceImpl implements InspectionSeance {
 		}
 	}
 
-	private void startInspectionSeanceForAnchor(TopLevelElementRepresentation anchorElement) {
-		debugCollector.collectDebugEvent(new DebugEvent<TopLevelElementRepresentation>(SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT, anchorElement));
+	private void startInspectionSeanceForAnchor(TopLevelElementRepresentationDTO anchorElement) {
+		debugCollector.collectDebugEvent(new DebugEvent<TopLevelElementRepresentationDTO>(SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT, anchorElement));
 		while (DebuggerContext.context().isInspectionSeanceActive()) {
 			AbstractUIEvent abstractUIEvent = null;
 			try {
