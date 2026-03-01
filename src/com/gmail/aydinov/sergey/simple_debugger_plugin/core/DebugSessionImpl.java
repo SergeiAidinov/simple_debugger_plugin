@@ -124,9 +124,9 @@ public class DebugSessionImpl implements DebugSession {
 					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
 							.refreshBreakpoints();
 					handleBreakpointEvent(breakpointEvent, uiEvent);
-					if (DebuggerContext.context().isRunning()) {
-						updateUI(breakpointEvent);
-					}
+//					if (DebuggerContext.context().isRunning()) {
+//						updateUI(breakpointEvent);
+//					}
 				}
 			}
 		}
@@ -198,7 +198,7 @@ public class DebugSessionImpl implements DebugSession {
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT)) {
-				UIEvent<InnerElementDTO> userStartedInspectionSeanceEvent = (UIEvent<InnerElementDTO>) abstractSimpleDebuggerUIEvent;
+				UIEvent<InnerElementRepresentationDTO> userStartedInspectionSeanceEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
 				initiateInspectionSeanceIfPossible(userStartedInspectionSeanceEvent.getPayload());
 			} else {
 				SimpleDebuggerLogger
@@ -206,10 +206,14 @@ public class DebugSessionImpl implements DebugSession {
 			}
 		} catch (Exception exception) {
 			SimpleDebuggerLogger.error(exception.getMessage(), exception);
+		} finally {
+			targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+					targetVirtualMachineRepresentation.getVirtualMachine());
 		}
+
 	}
 
-	private void initiateInspectionSeanceIfPossible(InnerElementDTO event) {
+	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
 				|| DebuggerContext.context().isInspectionSeanceActive())
 			return;

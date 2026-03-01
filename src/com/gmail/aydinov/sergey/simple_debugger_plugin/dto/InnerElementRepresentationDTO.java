@@ -11,7 +11,7 @@ public class InnerElementRepresentationDTO {
     private final String name;
     private final String typeName;
     private final TargetApplicationElementType elementType;
-    private final String value;
+    private String value;
 
     public InnerElementRepresentationDTO(InnerElementRepresentation original) {
         this.name = original.getElementName();
@@ -43,4 +43,9 @@ public class InnerElementRepresentationDTO {
     public String getValue() {
         return value;
     }
+
+	public void setValue(String newValStr) {
+		value = newValStr;
+		
+	}
 }
