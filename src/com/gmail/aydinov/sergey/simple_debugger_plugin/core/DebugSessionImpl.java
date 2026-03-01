@@ -210,7 +210,6 @@ public class DebugSessionImpl implements DebugSession {
 			targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
 					targetVirtualMachineRepresentation.getVirtualMachine());
 		}
-
 	}
 
 	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {
