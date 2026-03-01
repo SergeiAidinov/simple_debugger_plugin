@@ -118,23 +118,26 @@ public class TargetApplicationRepresentation {
 	}
 
 	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
-	    if (parentElement == null || refType == null) {
-	        return;
-	    }
+	    if (parentElement == null || refType == null) return;
 
-	    UUID parentId = parentElement.getTag().getParentUniqueId();
+	    UUID parentId = parentElement.getTag().getUniqueId(); // теперь parentId — это tag.uniqueId
 
 	    // ---------------- Fields ----------------
 	    for (Field field : refType.allFields()) {
 	        try {
 	            if (field.isSynthetic()) continue;
 
+	            boolean isStatic = field.isStatic();
+
 	            UniversalElementRepresentation.UniversalElementType elementType =
-	                    field.isStatic()
-	                        ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
-	                        : UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
+	                    isStatic
+	                            ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
+	                            : UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
 
 	            UniversalElementRepresentation.CurrentRole role = UniversalElementRepresentation.CurrentRole.INNER;
+
+	            // Определяем ValueCategory
+	            UniversalElementRepresentation.ValueCategory category = determineValueCategory(field.typeName());
 
 	            UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
 	                    .uniqueId(UUID.randomUUID())
@@ -144,6 +147,8 @@ public class TargetApplicationRepresentation {
 	                    .fullQualifiedName(field.typeName())
 	                    .elementType(elementType)
 	                    .currentRole(role)
+	                    .isStatic(isStatic)
+	                    .valueCategory(category)
 	                    .value(null)
 	                    .build();
 
@@ -158,15 +163,13 @@ public class TargetApplicationRepresentation {
 	            if (method.isSynthetic()) continue;
 
 	            String methodName = method.name();
-	            // Пропускаем конструкторы и статические инициализаторы
 	            if (methodName.equals("<init>") || methodName.equals("<clinit>")) continue;
-
-	            // Пропускаем методы Object, если они не переопределены
 	            if (isObjectMethodUnoverridden(refType, method)) continue;
 
 	            String methodArgs = method.argumentTypes().stream()
-	                                    .map(Type::name)      
-	                                    .collect(Collectors.joining(", "));  
+	                    .map(Type::name)
+	                    .collect(Collectors.joining(", "));
+
 	            UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
 	                    .uniqueId(UUID.randomUUID())
 	                    .parentUniqueId(parentId)
@@ -175,6 +178,8 @@ public class TargetApplicationRepresentation {
 	                    .fullQualifiedName(method.returnTypeName())
 	                    .elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
 	                    .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+	                    .isStatic(method.isStatic())
+	                    .valueCategory(UniversalElementRepresentation.ValueCategory.UNKNOWN)
 	                    .value(parentElement.getFullQualifiedName() + "." + methodName + "(" + methodArgs + ")")
 	                    .build();
 
@@ -184,12 +189,10 @@ public class TargetApplicationRepresentation {
 	    }
 
 	    // ---------------- Class / Interface ----------------
-	    UniversalElementRepresentation.UniversalElementType type;
-	    if (refType instanceof com.sun.jdi.InterfaceType) {
-	        type = UniversalElementRepresentation.UniversalElementType.INTERFACE;
-	    } else {
-	        type = UniversalElementRepresentation.UniversalElementType.CLASS;
-	    }
+	    UniversalElementRepresentation.UniversalElementType type =
+	            refType instanceof com.sun.jdi.InterfaceType
+	                    ? UniversalElementRepresentation.UniversalElementType.INTERFACE
+	                    : UniversalElementRepresentation.UniversalElementType.CLASS;
 
 	    UniversalElementRepresentation classElement = UniversalElementRepresentation.builder()
 	            .uniqueId(UUID.randomUUID())
@@ -199,29 +202,58 @@ public class TargetApplicationRepresentation {
 	            .fullQualifiedName(refType.name())
 	            .elementType(type)
 	            .currentRole(UniversalElementRepresentation.CurrentRole.OUTER)
+	            .isStatic(false)
+	            .valueCategory(UniversalElementRepresentation.ValueCategory.USER_OBJECT)
 	            .value(refType.name())
 	            .build();
 
 	    parentElement.getInnerElements().add(classElement);
 	}
 
-	/**
-	 * Проверяет, является ли метод стандартным методом Object, который не переопределён.
-	 */
+	// ---------------- Вспомогательный метод ----------------
+	private UniversalElementRepresentation.ValueCategory determineValueCategory(String typeName) {
+	    if (typeName == null) return UniversalElementRepresentation.ValueCategory.NULL;
+	    if (typeName.equals("void")) return UniversalElementRepresentation.ValueCategory.NULL;
+	    if (Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char")
+	            .contains(typeName)) return UniversalElementRepresentation.ValueCategory.PRIMITIVE;
+	    if (Set.of("java.lang.Byte", "java.lang.Short", "java.lang.Integer", "java.lang.Long",
+	               "java.lang.Float", "java.lang.Double", "java.lang.Boolean", "java.lang.Character")
+	            .contains(typeName)) return UniversalElementRepresentation.ValueCategory.WRAPPER;
+	    if (typeName.equals("java.lang.String")) return UniversalElementRepresentation.ValueCategory.STRING;
+	    if (typeName.startsWith("java.util.List") || typeName.startsWith("java.util.Set"))
+	        return UniversalElementRepresentation.ValueCategory.COLLECTION;
+	    if (typeName.endsWith("[]")) return UniversalElementRepresentation.ValueCategory.ARRAY;
+	    if (typeName.startsWith("java.util.Map")) return UniversalElementRepresentation.ValueCategory.MAP;
+	    return UniversalElementRepresentation.ValueCategory.USER_OBJECT;
+	}
+	
 	private boolean isObjectMethodUnoverridden(ReferenceType refType, Method method) {
 	    try {
-	        if (!refType.name().equals("java.lang.Object")) {
-	            // Попытка найти метод с такой сигнатурой в Object
-	            List<ReferenceType> objectTypes = method.virtualMachine().classesByName("java.lang.Object");
-	            if (!objectTypes.isEmpty()) {
-	                ReferenceType objectRef = objectTypes.get(0);
-	                for (Method objMethod : objectRef.allMethods()) {
-	                    if (objMethod.name().equals(method.name()) &&
-	                        objMethod.signature().equals(method.signature())) {
-	                        // Этот метод стандартный Object и не переопределён
-	                        return true;
+	        // Если это сам Object, то ничего не пропускаем
+	        if (refType.name().equals("java.lang.Object")) return false;
+
+	        // Получаем классы Object в VM
+	        List<ReferenceType> objectClasses = method.virtualMachine().classesByName("java.lang.Object");
+	        if (objectClasses.isEmpty()) return false;
+
+	        ReferenceType objectRef = objectClasses.get(0);
+
+	        // Проверяем, есть ли у Object метод с такой же сигнатурой
+	        for (Method objMethod : objectRef.allMethods()) {
+	            if (objMethod.name().equals(method.name()) &&
+	                objMethod.signature().equals(method.signature())) {
+	                // Метод есть в Object, значит проверяем, переопределён ли он
+	                // Если класс refType НЕ содержит свой метод с такой сигнатурой — значит не переопределён
+	                for (Method classMethod : refType.allMethods()) {
+	                    if (classMethod.name().equals(method.name()) &&
+	                        classMethod.signature().equals(method.signature()) &&
+	                        classMethod.declaringType().equals(refType)) {
+	                        // Нашли метод именно в этом классе — значит переопределён
+	                        return false;
 	                    }
 	                }
+	                // Метод есть в Object, но не переопределён
+	                return true;
 	            }
 	        }
 	    } catch (Exception ignored) {}

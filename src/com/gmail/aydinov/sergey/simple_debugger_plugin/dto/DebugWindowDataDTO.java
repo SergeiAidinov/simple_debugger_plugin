@@ -22,6 +22,7 @@ public class DebugWindowDataDTO {
     private UniversalElementType elementType;
     private String qualifiedTypeName;
     private Set<InnerElementRepresentationDTO> innerElements;
+    private final boolean isStatic;
 
     private int lineNumber = -1;
     private List<MethodCallInStackDTO> stackCall = List.of();
@@ -50,6 +51,7 @@ public class DebugWindowDataDTO {
             this.lineNumber = location.lineNumber();
             this.methodName = location.method().name() + "(..)";
         }
+        this.isStatic = element.isStatic();
     }
 
     // ===== Фильтрация допустимых элементов =====
@@ -68,7 +70,8 @@ public class DebugWindowDataDTO {
                 e.getElementName(),
                 e.getFullQualifiedName(),
                 e.getElementType(),
-                e.getValue()
+                e.getValue(),
+                e.isStatic()
         );
     }
 
@@ -82,6 +85,7 @@ public class DebugWindowDataDTO {
     public int getLineNumber() { return lineNumber; }
     public List<MethodCallInStackDTO> getStackCall() { return stackCall; }
     public String getMethodName() { return methodName; }
+    public boolean isStatic() { return isStatic;}
 
     public void setStackCall(List<MethodCallInStackDTO> stackCall) { this.stackCall = stackCall; }
 }

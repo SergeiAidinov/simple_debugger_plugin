@@ -172,7 +172,7 @@ public class ClassMembersAtBreakpoint {
     private Image getTypeIcon(InnerElementRepresentationDTO dto) {
         String key = switch (dto.getElementType()) {
             case INTERFACE -> "interface";
-            case METHOD -> "method";
+            case METHOD -> dto.isStatic() ? "static_method" : "method"; // <-- статический метод
             case STATIC_FIELD -> "static_field";
             case NON_STATIC_FIELD -> "fieldIcon";
             case VARIABLE -> "variableIcon";
@@ -186,7 +186,7 @@ public class ClassMembersAtBreakpoint {
     private PairDTO<Image, String> getTypeTooltip(InnerElementRepresentationDTO dto) {
         String key = switch (dto.getElementType()) {
             case INTERFACE -> "interface";
-            case METHOD -> "method";
+            case METHOD -> dto.isStatic() ? "static_method" : "method"; // <-- статический метод
             case STATIC_FIELD -> "static_field";
             case NON_STATIC_FIELD -> "fieldIcon";
             case VARIABLE -> "variableIcon";
