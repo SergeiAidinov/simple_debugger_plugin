@@ -23,6 +23,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
@@ -75,6 +76,7 @@ public class ClassMembersAtBreakpoint {
 
     private void setupColumns() {
 
+        // 0: Name
         createColumn(
                 0,
                 "Name",
@@ -83,6 +85,7 @@ public class ClassMembersAtBreakpoint {
                 e -> null
         );
 
+        // 1: Type / Return Type
         createColumn(
                 1,
                 "Type / Return Type",
@@ -91,11 +94,23 @@ public class ClassMembersAtBreakpoint {
                 this::getTypeIcon
         );
 
+        // 2: Value / Info
         TableViewerColumn valueColumn = createColumn(
                 2,
                 "Value / Info",
                 300,
-                InnerElementRepresentationDTO::getValue,
+                dto -> {
+                    String v = dto.getValue();
+                    if (v != null) return v;
+
+                    // Если поле или статическое поле, показываем тип
+                    if (dto.getElementType() == UniversalElementType.STATIC_FIELD ||
+                        dto.getElementType() == UniversalElementType.NON_STATIC_FIELD) {
+                        return dto.getFullQualifiedName();
+                    }
+
+                    return ""; // иначе пусто
+                },
                 this::getInspectIcon
         );
 
@@ -172,7 +187,7 @@ public class ClassMembersAtBreakpoint {
     private Image getTypeIcon(InnerElementRepresentationDTO dto) {
         String key = switch (dto.getElementType()) {
             case INTERFACE -> "interface";
-            case METHOD -> dto.isStatic() ? "static_method" : "method"; // <-- статический метод
+            case METHOD -> dto.isStatic() ? "static_method" : "method";
             case STATIC_FIELD -> "static_field";
             case NON_STATIC_FIELD -> "fieldIcon";
             case VARIABLE -> "variableIcon";
@@ -186,7 +201,7 @@ public class ClassMembersAtBreakpoint {
     private PairDTO<Image, String> getTypeTooltip(InnerElementRepresentationDTO dto) {
         String key = switch (dto.getElementType()) {
             case INTERFACE -> "interface";
-            case METHOD -> dto.isStatic() ? "static_method" : "method"; // <-- статический метод
+            case METHOD -> dto.isStatic() ? "static_method" : "method";
             case STATIC_FIELD -> "static_field";
             case NON_STATIC_FIELD -> "fieldIcon";
             case VARIABLE -> "variableIcon";

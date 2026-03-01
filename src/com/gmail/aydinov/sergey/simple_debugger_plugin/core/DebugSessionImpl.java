@@ -323,10 +323,8 @@ public class DebugSessionImpl implements DebugSession {
 		ReferenceType referenceType = location.declaringType();
 		AtomicReference<UniversalElementRepresentation> anchorElementReference = new AtomicReference<UniversalElementRepresentation>();
 		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-				//.filter(p -> p.getFirst().equals(referenceType)).findAny()
 				.filter (v -> v.getReferenceType().equals(referenceType)).findAny()
 				.ifPresent(v -> anchorElementReference.set(v));
-		;
 		if (Objects.isNull(anchorElementReference.get()))
 			return false;
 		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(anchorElementReference.get(), location);
