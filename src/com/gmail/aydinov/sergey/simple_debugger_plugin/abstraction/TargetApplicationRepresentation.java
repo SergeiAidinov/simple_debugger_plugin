@@ -53,7 +53,7 @@ public class TargetApplicationRepresentation {
 	private final DebugConfiguration debugConfiguration;
 
 	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
-			EventRequestManager eventRequestManager, VirtualMachine virtualMachine, 
+			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
 			BreakpointSubscriberRegistrar breakpointSubscriberRegistrar, DebugConfiguration debugConfiguration) {
 		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakpointRepresentation(
 				iBreakpointManager, virtualMachine);
@@ -65,119 +65,107 @@ public class TargetApplicationRepresentation {
 	public TargetApplicationBreakpointRepresentation getTargetApplicationBreakepointRepresentation() {
 		return targetApplicationBreakepointRepresentation;
 	}
-	
-	
 
 	public Map<ReferenceType, AbstractElementRepresentation> getTargetApplicationSnapshot() {
 		return targetApplicationSnapshot;
 	}
 
 	public void refreshReferencesToClassesOfTargetApplication(VirtualMachine virtualMachine) {
-	    targetApplicationSnapshot.clear();
-	    SimpleDebuggerLogger.info("Waiting for target classes to load...");
+		targetApplicationSnapshot.clear();
+		SimpleDebuggerLogger.info("Waiting for target classes to load...");
 
-	    // 1. Ждём, пока классы загрузятся
-	    List<ReferenceType> loadedReferenceTypes = waitUntilClassesAreLoaded(virtualMachine);
+		// 1. Ждём, пока классы загрузятся
+		List<ReferenceType> loadedReferenceTypes = waitUntilClassesAreLoaded(virtualMachine);
 
-	    // 2. Фильтруем target-классы
-	    List<ReferenceType> targetClasses = filterTargetClasses(loadedReferenceTypes);
+		// 2. Фильтруем target-классы
+		List<ReferenceType> targetClasses = filterTargetClasses(loadedReferenceTypes);
 
-	    SimpleDebuggerLogger.info("Loaded " + targetClasses.size() + " classes.");
+		SimpleDebuggerLogger.info("Loaded " + targetClasses.size() + " classes.");
 
-	    // 3. Собираем классы, определённые class loader'ами
-	    Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
+		// 3. Собираем классы, определённые class loader'ами
+		Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
 
-	    // 4. Обрабатываем каждый top-level элемент
-	    for (ReferenceType refType : definedByLoaders) {
-	        TargetApplicationElementType elementType = determineElementType(refType);
-	        if (elementType == null) continue;
+		// 4. Обрабатываем каждый top-level элемент
+		for (ReferenceType refType : definedByLoaders) {
+			TargetApplicationElementType elementType = determineElementType(refType);
+			if (elementType == null)
+				continue;
 
-	        // Создаём top-level элемент через фабрику
-	        TopLevelElementRepresentation topLevelElement =
-	                 new TopLevelElementRepresentation(
-	                        refType, refType.name(), refType.name(), elementType, new HashSet<>());
+			// Создаём top-level элемент через фабрику
+			TopLevelElementRepresentation topLevelElement = new TopLevelElementRepresentation(refType, refType.name(),
+					refType.name(), elementType, new HashSet<>());
 
-	        // Рекурсивно заполняем поля, методы и inner элементы
-	        populateInnerElements(topLevelElement, refType);
+			// Рекурсивно заполняем поля, методы и inner элементы
+			populateInnerElements(topLevelElement, refType);
 
-	        // Добавляем top-level элемент в Map
-	        targetApplicationSnapshot.put(refType, topLevelElement);
-	    }
+			// Добавляем top-level элемент в Map
+			targetApplicationSnapshot.put(refType, topLevelElement);
+		}
 
-	    SimpleDebuggerLogger.info("LOADED CLASSES: " + targetApplicationSnapshot.size());
+		SimpleDebuggerLogger.info("LOADED CLASSES: " + targetApplicationSnapshot.size());
 	}
 
 	/**
 	 * Рекурсивно создаёт все внутренние элементы и добавляет их в parentElement.
 	 */
 	private void populateInnerElements(AbstractTargetAplicationTopLevelElement parentElement, ReferenceType refType) {
-	    Set<InnerElementRepresentation> innerElements = new HashSet<>();
+		Set<InnerElementRepresentation> innerElements = new HashSet<>();
 
-	    ObjectReference instance = null;
-	    if (refType instanceof ClassType classType) {
-	        try {
-	            // Берём первый доступный объект для нестатических полей
-	            List<ObjectReference> instances = classType.instances(1);
-	            if (!instances.isEmpty()) {
-	                instance = instances.get(0);
-	            }
-	        } catch (Exception ignored) {}
-	    }
+		ObjectReference instance = null;
+		if (refType instanceof ClassType classType) {
+			try {
+				// Берём первый доступный объект для нестатических полей
+				List<ObjectReference> instances = classType.instances(1);
+				if (!instances.isEmpty()) {
+					instance = instances.get(0);
+				}
+			} catch (Exception ignored) {
+			}
+		}
 
-	    // --- поля ---
-	    for (Field field : refType.allFields()) {
-	        try {
-	            if (field.isSynthetic()) continue;
+		// --- поля ---
+		for (Field field : refType.allFields()) {
+			try {
+				if (field.isSynthetic())
+					continue;
 
-	            TargetApplicationElementType elementType = field.isStatic() ?
-	                    TargetApplicationElementType.STATIC_FIELD :
-	                    TargetApplicationElementType.NON_STATIC_FIELD;
+				TargetApplicationElementType elementType = field.isStatic() ? TargetApplicationElementType.STATIC_FIELD
+						: TargetApplicationElementType.NON_STATIC_FIELD;
 
-	            ObjectReference fieldInstance = field.isStatic() ? null : instance;
+				ObjectReference fieldInstance = field.isStatic() ? null : instance;
 
-	            // Получаем полный тип поля
-	            String typeName = field.typeName(); // <-- полный тип, например "java.lang.String"
+				// Получаем полный тип поля
+				String typeName = field.typeName(); // <-- полный тип, например "java.lang.String"
 
-	            // Создаём объект
-	            InnerElementRepresentation fieldElement = new InnerElementRepresentation(
-	                   parentElement.getReferenceType(),
-	            		refType,
-	                    fieldInstance,
-	                    field.name(),
-	                    typeName,             // <-- теперь это тип, а не значение
-	                    elementType
-	            );
+				// Создаём объект
+				InnerElementRepresentation fieldElement = new InnerElementRepresentation(
+						parentElement.getReferenceType(), refType, fieldInstance, field.name(), typeName, // <-- теперь
+																											// это тип,
+																											// а не
+																											// значение
+						elementType);
 
-	            innerElements.add(fieldElement);
-	        } catch (Exception ignored) {}
-	    }
+				innerElements.add(fieldElement);
+			} catch (Exception ignored) {
+			}
+		}
 
-	    // --- методы ---
-	 // --- методы ---
-	    for (Method method : refType.allMethods()) {
-	        if (method.isNative() || "<init>".equals(method.name()) || method.isSynthetic()) continue;
+		// --- методы ---
+		// --- методы ---
+		for (Method method : refType.methods()) {
+			if (method.isNative() || "<init>".equals(method.name()) || method.isSynthetic()
+					|| method.name().equals("<clinit>"))
+				continue;
+			String returnTypeName = method.returnTypeName();
+			String methodName = method.name();
+			InnerElementRepresentation methodElement = new InnerElementRepresentation(parentElement.getReferenceType(),
+					refType, null, methodName, returnTypeName, TargetApplicationElementType.METHOD);
 
-	        String returnTypeName = method.returnTypeName(); 
-	        String methodName = method.name();
+			innerElements.add(methodElement);
+		}
 
-	        // Формируем полное имя для отображения в колонке Name
-	        String ownerName = refType.name(); // имя класса или интерфейса
-	        String displayName = ownerName + "." + methodName;
-
-	        InnerElementRepresentation methodElement = new InnerElementRepresentation(
-	        		parentElement.getReferenceType(),
-	                refType,
-	                null,
-	                methodName,       
-	                returnTypeName,   
-	                TargetApplicationElementType.METHOD
-	        );
-
-	        innerElements.add(methodElement);
-	    }
-
-	    // --- сохраняем во внутренние элементы родителя ---
-	    parentElement.getInnerElements().addAll(innerElements);
+		// --- сохраняем во внутренние элементы родителя ---
+		parentElement.getInnerElements().addAll(innerElements);
 	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
@@ -198,20 +186,18 @@ public class TargetApplicationRepresentation {
 	}
 
 	private List<ReferenceType> filterTargetClasses(List<ReferenceType> referenceTypes) {
-		//return referenceTypes;
-	    // Determine the target root package
-	    String targetPackage = debugConfiguration.getTargetRootPackage();
-	    if (targetPackage == null || targetPackage.isBlank()) {
-	        // Fallback to the package of the main class
-	        String mainClass = debugConfiguration.getMainClassName();
-	        int lastDot = mainClass.lastIndexOf('.');
-	        targetPackage = lastDot > 0 ? mainClass.substring(0, lastDot) : "";
-	    }
-	    String finalTargetPackage = targetPackage;
-	    // Filter classes belonging to the target package
-	    return referenceTypes.stream()
-	            .filter(rt -> rt.name().startsWith(finalTargetPackage + "."))
-	            .toList();
+		// return referenceTypes;
+		// Determine the target root package
+		String targetPackage = debugConfiguration.getTargetRootPackage();
+		if (targetPackage == null || targetPackage.isBlank()) {
+			// Fallback to the package of the main class
+			String mainClass = debugConfiguration.getMainClassName();
+			int lastDot = mainClass.lastIndexOf('.');
+			targetPackage = lastDot > 0 ? mainClass.substring(0, lastDot) : "";
+		}
+		String finalTargetPackage = targetPackage;
+		// Filter classes belonging to the target package
+		return referenceTypes.stream().filter(rt -> rt.name().startsWith(finalTargetPackage + ".")).toList();
 	}
 
 	private Set<ReferenceType> collectDefinedClasses(List<ReferenceType> referenceTypes) {
