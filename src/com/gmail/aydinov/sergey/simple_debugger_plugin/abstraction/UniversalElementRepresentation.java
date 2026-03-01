@@ -56,7 +56,7 @@ public class UniversalElementRepresentation {
     private final Tag tag;
     private final ReferenceType referenceType;
     private final String elementName;
-    private final String fullQualifiedName;
+    private final String additionalInfo;
     private final UniversalElementType elementType;
     private CurrentRole currentRole;
     private final String value;
@@ -66,13 +66,13 @@ public class UniversalElementRepresentation {
 
     // =================== Конструктор ===================
     private UniversalElementRepresentation(Tag tag, ReferenceType referenceType,
-                                           String elementName, String fullQualifiedName,
+                                           String elementName, String additionalInfo,
                                            UniversalElementType elementType, CurrentRole currentRole,
                                            String value, boolean isStatic, ValueCategory valueCategory) {
         this.tag = tag;
         this.referenceType = referenceType;
         this.elementName = elementName;
-        this.fullQualifiedName = fullQualifiedName;
+        this.additionalInfo = additionalInfo;
         this.elementType = elementType;
         this.currentRole = currentRole;
         this.value = value;
@@ -84,7 +84,7 @@ public class UniversalElementRepresentation {
     public Tag getTag() { return tag; }
     public ReferenceType getReferenceType() { return referenceType; }
     public String getElementName() { return elementName; }
-    public String getFullQualifiedName() { return fullQualifiedName; }
+    public String getAdditionalInfo() { return additionalInfo; }
     public UniversalElementType getElementType() { return elementType; }
     public CurrentRole getCurrentRole() { return currentRole; }
     public void setCurrentRole(CurrentRole currentRole) { this.currentRole = currentRole; }
@@ -96,7 +96,7 @@ public class UniversalElementRepresentation {
     // =================== Equals и hashCode по бизнес-логике ===================
     @Override
     public int hashCode() {
-        return Objects.hash(elementName, fullQualifiedName, elementType, currentRole, value, innerElements, isStatic, valueCategory);
+        return Objects.hash(elementName, additionalInfo, elementType, currentRole, value, innerElements, isStatic, valueCategory);
     }
 
     @Override
@@ -105,7 +105,7 @@ public class UniversalElementRepresentation {
         if (obj == null || getClass() != obj.getClass()) return false;
         UniversalElementRepresentation other = (UniversalElementRepresentation) obj;
         return Objects.equals(elementName, other.elementName) &&
-               Objects.equals(fullQualifiedName, other.fullQualifiedName) &&
+               Objects.equals(additionalInfo, other.additionalInfo) &&
                elementType == other.elementType &&
                currentRole == other.currentRole &&
                Objects.equals(value, other.value) &&

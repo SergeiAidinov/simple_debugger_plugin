@@ -180,7 +180,7 @@ public class TargetApplicationRepresentation {
 	                    .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
 	                    .isStatic(method.isStatic())
 	                    .valueCategory(UniversalElementRepresentation.ValueCategory.UNKNOWN)
-	                    .value(parentElement.getFullQualifiedName() + "." + methodName + "(" + methodArgs + ")")
+	                    .value(parentElement.getAdditionalInfo() + "." + methodName + "(" + methodArgs + ")")
 	                    .build();
 
 	            parentElement.getInnerElements().add(methodElement);
