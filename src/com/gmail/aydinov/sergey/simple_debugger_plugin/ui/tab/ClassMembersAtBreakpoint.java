@@ -187,20 +187,27 @@ public class ClassMembersAtBreakpoint {
 	}
 
 	private boolean isEditable(InnerElementRepresentationDTO dto) {
-		String typeName = dto.getTypeName();
-		if (typeName == null)
-			return false;
+	    if (dto == null || dto.getTypeName() == null) return false;
 
-		// Примитивы, их обертки и String редактируем
-		if (JAVA_STANDARD_TYPES.contains(typeName) || "java.lang.String".equals(typeName))
-			return true;
+	    // Редактируем только поля и переменные, методы никогда
+	    switch (dto.getElementType()) {
+	        case STATIC_FIELD, NON_STATIC_FIELD, VARIABLE -> {
+	            String typeName = dto.getTypeName();
 
-		// Пользовательские объекты (не java./javax.) — нельзя
-		if (!typeName.startsWith("java.") && !typeName.startsWith("javax."))
-			return false;
+	            // массивы и коллекции нередактируемы
+	            if (isCollectionType(typeName)) return false;
 
-		// Остальные стандартные классы — редактируем
-		return true;
+	            // примитивы, их обёртки и String редактируемы
+	            if (JAVA_STANDARD_TYPES.contains(typeName) || "java.lang.String".equals(typeName)) return true;
+
+	            // все остальные объекты — нередактируемы
+	            return false;
+	        }
+	        default -> {
+	            // методы, интерфейсы и прочее нередактируемы
+	            return false;
+	        }
+	    }
 	}
 
 	private boolean shouldShowInspectIcon(InnerElementRepresentationDTO dto) {
@@ -286,6 +293,23 @@ public class ClassMembersAtBreakpoint {
 				return i;
 		}
 		return -1;
+	}
+	
+	private boolean isCollectionType(String typeName) {
+	    if (typeName == null) return false;
+
+	    // массивы — редактируем их нельзя
+	    if (typeName.endsWith("[]")) return true;
+
+	    try {
+	        Class<?> clazz = Class.forName(typeName);
+	        // все коллекции и карты — нередактируемы
+	        return java.util.Collection.class.isAssignableFrom(clazz)
+	                || java.util.Map.class.isAssignableFrom(clazz);
+	    } catch (ClassNotFoundException e) {
+	        // тип не найден, считаем не коллекцией
+	        return false;
+	    }
 	}
 
 	public Composite getControl() {
