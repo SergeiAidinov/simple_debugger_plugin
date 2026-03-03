@@ -35,6 +35,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -43,7 +44,9 @@ import com.sun.jdi.InterfaceType;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
+import com.sun.jdi.PrimitiveValue;
 import com.sun.jdi.ReferenceType;
+import com.sun.jdi.StringReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
@@ -120,7 +123,19 @@ public class TargetApplicationRepresentation {
 	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
 	    if (parentElement == null || refType == null) return;
 
-	    UUID parentId = parentElement.getTag().getUniqueId(); // теперь parentId — это tag.uniqueId
+	    UUID parentId = parentElement.getTag().getUniqueId();
+
+	    // 🔹 Получаем экземпляр (если есть)
+	    ObjectReference instance = null;
+
+	    if (refType instanceof ClassType classType) {
+	        try {
+	            List<ObjectReference> instances = classType.instances(1);
+	            if (!instances.isEmpty()) {
+	                instance = instances.get(0);
+	            }
+	        } catch (Exception ignored) {}
+	    }
 
 	    // ---------------- Fields ----------------
 	    for (Field field : refType.allFields()) {
@@ -134,23 +149,28 @@ public class TargetApplicationRepresentation {
 	                            ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
 	                            : UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
 
-	            UniversalElementRepresentation.CurrentRole role = UniversalElementRepresentation.CurrentRole.INNER;
+	            UniversalElementRepresentation.CurrentRole role =
+	                    UniversalElementRepresentation.CurrentRole.INNER;
 
-	            // Определяем ValueCategory
-	            UniversalElementRepresentation.ValueCategory category = determineValueCategory(field.typeName());
+	            UniversalElementRepresentation.ValueCategory category =
+	                    determineValueCategory(field.typeName());
 
-	            UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
-	                    .uniqueId(UUID.randomUUID())
-	                    .parentUniqueId(parentId)
-	                    .referenceType(refType)
-	                    .elementName(field.name())
-	                    .additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
-	                    .elementType(elementType)
-	                    .currentRole(role)
-	                    .isStatic(isStatic)
-	                    .valueCategory(category)
-	                    .value(field.typeName())
-	                    .build();
+	            // 🔹 Получаем значение (только примитивы и String)
+	            String value = extractPrimitiveOrStringAsText(field, instance);
+
+	            UniversalElementRepresentation fieldElement =
+	                    UniversalElementRepresentation.builder()
+	                            .uniqueId(UUID.randomUUID())
+	                            .parentUniqueId(parentId)
+	                            .referenceType(refType)
+	                            .elementName(field.name())
+	                            .additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
+	                            .elementType(elementType)
+	                            .currentRole(role)
+	                            .isStatic(isStatic)
+	                            .valueCategory(category)
+	                            .value(value) // ← теперь передаём реальное значение
+	                            .build();
 
 	            parentElement.getInnerElements().add(fieldElement);
 
@@ -170,44 +190,59 @@ public class TargetApplicationRepresentation {
 	                    .map(Type::name)
 	                    .collect(Collectors.joining(", "));
 
-	            UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
-	                    .uniqueId(UUID.randomUUID())
-	                    .parentUniqueId(parentId)
-	                    .referenceType(refType)
-	                    .elementName(methodName + "()")
-	                    .additionalInfo(method.returnTypeName())
-	                    .elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
-	                    .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-	                    .isStatic(method.isStatic())
-	                    .valueCategory(UniversalElementRepresentation.ValueCategory.UNKNOWN)
-	                    .value(parentElement.getAdditionalInfo() + "." + methodName + "(" + methodArgs + ")")
-	                    .build();
+	            UniversalElementRepresentation methodElement =
+	                    UniversalElementRepresentation.builder()
+	                            .uniqueId(UUID.randomUUID())
+	                            .parentUniqueId(parentId)
+	                            .referenceType(refType)
+	                            .elementName(methodName + "()")
+	                            .additionalInfo(method.returnTypeName())
+	                            .elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
+	                            .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+	                            .isStatic(method.isStatic())
+	                            .valueCategory(UniversalElementRepresentation.ValueCategory.UNKNOWN)
+	                            .value(parentElement.getAdditionalInfo() + "." + methodName + "(" + methodArgs + ")")
+	                            .build();
 
 	            parentElement.getInnerElements().add(methodElement);
 
 	        } catch (Exception ignored) {}
 	    }
+	}
 
-	    // ---------------- Class / Interface ----------------
-//	    UniversalElementRepresentation.UniversalElementType type =
-//	            refType instanceof com.sun.jdi.InterfaceType
-//	                    ? UniversalElementRepresentation.UniversalElementType.INTERFACE
-//	                    : UniversalElementRepresentation.UniversalElementType.CLASS;
-//
-//	    UniversalElementRepresentation classElement = UniversalElementRepresentation.builder()
-//	            .uniqueId(UUID.randomUUID())
-//	            .parentUniqueId(parentId)
-//	            .referenceType(refType)
-//	            .elementName(refType.name())
-//	            .additionalInfo(refType.name())
-//	            .elementType(type)
-//	            .currentRole(UniversalElementRepresentation.CurrentRole.OUTER)
-//	            .isStatic(false)
-//	            .valueCategory(UniversalElementRepresentation.ValueCategory.USER_OBJECT)
-//	            .value(refType.name())
-//	            .build();
-//
-//	    parentElement.getInnerElements().add(classElement);
+	
+	
+	private String extractPrimitiveOrStringAsText(Field field, ObjectReference instance) {
+	    if (field == null) {
+	        return null;
+	    }
+
+	    Value value;
+
+	    if (field.isStatic()) {
+	        value = field.declaringType().getValue(field);
+	    } else {
+	        if (instance == null) {
+	            return null;
+	        }
+	        value = instance.getValue(field);
+	    }
+
+	    if (value == null) {
+	        return "null"; // можно вернуть null, если тебе так логически удобнее
+	    }
+
+	    // String
+	    if (value instanceof StringReference stringRef) {
+	        return stringRef.value();
+	    }
+
+	    // Любой примитив
+	    if (value instanceof PrimitiveValue primitiveValue) {
+	        return ((StringReference) primitiveValue).value().toString();
+	    }
+
+	    return "<null>";
 	}
 
 	// ---------------- Вспомогательный метод ----------------
