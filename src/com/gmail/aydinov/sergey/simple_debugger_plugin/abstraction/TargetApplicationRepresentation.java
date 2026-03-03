@@ -176,12 +176,9 @@ public class TargetApplicationRepresentation {
 	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
 		if (parentElement == null || refType == null)
 			return;
-
 		UUID parentId = parentElement.getTag().getUniqueId();
-
 		// 🔹 Получаем экземпляр (если есть)
 		ObjectReference instance = null;
-
 		if (refType instanceof ClassType classType) {
 			try {
 				List<ObjectReference> instances = classType.instances(1);
@@ -191,42 +188,30 @@ public class TargetApplicationRepresentation {
 			} catch (Exception ignored) {
 			}
 		}
-
 		// ---------------- Fields ----------------
 		for (Field field : refType.allFields()) {
 			try {
 				if (field.isSynthetic())
 					continue;
-
 				boolean isStatic = field.isStatic();
-
 				UniversalElementRepresentation.UniversalElementType elementType = isStatic
 						? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
 						: UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
-
 				UniversalElementRepresentation.CurrentRole role = UniversalElementRepresentation.CurrentRole.INNER;
-
 				UniversalElementRepresentation.ValueCategory category = determineValueCategory(field.typeName());
-
 				// 🔹 Получаем значение (только примитивы и String)
-
 				String value = field.name();
-
 				if (category == ValueCategory.PRIMITIVE || category == ValueCategory.STRING) {
 					value = extractPrimitiveOrStringAsText(field, instance);
 				}
-
 				// String value = extractPrimitiveOrStringAsText(field, instance);
-
 				UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
 						.uniqueId(UUID.randomUUID()).parentUniqueId(parentId).referenceType(refType)
 						.elementName(field.name()).additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
 						.elementType(elementType).currentRole(role).isStatic(isStatic).valueCategory(category)
 						.value(value) // ← теперь передаём реальное значение
 						.fullQualifiedName(field.typeName()).build();
-
 				parentElement.getInnerElements().add(fieldElement);
-
 			} catch (Exception ignored) {
 			}
 		}
@@ -236,15 +221,12 @@ public class TargetApplicationRepresentation {
 			try {
 				if (method.isSynthetic())
 					continue;
-
 				String methodName = method.name();
 				if (methodName.equals("<init>") || methodName.equals("<clinit>"))
 					continue;
 				if (isObjectMethodUnoverridden(refType, method))
 					continue;
-
 				String methodArgs = method.argumentTypes().stream().map(Type::name).collect(Collectors.joining(", "));
-
 				UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
 						.uniqueId(UUID.randomUUID()).parentUniqueId(parentId).referenceType(refType)
 						.elementName(methodName + "()").additionalInfo(method.returnTypeName())
@@ -253,9 +235,7 @@ public class TargetApplicationRepresentation {
 						.valueCategory(UniversalElementRepresentation.ValueCategory.UNKNOWN)
 						.value(parentElement.getAdditionalInfo() + "." + methodName + "(" + methodArgs + ")")
 						.fullQualifiedName(method.name()).build();
-
 				parentElement.getInnerElements().add(methodElement);
-
 			} catch (Exception ignored) {
 			}
 		}
@@ -265,9 +245,7 @@ public class TargetApplicationRepresentation {
 		if (field == null) {
 			return null;
 		}
-
 		Value value;
-
 		if (field.isStatic()) {
 			value = field.declaringType().getValue(field);
 		} else {
@@ -276,21 +254,17 @@ public class TargetApplicationRepresentation {
 			}
 			value = instance.getValue(field);
 		}
-
 		if (value == null) {
 			return "null"; // можно вернуть null, если тебе так логически удобнее
 		}
-
 		// String
 		if (value instanceof StringReference stringRef) {
 			return stringRef.value();
 		}
-
 		// Любой примитив
 		if (value instanceof PrimitiveValue primitiveValue) {
 			return ((StringReference) primitiveValue).value().toString();
 		}
-
 		return "<null>";
 	}
 
@@ -321,14 +295,11 @@ public class TargetApplicationRepresentation {
 			// Если это сам Object, то ничего не пропускаем
 			if (refType.name().equals("java.lang.Object"))
 				return false;
-
 			// Получаем классы Object в VM
 			List<ReferenceType> objectClasses = method.virtualMachine().classesByName("java.lang.Object");
 			if (objectClasses.isEmpty())
 				return false;
-
 			ReferenceType objectRef = objectClasses.get(0);
-
 			// Проверяем, есть ли у Object метод с такой же сигнатурой
 			for (Method objMethod : objectRef.allMethods()) {
 				if (objMethod.name().equals(method.name()) && objMethod.signature().equals(method.signature())) {
@@ -354,7 +325,6 @@ public class TargetApplicationRepresentation {
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
 		List<ReferenceType> referenceTypes = new ArrayList<>();
-
 		while (referenceTypes.isEmpty()) {
 			referenceTypes.addAll(virtualMachine.allClasses());
 			if (!referenceTypes.isEmpty()) {
@@ -386,14 +356,11 @@ public class TargetApplicationRepresentation {
 
 	private Set<ReferenceType> collectDefinedClasses(List<ReferenceType> referenceTypes) {
 		Set<ReferenceType> result = new HashSet<>();
-
 		for (ReferenceType referenceType : referenceTypes) {
 			ClassLoaderReference classLoaderReference = referenceType.classLoader();
-
 			if (Objects.isNull(classLoaderReference)) {
 				continue;
 			}
-
 			for (ReferenceType definedReferenceType : classLoaderReference.definedClasses()) {
 
 				if (Objects.nonNull(definedReferenceType)) {
@@ -416,16 +383,13 @@ public class TargetApplicationRepresentation {
 
 	private Set<TargetApplicationMethodDTO> buildMethodDTOs(ReferenceType referenceType) {
 		Set<TargetApplicationMethodDTO> result = new TreeSet<>();
-
 		for (Method method : referenceType.allMethods()) {
-
 			if (method.isNative()) {
 				continue;
 			}
 			if ("<init>".equals(method.name())) {
 				continue;
 			}
-
 			TargetApplicationMethodDTO targetApplicationMethodDTO = createMethodDTO(method);
 
 			if (Objects.nonNull(targetApplicationMethodDTO)) {
@@ -439,11 +403,8 @@ public class TargetApplicationRepresentation {
 		try {
 			List<com.sun.jdi.Type> argumentTypes = method.argumentTypes();
 			List<com.sun.jdi.LocalVariable> argumentVariables = loadArgVars(method);
-
 			List<TargetApplicationMethodParameterDTO> parameters = compileParameters(argumentTypes, argumentVariables);
-
 			return new TargetApplicationMethodDTO(method.name(), method.returnType().toString(), parameters);
-
 		} catch (ClassNotLoadedException classNotLoadedException) {
 			classNotLoadedException.printStackTrace();
 			return null;
@@ -461,23 +422,18 @@ public class TargetApplicationRepresentation {
 	private List<TargetApplicationMethodParameterDTO> compileParameters(List<com.sun.jdi.Type> argumentTypes,
 			List<com.sun.jdi.LocalVariable> argumentVariables) {
 		List<TargetApplicationMethodParameterDTO> parameters = new ArrayList<>();
-
 		for (int index = 0; index < argumentTypes.size(); index++) {
 			com.sun.jdi.Type type = argumentTypes.get(index);
-
 			String name = (index < argumentVariables.size()) ? argumentVariables.get(index).name() : "arg" + index;
-
 			String typeName;
 			try {
 				typeName = type.name();
 			} catch (Exception exception) {
 				typeName = "";
 			}
-
 			if (Objects.nonNull(typeName) && typeName.contains("no class loader")) {
 				typeName = "";
 			}
-
 			parameters.add(new TargetApplicationMethodParameterDTO(name, typeName));
 		}
 		return parameters;
@@ -487,10 +443,8 @@ public class TargetApplicationRepresentation {
 		if (Objects.isNull(virtualMachine)) {
 			return;
 		}
-
 		try {
 			virtualMachine.eventRequestManager().deleteAllBreakpoints();
-
 			virtualMachine.allThreads().forEach(threadReference -> {
 				try {
 					if (threadReference.suspendCount() > 0) {
@@ -499,9 +453,7 @@ public class TargetApplicationRepresentation {
 				} catch (Exception ignored) {
 				}
 			});
-
 			virtualMachine.dispose();
-
 		} catch (VMDisconnectedException ignored) {
 		} catch (Exception exception) {
 			exception.printStackTrace();
@@ -510,23 +462,17 @@ public class TargetApplicationRepresentation {
 
 	public IFile findIFileForLocation(Location location) {
 		ReferenceType referenceType = location.declaringType();
-
 		if (Objects.isNull(referenceType)) {
 			return null;
 		}
-
 		String jvmName = referenceType.name();
 		String className = jvmName.replace('/', '.');
-
 		if (className.startsWith("L") && className.endsWith(";")) {
 			className = className.substring(1, className.length() - 1);
 		}
-
 		IWorkspace iWorkspace = ResourcesPlugin.getWorkspace();
 		IWorkspaceRoot iWorkspaceRoot = iWorkspace.getRoot();
-
 		for (IProject iProject : iWorkspaceRoot.getProjects()) {
-
 			try {
 				if (!iProject.isOpen() || !iProject.hasNature(JavaCore.NATURE_ID)) {
 					continue;
@@ -534,9 +480,7 @@ public class TargetApplicationRepresentation {
 			} catch (CoreException coreException) {
 				coreException.printStackTrace();
 			}
-
 			IJavaProject iJavaProject = JavaCore.create(iProject);
-
 			IType iType;
 			try {
 				iType = iJavaProject.findType(className);
@@ -544,10 +488,8 @@ public class TargetApplicationRepresentation {
 				javaModelException.printStackTrace();
 				continue;
 			}
-
 			if (Objects.nonNull(iType)) {
 				ICompilationUnit iCompilationUnit = iType.getCompilationUnit();
-
 				if (Objects.nonNull(iCompilationUnit)) {
 					try {
 						IResource iResource = iCompilationUnit.getUnderlyingResource();
@@ -567,13 +509,9 @@ public class TargetApplicationRepresentation {
 		if (Objects.isNull(universalElementRepresentation)) {
 			return null;
 		}
-
 		String className = universalElementRepresentation.getElementName();
-
 		for (Entry<UUID, UniversalElementRepresentation> entry : targetApplicationSnapshot.entrySet()) {
-
 			ReferenceType referenceType = entry.getValue().getReferenceType();
-
 			if (Objects.nonNull(referenceType) && className.equals(referenceType.name())) {
 				return referenceType;
 			}
@@ -584,14 +522,11 @@ public class TargetApplicationRepresentation {
 	public ObjectReference createObjectInstance(ClassType classType) {
 		try {
 			Method constructor = classType.concreteMethodByName("<init>", "()V");
-
 			if (Objects.isNull(constructor)) {
 				throw new RuntimeException("No default constructor for " + classType.name());
 			}
-
 			return classType.newInstance(virtualMachine.allThreads().get(0), constructor, List.of(),
 					ClassType.INVOKE_SINGLE_THREADED);
-
 		} catch (Exception exception) {
 			throw new RuntimeException("Cannot create instance of " + classType.name(), exception);
 		}
