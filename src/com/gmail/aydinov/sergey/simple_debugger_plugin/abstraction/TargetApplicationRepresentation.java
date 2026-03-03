@@ -123,56 +123,96 @@ public class TargetApplicationRepresentation {
 		SimpleDebuggerLogger.info("LOADED TOP-LEVEL ELEMENTS: " + targetApplicationSnapshot.size());
 	}
 
-	public boolean addLocalVaraibles(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
-		StackFrame frame = null;
-		try {
-			frame = breakpointEvent.thread().frame(0);
-		} catch (IncompatibleThreadStateException e) {
-			SimpleDebuggerLogger.error(e.getMessage(), e);
-			return false;
-		} // верхний кадр стека
-		Location location = breakpointEvent.location(); // где сработал брейкпойнт
-		Method method = location.method();
-		Optional<UniversalElementRepresentation> methodRepresentationOpt = targetApplicationSnapshot.values().stream()
-				.filter(e -> (e.getReferenceType().equals(method.declaringType()))).findAny();
-		if (methodRepresentationOpt.isEmpty())
-			return false;
-		UniversalElementRepresentation methodRepresentation = methodRepresentationOpt.get();
-		Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
-		List<UniversalElementRepresentation> localVariables = new ArrayList<UniversalElementRepresentation>();
-		for (Entry<LocalVariable, Value> entry : locals.entrySet()) {
-			LocalVariable var = entry.getKey();
-			Value value = entry.getValue();
-			UniversalElementRepresentation qq = UniversalElementRepresentation.builder()
-					.tag(new UniversalElementRepresentation.Tag(UUID.randomUUID(),
-							methodRepresentation.getTag().getUniqueId()))
-					.build();
-			localVariables.add(qq);
-		}
-//		new UniversalElementRepresentation.Tag(UUID.randomUUID(), methodRepresentation.getTag().getUniqueId())
-//		List<InnerElementRepresentationDTO> localVariables = locals.entrySet().stream()
-//		        .map(entry -> {
-//		            LocalVariable var = entry.getKey();
-//		            Value value = entry.getValue();
-//		            return new UniversalElementRepresentation(
-//		            		new UniversalElementRepresentation.Tag(UUID.randomUUID(), methodRepresentation.getTag().getUniqueId()),
-//		            		null,
-//		            		entry.getValue().toString(),
-//		            		null,
-//		            		null,
-//		            		null,
-//		            		null,
-//		            		null,
-//		            		null,
-//		            		null
-//		            		
-//		            		);
-//		            		
-//		            
-//		        })
-//		        .toList();
+	public boolean addLocalVaraibles(
+	        VirtualMachine virtualMachine,
+	        BreakpointEvent breakpointEvent
+	) {
 
-		return true;
+	    StackFrame frame;
+	    try {
+	        frame = breakpointEvent.thread().frame(0);
+	    } catch (IncompatibleThreadStateException e) {
+	        SimpleDebuggerLogger.error(e.getMessage(), e);
+	        return false;
+	    }
+
+	    Location location = breakpointEvent.location();
+	    Method method = location.method();
+
+	    if (method == null) return false;
+
+	    Optional<UniversalElementRepresentation> classRepresentationOpt =
+	            targetApplicationSnapshot.values().stream()
+	                    .filter(e -> e.getReferenceType() != null
+	                            && e.getReferenceType().equals(method.declaringType()))
+	                    .findFirst();
+
+	    if (classRepresentationOpt.isEmpty())
+	        return false;
+
+	    UniversalElementRepresentation classRepresentation =
+	            classRepresentationOpt.get();
+
+	    Optional<UniversalElementRepresentation> methodRepresentationOpt =
+	            classRepresentation.getInnerElements().stream()
+	                    .filter(e ->
+	                            e.getElementType() == UniversalElementType.METHOD
+	                                    && e.getElementName().startsWith(method.name()))
+	                    .findFirst();
+
+	    if (methodRepresentationOpt.isEmpty())
+	        return false;
+
+	    UniversalElementRepresentation methodRepresentation =
+	            methodRepresentationOpt.get();
+
+	    // ❗ Удаляем ТОЛЬКО старые локальные переменные
+	    methodRepresentation.getInnerElements().removeIf(
+	            e -> e.getElementType() == UniversalElementType.VARIABLE
+	    );
+
+	    Map<LocalVariable, Value> locals =
+	            DebugUtils.compileLocalVariables(frame);
+
+	    List<UniversalElementRepresentation> localVariables =
+	            new ArrayList<>();
+
+	    for (Entry<LocalVariable, Value> entry : locals.entrySet()) {
+
+	        LocalVariable var = entry.getKey();
+	        Value value = entry.getValue();
+
+	        String valueText = (value == null) ? "null" : value.toString();
+
+	        UniversalElementRepresentation variable =
+	                UniversalElementRepresentation.builder()
+	                        .tag(new UniversalElementRepresentation.Tag(
+	                                UUID.randomUUID(),
+	                                methodRepresentation.getTag().getUniqueId() // ✔ родитель = метод
+	                        ))
+	                        .referenceType(null)
+	                        .elementName(var.name())
+	                        .additionalInfo(valueText)
+	                        .elementType(UniversalElementType.VARIABLE)
+	                        .currentRole(CurrentRole.INNER)
+	                        .value(valueText)
+	                        .isStatic(false)
+	                        .valueCategory(
+	                                DebugUtils.determineValueCategory(value))
+	                        .fullQualifiedName(
+	                                value instanceof ObjectReference obj
+	                                        ? obj.referenceType().name()
+	                                        : var.typeName())
+	                        .build();
+
+	        localVariables.add(variable);
+	    }
+
+	    methodRepresentation.getInnerElements().addAll(localVariables);
+
+	    System.out.println("LVAR: " + localVariables.size());
+
+	    return true;
 	}
 
 	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
