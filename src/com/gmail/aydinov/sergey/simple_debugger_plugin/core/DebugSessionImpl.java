@@ -349,7 +349,8 @@ public class DebugSessionImpl implements DebugSession {
 		                    var.typeName(),          // полное имя типа
 		                    UniversalElementType.VARIABLE, // тип элемента
 		                    value != null ? value.toString() : "null", // значение
-		                    debugWindowDataDTO.isStatic()	
+		                    debugWindowDataDTO.isStatic(),
+		                    debugWindowDataDTO.getValueCategory()
 		            );
 		        })
 		        .toList();
