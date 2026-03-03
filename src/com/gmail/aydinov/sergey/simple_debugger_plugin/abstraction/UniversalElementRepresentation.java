@@ -119,7 +119,7 @@ public class UniversalElementRepresentation {
         private Tag tag;
         private ReferenceType referenceType = null;
         private String elementName = "";
-        private String fullQualifiedName = "";
+        private String additionalInfo = "";
         private UniversalElementType elementType = UniversalElementType.UNKNOWN;
         private CurrentRole currentRole = CurrentRole.OUTER;
         private String value = null;
@@ -140,7 +140,7 @@ public class UniversalElementRepresentation {
         }
         public Builder referenceType(ReferenceType referenceType) { this.referenceType = referenceType; return this; }
         public Builder elementName(String elementName) { this.elementName = elementName; return this; }
-        public Builder fullQualifiedName(String fullQualifiedName) { this.fullQualifiedName = fullQualifiedName; return this; }
+        public Builder additionalInfo(String additionalInfo) { this.additionalInfo = additionalInfo; return this; }
         public Builder elementType(UniversalElementType elementType) { this.elementType = elementType; return this; }
         public Builder currentRole(CurrentRole currentRole) { this.currentRole = currentRole; return this; }
         public Builder value(String value) { this.value = value; return this; }
@@ -158,7 +158,7 @@ public class UniversalElementRepresentation {
         public UniversalElementRepresentation build() {
             if (tag == null) tag = new Tag(UUID.randomUUID(), null);
             UniversalElementRepresentation element = new UniversalElementRepresentation(
-                    tag, referenceType, elementName, fullQualifiedName,
+                    tag, referenceType, elementName, additionalInfo,
                     elementType, currentRole, value, isStatic, valueCategory
             );
             element.getInnerElements().addAll(innerElements);
