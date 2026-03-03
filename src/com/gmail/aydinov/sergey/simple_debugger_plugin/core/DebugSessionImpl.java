@@ -255,10 +255,8 @@ public class DebugSessionImpl implements DebugSession {
 		try {
 			LocalVariable localVariable = currentFrame.visibleVariables().stream()
 					.filter(v -> v.name().equals(userChangedVariableEventDTO.getName())).findFirst().orElse(null);
-
 			if (Objects.isNull(localVariable))
 				return;
-
 			Value value = DebugUtils.createJdiValueFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
 					localVariable, userChangedVariableEventDTO.getNewValue().toString());
 			currentFrame.setValue(localVariable, value);
@@ -274,10 +272,8 @@ public class DebugSessionImpl implements DebugSession {
 		Field field = referenceType.fieldByName(fieldEvent.getFieldName());
 		if (Objects.isNull(field))
 			return;
-
 		Value value = DebugUtils.createJdiObjectFromString(targetVirtualMachineRepresentation.getVirtualMachine(),
 				field.type(), fieldEvent.getNewValue(), currentFrame.thread());
-
 		if (Modifier.isStatic(field.modifiers()) && referenceType instanceof ClassType classType) {
 			classType.setValue(field, value);
 		} else if (Objects.nonNull(currentFrame.thisObject())) {
@@ -296,14 +292,12 @@ public class DebugSessionImpl implements DebugSession {
 			ObjectReference instance = !method.isStatic()
 					? targetApplicationRepresentation.createObjectInstance((ClassType) referenceType)
 					: null;
-
 			Value result = Objects.nonNull(instance)
 					? instance.invokeMethod(targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0),
 							method, methodArguments, ObjectReference.INVOKE_SINGLE_THREADED)
 					: ((ClassType) referenceType).invokeMethod(
 							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), method,
 							methodArguments, ClassType.INVOKE_SINGLE_THREADED);
-
 			methodInvocationResult.set(String.valueOf(result));
 			simpleDebugEventCollector.collectDebugEvent(new DebugEvent<String>(
 					SimpleDebuggerEventTypes.SimpleDebuggerEventType.METHOD_INVOKE, methodInvocationResult.get()));
@@ -323,60 +317,9 @@ public class DebugSessionImpl implements DebugSession {
 	private boolean updateUI(BreakpointEvent breakpointEvent) {
 		if (Objects.isNull(breakpointEvent))
 			return false;
-
-//		StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
-//		if (Objects.isNull(currentFrame))
-//			return false;
-//
-//		Location location = breakpointEvent.location();
-//		ReferenceType referenceType = location.declaringType();
-//		AtomicReference<UniversalElementRepresentation> anchorElementReference = new AtomicReference<UniversalElementRepresentation>();
-//		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-//				.filter (v -> v.getReferenceType().equals(referenceType)).findAny()
-//				.ifPresent(v -> anchorElementReference.set(v));
-//		if (Objects.isNull(anchorElementReference.get()))
-//			return false;
-//		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(anchorElementReference.get(), location);
-//		ThreadReference thread = breakpointEvent.thread();
-//		StackFrame frame = null;
-//		try {
-//			frame = thread.frame(0);
-//		} catch (IncompatibleThreadStateException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
-//		
-//	
-
-//		List<InnerElementRepresentationDTO> localVariables = locals.entrySet().stream()
-//		        .map(entry -> {
-//		            LocalVariable var = entry.getKey();
-//		            Value value = entry.getValue();
-//		            return new InnerElementRepresentationDTO(
-//		                    UUID.randomUUID(),       // уникальный идентификатор
-//		                    debugWindowDataDTO.getUniqueId(),
-//		                    var.name(),              // имя переменной
-//		                    var.typeName(),          // полное имя типа
-//		                    UniversalElementType.VARIABLE, // тип элемента
-//		                    value != null ? value.toString() : "null", // значение
-//		                    debugWindowDataDTO.isStatic(),
-//		                    debugWindowDataDTO.getValueCategory(),
-//		                    value.type().name()
-//		            );
-//		        })
-//		        .toList();
-
-		
-		
-//		if (!localVariables.isEmpty()) {
-//			debugWindowDataDTO.getInnerElements().addAll(localVariables);
-//		}
-		
 		StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
 		if (Objects.isNull(currentFrame))
 			return false;
-
 		Location location = breakpointEvent.location();
 		ReferenceType referenceType = location.declaringType();
 		AtomicReference<UniversalElementRepresentation> anchorElementReference = new AtomicReference<UniversalElementRepresentation>();
@@ -396,14 +339,10 @@ public class DebugSessionImpl implements DebugSession {
 			ee.add(ww);
 		 }
 	    debugWindowDataDTO.getInnerElements().addAll(ee);
-			
-		
-		
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
 		simpleDebugEventCollector
 				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
 			display.asyncExec(() -> {
@@ -418,7 +357,6 @@ public class DebugSessionImpl implements DebugSession {
 				}
 			});
 		}
-
 		return true;
 	}
 
@@ -426,7 +364,6 @@ public class DebugSessionImpl implements DebugSession {
 	    Method method = location.method();
 	    if (method == null)
 	        return Collections.emptySet();
-
 	    // 1. Найти representation класса
 	    Optional<UniversalElementRepresentation> classRepresentationOpt =
 	            targetApplicationRepresentation.getTargetApplicationSnapshot()
@@ -435,12 +372,9 @@ public class DebugSessionImpl implements DebugSession {
 	                    .filter(e -> e.getReferenceType() != null
 	                            && e.getReferenceType().equals(method.declaringType()))
 	                    .findFirst();
-
 	    if (classRepresentationOpt.isEmpty())
 	        return Collections.emptySet();
-
 	    UniversalElementRepresentation classRepresentation = classRepresentationOpt.get();
-
 	    // 2. Найти representation метода внутри класса
 	    Optional<UniversalElementRepresentation> methodRepresentationOpt =
 	            classRepresentation.getInnerElements()
@@ -448,16 +382,12 @@ public class DebugSessionImpl implements DebugSession {
 	                    .filter(e -> e.getElementType() == UniversalElementType.METHOD
 	                            && e.getElementName().startsWith(method.name()))
 	                    .findFirst();
-
 	    if (methodRepresentationOpt.isEmpty())
 	        return Collections.emptySet();
-
 	    UniversalElementRepresentation methodRepresentation = methodRepresentationOpt.get();
-
 	    // 3. Вернуть локальные переменные
 	    return new HashSet<>(methodRepresentation.getInnerElements());
 	}
-
 	private List<TopLevelElementRepresentationDTO> discardVoidMethods(List<TopLevelElementRepresentationDTO> targetElements) {
 		return targetElements;
 	}
@@ -465,19 +395,15 @@ public class DebugSessionImpl implements DebugSession {
 	private ITextEditor openEditorForLocation(Location location) throws Exception {
 		if (Objects.isNull(location))
 			return null;
-
 		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		if (Objects.isNull(workbenchWindow))
 			return null;
-
 		IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
 		if (Objects.isNull(workbenchPage))
 			return null;
-
 		IFile file = targetApplicationRepresentation.findIFileForLocation(location);
 		if (Objects.isNull(file))
 			throw new IllegalStateException("Cannot map location to IFile: " + location);
-
 		IEditorPart editorPart = IDE.openEditor(workbenchPage, file, true);
 		if (editorPart instanceof ITextEditor textEditor) {
 			return textEditor;
