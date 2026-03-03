@@ -201,61 +201,88 @@ public class ClassMembersAtBreakpoint {
 	// =========================================================
 	// Editing
 	// =========================================================
-
 	private boolean isEditable(InnerElementRepresentationDTO dto) {
-		if (dto == null)
-			return false;
+	    if (dto == null)
+	        return false;
 
-		if (dto.getElementType() != UniversalElementType.NON_STATIC_FIELD
-				&& dto.getElementType() != UniversalElementType.VARIABLE)
-			return false;
+	    // Разрешаем редактировать поля (static и non-static) и локальные переменные
+	    if (dto.getElementType() != UniversalElementType.STATIC_FIELD
+	            && dto.getElementType() != UniversalElementType.NON_STATIC_FIELD
+	            && dto.getElementType() != UniversalElementType.VARIABLE)
+	        return false;
 
-		return JAVA_STANDARD_TYPES.contains(dto.getAdditionalInfo());
+	    // Разрешаем только стандартные типы Java (примитивы + String)
+	    return JAVA_STANDARD_TYPES.contains(dto.getAdditionalInfo());
 	}
 
 	private class ValueEditingSupport extends EditingSupport {
 
-		private final TextCellEditor editor;
+	    private final TextCellEditor editor;
 
-		ValueEditingSupport(TableViewer viewer) {
-			super(viewer);
-			this.editor = new TextCellEditor(viewer.getTable());
-		}
+	    ValueEditingSupport(TableViewer viewer) {
+	        super(viewer);
+	        this.editor = new TextCellEditor(viewer.getTable());
+	    }
 
-		@Override
-		protected CellEditor getCellEditor(Object element) {
-			return editor;
-		}
+	    @Override
+	    protected CellEditor getCellEditor(Object element) {
+	        return editor;
+	    }
 
-		@Override
-		protected boolean canEdit(Object element) {
-			return element instanceof InnerElementRepresentationDTO dto && isEditable(dto);
-		}
+	    @Override
+	    protected boolean canEdit(Object element) {
+	        return element instanceof InnerElementRepresentationDTO dto && isEditable(dto);
+	    }
 
-		@Override
-		protected Object getValue(Object element) {
-			return ((InnerElementRepresentationDTO) element).getValue();
-		}
+	    @Override
+	    protected Object getValue(Object element) {
+	        return ((InnerElementRepresentationDTO) element).getValue();
+	    }
 
-		@Override
-		protected void setValue(Object element, Object value) {
-			if (!(element instanceof InnerElementRepresentationDTO dto))
-				return;
+	    @Override
+	    protected void setValue(Object element, Object value) {
+	        if (!(element instanceof InnerElementRepresentationDTO dto))
+	            return;
 
-			if (value == null)
-				return;
+	        if (value == null)
+	            return;
 
-			String newValue = value.toString();
+	        String newValue = value.toString();
 
-			switch (dto.getElementType()) {
-			case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, newValue);
-			case VARIABLE -> updateVariableValue(dto, newValue);
-			default -> {
-			}
-			}
+	        // Попробуем преобразовать строку в нужный тип, если это примитив
+	        String type = dto.getAdditionalInfo();
+	        Object convertedValue = convertToType(newValue, type);
 
-			viewer.update(dto, null);
-		}
+	        switch (dto.getElementType()) {
+	            case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, convertedValue.toString());
+	            case VARIABLE -> updateVariableValue(dto, convertedValue.toString());
+	            default -> { }
+	        }
+
+	        viewer.update(dto, null);
+	    }
+	}
+
+	/**
+	 * Преобразование строки в нужный примитив / объект
+	 */
+	private Object convertToType(String value, String type) {
+	    try {
+	        return switch (type) {
+	            case "int", "java.lang.Integer" -> Integer.parseInt(value);
+	            case "long", "java.lang.Long" -> Long.parseLong(value);
+	            case "short", "java.lang.Short" -> Short.parseShort(value);
+	            case "byte", "java.lang.Byte" -> Byte.parseByte(value);
+	            case "float", "java.lang.Float" -> Float.parseFloat(value);
+	            case "double", "java.lang.Double" -> Double.parseDouble(value);
+	            case "boolean", "java.lang.Boolean" -> Boolean.parseBoolean(value);
+	            case "char", "java.lang.Character" -> value.length() > 0 ? value.charAt(0) : '\0';
+	            case "java.lang.String" -> value;
+	            default -> value; // fallback для неизвестных типов
+	        };
+	    } catch (Exception e) {
+	        return value; // если не удалось преобразовать, оставляем как строку
+	    }
 	}
 
 	private void updateFieldValue(InnerElementRepresentationDTO dto, String newValue) {

@@ -1,6 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
-import java.lang.annotation.ElementType;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -30,6 +29,8 @@ public class DebugWindowDataDTO {
     private String methodName = "[NO METHOD]";
     private final ValueCategory valueCategory;
 
+    private final String fullQualifiedName; // <- новое поле
+
     // ===== Конструктор =====
     public DebugWindowDataDTO(UniversalElementRepresentation element, Location location) {
         if (element != null) {
@@ -38,6 +39,7 @@ public class DebugWindowDataDTO {
             this.elementName = element.getElementName();
             this.elementType = element.getElementType();
             this.additionalInfo = element.getAdditionalInfo();
+            this.fullQualifiedName = element.getFullQualifiedName(); // <- переносим значение
 
             this.innerElements = element.getInnerElements() == null
                     ? Set.of()
@@ -47,14 +49,15 @@ public class DebugWindowDataDTO {
                         .collect(Collectors.toSet());
         } else {
             this.innerElements = Set.of();
+            this.fullQualifiedName = "";
         }
 
         if (location != null) {
             this.lineNumber = location.lineNumber();
             this.methodName = location.method().name() + "(..)";
         }
-        this.isStatic = element.isStatic();
-       this.valueCategory = element.getValueCategory();
+        this.isStatic = element != null && element.isStatic();
+        this.valueCategory = element != null ? element.getValueCategory() : ValueCategory.UNKNOWN;
     }
 
     // ===== Фильтрация допустимых элементов =====
@@ -65,32 +68,33 @@ public class DebugWindowDataDTO {
             || e.getElementType() == UniversalElementType.VARIABLE;
     }
 
-    // ===== Маппинг UniversalElementRepresentation → InnerElementRepresentation =====
+    // ===== Маппинг UniversalElementRepresentation → InnerElementRepresentationDTO =====
     private static InnerElementRepresentationDTO toInnerRepresentation(UniversalElementRepresentation e) {
         return new InnerElementRepresentationDTO(
-                e.getTag().getUniqueId(),
-                e.getTag().getUniqueId(),
+                e.getTag().getUniqueId(),          // UUID текущего элемента
+                e.getTag().getParentUniqueId(),    // UUID родителя
                 e.getElementName(),
                 e.getAdditionalInfo(),
                 e.getElementType(),
                 e.getValue(),
                 e.isStatic(),
-                e.getValueCategory()
+                e.getValueCategory(),
+                e.getFullQualifiedName()           // полное имя класса/элемента
         );
     }
 
     // ===== Getters =====
     public ReferenceType getReferenceType() { return referenceType; }
-    public UUID getUniqueId() { return uniqueId;}
+    public UUID getUniqueId() { return uniqueId; }
     public String getElementName() { return elementName; }
     public UniversalElementType getElementType() { return elementType; }
     public String getAdditionalInfo() { return additionalInfo; }
     public Set<InnerElementRepresentationDTO> getInnerElements() { return innerElements; }
-    public boolean isStatic() { return isStatic;}
+    public boolean isStatic() { return isStatic; }
     public int getLineNumber() { return lineNumber; }
     public List<MethodCallInStackDTO> getStackCall() { return stackCall; }
     public void setStackCall(List<MethodCallInStackDTO> stackCall) { this.stackCall = stackCall; }
     public String getMethodName() { return methodName; }
-    public ValueCategory getValueCategory() { return valueCategory;}
-    
-    }
+    public ValueCategory getValueCategory() { return valueCategory; }
+    public String getFullQualifiedName() { return fullQualifiedName; } // <- геттер для нового поля
+}

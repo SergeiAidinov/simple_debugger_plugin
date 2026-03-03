@@ -109,6 +109,7 @@ public class TargetApplicationRepresentation {
 					.additionalInfo(referenceType.name())
 					.elementType(DebugUtils.determineUniversalElementType(referenceType))
 					.currentRole(CurrentRole.OUTER)
+					.fullQualifiedName(referenceType.name())
 					.build();
 			targetApplicationSnapshot.put(topLevelUiid, topLevelElement);
 					
@@ -178,6 +179,7 @@ public class TargetApplicationRepresentation {
 	                            .isStatic(isStatic)
 	                            .valueCategory(category)
 	                            .value(value) // ← теперь передаём реальное значение
+	                            .fullQualifiedName(field.typeName())
 	                            .build();
 
 	            parentElement.getInnerElements().add(fieldElement);
@@ -210,6 +212,7 @@ public class TargetApplicationRepresentation {
 	                            .isStatic(method.isStatic())
 	                            .valueCategory(UniversalElementRepresentation.ValueCategory.UNKNOWN)
 	                            .value(parentElement.getAdditionalInfo() + "." + methodName + "(" + methodArgs + ")")
+	                            .fullQualifiedName(method.name())
 	                            .build();
 
 	            parentElement.getInnerElements().add(methodElement);

@@ -63,12 +63,14 @@ public class UniversalElementRepresentation {
     private final Set<UniversalElementRepresentation> innerElements = new HashSet<>();
     private final boolean isStatic;
     private final ValueCategory valueCategory;
+    private final String fullQualifiedName; // <- новое поле
 
     // =================== Конструктор ===================
     private UniversalElementRepresentation(Tag tag, ReferenceType referenceType,
                                            String elementName, String additionalInfo,
                                            UniversalElementType elementType, CurrentRole currentRole,
-                                           String value, boolean isStatic, ValueCategory valueCategory) {
+                                           String value, boolean isStatic, ValueCategory valueCategory,
+                                           String fullQualifiedName) {
         this.tag = tag;
         this.referenceType = referenceType;
         this.elementName = elementName;
@@ -78,6 +80,7 @@ public class UniversalElementRepresentation {
         this.value = value;
         this.isStatic = isStatic;
         this.valueCategory = valueCategory;
+        this.fullQualifiedName = fullQualifiedName;
     }
 
     // =================== Геттеры ===================
@@ -92,11 +95,13 @@ public class UniversalElementRepresentation {
     public Set<UniversalElementRepresentation> getInnerElements() { return innerElements; }
     public boolean isStatic() { return isStatic; }
     public ValueCategory getValueCategory() { return valueCategory; }
+    public String getFullQualifiedName() { return fullQualifiedName; } // <- геттер для нового поля
 
     // =================== Equals и hashCode по бизнес-логике ===================
     @Override
     public int hashCode() {
-        return Objects.hash(elementName, additionalInfo, elementType, currentRole, value, innerElements, isStatic, valueCategory);
+        return Objects.hash(elementName, additionalInfo, elementType, currentRole, value, innerElements,
+                            isStatic, valueCategory, fullQualifiedName);
     }
 
     @Override
@@ -111,7 +116,8 @@ public class UniversalElementRepresentation {
                Objects.equals(value, other.value) &&
                Objects.equals(innerElements, other.innerElements) &&
                isStatic == other.isStatic &&
-               valueCategory == other.valueCategory;
+               valueCategory == other.valueCategory &&
+               Objects.equals(fullQualifiedName, other.fullQualifiedName);
     }
 
     // =================== Builder ===================
@@ -126,6 +132,7 @@ public class UniversalElementRepresentation {
         private Set<UniversalElementRepresentation> innerElements = new HashSet<>();
         private boolean isStatic = false;
         private ValueCategory valueCategory = ValueCategory.UNKNOWN;
+        private String fullQualifiedName = ""; // <- новое поле
 
         public Builder tag(Tag tag) { this.tag = tag; return this; }
         public Builder uniqueId(UUID uniqueId) {
@@ -154,12 +161,17 @@ public class UniversalElementRepresentation {
         }
         public Builder isStatic(boolean isStatic) { this.isStatic = isStatic; return this; }
         public Builder valueCategory(ValueCategory valueCategory) { this.valueCategory = valueCategory; return this; }
+        public Builder fullQualifiedName(String fullQualifiedName) { // <- новый метод Builder
+            this.fullQualifiedName = fullQualifiedName;
+            return this;
+        }
 
         public UniversalElementRepresentation build() {
             if (tag == null) tag = new Tag(UUID.randomUUID(), null);
             UniversalElementRepresentation element = new UniversalElementRepresentation(
                     tag, referenceType, elementName, additionalInfo,
-                    elementType, currentRole, value, isStatic, valueCategory
+                    elementType, currentRole, value, isStatic, valueCategory,
+                    fullQualifiedName // <- передаём в конструктор
             );
             element.getInnerElements().addAll(innerElements);
             return element;
