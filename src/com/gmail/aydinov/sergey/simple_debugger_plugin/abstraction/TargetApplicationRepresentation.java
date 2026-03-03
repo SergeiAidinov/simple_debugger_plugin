@@ -156,7 +156,15 @@ public class TargetApplicationRepresentation {
 	                    determineValueCategory(field.typeName());
 
 	            // 🔹 Получаем значение (только примитивы и String)
-	            String value = extractPrimitiveOrStringAsText(field, instance);
+	            
+	            String value = field.name();
+
+	            if (category == ValueCategory.PRIMITIVE
+	                    || category == ValueCategory.STRING) {
+	                value = extractPrimitiveOrStringAsText(field, instance);
+	            }
+	            
+	            //String value = extractPrimitiveOrStringAsText(field, instance);
 
 	            UniversalElementRepresentation fieldElement =
 	                    UniversalElementRepresentation.builder()
