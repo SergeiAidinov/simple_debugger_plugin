@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -9,6 +10,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.sun.jdi.Location;
+import com.sun.jdi.Method;
 import com.sun.jdi.ReferenceType;
 
 /**
@@ -58,9 +60,11 @@ public class DebugWindowDataDTO {
         }
         this.isStatic = element != null && element.isStatic();
         this.valueCategory = element != null ? element.getValueCategory() : ValueCategory.UNKNOWN;
+       // addInnerElements(location);
+       
     }
 
-    // ===== Фильтрация допустимых элементов =====
+	// ===== Фильтрация допустимых элементов =====
     private static boolean isSupportedInnerElement(UniversalElementRepresentation e) {
         return e.getElementType() == UniversalElementType.METHOD
             || e.getElementType() == UniversalElementType.STATIC_FIELD
@@ -69,7 +73,7 @@ public class DebugWindowDataDTO {
     }
 
     // ===== Маппинг UniversalElementRepresentation → InnerElementRepresentationDTO =====
-    private static InnerElementRepresentationDTO toInnerRepresentation(UniversalElementRepresentation e) {
+    public static InnerElementRepresentationDTO toInnerRepresentation(UniversalElementRepresentation e) {
         return new InnerElementRepresentationDTO(
                 e.getTag().getUniqueId(),          // UUID текущего элемента
                 e.getTag().getParentUniqueId(),    // UUID родителя
