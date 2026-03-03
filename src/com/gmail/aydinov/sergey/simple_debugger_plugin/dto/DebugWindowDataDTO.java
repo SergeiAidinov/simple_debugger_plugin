@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
 
+import java.lang.annotation.ElementType;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -7,6 +8,7 @@ import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.sun.jdi.Location;
 import com.sun.jdi.ReferenceType;
 
@@ -23,10 +25,10 @@ public class DebugWindowDataDTO {
     private String additionalInfo;
     private Set<InnerElementRepresentationDTO> innerElements;
     private final boolean isStatic;
-
     private int lineNumber = -1;
     private List<MethodCallInStackDTO> stackCall = List.of();
     private String methodName = "[NO METHOD]";
+    private final ValueCategory valueCategory;
 
     // ===== Конструктор =====
     public DebugWindowDataDTO(UniversalElementRepresentation element, Location location) {
@@ -52,6 +54,7 @@ public class DebugWindowDataDTO {
             this.methodName = location.method().name() + "(..)";
         }
         this.isStatic = element.isStatic();
+       this.valueCategory = element.getValueCategory();
     }
 
     // ===== Фильтрация допустимых элементов =====
@@ -71,7 +74,8 @@ public class DebugWindowDataDTO {
                 e.getAdditionalInfo(),
                 e.getElementType(),
                 e.getValue(),
-                e.isStatic()
+                e.isStatic(),
+                e.getValueCategory()
         );
     }
 
@@ -82,10 +86,11 @@ public class DebugWindowDataDTO {
     public UniversalElementType getElementType() { return elementType; }
     public String getAdditionalInfo() { return additionalInfo; }
     public Set<InnerElementRepresentationDTO> getInnerElements() { return innerElements; }
+    public boolean isStatic() { return isStatic;}
     public int getLineNumber() { return lineNumber; }
     public List<MethodCallInStackDTO> getStackCall() { return stackCall; }
-    public String getMethodName() { return methodName; }
-    public boolean isStatic() { return isStatic;}
-
     public void setStackCall(List<MethodCallInStackDTO> stackCall) { this.stackCall = stackCall; }
-}
+    public String getMethodName() { return methodName; }
+    public ValueCategory getValueCategory() { return valueCategory;}
+    
+    }

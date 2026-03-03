@@ -189,25 +189,25 @@ public class TargetApplicationRepresentation {
 	    }
 
 	    // ---------------- Class / Interface ----------------
-	    UniversalElementRepresentation.UniversalElementType type =
-	            refType instanceof com.sun.jdi.InterfaceType
-	                    ? UniversalElementRepresentation.UniversalElementType.INTERFACE
-	                    : UniversalElementRepresentation.UniversalElementType.CLASS;
-
-	    UniversalElementRepresentation classElement = UniversalElementRepresentation.builder()
-	            .uniqueId(UUID.randomUUID())
-	            .parentUniqueId(parentId)
-	            .referenceType(refType)
-	            .elementName(refType.name())
-	            .additionalInfo(refType.name())
-	            .elementType(type)
-	            .currentRole(UniversalElementRepresentation.CurrentRole.OUTER)
-	            .isStatic(false)
-	            .valueCategory(UniversalElementRepresentation.ValueCategory.USER_OBJECT)
-	            .value(refType.name())
-	            .build();
-
-	    parentElement.getInnerElements().add(classElement);
+//	    UniversalElementRepresentation.UniversalElementType type =
+//	            refType instanceof com.sun.jdi.InterfaceType
+//	                    ? UniversalElementRepresentation.UniversalElementType.INTERFACE
+//	                    : UniversalElementRepresentation.UniversalElementType.CLASS;
+//
+//	    UniversalElementRepresentation classElement = UniversalElementRepresentation.builder()
+//	            .uniqueId(UUID.randomUUID())
+//	            .parentUniqueId(parentId)
+//	            .referenceType(refType)
+//	            .elementName(refType.name())
+//	            .additionalInfo(refType.name())
+//	            .elementType(type)
+//	            .currentRole(UniversalElementRepresentation.CurrentRole.OUTER)
+//	            .isStatic(false)
+//	            .valueCategory(UniversalElementRepresentation.ValueCategory.USER_OBJECT)
+//	            .value(refType.name())
+//	            .build();
+//
+//	    parentElement.getInnerElements().add(classElement);
 	}
 
 	// ---------------- Вспомогательный метод ----------------
