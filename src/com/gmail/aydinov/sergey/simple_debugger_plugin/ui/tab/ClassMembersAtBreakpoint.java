@@ -181,16 +181,21 @@ public class ClassMembersAtBreakpoint {
 		return key != null ? DebugWindowsManager.instance().icons.get(key) : null;
 	}
 
-	private Image getIcon(InnerElementRepresentationDTO innerElementRepresentationDTO) {
-		if (innerElementRepresentationDTO.getValueCategoty().equals(ValueCategory.COLLECTION)
-				|| (innerElementRepresentationDTO.getValueCategoty().equals(ValueCategory.MAP))) {
-			return DebugWindowsManager.instance().icons.get("lens").getFirst();
-		} else if (Objects.nonNull(innerElementRepresentationDTO.getValueCategoty())
-				&& innerElementRepresentationDTO.getValueCategoty().equals(ValueCategory.USER_OBJECT)) {
-		return	DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
-		}
-
-		return null;
+	private Image getIcon(InnerElementRepresentationDTO dto) {
+	    if (Objects.isNull(dto)) {
+	        return null;
+	    }
+	    ValueCategory category = dto.getValueCategoty();
+	    if (Objects.isNull(category)) {
+	        return null;
+	    }
+	    if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
+	        return DebugWindowsManager.instance().icons.get("lens").getFirst();
+	    }
+	    if (category == ValueCategory.USER_OBJECT) {
+	        return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
+	    }
+	    return null;
 	}
 
 	// =========================================================
