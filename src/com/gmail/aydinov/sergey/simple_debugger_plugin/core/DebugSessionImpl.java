@@ -1,9 +1,13 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.lang.reflect.Modifier;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -111,6 +115,7 @@ public class DebugSessionImpl implements DebugSession {
 					handleVmDisconnected();
 					return;
 				}
+				targetApplicationRepresentation.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
 				targetApplicationRepresentation.addLocalVaraibles(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 				updateUI(breakpointEvent);
 
@@ -153,6 +158,7 @@ public class DebugSessionImpl implements DebugSession {
 		try {
 			targetApplicationRepresentation.takeSnapshotOfTargetApplication(
 					targetVirtualMachineRepresentation.getVirtualMachine());
+			targetApplicationRepresentation.addLocalVaraibles(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 			handleSingleUiEvent(uiEvent, breakpointEvent);
 			targetApplicationRepresentation.addLocalVaraibles(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 		} catch (Throwable exception) {
@@ -160,6 +166,8 @@ public class DebugSessionImpl implements DebugSession {
 		}
 
 		if (DebuggerContext.context().isRunning()) {
+			targetApplicationRepresentation.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+			targetApplicationRepresentation.addLocalVaraibles(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 			updateUI(breakpointEvent);
 		}
 	}
@@ -316,6 +324,55 @@ public class DebugSessionImpl implements DebugSession {
 		if (Objects.isNull(breakpointEvent))
 			return false;
 
+//		StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
+//		if (Objects.isNull(currentFrame))
+//			return false;
+//
+//		Location location = breakpointEvent.location();
+//		ReferenceType referenceType = location.declaringType();
+//		AtomicReference<UniversalElementRepresentation> anchorElementReference = new AtomicReference<UniversalElementRepresentation>();
+//		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+//				.filter (v -> v.getReferenceType().equals(referenceType)).findAny()
+//				.ifPresent(v -> anchorElementReference.set(v));
+//		if (Objects.isNull(anchorElementReference.get()))
+//			return false;
+//		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(anchorElementReference.get(), location);
+//		ThreadReference thread = breakpointEvent.thread();
+//		StackFrame frame = null;
+//		try {
+//			frame = thread.frame(0);
+//		} catch (IncompatibleThreadStateException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
+//		
+//	
+
+//		List<InnerElementRepresentationDTO> localVariables = locals.entrySet().stream()
+//		        .map(entry -> {
+//		            LocalVariable var = entry.getKey();
+//		            Value value = entry.getValue();
+//		            return new InnerElementRepresentationDTO(
+//		                    UUID.randomUUID(),       // уникальный идентификатор
+//		                    debugWindowDataDTO.getUniqueId(),
+//		                    var.name(),              // имя переменной
+//		                    var.typeName(),          // полное имя типа
+//		                    UniversalElementType.VARIABLE, // тип элемента
+//		                    value != null ? value.toString() : "null", // значение
+//		                    debugWindowDataDTO.isStatic(),
+//		                    debugWindowDataDTO.getValueCategory(),
+//		                    value.type().name()
+//		            );
+//		        })
+//		        .toList();
+
+		
+		
+//		if (!localVariables.isEmpty()) {
+//			debugWindowDataDTO.getInnerElements().addAll(localVariables);
+//		}
+		
 		StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
 		if (Objects.isNull(currentFrame))
 			return false;
@@ -330,39 +387,18 @@ public class DebugSessionImpl implements DebugSession {
 			return false;
 		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(anchorElementReference.get(), location);
 		ThreadReference thread = breakpointEvent.thread();
-		StackFrame frame = null;
-		try {
-			frame = thread.frame(0);
-		} catch (IncompatibleThreadStateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
-		
-	
-
-		List<InnerElementRepresentationDTO> localVariables = locals.entrySet().stream()
-		        .map(entry -> {
-		            LocalVariable var = entry.getKey();
-		            Value value = entry.getValue();
-		            return new InnerElementRepresentationDTO(
-		                    UUID.randomUUID(),       // уникальный идентификатор
-		                    debugWindowDataDTO.getUniqueId(),
-		                    var.name(),              // имя переменной
-		                    var.typeName(),          // полное имя типа
-		                    UniversalElementType.VARIABLE, // тип элемента
-		                    value != null ? value.toString() : "null", // значение
-		                    debugWindowDataDTO.isStatic(),
-		                    debugWindowDataDTO.getValueCategory(),
-		                    value.type().name()
-		            );
-		        })
-		        .toList();
-
-		if (!localVariables.isEmpty()) {
-			debugWindowDataDTO.getInnerElements().addAll(localVariables);
-		}
 		debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(thread));
+		 Set<UniversalElementRepresentation> qq = deriveLocalVariables(location);
+		 System.out.println(qq);
+		 Set<InnerElementRepresentationDTO> ee = new HashSet<InnerElementRepresentationDTO>();
+		 for (UniversalElementRepresentation q : qq) {
+			InnerElementRepresentationDTO ww = DebugWindowDataDTO.toInnerRepresentation(q);
+			ee.add(ww);
+		 }
+	    debugWindowDataDTO.getInnerElements().addAll(ee);
+			
+		
+		
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
 		simpleDebugEventCollector
@@ -384,6 +420,42 @@ public class DebugSessionImpl implements DebugSession {
 		}
 
 		return true;
+	}
+
+	private Set<UniversalElementRepresentation> deriveLocalVariables(Location location) {
+	    Method method = location.method();
+	    if (method == null)
+	        return Collections.emptySet();
+
+	    // 1. Найти representation класса
+	    Optional<UniversalElementRepresentation> classRepresentationOpt =
+	            targetApplicationRepresentation.getTargetApplicationSnapshot()
+	                    .values()
+	                    .stream()
+	                    .filter(e -> e.getReferenceType() != null
+	                            && e.getReferenceType().equals(method.declaringType()))
+	                    .findFirst();
+
+	    if (classRepresentationOpt.isEmpty())
+	        return Collections.emptySet();
+
+	    UniversalElementRepresentation classRepresentation = classRepresentationOpt.get();
+
+	    // 2. Найти representation метода внутри класса
+	    Optional<UniversalElementRepresentation> methodRepresentationOpt =
+	            classRepresentation.getInnerElements()
+	                    .stream()
+	                    .filter(e -> e.getElementType() == UniversalElementType.METHOD
+	                            && e.getElementName().startsWith(method.name()))
+	                    .findFirst();
+
+	    if (methodRepresentationOpt.isEmpty())
+	        return Collections.emptySet();
+
+	    UniversalElementRepresentation methodRepresentation = methodRepresentationOpt.get();
+
+	    // 3. Вернуть локальные переменные
+	    return new HashSet<>(methodRepresentation.getInnerElements());
 	}
 
 	private List<TopLevelElementRepresentationDTO> discardVoidMethods(List<TopLevelElementRepresentationDTO> targetElements) {
