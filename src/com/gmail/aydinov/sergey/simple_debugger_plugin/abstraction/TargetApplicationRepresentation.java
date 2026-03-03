@@ -103,7 +103,7 @@ public class TargetApplicationRepresentation {
 					.parentUniqueId(null)
 					.referenceType(referenceType)
 					.elementName(DebugUtils.extractSimpleName(referenceType.name()))
-					.fullQualifiedName(referenceType.name())
+					.additionalInfo(referenceType.name())
 					.elementType(DebugUtils.determineUniversalElementType(referenceType))
 					.currentRole(CurrentRole.OUTER)
 					.build();
@@ -144,12 +144,12 @@ public class TargetApplicationRepresentation {
 	                    .parentUniqueId(parentId)
 	                    .referenceType(refType)
 	                    .elementName(field.name())
-	                    .fullQualifiedName(field.typeName())
+	                    .additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
 	                    .elementType(elementType)
 	                    .currentRole(role)
 	                    .isStatic(isStatic)
 	                    .valueCategory(category)
-	                    .value(null)
+	                    .value(field.typeName())
 	                    .build();
 
 	            parentElement.getInnerElements().add(fieldElement);
@@ -174,8 +174,8 @@ public class TargetApplicationRepresentation {
 	                    .uniqueId(UUID.randomUUID())
 	                    .parentUniqueId(parentId)
 	                    .referenceType(refType)
-	                    .elementName(methodName)
-	                    .fullQualifiedName(method.returnTypeName())
+	                    .elementName(methodName + "()")
+	                    .additionalInfo(method.returnTypeName())
 	                    .elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
 	                    .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
 	                    .isStatic(method.isStatic())
@@ -199,7 +199,7 @@ public class TargetApplicationRepresentation {
 	            .parentUniqueId(parentId)
 	            .referenceType(refType)
 	            .elementName(refType.name())
-	            .fullQualifiedName(refType.name())
+	            .additionalInfo(refType.name())
 	            .elementType(type)
 	            .currentRole(UniversalElementRepresentation.CurrentRole.OUTER)
 	            .isStatic(false)
