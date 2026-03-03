@@ -11,6 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassNotLoadedException;
@@ -469,6 +470,67 @@ public class DebugUtils {
 	    }
 
 	    return name;
+	}
+	
+	public static ValueCategory determineValueCategory(Value value) {
+
+	    if (value == null) {
+	        return ValueCategory.NULL;
+	    }
+
+	    // ---------- Primitive ----------
+	    if (value instanceof com.sun.jdi.PrimitiveValue) {
+	        return ValueCategory.PRIMITIVE;
+	    }
+
+	    if (!(value instanceof com.sun.jdi.ObjectReference objectReference)) {
+	        return ValueCategory.UNKNOWN;
+	    }
+
+	    ReferenceType referenceType = objectReference.referenceType();
+	    String typeName = referenceType.name();
+
+	    // ---------- String ----------
+	    if ("java.lang.String".equals(typeName)) {
+	        return ValueCategory.STRING;
+	    }
+
+	    // ---------- Wrapper ----------
+	    if (typeName.startsWith("java.lang.")
+	            && (typeName.endsWith("Integer")
+	            || typeName.endsWith("Long")
+	            || typeName.endsWith("Double")
+	            || typeName.endsWith("Float")
+	            || typeName.endsWith("Boolean")
+	            || typeName.endsWith("Character")
+	            || typeName.endsWith("Byte")
+	            || typeName.endsWith("Short"))) {
+	        return ValueCategory.WRAPPER;
+	    }
+
+	    // ---------- Array ----------
+	    if (referenceType instanceof com.sun.jdi.ArrayType) {
+	        return ValueCategory.ARRAY;
+	    }
+
+	    // ---------- Collection ----------
+	    if (implementsInterface(referenceType, "java.util.Collection")) {
+	        return ValueCategory.COLLECTION;
+	    }
+
+	    // ---------- Map ----------
+	    if (implementsInterface(referenceType, "java.util.Map")) {
+	        return ValueCategory.MAP;
+	    }
+
+	    // ---------- User object ----------
+	    return ValueCategory.USER_OBJECT;
+	}
+	
+	private static boolean implementsInterface(ReferenceType referenceType, String interfaceName) {
+	    return ((ClassType) referenceType).allInterfaces()
+	            .stream()
+	            .anyMatch(i -> i.name().equals(interfaceName));
 	}
 
 }
