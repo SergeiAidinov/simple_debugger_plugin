@@ -111,7 +111,7 @@ public class DebugSessionImpl implements DebugSession {
 					handleVmDisconnected();
 					return;
 				}
-
+				targetApplicationRepresentation.addLocalVaraibles(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 				updateUI(breakpointEvent);
 
 				while (DebuggerContext.context().isDebugSessionActive()) {
@@ -120,7 +120,7 @@ public class DebugSessionImpl implements DebugSession {
 						continue;
 					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
 							.refreshBreakpoints();
-					handleBreakpointEvent(breakpointEvent, uiEvent);
+					doWorkAtBreakpoint(breakpointEvent, uiEvent);
 				}
 			}
 		}
@@ -134,7 +134,7 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void handleBreakpointEvent(BreakpointEvent breakpointEvent, AbstractUIEvent uiEvent) {
+	private void doWorkAtBreakpoint(BreakpointEvent breakpointEvent, AbstractUIEvent uiEvent) {
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
 			display.asyncExec(() -> {
@@ -151,9 +151,10 @@ public class DebugSessionImpl implements DebugSession {
 		}
 
 		try {
-			targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+			targetApplicationRepresentation.takeSnapshotOfTargetApplication(
 					targetVirtualMachineRepresentation.getVirtualMachine());
 			handleSingleUiEvent(uiEvent, breakpointEvent);
+			targetApplicationRepresentation.addLocalVaraibles(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 		} catch (Throwable exception) {
 			logError("Breakpoint handler error", exception);
 		}
@@ -201,7 +202,7 @@ public class DebugSessionImpl implements DebugSession {
 		} catch (Exception exception) {
 			SimpleDebuggerLogger.error(exception.getMessage(), exception);
 		} finally {
-			targetApplicationRepresentation.refreshReferencesToClassesOfTargetApplication(
+			targetApplicationRepresentation.takeSnapshotOfTargetApplication(
 					targetVirtualMachineRepresentation.getVirtualMachine());
 		}
 	}
@@ -337,6 +338,8 @@ public class DebugSessionImpl implements DebugSession {
 			e.printStackTrace();
 		}
 		Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
+		
+	
 
 		List<InnerElementRepresentationDTO> localVariables = locals.entrySet().stream()
 		        .map(entry -> {
