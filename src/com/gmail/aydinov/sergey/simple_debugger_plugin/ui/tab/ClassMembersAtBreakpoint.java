@@ -76,7 +76,7 @@ public class ClassMembersAtBreakpoint {
 		createColumn(0, "Name", 150, InnerElementRepresentationDTO::getElementName, e -> null);
 
 		// 1: Type / Return Type
-		createColumn(1, "Type / Return Type", 200, InnerElementRepresentationDTO::getAdditionalInfo, this::getTypeIcon);
+		createColumn(1, "Type / Return Type", 200, InnerElementRepresentationDTO::getFullQualifiedName, this::getTypeIcon);
 
 		// 2: Value / Info
 		TableViewerColumn valueColumn = createColumn(2, "Value / Info", 300, dto -> {
@@ -206,13 +206,13 @@ public class ClassMembersAtBreakpoint {
 	        return false;
 
 	    // Разрешаем редактировать поля (static и non-static) и локальные переменные
-	    if (dto.getElementType() != UniversalElementType.STATIC_FIELD
-	            && dto.getElementType() != UniversalElementType.NON_STATIC_FIELD
-	            && dto.getElementType() != UniversalElementType.VARIABLE)
-	        return false;
+//	    if (dto.getElementType() != UniversalElementType.STATIC_FIELD
+//	            && dto.getElementType() != UniversalElementType.NON_STATIC_FIELD
+//	            && dto.getElementType() != UniversalElementType.VARIABLE)
+//	        return false;
 
 	    // Разрешаем только стандартные типы Java (примитивы + String)
-	    return JAVA_STANDARD_TYPES.contains(dto.getAdditionalInfo());
+	    return JAVA_STANDARD_TYPES.contains(dto.getFullQualifiedName());
 	}
 
 	private class ValueEditingSupport extends EditingSupport {

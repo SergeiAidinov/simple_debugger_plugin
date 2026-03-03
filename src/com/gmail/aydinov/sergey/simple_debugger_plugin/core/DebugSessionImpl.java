@@ -351,7 +351,7 @@ public class DebugSessionImpl implements DebugSession {
 		                    value != null ? value.toString() : "null", // значение
 		                    debugWindowDataDTO.isStatic(),
 		                    debugWindowDataDTO.getValueCategory(),
-		                    debugWindowDataDTO.getFullQualifiedName()
+		                    value.type().name()
 		            );
 		        })
 		        .toList();
