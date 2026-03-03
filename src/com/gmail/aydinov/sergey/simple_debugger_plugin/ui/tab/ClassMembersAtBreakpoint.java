@@ -91,7 +91,7 @@ public class ClassMembersAtBreakpoint {
 			}
 
 			return ""; // иначе пусто
-		}, this::getInspectIcon);
+		}, this::getIcon);
 
 		valueColumn.setEditingSupport(new ValueEditingSupport(viewer));
 	}
@@ -134,7 +134,7 @@ public class ClassMembersAtBreakpoint {
 					if (tooltip != null) {
 						item.setData("tooltip_col_" + index, tooltip.getSecond());
 					}
-				} else if (index == 2 && img == getInspectIcon(dto)) {
+				} else if (index == 2 && img == getIcon(dto)) {
 					item.setData("tooltip_col_" + index,
 							DebugWindowsManager.instance().icons.get("inspectIcon").getSecond());
 				}
@@ -181,8 +181,17 @@ public class ClassMembersAtBreakpoint {
 		return key != null ? DebugWindowsManager.instance().icons.get(key) : null;
 	}
 
-	private Image getInspectIcon(InnerElementRepresentationDTO dto) {
+	private Image getIcon(InnerElementRepresentationDTO dto) {
+		if (dto.getValueCategoty().equals(ValueCategory.COLLECTION)
+				|| (dto.getValueCategoty().equals(ValueCategory.MAP))) {
+			return getLensIcon(dto);
+		}
+
 		return shouldShowInspectIcon(dto) ? DebugWindowsManager.instance().icons.get("inspectIcon").getFirst() : null;
+	}
+
+	private Image getLensIcon(InnerElementRepresentationDTO dto) {
+		return DebugWindowsManager.instance().icons.get("lens").getFirst();
 	}
 
 	private boolean shouldShowInspectIcon(InnerElementRepresentationDTO innerElementRepresentationDTO) {
@@ -192,11 +201,11 @@ public class ClassMembersAtBreakpoint {
 		UniversalElementType type = innerElementRepresentationDTO.getElementType();
 //		if (Objects.nonNull(type) && type.equals(UniversalElementType.STATIC_FIELD)
 //				&& type.equals(UniversalElementType.NON_STATIC_FIELD)) {
-			if (Objects.nonNull(innerElementRepresentationDTO.getValueCategoty())
-					&& innerElementRepresentationDTO.getValueCategoty().equals(ValueCategory.USER_OBJECT)) {
-				return true;
-			}
-		//}
+		if (Objects.nonNull(innerElementRepresentationDTO.getValueCategoty())
+				&& innerElementRepresentationDTO.getValueCategoty().equals(ValueCategory.USER_OBJECT)) {
+			return true;
+		}
+		// }
 		return false;
 
 //		if (type != UniversalElementType.NON_STATIC_FIELD && type != UniversalElementType.VARIABLE)
