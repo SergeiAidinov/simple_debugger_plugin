@@ -181,44 +181,16 @@ public class ClassMembersAtBreakpoint {
 		return key != null ? DebugWindowsManager.instance().icons.get(key) : null;
 	}
 
-	private Image getIcon(InnerElementRepresentationDTO dto) {
-		if (dto.getValueCategoty().equals(ValueCategory.COLLECTION)
-				|| (dto.getValueCategoty().equals(ValueCategory.MAP))) {
-			return getLensIcon(dto);
-		}
-
-		return shouldShowInspectIcon(dto) ? DebugWindowsManager.instance().icons.get("inspectIcon").getFirst() : null;
-	}
-
-	private Image getLensIcon(InnerElementRepresentationDTO dto) {
-		return DebugWindowsManager.instance().icons.get("lens").getFirst();
-	}
-
-	private boolean shouldShowInspectIcon(InnerElementRepresentationDTO innerElementRepresentationDTO) {
-		if (innerElementRepresentationDTO == null)
-			return false;
-
-		UniversalElementType type = innerElementRepresentationDTO.getElementType();
-//		if (Objects.nonNull(type) && type.equals(UniversalElementType.STATIC_FIELD)
-//				&& type.equals(UniversalElementType.NON_STATIC_FIELD)) {
-		if (Objects.nonNull(innerElementRepresentationDTO.getValueCategoty())
+	private Image getIcon(InnerElementRepresentationDTO innerElementRepresentationDTO) {
+		if (innerElementRepresentationDTO.getValueCategoty().equals(ValueCategory.COLLECTION)
+				|| (innerElementRepresentationDTO.getValueCategoty().equals(ValueCategory.MAP))) {
+			return DebugWindowsManager.instance().icons.get("lens").getFirst();
+		} else if (Objects.nonNull(innerElementRepresentationDTO.getValueCategoty())
 				&& innerElementRepresentationDTO.getValueCategoty().equals(ValueCategory.USER_OBJECT)) {
-			return true;
+		return	DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
 		}
-		// }
-		return false;
 
-//		if (type != UniversalElementType.NON_STATIC_FIELD && type != UniversalElementType.VARIABLE)
-//			return false;
-//
-//		String typeName = dto.getAdditionalInfo();
-//		if (typeName == null || typeName.isBlank())
-//			return false;
-//
-//		if (JAVA_STANDARD_TYPES.contains(typeName))
-//			return false;
-//
-//		return !typeName.startsWith("java.") && !typeName.startsWith("javax.");
+		return null;
 	}
 
 	// =========================================================
