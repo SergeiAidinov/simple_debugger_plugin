@@ -343,8 +343,9 @@ public class DebugSessionImpl implements DebugSession {
 //			InnerElementRepresentationDTO ww = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(q);
 //			ee.add(ww);
 //		}
+		String methodName = location.declaringType().name() + "." + location.method().name() + "()";
 		System.out.println(ee);
-		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), location.method().name() + "()",
+		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,
 				DebugUtils.compileStackInfo(thread), ee);
 				
 				
