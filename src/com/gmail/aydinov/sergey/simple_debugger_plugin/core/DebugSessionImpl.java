@@ -44,6 +44,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
@@ -216,35 +217,27 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {
-//		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
-//				|| DebuggerContext.context().isInspectionSeanceActive())
-//			return;
-//		Optional.ofNullable(targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-//				.filter(v -> v.getSecond().getUniqueId().equals(innerElementRepresentationDTO.getUniqueId())))
-//				.ifPresent(topLevelElement -> {
-//					try {
-//						simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
-//								SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-//						simpleDebugEventCollector.collectDebugEvent(
-//								new DebugEvent<Boolean>(SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW, true));
-//
-//						InspectionSeance inspectionSession = new InspectionSeanceImpl(
-//								(TopLevelElementRepresentation) topLevelElement, targetApplicationRepresentation);
-//						Thread inspectionSessionThread = new Thread(inspectionSession);
-//						inspectionSessionThread.setDaemon(true);
-//						inspectionSessionThread.start();
-//
-//						inspectionSessionThread.join();
-//					} catch (InterruptedException e) {
-//						Thread.currentThread().interrupt();
-//					} catch (Exception e) {
-//						SimpleDebuggerLogger.error("Inspection error", e);
-//					} finally {
-//						simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
-//								SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-//						DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-//					}
-//				});
+		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
+				|| DebuggerContext.context().isInspectionSeanceActive())
+			return;
+		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+	    .filter(v -> v.getTag().getUniqueId().equals(innerElementRepresentationDTO.getUniqueId()))
+	    .findAny() // <- получаем Optional<UniversalElementRepresentation>
+	    .ifPresent(topLevelElement -> {
+	        try {
+	            simpleDebugEventCollector.collectDebugEvent(
+	                new DebugEvent<Boolean>(
+	                    SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
+	            simpleDebugEventCollector.collectDebugEvent(
+	                new DebugEvent<Boolean>(SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW, true));
+
+	            InspectionSeance inspectionSession = new InspectionSeanceImpl(
+	                topLevelElement, targetApplicationRepresentation);
+	            // ...
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+	    });
 
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));

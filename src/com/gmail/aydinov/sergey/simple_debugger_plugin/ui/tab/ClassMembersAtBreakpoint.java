@@ -64,6 +64,7 @@ public class ClassMembersAtBreakpoint {
 
 		setupColumns();
 		setupTooltips(table);
+		setupColumnClickListeners();
 	}
 
 	// =========================================================
@@ -340,6 +341,28 @@ public class ClassMembersAtBreakpoint {
 				viewer.setInput(sorted);
 			}
 		});
+	}
+	
+	private void setupColumnClickListeners() {
+	    Table table = viewer.getTable();
+	    table.addListener(SWT.MouseDown, event -> {
+	        TableItem item = table.getItem(new Point(event.x, event.y));
+	        if (item == null) return;
+
+	        int colIndex = getColumnIndexAtPoint(table, event.x);
+	        // Наша третья колонка — индекс 2
+	        if (colIndex != 2) return;
+
+	        Object data = item.getData();
+	        if (!(data instanceof InnerElementRepresentationDTO dto)) return;
+
+	        // Проверяем, что клик именно по inspectIcon (значение колонки совпадает с иконкой)
+	        Image clickedImage = getIcon(dto);
+	        if (clickedImage == null) return; // нет inspectIcon — ничего не делаем
+
+	        // Генерируем событие
+	        uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto));
+	    });
 	}
 
 	public Composite getControl() {
