@@ -70,14 +70,14 @@ public class UniversalElementRepresentation {
    // private final Set<UniversalElementRepresentation> innerElements = new HashSet<>();
     private final boolean isStatic;
     private final ValueCategory valueCategory;
-    private final String fullQualifiedName;
+    private final String typeOrReturnType;
 
     // =================== Конструктор ===================
     private UniversalElementRepresentation(Tag tag, ReferenceType referenceType,
                                            String elementName, String additionalInfo,
                                            UniversalElementType elementType, CurrentRole currentRole,
                                            String value, boolean isStatic, ValueCategory valueCategory,
-                                           String fullQualifiedName) {
+                                           String typeOrReturnType) {
         this.tag = tag;
         this.referenceType = referenceType;
         this.elementName = elementName;
@@ -87,7 +87,7 @@ public class UniversalElementRepresentation {
         this.value = value;
         this.isStatic = isStatic;
         this.valueCategory = valueCategory;
-        this.fullQualifiedName = fullQualifiedName;
+        this.typeOrReturnType = typeOrReturnType;
     }
 
     // =================== Геттеры ===================
@@ -102,7 +102,7 @@ public class UniversalElementRepresentation {
    // public Set<UniversalElementRepresentation> getInnerElements() { return innerElements; }
     public boolean isStatic() { return isStatic; }
     public ValueCategory getValueCategory() { return valueCategory; }
-    public String getFullQualifiedName() { return fullQualifiedName; }
+    public String gettypeOrReturnType() { return typeOrReturnType; }
 
     // =================== Equals и hashCode по бизнес-логике (без UUID) ===================
     public boolean equalsByBusinessLogic(Object obj) {
@@ -117,12 +117,12 @@ public class UniversalElementRepresentation {
             //   Objects.equals(innerElements, other.innerElements) &&
                isStatic == other.isStatic &&
                valueCategory == other.valueCategory &&
-               Objects.equals(fullQualifiedName, other.fullQualifiedName);
+               Objects.equals(typeOrReturnType, other.typeOrReturnType);
     }
 
     public int hashCodeByBusinessLogic() {
         return Objects.hash(elementName, additionalInfo, elementType, currentRole, value, /*innerElements,*/
-                            isStatic, valueCategory, fullQualifiedName);
+                            isStatic, valueCategory, typeOrReturnType);
     }
 
     // =================== Builder ===================
@@ -136,7 +136,7 @@ public class UniversalElementRepresentation {
        // private Set<UniversalElementRepresentation> innerElements = new HashSet<>();
         private boolean isStatic = false;
         private ValueCategory valueCategory = ValueCategory.NOT_SPECIFIED;
-        private String fullQualifiedName = "";
+        private String typeOrReturnType = "";
         private UUID uniqueId = UUID.randomUUID();
         private UUID parentUniqueId = null;
 
@@ -146,17 +146,9 @@ public class UniversalElementRepresentation {
         public Builder elementType(UniversalElementType elementType) { this.elementType = elementType; return this; }
         public Builder currentRole(CurrentRole currentRole) { this.currentRole = currentRole; return this; }
         public Builder value(String value) { this.value = value; return this; }
-//        public Builder innerElements(Set<UniversalElementRepresentation> innerElements) { 
-//            if (innerElements != null) this.innerElements = innerElements; 
-//            return this; 
-//        }
-//        public Builder addInnerElement(UniversalElementRepresentation innerElement) {
-//            if (innerElement != null) this.innerElements.add(innerElement);
-//            return this;
-//        }
         public Builder isStatic(boolean isStatic) { this.isStatic = isStatic; return this; }
         public Builder valueCategory(ValueCategory valueCategory) { this.valueCategory = valueCategory; return this; }
-        public Builder fullQualifiedName(String fullQualifiedName) { this.fullQualifiedName = fullQualifiedName; return this; }
+        public Builder typeOrReturnType(String typeOrReturnType) { this.typeOrReturnType = typeOrReturnType; return this; }
         public Builder uniqueId(UUID uniqueId) { this.uniqueId = uniqueId; return this; }
         public Builder parentUniqueId(UUID parentUniqueId) { this.parentUniqueId = parentUniqueId; return this; }
 
@@ -164,7 +156,7 @@ public class UniversalElementRepresentation {
             Tag tag = new Tag(uniqueId, parentUniqueId);
             UniversalElementRepresentation element = new UniversalElementRepresentation(
                     tag, referenceType, elementName, additionalInfo, elementType, currentRole,
-                    value, isStatic, valueCategory, fullQualifiedName
+                    value, isStatic, valueCategory, typeOrReturnType
             );
           //  element.getInnerElements().addAll(innerElements);
             return element;
@@ -179,13 +171,13 @@ public class UniversalElementRepresentation {
 
         UniversalElementRepresentation clazz = UniversalElementRepresentation.builder()
                 .elementType(UniversalElementType.CLASS)
-                .fullQualifiedName("com.example.MyClass")
+                .typeOrReturnType("com.example.MyClass")
                 .elementName("MyClass")
                 .build();
 
         UniversalElementRepresentation method = UniversalElementRepresentation.builder()
                 .elementType(UniversalElementType.METHOD)
-                .fullQualifiedName("com.example.MyClass.myMethod()")
+                .typeOrReturnType("com.example.MyClass.myMethod()")
                 .elementName("myMethod")
                 .parentUniqueId(clazz.getTag().getUniqueId())
                 .build();

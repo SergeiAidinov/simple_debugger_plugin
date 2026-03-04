@@ -102,7 +102,7 @@ public class TargetApplicationRepresentation {
                     .value(fqName)
                     .isStatic(referenceType.isStatic())
                     .valueCategory(ValueCategory.NOT_SPECIFIED)
-                    .fullQualifiedName(fqName)
+                    .typeOrReturnType(fqName)
                     .uniqueId(UUID.randomUUID())
                     .parentUniqueId(null)
                     .build();
@@ -148,7 +148,7 @@ public class TargetApplicationRepresentation {
                     .value(valueText)
                     .isStatic(false)
                     .valueCategory(DebugUtils.determineValueCategory(value))
-                    .fullQualifiedName(value instanceof ObjectReference obj
+                    .typeOrReturnType(value instanceof ObjectReference obj
                             ? (obj.referenceType() != null ? obj.referenceType().name() : "java.lang.Object")
                             : localVariable.typeName())
                     .uniqueId(UUID.randomUUID())
@@ -191,7 +191,7 @@ public class TargetApplicationRepresentation {
                         .value(value)
                         .isStatic(field.isStatic())
                         .valueCategory(category)
-                        .fullQualifiedName(field.typeName())
+                        .typeOrReturnType(field.typeName())
                         .uniqueId(UUID.randomUUID())
                         .parentUniqueId(parentElement.getTag().getUniqueId())
                         .build();
@@ -216,7 +216,7 @@ public class TargetApplicationRepresentation {
                         .value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
                         .isStatic(method.isStatic())
                         .valueCategory(ValueCategory.NOT_SPECIFIED)
-                        .fullQualifiedName(method.name())
+                        .typeOrReturnType(method.returnTypeName())  // Type ReturnType
                         .uniqueId(UUID.randomUUID())
                         .parentUniqueId(parentElement.getTag().getUniqueId())
                         .build();
