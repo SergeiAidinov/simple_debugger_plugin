@@ -332,7 +332,7 @@ public class DebugSessionImpl implements DebugSession {
 		ThreadReference thread = breakpointEvent.thread();
 		// Set<UniversalElementRepresentation> qq = deriveLocalVariables(location);
 		//System.out.println(qq);
-		 Map<Tag, UniversalElementRepresentation> rr = targetApplicationRepresentation.getTargetApplicationSnapshot();
+		Map<Tag, UniversalElementRepresentation> rr = targetApplicationRepresentation.getTargetApplicationSnapshot();
 		Set<InnerElementRepresentationDTO> ee = new HashSet<InnerElementRepresentationDTO>();
 		for (UniversalElementRepresentation r : rr.values()) {
 			InnerElementRepresentationDTO ww = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(r);
@@ -344,8 +344,10 @@ public class DebugSessionImpl implements DebugSession {
 //			ee.add(ww);
 //		}
 		System.out.println(ee);
-		DebugWindowDataDTO debugWindowDataDTO = DebugWindowDataDTO.Factory
-				.fromUniversalElement(anchorElementReference.get(), location.lineNumber(), location.method().name() + "()", ee, DebugUtils.compileStackInfo(thread));
+		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), location.method().name() + "()",
+				DebugUtils.compileStackInfo(thread), ee);
+				
+				
 
 		// (anchorElementReference.get(), location);
 		
