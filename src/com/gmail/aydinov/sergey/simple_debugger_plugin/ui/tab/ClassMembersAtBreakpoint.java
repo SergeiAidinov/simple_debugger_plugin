@@ -182,14 +182,13 @@ public class ClassMembersAtBreakpoint {
 		return key != null ? DebugWindowsManager.instance().icons.get(key) : null;
 	}
 
+	// Пример исправления опечатки в getValueCategoty()
 	private Image getIcon(InnerElementRepresentationDTO dto) {
-	    if (Objects.isNull(dto)) {
-	        return null;
-	    }
-	    ValueCategory category = dto.getValueCategoty();
-	    if (Objects.isNull(category)) {
-	        return null;
-	    }
+	    if (Objects.isNull(dto)) return null;
+
+	    ValueCategory category = dto.getValueCategory(); // <=== исправлено
+	    if (Objects.isNull(category)) return null;
+
 	    if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
 	        return DebugWindowsManager.instance().icons.get("lens").getFirst();
 	    }
@@ -199,20 +198,11 @@ public class ClassMembersAtBreakpoint {
 	    return null;
 	}
 
-	// =========================================================
-	// Editing
-	// =========================================================
 	private boolean isEditable(InnerElementRepresentationDTO dto) {
-	    if (dto == null)
-	        return false;
+	    if (dto == null) return false;
 
-	    // Разрешаем редактировать поля (static и non-static) и локальные переменные
-//	    if (dto.getElementType() != UniversalElementType.STATIC_FIELD
-//	            && dto.getElementType() != UniversalElementType.NON_STATIC_FIELD
-//	            && dto.getElementType() != UniversalElementType.VARIABLE)
-//	        return false;
-
-	    // Разрешаем только стандартные типы Java (примитивы + String)
+	    // Разрешаем редактировать только стандартные типы Java (примитивы + String)
+	    // Используем полное имя элемента как идентификатор типа
 	    return JAVA_STANDARD_TYPES.contains(dto.getFullQualifiedName());
 	}
 
