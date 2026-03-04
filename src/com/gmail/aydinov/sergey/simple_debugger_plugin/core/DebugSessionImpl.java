@@ -26,6 +26,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
@@ -128,6 +129,7 @@ public class DebugSessionImpl implements DebugSession {
 						continue;
 					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
 							.refreshBreakpoints();
+					updateUI(breakpointEvent);
 					doWorkAtBreakpoint(breakpointEvent, uiEvent);
 				}
 			}
@@ -330,13 +332,19 @@ public class DebugSessionImpl implements DebugSession {
 		ThreadReference thread = breakpointEvent.thread();
 		Set<UniversalElementRepresentation> qq = deriveLocalVariables(location);
 		System.out.println(qq);
+		 Map<Tag, UniversalElementRepresentation> rr = targetApplicationRepresentation.getTargetApplicationSnapshot();
 		Set<InnerElementRepresentationDTO> ee = new HashSet<InnerElementRepresentationDTO>();
+		for (UniversalElementRepresentation r : rr.values()) {
+			InnerElementRepresentationDTO ww = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(r);
+			ee.add(ww);
+		}
+		
 		for (UniversalElementRepresentation q : qq) {
 			InnerElementRepresentationDTO ww = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(q);
 			ee.add(ww);
 		}
 		DebugWindowDataDTO debugWindowDataDTO = DebugWindowDataDTO.Factory
-				.fromUniversalElement(anchorElementReference.get(), location.lineNumber(), "[STUB]", ee, DebugUtils.compileStackInfo(thread));
+				.fromUniversalElement(anchorElementReference.get(), location.lineNumber(), location.method().name() + "()", ee, DebugUtils.compileStackInfo(thread));
 
 		// (anchorElementReference.get(), location);
 		
