@@ -126,37 +126,66 @@ public class TargetApplicationRepresentation {
             SimpleDebuggerLogger.error(e.getMessage(), e);
             return false;
         }
+
         Location location = breakpointEvent.location();
         Method method = location.method();
         if (method == null) return false;
+
+        // Получаем представление метода
         UniversalElementRepresentation methodRepresentation = targetApplicationSnapshot.values().stream()
-                .filter(c -> c.getReferenceType().equals(method.declaringType()))
+                .filter(c -> c.getReferenceType() != null &&
+                        c.getReferenceType().equals(method.declaringType()))
                 .findFirst().orElse(null);
         if (methodRepresentation == null) return false;
-        
-        Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
+
+        Map<LocalVariable, Value> locals = new HashMap<>();
+
+        // -----------------------------
+        // 1️⃣ Добавляем параметры метода
+        try {
+            for (LocalVariable param : method.arguments()) {
+                if (!locals.containsKey(param)) {
+                    locals.put(param, frame.getValue(param));
+                }
+            }
+        } catch (AbsentInformationException ignored) { }
+
+        // -----------------------------
+        // 2️⃣ Добавляем видимые локальные переменные
+        try {
+            for (LocalVariable local : frame.visibleVariables()) {
+                if (!locals.containsKey(local)) {
+                    locals.put(local, frame.getValue(local));
+                }
+            }
+        } catch (AbsentInformationException ignored) { }
+
+        // -----------------------------
+        // 3️⃣ Формируем элементы для UI
         List<UniversalElementRepresentation> localVariables = new ArrayList<>();
         for (Map.Entry<LocalVariable, Value> entry : locals.entrySet()) {
-            LocalVariable localVariable = entry.getKey();
+            LocalVariable localVar = entry.getKey();
             Value value = entry.getValue();
+
             String valueText = value == null ? "<null>" : value.toString();
             UniversalElementRepresentation variable = UniversalElementRepresentation.builder()
-            		.referenceType(null)
-                    .elementName(localVariable.name())
-                    .additionalInfo(valueText)
+                    .referenceType(null)
+                    .elementName(localVar.name())
+                    .additionalInfo(localVar.typeName()) // используем тип переменной
                     .elementType(UniversalElementType.VARIABLE)
                     .currentRole(CurrentRole.INNER)
                     .value(valueText)
                     .isStatic(false)
                     .valueCategory(DebugUtils.determineValueCategory(value))
-                    .typeOrReturnType(value instanceof ObjectReference obj
-                            ? (obj.referenceType() != null ? obj.referenceType().name() : "java.lang.Object")
-                            : localVariable.typeName())
+                    .typeOrReturnType(localVar.typeName())
                     .uniqueId(UUID.randomUUID())
                     .parentUniqueId(methodRepresentation.getTag().getUniqueId())
                     .build();
+
             targetApplicationSnapshot.put(variable.getTag(), variable);
+            localVariables.add(variable);
         }
+
         return true;
     }
 
