@@ -21,6 +21,7 @@ public class InnerElementRepresentationDTO {
     private final boolean isStatic;
     private final ValueCategory valueCategory;
     private final String fullQualifiedName;
+    private int level = 0;
 
     protected InnerElementRepresentationDTO(Tag tag,
                                          String elementName,
@@ -49,6 +50,8 @@ public class InnerElementRepresentationDTO {
     public ValueCategory getValueCategory() { return valueCategory; }
     public boolean isStatic() { return isStatic; }
     public String getFullQualifiedName() { return fullQualifiedName; }
+    public int getLevel() { return level; }
+    public void setLevel(int level) { this.level = level; }
 
     @Override
     public String toString() {

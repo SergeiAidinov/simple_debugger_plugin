@@ -77,7 +77,17 @@ public class ClassMembersAtBreakpoint {
 	private void setupColumns() {
 
 		// 0: Name
-		createColumn(0, "Name", 150, InnerElementRepresentationDTO::getElementName, e -> null);
+		createColumn(
+			    0,
+			    "Name",
+			    150,
+			    e -> {
+			        InnerElementRepresentationDTO dto = (InnerElementRepresentationDTO) e;
+			        String indent = "   ".repeat(dto.getLevel()); // 3 пробела на уровень
+			        return indent + dto.getElementName();
+			    },
+			    e -> null
+			);
 
 		// 1: Type / Return Type
 		createColumn(1, "Type / Return Type", 200, InnerElementRepresentationDTO::getFullQualifiedName,
@@ -345,76 +355,101 @@ public class ClassMembersAtBreakpoint {
 	}
 
 	public List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
+	    Map<UUID, List<InnerElementRepresentationDTO>> childrenMap = new HashMap<>();
+	    List<InnerElementRepresentationDTO> roots = new ArrayList<>();
 
-		Map<UUID, List<InnerElementRepresentationDTO>> childrenMap = new HashMap<>();
-		List<InnerElementRepresentationDTO> roots = new ArrayList<>();
+	    // 1️⃣ Разделяем root и children по parentId
+	    for (InnerElementRepresentationDTO element : allElements) {
+	        UUID parentId = element.getTag().getParentId();
 
-		// 1️⃣ Разделяем root и children
-		for (InnerElementRepresentationDTO element : allElements) {
-			UUID parentId = element.getTag().getParentId();
+	        if (parentId == null) {
+	            roots.add(element);
+	        } else {
+	            childrenMap.computeIfAbsent(parentId, k -> new ArrayList<>()).add(element);
+	        }
+	    }
 
-			if (parentId == null) {
-				roots.add(element);
-			} else {
-				childrenMap.computeIfAbsent(parentId, k -> new ArrayList<>()).add(element);
-			}
-		}
+	    // 2️⃣ Сортируем root-элементы по имени
+	    roots.sort(Comparator.comparing(InnerElementRepresentationDTO::getElementName));
 
-		// 2️⃣ Сортируем root-элементы по имени
-		roots.sort(Comparator.comparing(InnerElementRepresentationDTO::getElementName));
+	    List<InnerElementRepresentationDTO> result = new ArrayList<>();
 
-		List<InnerElementRepresentationDTO> result = new ArrayList<>();
+	    // 3️⃣ Обходим каждый root
+	    for (InnerElementRepresentationDTO root : roots) {
+	        root.setLevel(0);
+	        result.add(root);
 
-		// 3️⃣ Обходим каждый root
-		for (InnerElementRepresentationDTO root : roots) {
-			result.add(root);
-			appendChildren(root, childrenMap, result);
-		}
+	        appendChildren(root, childrenMap, result, 1);
+	    }
 
-		return result;
+	    return result;
 	}
 
-	private void appendChildren(InnerElementRepresentationDTO parent,
-			Map<UUID, List<InnerElementRepresentationDTO>> childrenMap, List<InnerElementRepresentationDTO> result) {
+	private void appendChildren(
+	        InnerElementRepresentationDTO parent,
+	        Map<UUID, List<InnerElementRepresentationDTO>> childrenMap,
+	        List<InnerElementRepresentationDTO> result,
+	        int level) {
 
-		List<InnerElementRepresentationDTO> children = childrenMap.get(parent.getTag().getUniqueId());
+	    List<InnerElementRepresentationDTO> children = childrenMap.get(parent.getTag().getUniqueId());
+	    if (children == null || children.isEmpty()) return;
 
-		if (children == null || children.isEmpty()) {
-			return;
-		}
+	    Comparator<InnerElementRepresentationDTO> byName =
+	            Comparator.comparing(InnerElementRepresentationDTO::getElementName);
 
-		Comparator<InnerElementRepresentationDTO> byName = Comparator
-				.comparing(InnerElementRepresentationDTO::getElementName);
+	    // 1️⃣ STATIC fields
+	    children.stream()
+	            .filter(e -> e.getElementType() == UniversalElementType.STATIC_FIELD)
+	            .sorted(byName)
+	            .forEach(e -> { e.setLevel(level); result.add(e); });
 
-		// 1️⃣ СТАТИЧЕСКИЕ поля
-		children.stream().filter(e -> e.getElementType() == UniversalElementType.STATIC_FIELD).sorted(byName)
-				.forEach(result::add);
+	    // 2️⃣ NON STATIC fields
+	    children.stream()
+	            .filter(e -> e.getElementType() == UniversalElementType.NON_STATIC_FIELD)
+	            .sorted(byName)
+	            .forEach(e -> { e.setLevel(level); result.add(e); });
 
-		// 2️⃣ НЕСТАТИЧЕСКИЕ поля
-		children.stream().filter(e -> e.getElementType() == UniversalElementType.NON_STATIC_FIELD).sorted(byName)
-				.forEach(result::add);
+	    // 3️⃣ METHODS
+	    children.stream()
+	            .filter(e -> e.getElementType() == UniversalElementType.METHOD)
+	            .sorted(byName)
+	            .forEach(method -> {
+	                method.setLevel(level);
+	                result.add(method);
 
-		// 3️⃣ Методы
-		children.stream().filter(e -> e.getElementType() == UniversalElementType.METHOD).sorted(byName)
-				.forEach(method -> {
-					result.add(method);
-
-					// 4️⃣ Локальные переменные конкретного метода
-					appendMethodLocals(method, childrenMap, result);
-				});
+	                // 4️⃣ Local variables
+	                List<InnerElementRepresentationDTO> locals = childrenMap.get(method.getTag().getUniqueId());
+	                if (locals != null) {
+	                    locals.stream()
+	                            .filter(l -> l.getElementType() == UniversalElementType.VARIABLE)
+	                            .sorted(byName)
+	                            .forEach(l -> { l.setLevel(level + 1); result.add(l); });
+	                }
+	            });
 	}
 
-	private void appendMethodLocals(InnerElementRepresentationDTO method,
-			Map<UUID, List<InnerElementRepresentationDTO>> childrenMap, List<InnerElementRepresentationDTO> result) {
+	
 
-		List<InnerElementRepresentationDTO> locals = childrenMap.get(method.getTag().getUniqueId());
+	private void appendMethodLocals(
+	        InnerElementRepresentationDTO method,
+	        Map<UUID, List<InnerElementRepresentationDTO>> childrenMap,
+	        List<InnerElementRepresentationDTO> result,
+	        int level) {
 
-		if (locals == null || locals.isEmpty()) {
-			return;
-		}
+	    List<InnerElementRepresentationDTO> locals =
+	            childrenMap.get(method.getTag().getUniqueId());
 
-		locals.stream().filter(e -> e.getElementType() == UniversalElementType.VARIABLE)
-				.sorted(Comparator.comparing(InnerElementRepresentationDTO::getElementName)).forEach(result::add);
+	    if (locals == null || locals.isEmpty()) {
+	        return;
+	    }
+
+	    locals.stream()
+	            .filter(e -> e.getElementType() == UniversalElementType.VARIABLE)
+	            .sorted(Comparator.comparing(InnerElementRepresentationDTO::getElementName))
+	            .forEach(e -> {
+	                e.setLevel(level);
+	                result.add(e);
+	            });
 	}
 
 	private void setupColumnClickListeners() {

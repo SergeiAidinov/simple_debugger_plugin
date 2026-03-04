@@ -137,6 +137,7 @@ public class DebugSessionImpl implements DebugSession {
 	private void doWorkAtBreakpoint(BreakpointEvent breakpointEvent) {
 		targetApplicationRepresentation
 				.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+		targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 		updateUI(breakpointEvent);
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
@@ -156,7 +157,13 @@ public class DebugSessionImpl implements DebugSession {
 				if (Objects.isNull(uiEvent))
 					continue;
 				try {
+					
 					handleSingleUiEvent(uiEvent, breakpointEvent);
+					targetApplicationRepresentation
+					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+			updateUI(breakpointEvent);
+					
 				} catch (Throwable exception) {
 					logError("Breakpoint handler error", exception);
 				}
