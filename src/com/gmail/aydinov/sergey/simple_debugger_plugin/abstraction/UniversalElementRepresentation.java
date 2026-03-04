@@ -56,7 +56,7 @@ public class UniversalElementRepresentation {
     public enum CurrentRole { OUTER, INNER, LOCAL }
 
     public enum ValueCategory {
-        PRIMITIVE, WRAPPER, STRING, COLLECTION, ARRAY, MAP, USER_OBJECT, NULL, UNKNOWN
+        PRIMITIVE, WRAPPER, STRING, COLLECTION, ARRAY, MAP, USER_OBJECT, NULL, NOT_SPECIFIED
     }
 
     // =================== Поля ===================
@@ -133,9 +133,9 @@ public class UniversalElementRepresentation {
         private UniversalElementType elementType = UniversalElementType.UNKNOWN;
         private CurrentRole currentRole = CurrentRole.OUTER;
         private String value = null;
-        private Set<UniversalElementRepresentation> innerElements = new HashSet<>();
+       // private Set<UniversalElementRepresentation> innerElements = new HashSet<>();
         private boolean isStatic = false;
-        private ValueCategory valueCategory = ValueCategory.UNKNOWN;
+        private ValueCategory valueCategory = ValueCategory.NOT_SPECIFIED;
         private String fullQualifiedName = "";
         private UUID uniqueId = UUID.randomUUID();
         private UUID parentUniqueId = null;
@@ -146,14 +146,14 @@ public class UniversalElementRepresentation {
         public Builder elementType(UniversalElementType elementType) { this.elementType = elementType; return this; }
         public Builder currentRole(CurrentRole currentRole) { this.currentRole = currentRole; return this; }
         public Builder value(String value) { this.value = value; return this; }
-        public Builder innerElements(Set<UniversalElementRepresentation> innerElements) { 
-            if (innerElements != null) this.innerElements = innerElements; 
-            return this; 
-        }
-        public Builder addInnerElement(UniversalElementRepresentation innerElement) {
-            if (innerElement != null) this.innerElements.add(innerElement);
-            return this;
-        }
+//        public Builder innerElements(Set<UniversalElementRepresentation> innerElements) { 
+//            if (innerElements != null) this.innerElements = innerElements; 
+//            return this; 
+//        }
+//        public Builder addInnerElement(UniversalElementRepresentation innerElement) {
+//            if (innerElement != null) this.innerElements.add(innerElement);
+//            return this;
+//        }
         public Builder isStatic(boolean isStatic) { this.isStatic = isStatic; return this; }
         public Builder valueCategory(ValueCategory valueCategory) { this.valueCategory = valueCategory; return this; }
         public Builder fullQualifiedName(String fullQualifiedName) { this.fullQualifiedName = fullQualifiedName; return this; }

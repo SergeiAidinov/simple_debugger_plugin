@@ -484,7 +484,7 @@ public class DebugUtils {
 	    }
 
 	    if (!(value instanceof com.sun.jdi.ObjectReference objectReference)) {
-	        return ValueCategory.UNKNOWN;
+	        return ValueCategory.NOT_SPECIFIED;
 	    }
 
 	    ReferenceType referenceType = objectReference.referenceType();

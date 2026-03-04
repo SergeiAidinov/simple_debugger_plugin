@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -91,13 +92,19 @@ public class TargetApplicationRepresentation {
             if (elementType == null)
                 continue;
             String fqName = referenceType.name();
+          //  Value value = 
             UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
                     .referenceType(referenceType)
                     .elementName(DebugUtils.extractSimpleName(fqName))
                     .additionalInfo(fqName)
                     .elementType(elementType)
                     .currentRole(CurrentRole.OUTER)
+                    .value(fqName)
+                    .isStatic(referenceType.isStatic())
+                    .valueCategory(ValueCategory.NOT_SPECIFIED)
                     .fullQualifiedName(fqName)
+                    .uniqueId(UUID.randomUUID())
+                    .parentUniqueId(null)
                     .build();
             topLevelElements.put(topLevelElement.getTag(), topLevelElement);
            
@@ -121,21 +128,20 @@ public class TargetApplicationRepresentation {
         Location location = breakpointEvent.location();
         Method method = location.method();
         if (method == null) return false;
-//        UniversalElementRepresentation methodRepresentation = targetApplicationSnapshot.values().stream()
-//                .filter(c -> c.getReferenceType() != null && c.getReferenceType().equals(method.declaringType()))
-//                .flatMap(c -> c.getInnerElements().stream())
-//                .filter(e -> e.getElementType() == UniversalElementType.METHOD && e.getElementName().startsWith(method.name()))
-//                .findFirst().orElse(null);
-//        if (methodRepresentation == null) return false;
+        UniversalElementRepresentation methodRepresentation = targetApplicationSnapshot.values().stream()
+                .filter(c -> c.getReferenceType().equals(method.declaringType()))
+                .findFirst().orElse(null);
+        if (methodRepresentation == null) return false;
         
         Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
         List<UniversalElementRepresentation> localVariables = new ArrayList<>();
         for (Map.Entry<LocalVariable, Value> entry : locals.entrySet()) {
-            LocalVariable var = entry.getKey();
+            LocalVariable localVariable = entry.getKey();
             Value value = entry.getValue();
-            String valueText = value == null ? "null" : value.toString();
+            String valueText = value == null ? "<null>" : value.toString();
             UniversalElementRepresentation variable = UniversalElementRepresentation.builder()
-                    .elementName(var.name())
+            		.referenceType(null)
+                    .elementName(localVariable.name())
                     .additionalInfo(valueText)
                     .elementType(UniversalElementType.VARIABLE)
                     .currentRole(CurrentRole.INNER)
@@ -144,7 +150,9 @@ public class TargetApplicationRepresentation {
                     .valueCategory(DebugUtils.determineValueCategory(value))
                     .fullQualifiedName(value instanceof ObjectReference obj
                             ? (obj.referenceType() != null ? obj.referenceType().name() : "java.lang.Object")
-                            : var.typeName())
+                            : localVariable.typeName())
+                    .uniqueId(UUID.randomUUID())
+                    .parentUniqueId(methodRepresentation.getTag().getUniqueId())
                     .build();
             targetApplicationSnapshot.put(variable.getTag(), variable);
         }
@@ -180,17 +188,19 @@ public class TargetApplicationRepresentation {
                         .additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
                         .elementType(elementType)
                         .currentRole(CurrentRole.INNER)
-                        .isStatic(isStatic)
-                        .valueCategory(category)
                         .value(value)
+                        .isStatic(field.isStatic())
+                        .valueCategory(category)
                         .fullQualifiedName(field.typeName())
+                        .uniqueId(UUID.randomUUID())
+                        .parentUniqueId(parentElement.getTag().getUniqueId())
                         .build();
 
               //  parentElement.getInnerElements().add(fieldElement);
                 targetApplicationSnapshot.put(fieldElement.getTag(), fieldElement);
             } catch (Exception ignored) {}
         }
-
+        
         for (Method method : refType.allMethods()) {
             try {
                 if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
@@ -203,10 +213,12 @@ public class TargetApplicationRepresentation {
                         .additionalInfo(method.returnTypeName())
                         .elementType(UniversalElementType.METHOD)
                         .currentRole(CurrentRole.INNER)
-                        .isStatic(method.isStatic())
-                        .valueCategory(ValueCategory.UNKNOWN)
                         .value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
+                        .isStatic(method.isStatic())
+                        .valueCategory(ValueCategory.NOT_SPECIFIED)
                         .fullQualifiedName(method.name())
+                        .uniqueId(UUID.randomUUID())
+                        .parentUniqueId(parentElement.getTag().getUniqueId())
                         .build();
                 //parentElement.getInnerElements().add(methodElement);
                 targetApplicationSnapshot.put(methodElement.getTag(), methodElement);
