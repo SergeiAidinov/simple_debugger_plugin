@@ -221,9 +221,10 @@ public class DebugSessionImpl implements DebugSession {
 				|| DebuggerContext.context().isInspectionSeanceActive())
 			return;
 		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-	    .filter(v -> v.getTag().getUniqueId().equals(innerElementRepresentationDTO.getUniqueId()))
+	    .filter(v -> v.getFullQualifiedName().equals(innerElementRepresentationDTO.getFullQualifiedName()))
 	    .findAny() // <- получаем Optional<UniversalElementRepresentation>
 	    .ifPresent(topLevelElement -> {
+	    	System.out.println("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
 	        try {
 	            simpleDebugEventCollector.collectDebugEvent(
 	                new DebugEvent<Boolean>(
