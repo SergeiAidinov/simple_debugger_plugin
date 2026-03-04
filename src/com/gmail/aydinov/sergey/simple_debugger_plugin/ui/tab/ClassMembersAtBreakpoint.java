@@ -386,36 +386,11 @@ public class ClassMembersAtBreakpoint {
 		List<InnerElementRepresentationDTO> result = new ArrayList<InnerElementRepresentationDTO>();
 		for (Entry<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> triplet : tree.entrySet()) {
 			result.add(triplet.getKey());
-			result.addAll(triplet.getValue().getFirst());
-			result.addAll(triplet.getValue().getSecond());
+			result.addAll(triplet.getValue().getFirst().stream().sorted().peek(e -> e.setLevel(1)).toList());
+			result.addAll(triplet.getValue().getSecond().stream().sorted().peek(e -> e.setLevel(2)).toList());
 		}
+		if (!allElements.isEmpty()) result.addAll(allElements);
 		return result;
-	}
-
-	private void appendChildren(InnerElementRepresentationDTO parent,
-			Map<UUID, List<InnerElementRepresentationDTO>> childrenMap, List<InnerElementRepresentationDTO> result,
-			int level) {
-
-		List<InnerElementRepresentationDTO> children = childrenMap.get(parent.getTag().getUniqueId());
-		if (children == null || children.isEmpty())
-			return;
-
-		Comparator<InnerElementRepresentationDTO> byName = Comparator
-				.comparing(InnerElementRepresentationDTO::getElementName);
-
-// Обрабатываем все типы в порядке: STATIC_FIELD → NON_STATIC_FIELD → METHOD → VARIABLE
-		for (UniversalElementType type : List.of(UniversalElementType.STATIC_FIELD,
-				UniversalElementType.NON_STATIC_FIELD, UniversalElementType.METHOD, UniversalElementType.VARIABLE)) {
-			children.stream().filter(e -> e.getElementType() == type).sorted(byName).forEach(e -> {
-				e.setLevel(level);
-				result.add(e);
-
-				// рекурсивно обходим методы (или другие элементы, которые могут иметь inner)
-				if (type == UniversalElementType.METHOD || type == UniversalElementType.VARIABLE) {
-					appendChildren(e, childrenMap, result, level + 1);
-				}
-			});
-		}
 	}
 
 	private void setupColumnClickListeners() {
