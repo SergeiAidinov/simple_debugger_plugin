@@ -317,20 +317,22 @@ public class ClassMembersAtBreakpoint {
 	// Display
 	// =========================================================
 
-	public void showInnerElements(DebugWindowDataDTO dto) {
-		if (dto == null || dto.getInnerElements().isEmpty())
-			return;
+	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
+	    if (dto == null || dto.getInnerElements().isEmpty()) return;
 
-		List<InnerElementRepresentationDTO> sorted = new ArrayList<>(dto.getInnerElements());
+	    // Копируем и сортируем элементы
+	    List<InnerElementRepresentationDTO> sorted = new ArrayList<>(dto.getInnerElements());
+	    sorted.sort(Comparator
+	            .comparingInt((InnerElementRepresentationDTO e) -> e.getElementType().ordinal())
+	            .thenComparing(InnerElementRepresentationDTO::getElementName));
 
-		sorted.sort(Comparator.comparingInt((InnerElementRepresentationDTO e) -> e.getElementType().ordinal())
-				.thenComparing(InnerElementRepresentationDTO::getElementName));
-
-		root.getDisplay().asyncExec(() -> {
-			if (!viewer.getTable().isDisposed()) {
-				viewer.setInput(sorted);
-			}
-		});
+	    // Обновляем TableViewer в UI-потоке
+	    root.getDisplay().asyncExec(() -> {
+	        if (!viewer.getTable().isDisposed()) {
+	            viewer.setInput(sorted);
+	            viewer.refresh(); // обязательно обновляем таблицу
+	        }
+	    });
 	}
 	
 	private void setupColumnClickListeners() {

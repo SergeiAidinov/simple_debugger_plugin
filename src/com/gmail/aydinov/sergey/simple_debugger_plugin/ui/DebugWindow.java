@@ -183,7 +183,7 @@ public class DebugWindow {
 		locationLabel.setText(
 				STOP_INFO + debugWindowDataDTO.getElementName() + "." + debugWindowDataDTO.getMethodName() + " line: " + debugWindowDataDTO.getLineNumber());
 		resumeButton.setEnabled(true);
-		variablesFieldsTabContent.showInnerElements(debugWindowDataDTO);
+		variablesFieldsTabContent.showInnerElementsInTable(debugWindowDataDTO);
 		stackTabContent.updateStack(debugWindowDataDTO.getCompileStackInfo());
 	}
 
