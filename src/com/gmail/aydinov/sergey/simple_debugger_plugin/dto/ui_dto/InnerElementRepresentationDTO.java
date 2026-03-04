@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto;
 
+import java.util.Objects;
+
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
@@ -56,7 +58,31 @@ public class InnerElementRepresentationDTO {
                 + ", valueCategory=" + valueCategory + ", fullQualifiedName=" + fullQualifiedName + "]";
     }
     
-    /**
+    
+    
+    
+    @Override
+	public int hashCode() {
+		return Objects.hash(additionalInfo, elementName, elementType, fullQualifiedName, isStatic, value,
+				valueCategory);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		InnerElementRepresentationDTO other = (InnerElementRepresentationDTO) obj;
+		return Objects.equals(additionalInfo, other.additionalInfo) && Objects.equals(elementName, other.elementName)
+				&& elementType == other.elementType && Objects.equals(fullQualifiedName, other.fullQualifiedName)
+				&& isStatic == other.isStatic && Objects.equals(value, other.value)
+				&& valueCategory == other.valueCategory;
+	}
+
+	/**
      * Фабрика для InnerElementRepresentationDTO.
      * Позволяет создать DTO из UniversalElementRepresentation.
      */
