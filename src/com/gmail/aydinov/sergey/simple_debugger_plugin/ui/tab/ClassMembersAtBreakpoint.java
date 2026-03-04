@@ -84,8 +84,8 @@ public class ClassMembersAtBreakpoint {
 		char arrow = '⮡';
 		createColumn(0, "Name", 150, e -> {
 			InnerElementRepresentationDTO dto = (InnerElementRepresentationDTO) e;
-			String indent = "   ".repeat(dto.getLevel()); // 3 пробела на уровень
-			indent = indent + arrow;
+			String indent = "     ".repeat(dto.getLevel()); // 3 пробела на уровень
+			if(dto.getLevel() > 0) indent = indent + arrow;
 			return indent + dto.getElementName();
 		}, e -> null);
 
@@ -355,8 +355,6 @@ public class ClassMembersAtBreakpoint {
 	}
 
 	public List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
-	    allElements.forEach(System.out::println);
-
 	    Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<>();
 	    Set<InnerElementRepresentationDTO> elementsToDelete = new HashSet<>();
 
