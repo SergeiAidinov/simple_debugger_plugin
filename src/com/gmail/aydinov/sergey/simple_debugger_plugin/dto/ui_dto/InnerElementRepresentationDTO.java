@@ -110,7 +110,7 @@ public class InnerElementRepresentationDTO {
             String value = element.getValue();
             boolean isStatic = element.isStatic();
             UniversalElementRepresentation.ValueCategory valueCategory = element.getValueCategory();
-            String fullQualifiedName = element.getFullQualifiedName();
+            String fullQualifiedName = element.gettypeOrReturnType();
 
             return new InnerElementRepresentationDTO(
                     tag,

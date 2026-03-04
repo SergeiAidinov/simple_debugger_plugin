@@ -229,7 +229,7 @@ public class DebugSessionImpl implements DebugSession {
 				|| DebuggerContext.context().isInspectionSeanceActive())
 			return;
 		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-				.filter(v -> v.getFullQualifiedName().equals(innerElementRepresentationDTO.getFullQualifiedName()))
+				.filter(v -> v.gettypeOrReturnType().equals(innerElementRepresentationDTO.getFullQualifiedName()))
 				.findAny() // <- получаем Optional<UniversalElementRepresentation>
 				.ifPresent(topLevelElement -> {
 					System.out.println("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
