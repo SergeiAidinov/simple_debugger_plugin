@@ -1,10 +1,12 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+
 import com.sun.jdi.ReferenceType;
 
 public class UniversalElementRepresentation {
@@ -58,6 +60,9 @@ public class UniversalElementRepresentation {
     }
 
     // =================== Поля ===================
+    private final UUID uniqueId;
+    private final UUID parentUniqueId;
+
     private final Tag tag;
     private final ReferenceType referenceType;
     private final String elementName;
@@ -65,17 +70,26 @@ public class UniversalElementRepresentation {
     private final UniversalElementType elementType;
     private CurrentRole currentRole;
     private final String value;
-    private final Set<UniversalElementRepresentation> innerElements = new HashSet<>();
+    private final Set<UniversalElementRepresentation> innerElements = new LinkedHashSet<>();
     private final boolean isStatic;
     private final ValueCategory valueCategory;
     private final String fullQualifiedName;
 
     // =================== Конструктор ===================
-    private UniversalElementRepresentation(Tag tag, ReferenceType referenceType,
-                                           String elementName, String additionalInfo,
-                                           UniversalElementType elementType, CurrentRole currentRole,
-                                           String value, boolean isStatic, ValueCategory valueCategory,
+    private UniversalElementRepresentation(UUID uniqueId,
+                                           UUID parentUniqueId,
+                                           Tag tag,
+                                           ReferenceType referenceType,
+                                           String elementName,
+                                           String additionalInfo,
+                                           UniversalElementType elementType,
+                                           CurrentRole currentRole,
+                                           String value,
+                                           boolean isStatic,
+                                           ValueCategory valueCategory,
                                            String fullQualifiedName) {
+        this.uniqueId = uniqueId;
+        this.parentUniqueId = parentUniqueId;
         this.tag = tag;
         this.referenceType = referenceType;
         this.elementName = elementName;
@@ -89,6 +103,8 @@ public class UniversalElementRepresentation {
     }
 
     // =================== Геттеры ===================
+    public UUID getUniqueId() { return uniqueId; }
+    public UUID getParentUniqueId() { return parentUniqueId; }
     public Tag getTag() { return tag; }
     public ReferenceType getReferenceType() { return referenceType; }
     public String getElementName() { return elementName; }
@@ -102,11 +118,10 @@ public class UniversalElementRepresentation {
     public ValueCategory getValueCategory() { return valueCategory; }
     public String getFullQualifiedName() { return fullQualifiedName; }
 
-    // =================== Equals и hashCode по бизнес-логике ===================
+    // =================== Equals / hashCode по UUID ===================
     @Override
     public int hashCode() {
-        return Objects.hash(elementName, additionalInfo, elementType, currentRole, value, innerElements,
-                            isStatic, valueCategory, fullQualifiedName);
+        return Objects.hash(uniqueId);
     }
 
     @Override
@@ -114,64 +129,87 @@ public class UniversalElementRepresentation {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         UniversalElementRepresentation other = (UniversalElementRepresentation) obj;
-        return Objects.equals(elementName, other.elementName) &&
-               Objects.equals(additionalInfo, other.additionalInfo) &&
-               elementType == other.elementType &&
-               currentRole == other.currentRole &&
-               Objects.equals(value, other.value) &&
-               Objects.equals(innerElements, other.innerElements) &&
-               isStatic == other.isStatic &&
-               valueCategory == other.valueCategory &&
-               Objects.equals(fullQualifiedName, other.fullQualifiedName);
+        return Objects.equals(uniqueId, other.uniqueId);
+    }
+
+    @Override
+    public String toString() {
+        return "UniversalElementRepresentation{" +
+                "uniqueId=" + uniqueId +
+                ", elementType=" + elementType +
+                ", elementName='" + elementName + '\'' +
+                ", value='" + value + '\'' +
+                '}';
     }
 
     // =================== Builder ===================
     public static class Builder {
+        private UUID uniqueId = UUID.randomUUID();
+        private UUID parentUniqueId = null;
         private ReferenceType referenceType = null;
         private String elementName = "";
         private String additionalInfo = "";
         private UniversalElementType elementType = UniversalElementType.UNKNOWN;
         private CurrentRole currentRole = CurrentRole.OUTER;
         private String value = null;
-        private Set<UniversalElementRepresentation> innerElements = new HashSet<>();
+        private Set<UniversalElementRepresentation> innerElements = new LinkedHashSet<>();
         private boolean isStatic = false;
         private ValueCategory valueCategory = ValueCategory.UNKNOWN;
         private String fullQualifiedName = "";
 
+        public Builder uniqueId(UUID uniqueId) { this.uniqueId = uniqueId; return this; }
+        public Builder parentUniqueId(UUID parentUniqueId) { this.parentUniqueId = parentUniqueId; return this; }
         public Builder referenceType(ReferenceType referenceType) { this.referenceType = referenceType; return this; }
         public Builder elementName(String elementName) { this.elementName = elementName; return this; }
         public Builder additionalInfo(String additionalInfo) { this.additionalInfo = additionalInfo; return this; }
         public Builder elementType(UniversalElementType elementType) { this.elementType = elementType; return this; }
         public Builder currentRole(CurrentRole currentRole) { this.currentRole = currentRole; return this; }
         public Builder value(String value) { this.value = value; return this; }
-        public Builder innerElements(Set<UniversalElementRepresentation> innerElements) { 
-            if (innerElements != null) this.innerElements = innerElements; 
-            return this; 
-        }
-        public Builder addInnerElement(UniversalElementRepresentation innerElement) {
-            if (innerElement != null) this.innerElements.add(innerElement);
-            return this;
-        }
         public Builder isStatic(boolean isStatic) { this.isStatic = isStatic; return this; }
         public Builder valueCategory(ValueCategory valueCategory) { this.valueCategory = valueCategory; return this; }
         public Builder fullQualifiedName(String fullQualifiedName) { this.fullQualifiedName = fullQualifiedName; return this; }
 
+        public Builder innerElements(Set<UniversalElementRepresentation> innerElements) {
+            if (innerElements != null) this.innerElements = innerElements;
+            return this;
+        }
+
+        public Builder addInnerElement(UniversalElementRepresentation innerElement) {
+            if (innerElement != null) this.innerElements.add(innerElement);
+            return this;
+        }
+
         public UniversalElementRepresentation build() {
             Tag tag = Tag.of(fullQualifiedName, elementType);
-            UniversalElementRepresentation element = new UniversalElementRepresentation(
-                    tag, referenceType, elementName, additionalInfo, elementType, currentRole,
-                    value, isStatic, valueCategory, fullQualifiedName
-            );
+
+            UniversalElementRepresentation element =
+                new UniversalElementRepresentation(
+                        uniqueId,
+                        parentUniqueId,
+                        tag,
+                        referenceType,
+                        elementName,
+                        additionalInfo,
+                        elementType,
+                        currentRole,
+                        value,
+                        isStatic,
+                        valueCategory,
+                        fullQualifiedName
+                );
+
             element.getInnerElements().addAll(innerElements);
             return element;
         }
     }
 
-    public static Builder builder() { return new Builder(); }
+    public static Builder builder() {
+        return new Builder();
+    }
 
-    // =================== Пример использования snapshot ===================
+    // =================== Пример snapshot ===================
     public static void main(String[] args) {
-        Map<Tag, UniversalElementRepresentation> snapshot = new HashMap<>();
+        Map<UUID, UniversalElementRepresentation> snapshot = new HashMap<>();
 
         UniversalElementRepresentation clazz = UniversalElementRepresentation.builder()
                 .elementType(UniversalElementType.CLASS)
@@ -183,10 +221,11 @@ public class UniversalElementRepresentation {
                 .elementType(UniversalElementType.METHOD)
                 .fullQualifiedName("com.example.MyClass.myMethod()")
                 .elementName("myMethod")
+                .parentUniqueId(clazz.getUniqueId())
                 .build();
 
-        snapshot.put(clazz.getTag(), clazz);
-        snapshot.put(method.getTag(), method);
+        snapshot.put(clazz.getUniqueId(), clazz);
+        snapshot.put(method.getUniqueId(), method);
 
         System.out.println(snapshot);
     }
