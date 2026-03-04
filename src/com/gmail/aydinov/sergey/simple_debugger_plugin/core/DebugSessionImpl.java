@@ -108,6 +108,7 @@ public class DebugSessionImpl implements DebugSession {
 
 	/** Processes all events in the EventSet */
 	private void processEvents() {
+		
 		for (Event event : eventSet) {
 			if (!DebuggerContext.context().isRunning())
 				return;
@@ -117,24 +118,26 @@ public class DebugSessionImpl implements DebugSession {
 					handleVmDisconnected();
 					return;
 				}
-				targetApplicationRepresentation
-						.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-				targetApplicationRepresentation
-						.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
-				updateUI(breakpointEvent);
-
-				while (DebuggerContext.context().isDebugSessionActive()) {
-					AbstractUIEvent uiEvent = uiEventCollector.pollUiEvent();
-					if (Objects.isNull(uiEvent))
-						continue;
-					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
-							.refreshBreakpoints();
-					updateUI(breakpointEvent);
-					doWorkAtBreakpoint(breakpointEvent, uiEvent);
+				
+				doWorkAtBreakpoint(breakpointEvent);
+//				targetApplicationRepresentation
+//						.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+//				targetApplicationRepresentation
+//						.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+//				updateUI(breakpointEvent);
+				simpleDebugEventCollector
+				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+				
+//					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
+//							.refreshBreakpoints();
+//					targetApplicationRepresentation
+//					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+//					updateUI(breakpointEvent);
+					//doWorkAtBreakpoint(breakpointEvent, uiEvent);
 				}
 			}
 		}
-	}
+	
 
 	private void handleVmDisconnected() {
 		try {
@@ -144,7 +147,10 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void doWorkAtBreakpoint(BreakpointEvent breakpointEvent, AbstractUIEvent uiEvent) {
+	private void doWorkAtBreakpoint(BreakpointEvent breakpointEvent) {
+		targetApplicationRepresentation
+		.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+		updateUI(breakpointEvent);
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
 			display.asyncExec(() -> {
@@ -158,26 +164,31 @@ public class DebugSessionImpl implements DebugSession {
 					logError("Cannot highlight breakpoint location", exception);
 				}
 			});
-		}
-
+			while (DebuggerContext.context().isDebugSessionActive()) {
+				AbstractUIEvent uiEvent = uiEventCollector.pollUiEvent();
+				if (Objects.isNull(uiEvent))
+					continue;
 		try {
-			targetApplicationRepresentation
-					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
-					breakpointEvent);
+//			targetApplicationRepresentation
+//					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+//			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
+//					breakpointEvent);
+//			updateUI(breakpointEvent);
 			handleSingleUiEvent(uiEvent, breakpointEvent);
-			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
-					breakpointEvent);
+//			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
+//					breakpointEvent);
 		} catch (Throwable exception) {
 			logError("Breakpoint handler error", exception);
 		}
 
 		if (DebuggerContext.context().isRunning()) {
-			targetApplicationRepresentation
-					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
-					breakpointEvent);
-			updateUI(breakpointEvent);
+//			targetApplicationRepresentation
+//					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+//			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
+//					breakpointEvent);
+//			updateUI(breakpointEvent);
+		}
+			}
 		}
 	}
 
@@ -219,8 +230,8 @@ public class DebugSessionImpl implements DebugSession {
 		} catch (Exception exception) {
 			SimpleDebuggerLogger.error(exception.getMessage(), exception);
 		} finally {
-			targetApplicationRepresentation
-					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+//			targetApplicationRepresentation
+//					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
 		}
 	}
 
@@ -228,12 +239,15 @@ public class DebugSessionImpl implements DebugSession {
 		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
 				|| DebuggerContext.context().isInspectionSeanceActive())
 			return;
-		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-				.filter(v -> v.gettypeOrReturnType().equals(innerElementRepresentationDTO.getFullQualifiedName()))
+		 Map<Tag, UniversalElementRepresentation> qq = targetApplicationRepresentation.getTargetApplicationSnapshot();
+		System.out.println(qq);
+		targetApplicationRepresentation.getTargetApplicationSnapshot().keySet().stream()
+				.filter(v -> v.getUniqueId().equals(innerElementRepresentationDTO.getTag().getUniqueId()))
 				.findAny() // <- получаем Optional<UniversalElementRepresentation>
-				.ifPresent(topLevelElement -> {
+				.ifPresent(topLevelElementId -> {
 					System.out.println("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
 					try {
+						UniversalElementRepresentation topLevelElement = targetApplicationRepresentation.getTargetApplicationSnapshot().get(topLevelElementId);
 						simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
 								SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
 						simpleDebugEventCollector.collectDebugEvent(
@@ -323,9 +337,10 @@ public class DebugSessionImpl implements DebugSession {
 			return false;
 		Location location = breakpointEvent.location();
 		ReferenceType referenceType = location.declaringType();
+		if (Objects.isNull(referenceType)) return false;
 		AtomicReference<UniversalElementRepresentation> anchorElementReference = new AtomicReference<UniversalElementRepresentation>();
 		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-				.filter(v -> v.getReferenceType().equals(referenceType)).findAny()
+				.filter(v -> Objects.equals(v.getReferenceType(), referenceType)).findAny()
 				.ifPresent(v -> anchorElementReference.set(v));
 		if (Objects.isNull(anchorElementReference.get()))
 			return false;
