@@ -29,12 +29,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
@@ -116,8 +116,10 @@ public class DebugSessionImpl implements DebugSession {
 					handleVmDisconnected();
 					return;
 				}
-				targetApplicationRepresentation.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-				targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+				targetApplicationRepresentation
+						.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+				targetApplicationRepresentation
+						.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 				updateUI(breakpointEvent);
 
 				while (DebuggerContext.context().isDebugSessionActive()) {
@@ -157,18 +159,22 @@ public class DebugSessionImpl implements DebugSession {
 		}
 
 		try {
-			targetApplicationRepresentation.takeSnapshotOfTargetApplication(
-					targetVirtualMachineRepresentation.getVirtualMachine());
-			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+			targetApplicationRepresentation
+					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
+					breakpointEvent);
 			handleSingleUiEvent(uiEvent, breakpointEvent);
-			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
+					breakpointEvent);
 		} catch (Throwable exception) {
 			logError("Breakpoint handler error", exception);
 		}
 
 		if (DebuggerContext.context().isRunning()) {
-			targetApplicationRepresentation.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+			targetApplicationRepresentation
+					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
+					breakpointEvent);
 			updateUI(breakpointEvent);
 		}
 	}
@@ -211,8 +217,8 @@ public class DebugSessionImpl implements DebugSession {
 		} catch (Exception exception) {
 			SimpleDebuggerLogger.error(exception.getMessage(), exception);
 		} finally {
-			targetApplicationRepresentation.takeSnapshotOfTargetApplication(
-					targetVirtualMachineRepresentation.getVirtualMachine());
+			targetApplicationRepresentation
+					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
 		}
 	}
 
@@ -221,24 +227,23 @@ public class DebugSessionImpl implements DebugSession {
 				|| DebuggerContext.context().isInspectionSeanceActive())
 			return;
 		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-	    .filter(v -> v.getFullQualifiedName().equals(innerElementRepresentationDTO.getFullQualifiedName()))
-	    .findAny() // <- получаем Optional<UniversalElementRepresentation>
-	    .ifPresent(topLevelElement -> {
-	    	System.out.println("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
-	        try {
-	            simpleDebugEventCollector.collectDebugEvent(
-	                new DebugEvent<Boolean>(
-	                    SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-	            simpleDebugEventCollector.collectDebugEvent(
-	                new DebugEvent<Boolean>(SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW, true));
+				.filter(v -> v.getFullQualifiedName().equals(innerElementRepresentationDTO.getFullQualifiedName()))
+				.findAny() // <- получаем Optional<UniversalElementRepresentation>
+				.ifPresent(topLevelElement -> {
+					System.out.println("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
+					try {
+						simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
+								SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
+						simpleDebugEventCollector.collectDebugEvent(
+								new DebugEvent<Boolean>(SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW, true));
 
-	            InspectionSeance inspectionSession = new InspectionSeanceImpl(
-	                topLevelElement, targetApplicationRepresentation);
-	            // ...
-	        } catch (Exception e) {
-	            e.printStackTrace();
-	        }
-	    });
+						InspectionSeance inspectionSession = new InspectionSeanceImpl(topLevelElement,
+								targetApplicationRepresentation);
+						// ...
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				});
 
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
@@ -318,21 +323,26 @@ public class DebugSessionImpl implements DebugSession {
 		ReferenceType referenceType = location.declaringType();
 		AtomicReference<UniversalElementRepresentation> anchorElementReference = new AtomicReference<UniversalElementRepresentation>();
 		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-				.filter (v -> v.getReferenceType().equals(referenceType)).findAny()
+				.filter(v -> v.getReferenceType().equals(referenceType)).findAny()
 				.ifPresent(v -> anchorElementReference.set(v));
 		if (Objects.isNull(anchorElementReference.get()))
 			return false;
-		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(anchorElementReference.get(), location);
 		ThreadReference thread = breakpointEvent.thread();
-		debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(thread));
-		 Set<UniversalElementRepresentation> qq = deriveLocalVariables(location);
-		 System.out.println(qq);
-		 Set<InnerElementRepresentationDTO> ee = new HashSet<InnerElementRepresentationDTO>();
-		 for (UniversalElementRepresentation q : qq) {
-			InnerElementRepresentationDTO ww = DebugWindowDataDTO.toInnerRepresentation(q);
+		Set<UniversalElementRepresentation> qq = deriveLocalVariables(location);
+		System.out.println(qq);
+		Set<InnerElementRepresentationDTO> ee = new HashSet<InnerElementRepresentationDTO>();
+		for (UniversalElementRepresentation q : qq) {
+			InnerElementRepresentationDTO ww = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(q);
 			ee.add(ww);
-		 }
-	    debugWindowDataDTO.getInnerElements().addAll(ee);
+		}
+		DebugWindowDataDTO debugWindowDataDTO = DebugWindowDataDTO.Factory
+				.fromUniversalElement(anchorElementReference.get(), location.lineNumber(), "[STUB]", ee, DebugUtils.compileStackInfo(thread));
+
+		// (anchorElementReference.get(), location);
+		
+		//debugWindowDataDTO.setStackCall(DebugUtils.compileStackInfo(thread));
+		
+		//debugWindowDataDTO.getInnerElements().addAll(ee);
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
 		simpleDebugEventCollector
@@ -355,34 +365,31 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private Set<UniversalElementRepresentation> deriveLocalVariables(Location location) {
-	    Method method = location.method();
-	    if (method == null)
-	        return Collections.emptySet();
-	    // 1. Найти representation класса
-	    Optional<UniversalElementRepresentation> classRepresentationOpt =
-	            targetApplicationRepresentation.getTargetApplicationSnapshot()
-	                    .values()
-	                    .stream()
-	                    .filter(e -> e.getReferenceType() != null
-	                            && e.getReferenceType().equals(method.declaringType()))
-	                    .findFirst();
-	    if (classRepresentationOpt.isEmpty())
-	        return Collections.emptySet();
-	    UniversalElementRepresentation classRepresentation = classRepresentationOpt.get();
-	    // 2. Найти representation метода внутри класса
-	    Optional<UniversalElementRepresentation> methodRepresentationOpt =
-	            classRepresentation.getInnerElements()
-	                    .stream()
-	                    .filter(e -> e.getElementType() == UniversalElementType.METHOD
-	                            && e.getElementName().startsWith(method.name()))
-	                    .findFirst();
-	    if (methodRepresentationOpt.isEmpty())
-	        return Collections.emptySet();
-	    UniversalElementRepresentation methodRepresentation = methodRepresentationOpt.get();
-	    // 3. Вернуть локальные переменные
-	    return new HashSet<>(methodRepresentation.getInnerElements());
+		Method method = location.method();
+		if (method == null)
+			return Collections.emptySet();
+		// 1. Найти representation класса
+		Optional<UniversalElementRepresentation> classRepresentationOpt = targetApplicationRepresentation
+				.getTargetApplicationSnapshot().values().stream()
+				.filter(e -> e.getReferenceType() != null && e.getReferenceType().equals(method.declaringType()))
+				.findFirst();
+		if (classRepresentationOpt.isEmpty())
+			return Collections.emptySet();
+		UniversalElementRepresentation classRepresentation = classRepresentationOpt.get();
+		// 2. Найти representation метода внутри класса
+		Optional<UniversalElementRepresentation> methodRepresentationOpt = classRepresentation.getInnerElements()
+				.stream().filter(e -> e.getElementType() == UniversalElementType.METHOD
+						&& e.getElementName().startsWith(method.name()))
+				.findFirst();
+		if (methodRepresentationOpt.isEmpty())
+			return Collections.emptySet();
+		UniversalElementRepresentation methodRepresentation = methodRepresentationOpt.get();
+		// 3. Вернуть локальные переменные
+		return new HashSet<>(methodRepresentation.getInnerElements());
 	}
-	private List<TopLevelElementRepresentationDTO> discardVoidMethods(List<TopLevelElementRepresentationDTO> targetElements) {
+
+	private List<TopLevelElementRepresentationDTO> discardVoidMethods(
+			List<TopLevelElementRepresentationDTO> targetElements) {
 		return targetElements;
 	}
 
