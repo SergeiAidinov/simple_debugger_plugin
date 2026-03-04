@@ -352,45 +352,70 @@ public class ClassMembersAtBreakpoint {
 	}
 
 	public List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
-		allElements.stream().forEach(e -> System.out.println(e));
-		Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>>();
-		Set<InnerElementRepresentationDTO> elementsToDelete = new HashSet<InnerElementRepresentationDTO>();
-		for (InnerElementRepresentationDTO element : allElements) {
-			if (Objects.isNull(element.getTag().getParentId())) {
-				tree.put(element, PairDTO.of(new ArrayList<InnerElementRepresentationDTO>(),
-						new ArrayList<InnerElementRepresentationDTO>()));
-				elementsToDelete.add(element);
-			}
-		}
-		for (InnerElementRepresentationDTO rootElement: tree.keySet()) {
-			for (InnerElementRepresentationDTO secondLevelElement : allElements) {
-				if (rootElement.getTag().getUniqueId().equals(secondLevelElement.getTag().getParentId())) {
-					tree.get(rootElement).getFirst().add(secondLevelElement);
-					elementsToDelete.add(secondLevelElement);
-				}
-			}
-		}
-		allElements.remove(elementsToDelete);
-		elementsToDelete.clear();
-		for (PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>> pair: tree.values()) {
-			for (InnerElementRepresentationDTO secondLevelElement : pair.getFirst()) {
-				for (InnerElementRepresentationDTO thiedLevelElement : allElements) {
-					if (secondLevelElement.getTag().getUniqueId().equals(thiedLevelElement.getTag().getParentId())) {
-						pair.getSecond().add(thiedLevelElement);
-						elementsToDelete.add(thiedLevelElement);
-					}
-				}
-			}
-		}
-		allElements.removeAll(elementsToDelete);
-		List<InnerElementRepresentationDTO> result = new ArrayList<InnerElementRepresentationDTO>();
-		for (Entry<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> triplet : tree.entrySet()) {
-			result.add(triplet.getKey());
-			result.addAll(triplet.getValue().getFirst().stream().sorted().peek(e -> e.setLevel(1)).toList());
-			result.addAll(triplet.getValue().getSecond().stream().sorted().peek(e -> e.setLevel(2)).toList());
-		}
-		if (!allElements.isEmpty()) result.addAll(allElements);
-		return result;
+	    allElements.forEach(System.out::println);
+
+	    Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<>();
+	    Set<InnerElementRepresentationDTO> elementsToDelete = new HashSet<>();
+
+	    // 1️⃣ root элементы
+	    for (InnerElementRepresentationDTO element : allElements) {
+	        if (element.getTag().getParentId() == null) {
+	            tree.put(element, PairDTO.of(new ArrayList<>(), new ArrayList<>()));
+	            elementsToDelete.add(element);
+	        }
+	    }
+
+	    // 2️⃣ второй уровень
+	    for (InnerElementRepresentationDTO rootElement : tree.keySet()) {
+	        for (InnerElementRepresentationDTO secondLevelElement : allElements) {
+	            if (rootElement.getTag().getUniqueId().equals(secondLevelElement.getTag().getParentId())) {
+	                tree.get(rootElement).getFirst().add(secondLevelElement);
+	                elementsToDelete.add(secondLevelElement);
+	            }
+	        }
+	    }
+	    allElements.removeAll(elementsToDelete);
+	    elementsToDelete.clear();
+
+	    // 3️⃣ третий уровень
+	    for (PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>> pair : tree.values()) {
+	        for (InnerElementRepresentationDTO secondLevelElement : pair.getFirst()) {
+	            for (InnerElementRepresentationDTO thirdLevelElement : allElements) {
+	                if (secondLevelElement.getTag().getUniqueId().equals(thirdLevelElement.getTag().getParentId())) {
+	                    pair.getSecond().add(thirdLevelElement);
+	                    elementsToDelete.add(thirdLevelElement);
+	                }
+	            }
+	        }
+	    }
+	    allElements.removeAll(elementsToDelete);
+
+	    // 4️⃣ сборка результата
+	    List<InnerElementRepresentationDTO> result = new ArrayList<>();
+	    for (Entry<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> triplet : tree.entrySet()) {
+	        triplet.getKey().setLevel(0);
+	        result.add(triplet.getKey());
+
+	        result.addAll(triplet.getValue().getFirst().stream()
+	                             .sorted()
+	                             .peek(e -> e.setLevel(1))
+	                             .toList());
+
+	        result.addAll(triplet.getValue().getSecond().stream()
+	                             .sorted()
+	                             .peek(e -> e.setLevel(2))
+	                             .toList());
+	    }
+
+	    // 5️⃣ оставшиеся элементы, если есть
+	    if (!allElements.isEmpty()) {
+	        result.addAll(allElements.stream()
+	                                 .sorted()
+	                                 .peek(e -> e.setLevel(0))
+	                                 .toList());
+	    }
+
+	    return result;
 	}
 
 	private void setupColumnClickListeners() {
