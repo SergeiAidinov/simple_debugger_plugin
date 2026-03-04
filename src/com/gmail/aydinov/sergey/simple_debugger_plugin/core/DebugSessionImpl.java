@@ -117,7 +117,7 @@ public class DebugSessionImpl implements DebugSession {
 					return;
 				}
 				targetApplicationRepresentation.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-				targetApplicationRepresentation.addLocalVaraibles(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+				targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 				updateUI(breakpointEvent);
 
 				while (DebuggerContext.context().isDebugSessionActive()) {
@@ -159,16 +159,16 @@ public class DebugSessionImpl implements DebugSession {
 		try {
 			targetApplicationRepresentation.takeSnapshotOfTargetApplication(
 					targetVirtualMachineRepresentation.getVirtualMachine());
-			targetApplicationRepresentation.addLocalVaraibles(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 			handleSingleUiEvent(uiEvent, breakpointEvent);
-			targetApplicationRepresentation.addLocalVaraibles(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 		} catch (Throwable exception) {
 			logError("Breakpoint handler error", exception);
 		}
 
 		if (DebuggerContext.context().isRunning()) {
 			targetApplicationRepresentation.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-			targetApplicationRepresentation.addLocalVaraibles(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+			targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 			updateUI(breakpointEvent);
 		}
 	}
