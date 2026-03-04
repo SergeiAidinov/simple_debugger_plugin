@@ -67,7 +67,7 @@ public class UniversalElementRepresentation {
     private final UniversalElementType elementType;
     private CurrentRole currentRole;
     private final String value;
-    private final Set<UniversalElementRepresentation> innerElements = new HashSet<>();
+   // private final Set<UniversalElementRepresentation> innerElements = new HashSet<>();
     private final boolean isStatic;
     private final ValueCategory valueCategory;
     private final String fullQualifiedName;
@@ -99,7 +99,7 @@ public class UniversalElementRepresentation {
     public CurrentRole getCurrentRole() { return currentRole; }
     public void setCurrentRole(CurrentRole currentRole) { this.currentRole = currentRole; }
     public String getValue() { return value; }
-    public Set<UniversalElementRepresentation> getInnerElements() { return innerElements; }
+   // public Set<UniversalElementRepresentation> getInnerElements() { return innerElements; }
     public boolean isStatic() { return isStatic; }
     public ValueCategory getValueCategory() { return valueCategory; }
     public String getFullQualifiedName() { return fullQualifiedName; }
@@ -114,14 +114,14 @@ public class UniversalElementRepresentation {
                elementType == other.elementType &&
                currentRole == other.currentRole &&
                Objects.equals(value, other.value) &&
-               Objects.equals(innerElements, other.innerElements) &&
+            //   Objects.equals(innerElements, other.innerElements) &&
                isStatic == other.isStatic &&
                valueCategory == other.valueCategory &&
                Objects.equals(fullQualifiedName, other.fullQualifiedName);
     }
 
     public int hashCodeByBusinessLogic() {
-        return Objects.hash(elementName, additionalInfo, elementType, currentRole, value, innerElements,
+        return Objects.hash(elementName, additionalInfo, elementType, currentRole, value, /*innerElements,*/
                             isStatic, valueCategory, fullQualifiedName);
     }
 
@@ -166,7 +166,7 @@ public class UniversalElementRepresentation {
                     tag, referenceType, elementName, additionalInfo, elementType, currentRole,
                     value, isStatic, valueCategory, fullQualifiedName
             );
-            element.getInnerElements().addAll(innerElements);
+          //  element.getInnerElements().addAll(innerElements);
             return element;
         }
     }

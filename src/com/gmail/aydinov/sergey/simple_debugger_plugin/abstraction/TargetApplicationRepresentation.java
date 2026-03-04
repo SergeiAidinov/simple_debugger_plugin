@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +85,7 @@ public class TargetApplicationRepresentation {
         List<ReferenceType> targetClasses = filterTargetClasses(loadedReferenceTypes);
         SimpleDebuggerLogger.info("Loaded " + targetClasses.size() + " classes.");
         Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
+        Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> topLevelElements = new HashMap<UniversalElementRepresentation.Tag, UniversalElementRepresentation>();
         for (ReferenceType referenceType : definedByLoaders) {
             UniversalElementType elementType = determineElementType(referenceType);
             if (elementType == null)
@@ -97,10 +99,11 @@ public class TargetApplicationRepresentation {
                     .currentRole(CurrentRole.OUTER)
                     .fullQualifiedName(fqName)
                     .build();
-            targetApplicationSnapshot.put(topLevelElement.getTag(), topLevelElement);
+            topLevelElements.put(topLevelElement.getTag(), topLevelElement);
+           
         }
-
-        for (UniversalElementRepresentation topLevelElement : targetApplicationSnapshot.values()) {
+        targetApplicationSnapshot.putAll(topLevelElements);
+        for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
             populateInnerElements(topLevelElement, topLevelElement.getReferenceType());
         }
 
@@ -118,12 +121,13 @@ public class TargetApplicationRepresentation {
         Location location = breakpointEvent.location();
         Method method = location.method();
         if (method == null) return false;
-        UniversalElementRepresentation methodRepresentation = targetApplicationSnapshot.values().stream()
-                .filter(c -> c.getReferenceType() != null && c.getReferenceType().equals(method.declaringType()))
-                .flatMap(c -> c.getInnerElements().stream())
-                .filter(e -> e.getElementType() == UniversalElementType.METHOD && e.getElementName().startsWith(method.name()))
-                .findFirst().orElse(null);
-        if (methodRepresentation == null) return false;
+//        UniversalElementRepresentation methodRepresentation = targetApplicationSnapshot.values().stream()
+//                .filter(c -> c.getReferenceType() != null && c.getReferenceType().equals(method.declaringType()))
+//                .flatMap(c -> c.getInnerElements().stream())
+//                .filter(e -> e.getElementType() == UniversalElementType.METHOD && e.getElementName().startsWith(method.name()))
+//                .findFirst().orElse(null);
+//        if (methodRepresentation == null) return false;
+        
         Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
         List<UniversalElementRepresentation> localVariables = new ArrayList<>();
         for (Map.Entry<LocalVariable, Value> entry : locals.entrySet()) {
@@ -142,10 +146,10 @@ public class TargetApplicationRepresentation {
                             ? (obj.referenceType() != null ? obj.referenceType().name() : "java.lang.Object")
                             : var.typeName())
                     .build();
-            localVariables.add(variable);
+            targetApplicationSnapshot.put(variable.getTag(), variable);
         }
-        methodRepresentation.getInnerElements().clear();
-        methodRepresentation.getInnerElements().addAll(localVariables);
+//        methodRepresentation.getInnerElements().clear();
+//        methodRepresentation.getInnerElements().addAll(localVariables);
         return true;
     }
 
@@ -182,7 +186,8 @@ public class TargetApplicationRepresentation {
                         .fullQualifiedName(field.typeName())
                         .build();
 
-                parentElement.getInnerElements().add(fieldElement);
+              //  parentElement.getInnerElements().add(fieldElement);
+                targetApplicationSnapshot.put(fieldElement.getTag(), fieldElement);
             } catch (Exception ignored) {}
         }
 
@@ -203,7 +208,8 @@ public class TargetApplicationRepresentation {
                         .value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
                         .fullQualifiedName(method.name())
                         .build();
-                parentElement.getInnerElements().add(methodElement);
+                //parentElement.getInnerElements().add(methodElement);
+                targetApplicationSnapshot.put(methodElement.getTag(), methodElement);
             } catch (Exception ignored) {}
         }
     }

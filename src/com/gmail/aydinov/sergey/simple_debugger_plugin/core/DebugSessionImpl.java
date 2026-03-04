@@ -330,8 +330,8 @@ public class DebugSessionImpl implements DebugSession {
 		if (Objects.isNull(anchorElementReference.get()))
 			return false;
 		ThreadReference thread = breakpointEvent.thread();
-		Set<UniversalElementRepresentation> qq = deriveLocalVariables(location);
-		System.out.println(qq);
+		// Set<UniversalElementRepresentation> qq = deriveLocalVariables(location);
+		//System.out.println(qq);
 		 Map<Tag, UniversalElementRepresentation> rr = targetApplicationRepresentation.getTargetApplicationSnapshot();
 		Set<InnerElementRepresentationDTO> ee = new HashSet<InnerElementRepresentationDTO>();
 		for (UniversalElementRepresentation r : rr.values()) {
@@ -339,10 +339,11 @@ public class DebugSessionImpl implements DebugSession {
 			ee.add(ww);
 		}
 		
-		for (UniversalElementRepresentation q : qq) {
-			InnerElementRepresentationDTO ww = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(q);
-			ee.add(ww);
-		}
+//		for (UniversalElementRepresentation q : qq) {
+//			InnerElementRepresentationDTO ww = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(q);
+//			ee.add(ww);
+//		}
+		System.out.println(ee);
 		DebugWindowDataDTO debugWindowDataDTO = DebugWindowDataDTO.Factory
 				.fromUniversalElement(anchorElementReference.get(), location.lineNumber(), location.method().name() + "()", ee, DebugUtils.compileStackInfo(thread));
 
@@ -372,29 +373,29 @@ public class DebugSessionImpl implements DebugSession {
 		return true;
 	}
 
-	private Set<UniversalElementRepresentation> deriveLocalVariables(Location location) {
-		Method method = location.method();
-		if (method == null)
-			return Collections.emptySet();
-		// 1. Найти representation класса
-		Optional<UniversalElementRepresentation> classRepresentationOpt = targetApplicationRepresentation
-				.getTargetApplicationSnapshot().values().stream()
-				.filter(e -> e.getReferenceType() != null && e.getReferenceType().equals(method.declaringType()))
-				.findFirst();
-		if (classRepresentationOpt.isEmpty())
-			return Collections.emptySet();
-		UniversalElementRepresentation classRepresentation = classRepresentationOpt.get();
-		// 2. Найти representation метода внутри класса
-		Optional<UniversalElementRepresentation> methodRepresentationOpt = classRepresentation.getInnerElements()
-				.stream().filter(e -> e.getElementType() == UniversalElementType.METHOD
-						&& e.getElementName().startsWith(method.name()))
-				.findFirst();
-		if (methodRepresentationOpt.isEmpty())
-			return Collections.emptySet();
-		UniversalElementRepresentation methodRepresentation = methodRepresentationOpt.get();
-		// 3. Вернуть локальные переменные
-		return new HashSet<>(methodRepresentation.getInnerElements());
-	}
+//	private Set<UniversalElementRepresentation> deriveLocalVariables(Location location) {
+//		Method method = location.method();
+//		if (method == null)
+//			return Collections.emptySet();
+//		// 1. Найти representation класса
+//		Optional<UniversalElementRepresentation> classRepresentationOpt = targetApplicationRepresentation
+//				.getTargetApplicationSnapshot().values().stream()
+//				.filter(e -> e.getReferenceType() != null && e.getReferenceType().equals(method.declaringType()))
+//				.findFirst();
+//		if (classRepresentationOpt.isEmpty())
+//			return Collections.emptySet();
+//		UniversalElementRepresentation classRepresentation = classRepresentationOpt.get();
+//		// 2. Найти representation метода внутри класса
+//		Optional<UniversalElementRepresentation> methodRepresentationOpt = classRepresentation.getInnerElements()
+//				.stream().filter(e -> e.getElementType() == UniversalElementType.METHOD
+//						&& e.getElementName().startsWith(method.name()))
+//				.findFirst();
+//		if (methodRepresentationOpt.isEmpty())
+//			return Collections.emptySet();
+//		UniversalElementRepresentation methodRepresentation = methodRepresentationOpt.get();
+//		// 3. Вернуть локальные переменные
+//		return new HashSet<>(methodRepresentation.getInnerElements());
+//	}
 
 	private List<TopLevelElementRepresentationDTO> discardVoidMethods(
 			List<TopLevelElementRepresentationDTO> targetElements) {
