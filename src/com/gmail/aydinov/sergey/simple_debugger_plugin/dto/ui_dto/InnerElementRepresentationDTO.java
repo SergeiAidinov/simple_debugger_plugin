@@ -11,7 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
  * Представление внутреннего элемента (поле, метод, локальная переменная) для UI.
  * Адаптировано под новый Tag с parentId и uniqueId.
  */
-public class InnerElementRepresentationDTO {
+public class InnerElementRepresentationDTO implements Comparable<InnerElementRepresentationDTO>{
 
     private final Tag tag;               // <- объект Tag, содержит uniqueId и parentId
     private final String elementName;
@@ -84,6 +84,33 @@ public class InnerElementRepresentationDTO {
 				&& isStatic == other.isStatic && Objects.equals(value, other.value)
 				&& valueCategory == other.valueCategory;
 	}
+	
+	 @Override
+	    public int compareTo(InnerElementRepresentationDTO other) {
+	        if (other == null) {
+	            return 1;
+	        }
+
+	        // 1️⃣ По приоритету типа (через ordinal)
+	        int typeCompare = Integer.compare(
+	                this.elementType.ordinal(),
+	                other.elementType.ordinal()
+	        );
+
+	        if (typeCompare != 0) {
+	            return typeCompare;
+	        }
+
+	        // 2️⃣ По имени (без учёта регистра)
+	        int nameCompare = this.elementName.compareToIgnoreCase(other.elementName);
+	        if (nameCompare != 0) {
+	            return nameCompare;
+	        }
+
+	        // 3️⃣ На всякий случай стабилизируем сортировку
+	        return this.fullQualifiedName.compareToIgnoreCase(other.fullQualifiedName);
+	    }
+
 
 	/**
      * Фабрика для InnerElementRepresentationDTO.
