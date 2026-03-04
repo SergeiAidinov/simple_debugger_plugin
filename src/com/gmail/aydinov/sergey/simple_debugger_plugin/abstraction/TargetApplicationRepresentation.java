@@ -80,19 +80,14 @@ public class TargetApplicationRepresentation {
     public void takeSnapshotOfTargetApplication(VirtualMachine virtualMachine) {
         targetApplicationSnapshot.clear();
         SimpleDebuggerLogger.info("Waiting for target classes to load...");
-
         List<ReferenceType> loadedReferenceTypes = waitUntilClassesAreLoaded(virtualMachine);
         List<ReferenceType> targetClasses = filterTargetClasses(loadedReferenceTypes);
-
         SimpleDebuggerLogger.info("Loaded " + targetClasses.size() + " classes.");
-
         Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
-
         for (ReferenceType referenceType : definedByLoaders) {
             UniversalElementType elementType = determineElementType(referenceType);
             if (elementType == null)
                 continue;
-
             String fqName = referenceType.name();
             UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
                     .referenceType(referenceType)
@@ -102,7 +97,6 @@ public class TargetApplicationRepresentation {
                     .currentRole(CurrentRole.OUTER)
                     .fullQualifiedName(fqName)
                     .build();
-
             targetApplicationSnapshot.put(topLevelElement.getTag(), topLevelElement);
         }
 
@@ -121,27 +115,21 @@ public class TargetApplicationRepresentation {
             SimpleDebuggerLogger.error(e.getMessage(), e);
             return false;
         }
-
         Location location = breakpointEvent.location();
         Method method = location.method();
         if (method == null) return false;
-
         UniversalElementRepresentation methodRepresentation = targetApplicationSnapshot.values().stream()
                 .filter(c -> c.getReferenceType() != null && c.getReferenceType().equals(method.declaringType()))
                 .flatMap(c -> c.getInnerElements().stream())
                 .filter(e -> e.getElementType() == UniversalElementType.METHOD && e.getElementName().startsWith(method.name()))
                 .findFirst().orElse(null);
-
         if (methodRepresentation == null) return false;
-
         Map<LocalVariable, Value> locals = DebugUtils.compileLocalVariables(frame);
         List<UniversalElementRepresentation> localVariables = new ArrayList<>();
-
         for (Map.Entry<LocalVariable, Value> entry : locals.entrySet()) {
             LocalVariable var = entry.getKey();
             Value value = entry.getValue();
             String valueText = value == null ? "null" : value.toString();
-
             UniversalElementRepresentation variable = UniversalElementRepresentation.builder()
                     .elementName(var.name())
                     .additionalInfo(valueText)
@@ -154,19 +142,15 @@ public class TargetApplicationRepresentation {
                             ? (obj.referenceType() != null ? obj.referenceType().name() : "java.lang.Object")
                             : var.typeName())
                     .build();
-
             localVariables.add(variable);
         }
-
         methodRepresentation.getInnerElements().clear();
         methodRepresentation.getInnerElements().addAll(localVariables);
-
         return true;
     }
 
     private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
         if (parentElement == null || refType == null) return;
-
         ObjectReference instance = null;
         if (refType instanceof ClassType classType) {
             try {
@@ -174,7 +158,6 @@ public class TargetApplicationRepresentation {
                 if (!instances.isEmpty()) instance = instances.get(0);
             } catch (Exception ignored) {}
         }
-
         for (Field field : refType.allFields()) {
             try {
                 if (field.isSynthetic()) continue;
@@ -182,13 +165,11 @@ public class TargetApplicationRepresentation {
                 UniversalElementType elementType = isStatic
                         ? UniversalElementType.STATIC_FIELD
                         : UniversalElementType.NON_STATIC_FIELD;
-
                 ValueCategory category = determineValueCategory(field.typeName());
                 String value = field.name();
                 if (category == ValueCategory.PRIMITIVE || category == ValueCategory.STRING) {
                     value = extractPrimitiveOrStringAsText(field, instance);
                 }
-
                 UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
                         .referenceType(refType)
                         .elementName(field.name())
@@ -209,9 +190,7 @@ public class TargetApplicationRepresentation {
             try {
                 if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
                     continue;
-
                 if (isObjectMethodUnoverridden(refType, method)) continue;
-
                 String methodArgs = method.argumentTypes().stream().map(Type::name).collect(Collectors.joining(", "));
                 UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
                         .referenceType(refType)
@@ -224,7 +203,6 @@ public class TargetApplicationRepresentation {
                         .value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
                         .fullQualifiedName(method.name())
                         .build();
-
                 parentElement.getInnerElements().add(methodElement);
             } catch (Exception ignored) {}
         }
@@ -316,7 +294,6 @@ public class TargetApplicationRepresentation {
 		if (Objects.isNull(virtualMachine)) {
 			return;
 		}
-
 		try {
 			virtualMachine.eventRequestManager().deleteAllBreakpoints();
 
@@ -328,7 +305,6 @@ public class TargetApplicationRepresentation {
 				} catch (Exception ignored) {
 				}
 			});
-
 			virtualMachine.dispose();
 
 		} catch (VMDisconnectedException ignored) {
@@ -408,5 +384,4 @@ public class TargetApplicationRepresentation {
 		}
 		return null;
 	}
-
 }
