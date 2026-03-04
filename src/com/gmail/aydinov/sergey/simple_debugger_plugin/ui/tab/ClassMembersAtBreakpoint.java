@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
+import java.security.Identity;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -80,9 +81,11 @@ public class ClassMembersAtBreakpoint {
 	private void setupColumns() {
 
 		// 0: Name
+		char arrow = '⮡';
 		createColumn(0, "Name", 150, e -> {
 			InnerElementRepresentationDTO dto = (InnerElementRepresentationDTO) e;
 			String indent = "   ".repeat(dto.getLevel()); // 3 пробела на уровень
+			indent = indent + arrow;
 			return indent + dto.getElementName();
 		}, e -> null);
 
