@@ -395,19 +395,19 @@ public class DebugUtils {
 	/**
 	 * Determines if the DTO can be inspected (non-primitive, non-String, non-null)
 	 */
-	public static boolean isInspectable(DebugWindowDataDTO dto) {
-		if (dto == null || dto.getElementType() == null /* || dto.getValue() == null */)
-			return false;
-
-		switch (dto.getElementType().toString()) {
-		case "int", "long", "double", "float", "boolean", "byte", "short", "char":
-			return false;
-		}
-		if ("java.lang.String".equals(dto.getElementType()))
-			return false;
-
-		return true;
-	}
+//	public static boolean isInspectable(DebugWindowDataDTO dto) {
+//		if (dto == null || dto.getElementType() == null /* || dto.getValue() == null */)
+//			return false;
+//
+//		switch (dto.getElementType().toString()) {
+//		case "int", "long", "double", "float", "boolean", "byte", "short", "char":
+//			return false;
+//		}
+//		if ("java.lang.String".equals(dto.getElementType()))
+//			return false;
+//
+//		return true;
+//	}
 
 	public static boolean isStandardJavaCollection(Object object) {
 		if (Objects.isNull(object))
