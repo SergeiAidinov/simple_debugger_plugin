@@ -33,6 +33,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
+import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
@@ -156,8 +157,6 @@ public class TargetApplicationRepresentation {
                     .build();
             targetApplicationSnapshot.put(variable.getTag(), variable);
         }
-//        methodRepresentation.getInnerElements().clear();
-//        methodRepresentation.getInnerElements().addAll(localVariables);
         return true;
     }
 
