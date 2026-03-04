@@ -14,7 +14,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.DebugWindowDataDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -184,7 +184,7 @@ public class DebugWindow {
 				STOP_INFO + debugWindowDataDTO.getElementName() + "." + debugWindowDataDTO.getMethodName() + " line: " + debugWindowDataDTO.getLineNumber());
 		resumeButton.setEnabled(true);
 		variablesFieldsTabContent.showInnerElements(debugWindowDataDTO);
-		stackTabContent.updateStack(debugWindowDataDTO.getStackCall());
+		stackTabContent.updateStack(debugWindowDataDTO.getCompileStackInfo());
 	}
 
 	protected void appendConsoleLine(String line) {
