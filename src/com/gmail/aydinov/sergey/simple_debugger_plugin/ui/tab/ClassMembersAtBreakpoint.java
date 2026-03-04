@@ -2,9 +2,12 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -77,7 +80,8 @@ public class ClassMembersAtBreakpoint {
 		createColumn(0, "Name", 150, InnerElementRepresentationDTO::getElementName, e -> null);
 
 		// 1: Type / Return Type
-		createColumn(1, "Type / Return Type", 200, InnerElementRepresentationDTO::getFullQualifiedName, this::getTypeIcon);
+		createColumn(1, "Type / Return Type", 200, InnerElementRepresentationDTO::getFullQualifiedName,
+				this::getTypeIcon);
 
 		// 2: Value / Info
 		TableViewerColumn valueColumn = createColumn(2, "Value / Info", 300, dto -> {
@@ -184,96 +188,100 @@ public class ClassMembersAtBreakpoint {
 
 	// Пример исправления опечатки в getValueCategoty()
 	private Image getIcon(InnerElementRepresentationDTO dto) {
-	    if (Objects.isNull(dto)) return null;
+		if (Objects.isNull(dto))
+			return null;
 
-	    ValueCategory category = dto.getValueCategory(); // <=== исправлено
-	    if (Objects.isNull(category)) return null;
+		ValueCategory category = dto.getValueCategory(); // <=== исправлено
+		if (Objects.isNull(category))
+			return null;
 
-	    if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
-	        return DebugWindowsManager.instance().icons.get("lens").getFirst();
-	    }
-	    if (category == ValueCategory.USER_OBJECT) {
-	        return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
-	    }
-	    return null;
+		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
+			return DebugWindowsManager.instance().icons.get("lens").getFirst();
+		}
+		if (category == ValueCategory.USER_OBJECT) {
+			return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
+		}
+		return null;
 	}
 
 	private boolean isEditable(InnerElementRepresentationDTO dto) {
-	    if (dto == null) return false;
+		if (dto == null)
+			return false;
 
-	    // Разрешаем редактировать только стандартные типы Java (примитивы + String)
-	    // Используем полное имя элемента как идентификатор типа
-	    return JAVA_STANDARD_TYPES.contains(dto.getFullQualifiedName());
+		// Разрешаем редактировать только стандартные типы Java (примитивы + String)
+		// Используем полное имя элемента как идентификатор типа
+		return JAVA_STANDARD_TYPES.contains(dto.getFullQualifiedName());
 	}
 
 	private class ValueEditingSupport extends EditingSupport {
 
-	    private final TextCellEditor editor;
+		private final TextCellEditor editor;
 
-	    ValueEditingSupport(TableViewer viewer) {
-	        super(viewer);
-	        this.editor = new TextCellEditor(viewer.getTable());
-	    }
+		ValueEditingSupport(TableViewer viewer) {
+			super(viewer);
+			this.editor = new TextCellEditor(viewer.getTable());
+		}
 
-	    @Override
-	    protected CellEditor getCellEditor(Object element) {
-	        return editor;
-	    }
+		@Override
+		protected CellEditor getCellEditor(Object element) {
+			return editor;
+		}
 
-	    @Override
-	    protected boolean canEdit(Object element) {
-	        return element instanceof InnerElementRepresentationDTO dto && isEditable(dto);
-	    }
+		@Override
+		protected boolean canEdit(Object element) {
+			return element instanceof InnerElementRepresentationDTO dto && isEditable(dto);
+		}
 
-	    @Override
-	    protected Object getValue(Object element) {
-	        return ((InnerElementRepresentationDTO) element).getValue();
-	    }
+		@Override
+		protected Object getValue(Object element) {
+			return ((InnerElementRepresentationDTO) element).getValue();
+		}
 
-	    @Override
-	    protected void setValue(Object element, Object value) {
-	        if (!(element instanceof InnerElementRepresentationDTO dto))
-	            return;
+		@Override
+		protected void setValue(Object element, Object value) {
+			if (!(element instanceof InnerElementRepresentationDTO dto))
+				return;
 
-	        if (value == null)
-	            return;
+			if (value == null)
+				return;
 
-	        String newValue = value.toString();
+			String newValue = value.toString();
 
-	        // Попробуем преобразовать строку в нужный тип, если это примитив
-	        String type = dto.getAdditionalInfo();
-	        Object convertedValue = convertToType(newValue, type);
+			// Попробуем преобразовать строку в нужный тип, если это примитив
+			String type = dto.getAdditionalInfo();
+			Object convertedValue = convertToType(newValue, type);
 
-	        switch (dto.getElementType()) {
-	            case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, convertedValue.toString());
-	            case VARIABLE -> updateVariableValue(dto, convertedValue.toString());
-	            default -> { }
-	        }
+			switch (dto.getElementType()) {
+			case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, convertedValue.toString());
+			case VARIABLE -> updateVariableValue(dto, convertedValue.toString());
+			default -> {
+			}
+			}
 
-	        viewer.update(dto, null);
-	    }
+			viewer.update(dto, null);
+		}
 	}
 
 	/**
 	 * Преобразование строки в нужный примитив / объект
 	 */
 	private Object convertToType(String value, String type) {
-	    try {
-	        return switch (type) {
-	            case "int", "java.lang.Integer" -> Integer.parseInt(value);
-	            case "long", "java.lang.Long" -> Long.parseLong(value);
-	            case "short", "java.lang.Short" -> Short.parseShort(value);
-	            case "byte", "java.lang.Byte" -> Byte.parseByte(value);
-	            case "float", "java.lang.Float" -> Float.parseFloat(value);
-	            case "double", "java.lang.Double" -> Double.parseDouble(value);
-	            case "boolean", "java.lang.Boolean" -> Boolean.parseBoolean(value);
-	            case "char", "java.lang.Character" -> value.length() > 0 ? value.charAt(0) : '\0';
-	            case "java.lang.String" -> value;
-	            default -> value; // fallback для неизвестных типов
-	        };
-	    } catch (Exception e) {
-	        return value; // если не удалось преобразовать, оставляем как строку
-	    }
+		try {
+			return switch (type) {
+			case "int", "java.lang.Integer" -> Integer.parseInt(value);
+			case "long", "java.lang.Long" -> Long.parseLong(value);
+			case "short", "java.lang.Short" -> Short.parseShort(value);
+			case "byte", "java.lang.Byte" -> Byte.parseByte(value);
+			case "float", "java.lang.Float" -> Float.parseFloat(value);
+			case "double", "java.lang.Double" -> Double.parseDouble(value);
+			case "boolean", "java.lang.Boolean" -> Boolean.parseBoolean(value);
+			case "char", "java.lang.Character" -> value.length() > 0 ? value.charAt(0) : '\0';
+			case "java.lang.String" -> value;
+			default -> value; // fallback для неизвестных типов
+			};
+		} catch (Exception e) {
+			return value; // если не удалось преобразовать, оставляем как строку
+		}
 	}
 
 	private void updateFieldValue(InnerElementRepresentationDTO dto, String newValue) {
@@ -318,43 +326,123 @@ public class ClassMembersAtBreakpoint {
 	// =========================================================
 
 	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
-	    if (dto == null || dto.getInnerElements().isEmpty()) return;
+		if (dto == null || dto.getInnerElements().isEmpty())
+			return;
 
-	    // Копируем и сортируем элементы
-	    List<InnerElementRepresentationDTO> sorted = new ArrayList<>(dto.getInnerElements());
-	    sorted.sort(Comparator
-	            .comparingInt((InnerElementRepresentationDTO e) -> e.getElementType().ordinal())
-	            .thenComparing(InnerElementRepresentationDTO::getElementName));
+		// Копируем и сортируем элементы
+		List<InnerElementRepresentationDTO> sorted = buildOrderedList(dto.getInnerElements());
+//	    sorted.sort(Comparator
+//	            .comparingInt((InnerElementRepresentationDTO e) -> e.getElementType().ordinal())
+//	            .thenComparing(InnerElementRepresentationDTO::getElementName));
 
-	    // Обновляем TableViewer в UI-потоке
-	    root.getDisplay().asyncExec(() -> {
-	        if (!viewer.getTable().isDisposed()) {
-	            viewer.setInput(sorted);
-	            viewer.refresh(); // обязательно обновляем таблицу
-	        }
-	    });
+		// Обновляем TableViewer в UI-потоке
+		root.getDisplay().asyncExec(() -> {
+			if (!viewer.getTable().isDisposed()) {
+				viewer.setInput(sorted);
+				viewer.refresh(); // обязательно обновляем таблицу
+			}
+		});
 	}
-	
+
+	public List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
+
+		Map<UUID, List<InnerElementRepresentationDTO>> childrenMap = new HashMap<>();
+		List<InnerElementRepresentationDTO> roots = new ArrayList<>();
+
+		// 1️⃣ Разделяем root и children
+		for (InnerElementRepresentationDTO element : allElements) {
+			UUID parentId = element.getTag().getParentId();
+
+			if (parentId == null) {
+				roots.add(element);
+			} else {
+				childrenMap.computeIfAbsent(parentId, k -> new ArrayList<>()).add(element);
+			}
+		}
+
+		// 2️⃣ Сортируем root-элементы по имени
+		roots.sort(Comparator.comparing(InnerElementRepresentationDTO::getElementName));
+
+		List<InnerElementRepresentationDTO> result = new ArrayList<>();
+
+		// 3️⃣ Обходим каждый root
+		for (InnerElementRepresentationDTO root : roots) {
+			result.add(root);
+			appendChildren(root, childrenMap, result);
+		}
+
+		return result;
+	}
+
+	private void appendChildren(InnerElementRepresentationDTO parent,
+			Map<UUID, List<InnerElementRepresentationDTO>> childrenMap, List<InnerElementRepresentationDTO> result) {
+
+		List<InnerElementRepresentationDTO> children = childrenMap.get(parent.getTag().getUniqueId());
+
+		if (children == null || children.isEmpty()) {
+			return;
+		}
+
+		Comparator<InnerElementRepresentationDTO> byName = Comparator
+				.comparing(InnerElementRepresentationDTO::getElementName);
+
+		// 1️⃣ СТАТИЧЕСКИЕ поля
+		children.stream().filter(e -> e.getElementType() == UniversalElementType.STATIC_FIELD).sorted(byName)
+				.forEach(result::add);
+
+		// 2️⃣ НЕСТАТИЧЕСКИЕ поля
+		children.stream().filter(e -> e.getElementType() == UniversalElementType.NON_STATIC_FIELD).sorted(byName)
+				.forEach(result::add);
+
+		// 3️⃣ Методы
+		children.stream().filter(e -> e.getElementType() == UniversalElementType.METHOD).sorted(byName)
+				.forEach(method -> {
+					result.add(method);
+
+					// 4️⃣ Локальные переменные конкретного метода
+					appendMethodLocals(method, childrenMap, result);
+				});
+	}
+
+	private void appendMethodLocals(InnerElementRepresentationDTO method,
+			Map<UUID, List<InnerElementRepresentationDTO>> childrenMap, List<InnerElementRepresentationDTO> result) {
+
+		List<InnerElementRepresentationDTO> locals = childrenMap.get(method.getTag().getUniqueId());
+
+		if (locals == null || locals.isEmpty()) {
+			return;
+		}
+
+		locals.stream().filter(e -> e.getElementType() == UniversalElementType.VARIABLE)
+				.sorted(Comparator.comparing(InnerElementRepresentationDTO::getElementName)).forEach(result::add);
+	}
+
 	private void setupColumnClickListeners() {
-	    Table table = viewer.getTable();
-	    table.addListener(SWT.MouseDown, event -> {
-	        TableItem item = table.getItem(new Point(event.x, event.y));
-	        if (item == null) return;
+		Table table = viewer.getTable();
+		table.addListener(SWT.MouseDown, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			if (item == null)
+				return;
 
-	        int colIndex = getColumnIndexAtPoint(table, event.x);
-	        // Наша третья колонка — индекс 2
-	        if (colIndex != 2) return;
+			int colIndex = getColumnIndexAtPoint(table, event.x);
+			// Наша третья колонка — индекс 2
+			if (colIndex != 2)
+				return;
 
-	        Object data = item.getData();
-	        if (!(data instanceof InnerElementRepresentationDTO dto)) return;
+			Object data = item.getData();
+			if (!(data instanceof InnerElementRepresentationDTO dto))
+				return;
 
-	        // Проверяем, что клик именно по inspectIcon (значение колонки совпадает с иконкой)
-	        Image clickedImage = getIcon(dto);
-	        if (clickedImage == null) return; // нет inspectIcon — ничего не делаем
+			// Проверяем, что клик именно по inspectIcon (значение колонки совпадает с
+			// иконкой)
+			Image clickedImage = getIcon(dto);
+			if (clickedImage == null)
+				return; // нет inspectIcon — ничего не делаем
 
-	        // Генерируем событие
-	        uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto));
-	    });
+			// Генерируем событие
+			uiEventCollector.collectUiEvent(
+					new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto));
+		});
 	}
 
 	public Composite getControl() {
