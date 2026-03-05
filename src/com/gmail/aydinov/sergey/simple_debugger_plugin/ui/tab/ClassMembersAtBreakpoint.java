@@ -338,7 +338,6 @@ public class ClassMembersAtBreakpoint {
 	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
 		if (dto == null || dto.getInnerElements().isEmpty())
 			return;
-
 		// Копируем и сортируем элементы
 		List<InnerElementRepresentationDTO> sorted = buildOrderedList(dto.getInnerElements());
 //	    sorted.sort(Comparator
@@ -355,6 +354,8 @@ public class ClassMembersAtBreakpoint {
 	}
 
 	public List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
+		//System.out.println("ANCHOR: " + );
+		allElements.stream().forEach(e -> System.out.println(e));
 	    Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<>();
 	    Set<InnerElementRepresentationDTO> elementsToDelete = new HashSet<>();
 

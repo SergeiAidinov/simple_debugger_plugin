@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -327,16 +328,24 @@ public class DebugSessionImpl implements DebugSession {
 		if (Objects.isNull(anchorElementReference.get()))
 			return false;
 		ThreadReference thread = breakpointEvent.thread();
-		Set<InnerElementRepresentationDTO> innerElements = new HashSet<InnerElementRepresentationDTO>();
-		for (UniversalElementRepresentation element : targetApplicationRepresentation.getTargetApplicationSnapshot()
-				.values()) {
+
+		Set<UniversalElementRepresentation> innerElements = new HashSet<UniversalElementRepresentation>();
+		HashSet<UniversalElementRepresentation> initSet = new HashSet<UniversalElementRepresentation>();
+		initSet.add(anchorElementReference.get());		
+		innerElements =	selectActualElements(
+				initSet,
+				new HashSet<UniversalElementRepresentation>());
+		System.out.println(innerElements);
+		innerElements.add(anchorElementReference.get());
+		Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
+		for (UniversalElementRepresentation element : innerElements) {
 			InnerElementRepresentationDTO elementRepresentation = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
 					.fromUniversalElement(element);
-			innerElements.add(elementRepresentation);
+			innerElementDTOs.add(elementRepresentation);
 		}
 		String methodName = location.declaringType().name() + "." + location.method().name() + "()";
 		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,
-				DebugUtils.compileStackInfo(thread), innerElements);
+				DebugUtils.compileStackInfo(thread), innerElementDTOs);
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
 		simpleDebugEventCollector
@@ -356,6 +365,32 @@ public class DebugSessionImpl implements DebugSession {
 			});
 		}
 		return true;
+	}
+
+	private Set<UniversalElementRepresentation> selectActualElements(Set<UniversalElementRepresentation> lastIterationAddedElements,
+	        Set<UniversalElementRepresentation> innerElements) {
+
+	    Set<UniversalElementRepresentation> thisIterationAddedElements = new HashSet<>();
+
+	    for (UniversalElementRepresentation element : lastIterationAddedElements) {
+
+	        targetApplicationRepresentation.getTargetApplicationSnapshot()
+	                .values()
+	                .stream()
+	                .filter(e ->
+	                        Objects.equals(e.getTag().getParentId(), element.getTag().getUniqueId()) ||
+	                        Objects.equals(e.getTag().getUniqueId(), element.getTag().getParentId())
+	                )
+	                .filter(e -> !innerElements.contains(e))   // защита от циклов
+	                .forEach(thisIterationAddedElements::add);
+	    }
+
+	    if (!thisIterationAddedElements.isEmpty()) {
+	        innerElements.addAll(thisIterationAddedElements);
+	        selectActualElements(thisIterationAddedElements, innerElements);
+	    }
+
+	    return innerElements;
 	}
 
 	private ITextEditor openEditorForLocation(Location location) throws Exception {
