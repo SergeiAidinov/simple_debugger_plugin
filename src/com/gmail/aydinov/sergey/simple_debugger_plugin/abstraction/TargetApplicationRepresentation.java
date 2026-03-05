@@ -35,6 +35,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.sun.jdi.AbsentInformationException;
+import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
@@ -191,79 +192,169 @@ public class TargetApplicationRepresentation {
 	}
 
 	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
-		if (parentElement == null || refType == null)
-			return;
+	    if (parentElement == null || refType == null)
+	        return;
 
-		// Получаем объект-экземпляр, если класс — ClassType
-		ObjectReference instance = null;
-		if (refType instanceof ClassType classType) {
-			try {
-				List<ObjectReference> instances = classType.instances(1);
-				if (!instances.isEmpty())
-					instance = instances.get(0);
-			} catch (Exception ignored) {
-			}
-		}
+	    String className = refType.name();
+	    // Игнорируем стандартные JDK классы
+	    if (className.startsWith("java.") || className.startsWith("javax."))
+	        return;
 
-		// ---------------- Поля ----------------
-		for (Field field : refType.allFields()) {
-			try {
-				if (field.isSynthetic())
-					continue;
+	    // Получаем экземпляр объекта, если класс — ClassType
+	    ObjectReference instance = null;
+	    if (refType instanceof ClassType classType) {
+	        try {
+	            List<ObjectReference> instances = classType.instances(1);
+	            if (!instances.isEmpty())
+	                instance = instances.get(0);
+	        } catch (Exception ignored) {}
+	    }
 
-				boolean isStatic = field.isStatic();
-				UniversalElementRepresentation.UniversalElementType elementType = isStatic
-						? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
-						: UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
+	    // ---------------- Поля ----------------
+	    for (Field field : refType.allFields()) {
+	        try {
+	            if (field.isSynthetic()) continue;
 
-				UniversalElementRepresentation.ValueCategory category = determineValueCategory(field.typeName());
-				String valueText = field.name();
+	            boolean isStatic = field.isStatic();
+	            UniversalElementRepresentation.UniversalElementType elementType = isStatic
+	                    ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
+	                    : UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
 
-				if (category == UniversalElementRepresentation.ValueCategory.PRIMITIVE
-						|| category == UniversalElementRepresentation.ValueCategory.STRING) {
-					valueText = extractPrimitiveOrStringAsText(field, instance);
-				}
+	            UniversalElementRepresentation.ValueCategory category = determineValueCategory(field.typeName());
+	            String valueText = field.name();
 
-				UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
-						.referenceType(refType).objectReference(isStatic ? null : instance) // для нестатических полей
-																							// назначаем экземпляр
-						.elementName(field.name()).additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
-						.elementType(elementType).currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-						.value(valueText).isStatic(isStatic).valueCategory(category).typeOrReturnType(field.typeName())
-						.uniqueId(UUID.randomUUID()).parentUniqueId(parentElement.getTag().getUniqueId()).build();
+	            if (category == UniversalElementRepresentation.ValueCategory.PRIMITIVE
+	                    || category == UniversalElementRepresentation.ValueCategory.STRING) {
+	                valueText = extractPrimitiveOrStringAsText(field, instance);
+	            }
 
-				targetApplicationSnapshot.put(fieldElement.getTag(), fieldElement);
-			} catch (Exception ignored) {
-			}
-		}
+	            UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
+	                    .referenceType(refType)
+	                    .objectReference(isStatic ? null : instance)
+	                    .elementName(field.name())
+	                    .additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
+	                    .elementType(elementType)
+	                    .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+	                    .value(valueText)
+	                    .isStatic(isStatic)
+	                    .valueCategory(category)
+	                    .typeOrReturnType(field.typeName())
+	                    .uniqueId(UUID.randomUUID())
+	                    .parentUniqueId(parentElement.getTag().getUniqueId())
+	                    .build();
 
-		// ---------------- Методы ----------------
-		for (Method method : refType.allMethods()) {
-			try {
-				if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
-					continue;
+	            targetApplicationSnapshot.put(fieldElement.getTag(), fieldElement);
 
-				if (isObjectMethodUnoverridden(refType, method))
-					continue;
+	            // ---------------- Рекурсивно собираем объекты, на которые ссылаются поля ----------------
+	            if (instance != null && !isStatic && category == UniversalElementRepresentation.ValueCategory.USER_OBJECT) {
+	                Value fieldValue = instance.getValue(field);
+	                if (fieldValue instanceof ObjectReference childRef) {
+	                    populateObjectReference(fieldElement, childRef);
+	                }
+	            }
 
-				String methodArgs = method.argumentTypes().stream().map(Type::name).collect(Collectors.joining(", "));
+	        } catch (Exception ignored) {}
+	    }
 
-				UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
-						.referenceType(refType).objectReference(instance) // для методов можем назначить экземпляр (null
-																			// для статических)
-						.elementName(method.name() + "()").additionalInfo(method.returnTypeName())
-						.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
-						.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-						.value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
-						.isStatic(method.isStatic())
-						.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-						.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID())
-						.parentUniqueId(parentElement.getTag().getUniqueId()).build();
+	    // ---------------- Методы ----------------
+	    for (Method method : refType.allMethods()) {
+	        try {
+	            if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
+	                continue;
 
-				targetApplicationSnapshot.put(methodElement.getTag(), methodElement);
-			} catch (Exception ignored) {
-			}
-		}
+	            // Игнорируем стандартные методы JDK
+	            if (method.declaringType().name().startsWith("java.") && method.isStatic())
+	                continue;
+
+	            String methodArgs = method.argumentTypes().stream()
+	                    .map(Type::name)
+	                    .collect(Collectors.joining(","));
+
+	            UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
+	                    .referenceType(refType)
+	                    .objectReference(instance) // null для статических, instance для нестатических
+	                    .elementName(method.name() + "()")
+	                    .additionalInfo(method.returnTypeName())
+	                    .elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
+	                    .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+	                    .value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
+	                    .isStatic(method.isStatic())
+	                    .valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
+	                    .typeOrReturnType(method.returnTypeName())
+	                    .uniqueId(UUID.randomUUID())
+	                    .parentUniqueId(parentElement.getTag().getUniqueId())
+	                    .build();
+
+	            targetApplicationSnapshot.put(methodElement.getTag(), methodElement);
+
+	        } catch (Exception ignored) {}
+	    }
+	}
+
+	/**
+	 * Рекурсивно добавляет объект, на который ссылается поле
+	 */
+	private void populateObjectReference(UniversalElementRepresentation parentFieldElement, ObjectReference objRef) {
+	    if (objRef == null) return;
+
+	    ReferenceType refType = objRef.referenceType();
+	    if (refType.name().startsWith("java.") || refType.name().startsWith("javax."))
+	        return;
+
+	    UniversalElementRepresentation objElement = UniversalElementRepresentation.builder()
+	            .referenceType(refType)
+	            .objectReference(objRef)
+	            .elementName(refType.name()) // имя класса как elementName
+	            .additionalInfo(refType.name())
+	            .elementType(UniversalElementRepresentation.UniversalElementType.CLASS)
+	            .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+	            .value(refType.name())
+	            .isStatic(false)
+	            .valueCategory(UniversalElementRepresentation.ValueCategory.USER_OBJECT)
+	            .typeOrReturnType(refType.name())
+	            .uniqueId(UUID.randomUUID())
+	            .parentUniqueId(parentFieldElement.getTag().getUniqueId())
+	            .build();
+
+	    targetApplicationSnapshot.put(objElement.getTag(), objElement);
+
+	    // Собираем внутренние поля объекта
+	    populateInnerElements(objElement, refType);
+
+	    // Для коллекций и map добавляем элементы
+	    UniversalElementRepresentation.ValueCategory category = determineValueCategory(refType.name());
+	    if (category == UniversalElementRepresentation.ValueCategory.COLLECTION
+	            || category == UniversalElementRepresentation.ValueCategory.MAP) {
+	        List<ObjectReference> children = DebugUtils.getCollectionElements(objRef);
+	        for (ObjectReference child : children) {
+	            populateObjectReference(objElement, child);
+	        }
+	    }
+	}
+
+	// ---------------- helper для элементов коллекции ----------------
+	private void processCollectionElement(Value val, UniversalElementRepresentation parentFieldElement) {
+	    if (val instanceof ObjectReference objRef) {
+	        UniversalElementRepresentation childElement = UniversalElementRepresentation.builder()
+	                .referenceType((ReferenceType) objRef.referenceType())
+	                .objectReference(objRef)
+	                .elementName(DebugUtils.extractSimpleName(objRef.referenceType().name()))
+	                .additionalInfo(objRef.referenceType().name())
+	                .elementType(UniversalElementRepresentation.UniversalElementType.CLASS)
+	                .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+	                .value(objRef.toString())
+	                .isStatic(false)
+	                .valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
+	                .typeOrReturnType(objRef.referenceType().name())
+	                .uniqueId(UUID.randomUUID())
+	                .parentUniqueId(parentFieldElement.getTag().getUniqueId())
+	                .build();
+
+	        targetApplicationSnapshot.put(childElement.getTag(), childElement);
+
+	        // рекурсивно собираем внутренние элементы объекта
+	        populateInnerElements(childElement, (ReferenceType) objRef.referenceType());
+	    }
 	}
 
 	private String extractPrimitiveOrStringAsText(Field field, ObjectReference instance) {

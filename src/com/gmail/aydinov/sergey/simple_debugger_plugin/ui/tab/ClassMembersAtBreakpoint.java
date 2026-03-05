@@ -48,6 +48,7 @@ public class ClassMembersAtBreakpoint {
 	private final Composite root;
 	private final TableViewer viewer;
 	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+	private InnerElementRepresentationDTO lastInspectedElement;
 
 	private static final Set<String> JAVA_STANDARD_TYPES = Set.of("int", "long", "short", "byte", "float", "double",
 			"boolean", "char", "java.lang.Integer", "java.lang.Long", "java.lang.Short", "java.lang.Byte",
@@ -68,6 +69,7 @@ public class ClassMembersAtBreakpoint {
 		setupColumns();
 		setupTooltips(table);
 		setupColumnClickListeners();
+		setupHoverInspectionListener(); 
 	}
 
 	// =========================================================
@@ -78,7 +80,7 @@ public class ClassMembersAtBreakpoint {
 
 		// 0: Name
 		char arrow = '⮡';
-		createColumn(0, "Name", 150, e -> {
+		createColumn(0, "Name", 250, e -> {
 			InnerElementRepresentationDTO dto = (InnerElementRepresentationDTO) e;
 			String indent = "     ".repeat(dto.getLevel()); // 3 пробела на уровень
 			if (dto.getLevel() > 0)
@@ -87,11 +89,11 @@ public class ClassMembersAtBreakpoint {
 		}, e -> null);
 
 		// 1: Type / Return Type
-		createColumn(1, "Type / Return Type", 200, InnerElementRepresentationDTO::getTypeOrReturnType,
+		createColumn(1, "Type / Return Type", 300, InnerElementRepresentationDTO::getTypeOrReturnType,
 				this::getTypeIcon);
 
 		// 2: Value / Info
-		TableViewerColumn valueColumn = createColumn(2, "Value / Info", 300, dto -> {
+		TableViewerColumn valueColumn = createColumn(2, "Value / Info", 400, dto -> {
 			String v = dto.getValue();
 			if (v != null)
 				return v;
@@ -447,5 +449,48 @@ public class ClassMembersAtBreakpoint {
 
 	public Composite getControl() {
 		return root;
+	}
+	
+	private void setupHoverInspectionListener() {
+
+	    Table table = viewer.getTable();
+
+	    table.addListener(SWT.MouseMove, event -> {
+
+	        TableItem item = table.getItem(new Point(event.x, event.y));
+	        if (item == null) {
+	            lastInspectedElement = null;
+	            return;
+	        }
+
+	        int colIndex = getColumnIndexAtPoint(table, event.x);
+	        if (colIndex != 2)
+	            return;
+
+	        Object data = item.getData();
+	        if (!(data instanceof InnerElementRepresentationDTO dto))
+	            return;
+
+	        Image icon = getIcon(dto);
+
+	        if (icon == null ||
+	            icon != DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+	            lastInspectedElement = null;
+	            return;
+	        }
+
+	        // чтобы событие не генерировалось постоянно
+	        if (dto.equals(lastInspectedElement))
+	            return;
+
+	        lastInspectedElement = dto;
+
+	        uiEventCollector.collectUiEvent(
+	            new UIEvent<>(
+	                SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO,
+	                dto
+	            )
+	        );
+	    });
 	}
 }

@@ -14,10 +14,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDat
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.sun.jdi.AbsentInformationException;
+import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.InterfaceType;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -529,11 +531,11 @@ public class DebugUtils {
 	    return ValueCategory.USER_OBJECT;
 	}
 	
-	private static boolean implementsInterface(ReferenceType referenceType, String interfaceName) {
-	    return ((ClassType) referenceType).allInterfaces()
-	            .stream()
-	            .anyMatch(i -> i.name().equals(interfaceName));
-	}
+//	private static boolean implementsInterface(ReferenceType referenceType, String interfaceName) {
+//	    return ((ClassType) referenceType).allInterfaces()
+//	            .stream()
+//	            .anyMatch(i -> i.name().equals(interfaceName));
+//	}
 	
 	public static String getLocalVariableValueAsString(StackFrame frame, LocalVariable variable) {
 	    try {
@@ -561,5 +563,115 @@ public class DebugUtils {
 	        return "<error>";
 	    }
 	}
+
+	public static List<ObjectReference> getCollectionElements(ObjectReference objRef) {
+        List<ObjectReference> result = new ArrayList<>();
+        if (objRef == null) return result;
+
+        ReferenceType refType = objRef.referenceType();
+
+        try {
+            // Проверяем, является ли объект Collection
+            if (implementsInterface(refType, "java.util.Collection")) {
+                // Collection.toArray() вызываем через invokeMethod
+                Method toArray = findMethod(refType, "toArray", "()[Ljava/lang/Object;");
+                if (toArray != null) {
+                    Value arrayValue = objRef.invokeMethod(
+                        objRef.virtualMachine().allThreads().get(0), // текущий поток (в твоем случае можно адаптировать)
+                        toArray,
+                        Collections.emptyList(),
+                        ObjectReference.INVOKE_SINGLE_THREADED
+                    );
+                    if (arrayValue instanceof ArrayReference arrayRef) {
+                        for (Value val : arrayRef.getValues()) {
+                            if (val instanceof ObjectReference childObj) {
+                                result.add(childObj);
+                            }
+                        }
+                    }
+                }
+            }
+            // Проверяем, является ли объект Map
+            else if (implementsInterface(refType, "java.util.Map")) {
+                Method entrySetMethod = findMethod(refType, "entrySet", "()Ljava/util/Set;");
+                if (entrySetMethod != null) {
+                    Value entrySetValue = objRef.invokeMethod(
+                        objRef.virtualMachine().allThreads().get(0),
+                        entrySetMethod,
+                        Collections.emptyList(),
+                        ObjectReference.INVOKE_SINGLE_THREADED
+                    );
+                    if (entrySetValue instanceof ObjectReference entrySetRef) {
+                        // Получаем все Map.Entry через toArray()
+                        Method toArray = findMethod(entrySetRef.referenceType(), "toArray", "()[Ljava/lang/Object;");
+                        if (toArray != null) {
+                            Value arrayValue = entrySetRef.invokeMethod(
+                                objRef.virtualMachine().allThreads().get(0),
+                                toArray,
+                                Collections.emptyList(),
+                                ObjectReference.INVOKE_SINGLE_THREADED
+                            );
+                            if (arrayValue instanceof ArrayReference arrayRef) {
+                                for (Value val : arrayRef.getValues()) {
+                                    if (val instanceof ObjectReference entryObj) {
+                                        // Берем ключ и значение
+                                        Field keyField = entryObj.referenceType().fieldByName("key");
+                                        Field valueField = entryObj.referenceType().fieldByName("value");
+                                        if (keyField != null) {
+                                            Value keyVal = entryObj.getValue(keyField);
+                                            if (keyVal instanceof ObjectReference keyObj)
+                                                result.add(keyObj);
+                                        }
+                                        if (valueField != null) {
+                                            Value valueVal = entryObj.getValue(valueField);
+                                            if (valueVal instanceof ObjectReference valueObj)
+                                                result.add(valueObj);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // Безопасно игнорируем любые ошибки, чтобы не ломать debugger
+        }
+
+        return result;
+    }
+
+    /**
+     * Проверка, реализует ли объект интерфейс (с учетом суперклассов)
+     */
+    private static boolean implementsInterface(ReferenceType refType, String interfaceName) {
+        try {
+            for (Field iType : refType.allFields()) {
+                if (iType.name().equals(interfaceName)) {
+                    return true;
+                }
+            }
+            ClassType superClass = refType instanceof ClassType c ? c.superclass() : null;
+            while (superClass != null) {
+                for (InterfaceType iType : superClass.allInterfaces()) {
+                    if (iType.name().equals(interfaceName)) return true;
+                }
+                superClass = superClass.superclass();
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    /**
+     * Ищет метод в ReferenceType по имени и сигнатуре
+     */
+    private static Method findMethod(ReferenceType refType, String name, String signature) {
+        for (Method m : refType.methodsByName(name, signature)) {
+            return m;
+        }
+        return null;
+    }
+	
 
 }
