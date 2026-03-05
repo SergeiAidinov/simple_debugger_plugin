@@ -1,9 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
-import java.security.Identity;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -11,7 +8,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -32,7 +28,6 @@ import org.eclipse.swt.widgets.TableItem;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
@@ -336,15 +331,10 @@ public class ClassMembersAtBreakpoint {
 	// =========================================================
 
 	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
-		try {
 		if (dto == null || dto.getInnerElements().isEmpty())
 			return;
 		// Копируем и сортируем элементы
 		List<InnerElementRepresentationDTO> sorted = buildOrderedList(dto.getInnerElements());
-//	    sorted.sort(Comparator
-//	            .comparingInt((InnerElementRepresentationDTO e) -> e.getElementType().ordinal())
-//	            .thenComparing(InnerElementRepresentationDTO::getElementName));
-
 		// Обновляем TableViewer в UI-потоке
 		root.getDisplay().asyncExec(() -> {
 			if (!viewer.getTable().isDisposed()) {
@@ -352,13 +342,9 @@ public class ClassMembersAtBreakpoint {
 				viewer.refresh(); // обязательно обновляем таблицу
 			}
 		});
-	} catch (Exception e) {
-		System.out.println(e);
-	}
 	}
 
 	public List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
-		//System.out.println("ANCHOR: " + );
 		allElements.stream().forEach(e -> System.out.println(e));
 	    Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<>();
 	    Set<InnerElementRepresentationDTO> elementsToDelete = new HashSet<>();
