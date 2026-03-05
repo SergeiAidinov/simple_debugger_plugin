@@ -99,30 +99,41 @@ public class TargetApplicationRepresentation {
 
 		// 4. Создаем top-level элементы (классы)
 		for (ReferenceType referenceType : definedByLoaders) {
-			UniversalElementRepresentation.UniversalElementType elementType = determineElementType(referenceType);
-			if (elementType == null)
-				continue;
+		    String fqName = referenceType.name();
 
-			String fqName = referenceType.name();
-			ObjectReference instance = null;
-			if (referenceType instanceof ClassType classType) {
-				try {
-					List<ObjectReference> instances = classType.instances(1);
-					if (!instances.isEmpty())
-						instance = instances.get(0);
-				} catch (Exception ignored) {
-				}
-			}
-			UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
-					.referenceType(referenceType) // сам ReferenceType
-					.objectReference(instance) // у класса пока нет ObjectReference
-					.elementName(DebugUtils.extractSimpleName(fqName)).additionalInfo(fqName).elementType(elementType)
-					.currentRole(UniversalElementRepresentation.CurrentRole.OUTER).value(fqName)
-					.isStatic(referenceType.isStatic())
-					.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED).typeOrReturnType(fqName)
-					.uniqueId(UUID.randomUUID()).parentUniqueId(null).build();
+		    // Пропускаем JDK-классы
+		    if (fqName.startsWith("java.") || fqName.startsWith("javax."))
+		        continue;
 
-			topLevelElements.put(topLevelElement.getTag(), topLevelElement);
+		    UniversalElementRepresentation.UniversalElementType elementType = determineElementType(referenceType);
+		    if (elementType == null)
+		        continue;
+
+		    ObjectReference instance = null;
+		    if (referenceType instanceof ClassType classType) {
+		        try {
+		            List<ObjectReference> instances = classType.instances(1);
+		            if (!instances.isEmpty())
+		                instance = instances.get(0);
+		        } catch (Exception ignored) {}
+		    }
+
+		    UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
+		            .referenceType(referenceType)
+		            .objectReference(instance)
+		            .elementName(DebugUtils.extractSimpleName(fqName))
+		            .additionalInfo(fqName)
+		            .elementType(elementType)
+		            .currentRole(UniversalElementRepresentation.CurrentRole.OUTER)
+		            .value(fqName)
+		            .isStatic(referenceType.isStatic())
+		            .valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
+		            .typeOrReturnType(fqName)
+		            .uniqueId(UUID.randomUUID())
+		            .parentUniqueId(null)
+		            .build();
+
+		    topLevelElements.put(topLevelElement.getTag(), topLevelElement);
 		}
 
 		// 5. Добавляем в общий snapshot
