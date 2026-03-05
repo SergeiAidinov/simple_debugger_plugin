@@ -314,9 +314,6 @@ public class DebugSessionImpl implements DebugSession {
 	private boolean updateUI(BreakpointEvent breakpointEvent) {
 		if (Objects.isNull(breakpointEvent))
 			return false;
-		StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
-		if (Objects.isNull(currentFrame))
-			return false;
 		Location location = breakpointEvent.location();
 		ReferenceType referenceType = location.declaringType();
 		if (Objects.isNull(referenceType))
@@ -328,17 +325,10 @@ public class DebugSessionImpl implements DebugSession {
 		if (Objects.isNull(anchorElementReference.get()))
 			return false;
 		ThreadReference thread = breakpointEvent.thread();
-
-		Set<UniversalElementRepresentation> innerElements = new HashSet<UniversalElementRepresentation>();
-		HashSet<UniversalElementRepresentation> initSet = new HashSet<UniversalElementRepresentation>();
-		initSet.add(anchorElementReference.get());		
-		innerElements =	selectActualElements(
-				initSet,
-				new HashSet<UniversalElementRepresentation>());
-		System.out.println(innerElements);
-		innerElements.add(anchorElementReference.get());
+		Set<UniversalElementRepresentation> relevantElements = selectRelevantElements(Set.of(anchorElementReference.get()), new HashSet<UniversalElementRepresentation>());
+		relevantElements.add(anchorElementReference.get());
 		Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
-		for (UniversalElementRepresentation element : innerElements) {
+		for (UniversalElementRepresentation element : relevantElements) {
 			InnerElementRepresentationDTO elementRepresentation = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
 					.fromUniversalElement(element);
 			innerElementDTOs.add(elementRepresentation);
@@ -367,30 +357,21 @@ public class DebugSessionImpl implements DebugSession {
 		return true;
 	}
 
-	private Set<UniversalElementRepresentation> selectActualElements(Set<UniversalElementRepresentation> lastIterationAddedElements,
-	        Set<UniversalElementRepresentation> innerElements) {
-
-	    Set<UniversalElementRepresentation> thisIterationAddedElements = new HashSet<>();
-
-	    for (UniversalElementRepresentation element : lastIterationAddedElements) {
-
-	        targetApplicationRepresentation.getTargetApplicationSnapshot()
-	                .values()
-	                .stream()
-	                .filter(e ->
-	                        Objects.equals(e.getTag().getParentId(), element.getTag().getUniqueId()) ||
-	                        Objects.equals(e.getTag().getUniqueId(), element.getTag().getParentId())
-	                )
-	                .filter(e -> !innerElements.contains(e))   // защита от циклов
-	                .forEach(thisIterationAddedElements::add);
-	    }
-
-	    if (!thisIterationAddedElements.isEmpty()) {
-	        innerElements.addAll(thisIterationAddedElements);
-	        selectActualElements(thisIterationAddedElements, innerElements);
-	    }
-
-	    return innerElements;
+	private Set<UniversalElementRepresentation> selectRelevantElements(Set<UniversalElementRepresentation> lastIterationAddedElements,
+			Set<UniversalElementRepresentation> innerElements) {
+		Set<UniversalElementRepresentation> thisIterationAddedElements = new HashSet<>();
+		for (UniversalElementRepresentation element : lastIterationAddedElements) {
+			targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+					.filter(e -> Objects.equals(e.getTag().getParentId(), element.getTag().getUniqueId())
+							|| Objects.equals(e.getTag().getUniqueId(), element.getTag().getParentId()))
+					.filter(e -> !innerElements.contains(e)) // защита от циклов
+					.forEach(thisIterationAddedElements::add);
+		}
+		if (!thisIterationAddedElements.isEmpty()) {
+			innerElements.addAll(thisIterationAddedElements);
+			selectRelevantElements(thisIterationAddedElements, innerElements);
+		}
+		return innerElements;
 	}
 
 	private ITextEditor openEditorForLocation(Location location) throws Exception {
