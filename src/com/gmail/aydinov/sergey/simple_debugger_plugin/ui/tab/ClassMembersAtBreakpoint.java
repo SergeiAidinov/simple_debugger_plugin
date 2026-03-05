@@ -69,7 +69,7 @@ public class ClassMembersAtBreakpoint {
 		setupColumns();
 		setupTooltips(table);
 		setupColumnClickListeners();
-		setupHoverInspectionListener(); 
+		setupHoverInspectionListener();
 	}
 
 	// =========================================================
@@ -207,7 +207,8 @@ public class ClassMembersAtBreakpoint {
 		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
 			return DebugWindowsManager.instance().icons.get("lens").getFirst();
 		}
-		if (category == ValueCategory.USER_OBJECT) {
+		if (category == ValueCategory.USER_OBJECT && !dto.getElementType().equals(UniversalElementType.NON_STATIC_FIELD)
+				&& !dto.getElementType().equals(UniversalElementType.STATIC_FIELD)) {
 			return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
 		}
 		return null;
@@ -215,9 +216,8 @@ public class ClassMembersAtBreakpoint {
 
 	private boolean isEditable(InnerElementRepresentationDTO dto) {
 		System.out.println(dto);
-	    return dto != null &&
-	           dto.getTypeOrReturnType() != null &&
-	           JAVA_STANDARD_TYPES.contains(dto.getTypeOrReturnType());
+		return dto != null && dto.getTypeOrReturnType() != null
+				&& JAVA_STANDARD_TYPES.contains(dto.getTypeOrReturnType());
 	}
 
 	private class ValueEditingSupport extends EditingSupport {
@@ -345,8 +345,7 @@ public class ClassMembersAtBreakpoint {
 			}
 		});
 	}
-	
-	
+
 	public List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
 		allElements.stream().forEach(e -> System.out.println(e));
 		Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<>();
@@ -450,47 +449,41 @@ public class ClassMembersAtBreakpoint {
 	public Composite getControl() {
 		return root;
 	}
-	
+
 	private void setupHoverInspectionListener() {
 
-	    Table table = viewer.getTable();
+		Table table = viewer.getTable();
 
-	    table.addListener(SWT.MouseMove, event -> {
+		table.addListener(SWT.MouseMove, event -> {
 
-	        TableItem item = table.getItem(new Point(event.x, event.y));
-	        if (item == null) {
-	            lastInspectedElement = null;
-	            return;
-	        }
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			if (item == null) {
+				lastInspectedElement = null;
+				return;
+			}
 
-	        int colIndex = getColumnIndexAtPoint(table, event.x);
-	        if (colIndex != 2)
-	            return;
+			int colIndex = getColumnIndexAtPoint(table, event.x);
+			if (colIndex != 2)
+				return;
 
-	        Object data = item.getData();
-	        if (!(data instanceof InnerElementRepresentationDTO dto))
-	            return;
+			Object data = item.getData();
+			if (!(data instanceof InnerElementRepresentationDTO dto))
+				return;
 
-	        Image icon = getIcon(dto);
+			Image icon = getIcon(dto);
 
-	        if (icon == null ||
-	            icon != DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-	            lastInspectedElement = null;
-	            return;
-	        }
+			if (icon == null || icon != DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+				lastInspectedElement = null;
+				return;
+			}
 
-	        // чтобы событие не генерировалось постоянно
-	        if (dto.equals(lastInspectedElement))
-	            return;
+			// чтобы событие не генерировалось постоянно
+			if (dto.equals(lastInspectedElement))
+				return;
 
-	        lastInspectedElement = dto;
+			lastInspectedElement = dto;
 
-	        uiEventCollector.collectUiEvent(
-	            new UIEvent<>(
-	                SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO,
-	                dto
-	            )
-	        );
-	    });
+			uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto));
+		});
 	}
 }
