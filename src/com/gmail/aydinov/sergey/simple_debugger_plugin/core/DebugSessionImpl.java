@@ -168,7 +168,6 @@ public class DebugSessionImpl implements DebugSession {
 					targetApplicationRepresentation
 							.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 					updateUI(breakpointEvent);
-
 				} catch (Throwable exception) {
 					logError("Breakpoint handler error", exception);
 				}

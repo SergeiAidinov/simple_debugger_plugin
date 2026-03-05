@@ -23,8 +23,10 @@ import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.PrimitiveType;
+import com.sun.jdi.PrimitiveValue;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
+import com.sun.jdi.StringReference;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
@@ -447,7 +449,7 @@ public class DebugUtils {
 
 	    // ---------- Local variables ----------
 	    if (jdiElement instanceof com.sun.jdi.LocalVariable) {
-	        return UniversalElementRepresentation.UniversalElementType.VARIABLE;
+	        return UniversalElementRepresentation.UniversalElementType.LOCAL_VARIABLE;
 	    }
 
 	    return null;
@@ -531,6 +533,33 @@ public class DebugUtils {
 	    return ((ClassType) referenceType).allInterfaces()
 	            .stream()
 	            .anyMatch(i -> i.name().equals(interfaceName));
+	}
+	
+	public static String getLocalVariableValueAsString(StackFrame frame, LocalVariable variable) {
+	    try {
+	        Value value = frame.getValue(variable); // получаем Value из фрейма
+	        if (value == null) return "null";
+
+	        // ---------- Примитивы ----------
+	        if (value instanceof PrimitiveValue pv) {
+	            return pv.toString();
+	        }
+
+	        // ---------- String ----------
+	        if (value instanceof StringReference sr) {
+	            return sr.value();
+	        }
+
+	        // ---------- Object ----------
+	        if (value instanceof ObjectReference objRef) {
+	            return objRef.toString(); // по умолчанию toString() объекта
+	            // если нужно можно получать className: objRef.referenceType().name()
+	        }
+
+	        return value.toString();
+	    } catch (Exception e) {
+	        return "<error>";
+	    }
 	}
 
 }
