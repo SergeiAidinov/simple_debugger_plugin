@@ -83,34 +83,48 @@ public class TargetApplicationRepresentation {
     public void takeSnapshotOfTargetApplication(VirtualMachine virtualMachine) {
         targetApplicationSnapshot.clear();
         SimpleDebuggerLogger.info("Waiting for target classes to load...");
+
+        // 1. Ждем загрузки всех классов
         List<ReferenceType> loadedReferenceTypes = waitUntilClassesAreLoaded(virtualMachine);
+
+        // 2. Фильтруем только нужные классы таргета
         List<ReferenceType> targetClasses = filterTargetClasses(loadedReferenceTypes);
         SimpleDebuggerLogger.info("Loaded " + targetClasses.size() + " classes.");
+
+        // 3. Собираем только определенные загрузчиками
         Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
-        Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> topLevelElements = new HashMap<UniversalElementRepresentation.Tag, UniversalElementRepresentation>();
+
+        Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> topLevelElements = new HashMap<>();
+
+        // 4. Создаем top-level элементы (классы)
         for (ReferenceType referenceType : definedByLoaders) {
-            UniversalElementType elementType = determineElementType(referenceType);
-            if (elementType == null)
-                continue;
+            UniversalElementRepresentation.UniversalElementType elementType = determineElementType(referenceType);
+            if (elementType == null) continue;
+
             String fqName = referenceType.name();
-          //  Value value = 
+
             UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
-                    .referenceType(referenceType)
+                    .referenceType(referenceType)       // сам ReferenceType
+                    .objectReference(null)              // у класса пока нет ObjectReference
                     .elementName(DebugUtils.extractSimpleName(fqName))
                     .additionalInfo(fqName)
                     .elementType(elementType)
-                    .currentRole(CurrentRole.OUTER)
+                    .currentRole(UniversalElementRepresentation.CurrentRole.OUTER)
                     .value(fqName)
                     .isStatic(referenceType.isStatic())
-                    .valueCategory(ValueCategory.NOT_SPECIFIED)
+                    .valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
                     .typeOrReturnType(fqName)
                     .uniqueId(UUID.randomUUID())
                     .parentUniqueId(null)
                     .build();
+
             topLevelElements.put(topLevelElement.getTag(), topLevelElement);
-           
         }
+
+        // 5. Добавляем в общий snapshot
         targetApplicationSnapshot.putAll(topLevelElements);
+
+        // 6. Заполняем внутренние элементы (методы, поля)
         for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
             populateInnerElements(topLevelElement, topLevelElement.getReferenceType());
         }
@@ -191,6 +205,8 @@ public class TargetApplicationRepresentation {
 
     private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
         if (parentElement == null || refType == null) return;
+
+        // Получаем объект-экземпляр, если класс — ClassType
         ObjectReference instance = null;
         if (refType instanceof ClassType classType) {
             try {
@@ -198,57 +214,71 @@ public class TargetApplicationRepresentation {
                 if (!instances.isEmpty()) instance = instances.get(0);
             } catch (Exception ignored) {}
         }
+
+        // ---------------- Поля ----------------
         for (Field field : refType.allFields()) {
             try {
                 if (field.isSynthetic()) continue;
+
                 boolean isStatic = field.isStatic();
-                UniversalElementType elementType = isStatic
-                        ? UniversalElementType.STATIC_FIELD
-                        : UniversalElementType.NON_STATIC_FIELD;
-                ValueCategory category = determineValueCategory(field.typeName());
-                String value = field.name();
-                if (category == ValueCategory.PRIMITIVE || category == ValueCategory.STRING) {
-                    value = extractPrimitiveOrStringAsText(field, instance);
+                UniversalElementRepresentation.UniversalElementType elementType =
+                        isStatic ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
+                                 : UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
+
+                UniversalElementRepresentation.ValueCategory category = determineValueCategory(field.typeName());
+                String valueText = field.name();
+
+                if (category == UniversalElementRepresentation.ValueCategory.PRIMITIVE ||
+                    category == UniversalElementRepresentation.ValueCategory.STRING) {
+                    valueText = extractPrimitiveOrStringAsText(field, instance);
                 }
+
                 UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
                         .referenceType(refType)
+                        .objectReference(isStatic ? null : instance) // для нестатических полей назначаем экземпляр
                         .elementName(field.name())
                         .additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
                         .elementType(elementType)
-                        .currentRole(CurrentRole.INNER)
-                        .value(value)
-                        .isStatic(field.isStatic())
+                        .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+                        .value(valueText)
+                        .isStatic(isStatic)
                         .valueCategory(category)
                         .typeOrReturnType(field.typeName())
                         .uniqueId(UUID.randomUUID())
                         .parentUniqueId(parentElement.getTag().getUniqueId())
                         .build();
 
-              //  parentElement.getInnerElements().add(fieldElement);
                 targetApplicationSnapshot.put(fieldElement.getTag(), fieldElement);
             } catch (Exception ignored) {}
         }
-        
+
+        // ---------------- Методы ----------------
         for (Method method : refType.allMethods()) {
             try {
                 if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
                     continue;
+
                 if (isObjectMethodUnoverridden(refType, method)) continue;
-                String methodArgs = method.argumentTypes().stream().map(Type::name).collect(Collectors.joining(", "));
+
+                String methodArgs = method.argumentTypes().stream()
+                        .map(Type::name)
+                        .collect(Collectors.joining(", "));
+
                 UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
                         .referenceType(refType)
+                        .objectReference(instance) // для методов можем назначить экземпляр (null для статических)
                         .elementName(method.name() + "()")
                         .additionalInfo(method.returnTypeName())
-                        .elementType(UniversalElementType.METHOD)
-                        .currentRole(CurrentRole.INNER)
+                        .elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
+                        .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
                         .value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
                         .isStatic(method.isStatic())
-                        .valueCategory(ValueCategory.NOT_SPECIFIED)
-                        .typeOrReturnType(method.returnTypeName())  // Type ReturnType
+                        .valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
+                        .typeOrReturnType(method.returnTypeName())
                         .uniqueId(UUID.randomUUID())
                         .parentUniqueId(parentElement.getTag().getUniqueId())
                         .build();
-                //parentElement.getInnerElements().add(methodElement);
+
                 targetApplicationSnapshot.put(methodElement.getTag(), methodElement);
             } catch (Exception ignored) {}
         }

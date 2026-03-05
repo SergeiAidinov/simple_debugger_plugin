@@ -98,6 +98,8 @@ public class DebugSessionImpl implements DebugSession {
 		try {
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 			SimpleDebuggerLogger.info("DEBUG SESSION STARTED");
+			simpleDebugEventCollector.collectDebugEvent(
+					new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 			processEvents();
 		} catch (Throwable exception) {
 			logError("Fatal error in JDI event loop", exception);
@@ -315,18 +317,36 @@ public class DebugSessionImpl implements DebugSession {
 		if (Objects.isNull(breakpointEvent))
 			return false;
 		Location location = breakpointEvent.location();
-		ReferenceType referenceType = location.declaringType();
-		if (Objects.isNull(referenceType))
-			return false;
-		AtomicReference<UniversalElementRepresentation> anchorElementReference = new AtomicReference<UniversalElementRepresentation>();
-		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-				.filter(v -> Objects.equals(v.getReferenceType(), referenceType)).findAny()
-				.ifPresent(v -> anchorElementReference.set(v));
-		if (Objects.isNull(anchorElementReference.get()))
+		AtomicReference<ObjectReference> thisObjectRef = new AtomicReference<>();
+		try {
+		    thisObjectRef.set(breakpointEvent.thread().frame(0).thisObject());
+		} catch (IncompatibleThreadStateException e) {
+		    e.printStackTrace();
+		    return false;
+		}
+		//if (thisObjectRef.get() == null) return false;
+
+		Optional<UniversalElementRepresentation> anchorElement = targetApplicationRepresentation
+		        .getTargetApplicationSnapshot()
+		        .values()
+		        .stream()
+		        .filter(v -> {
+		            ObjectReference objRef = v.getObjectReference();
+		            if (objRef != null && thisObjectRef.get() != null) {
+		                return Objects.equals(objRef, thisObjectRef.get());
+		            } else {
+		                // хотя бы один null — сравниваем по ReferenceType
+		                return Objects.equals(v.getReferenceType(), breakpointEvent.location().declaringType());
+		            }
+		        })
+		        .findAny();
+		Map<Tag, UniversalElementRepresentation> qq = targetApplicationRepresentation.getTargetApplicationSnapshot();
+		System.out.println(qq);
+		if (anchorElement.isEmpty())
 			return false;
 		ThreadReference thread = breakpointEvent.thread();
-		Set<UniversalElementRepresentation> relevantElements = selectRelevantElements(Set.of(anchorElementReference.get()), new HashSet<UniversalElementRepresentation>());
-		relevantElements.add(anchorElementReference.get());
+		Set<UniversalElementRepresentation> relevantElements = selectRelevantElements(Set.of(anchorElement.get()), new HashSet<UniversalElementRepresentation>());
+		relevantElements.add(anchorElement.get());
 		Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
 		for (UniversalElementRepresentation element : relevantElements) {
 			InnerElementRepresentationDTO elementRepresentation = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
