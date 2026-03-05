@@ -87,7 +87,7 @@ public class ClassMembersAtBreakpoint {
 		}, e -> null);
 
 		// 1: Type / Return Type
-		createColumn(1, "Type / Return Type", 200, InnerElementRepresentationDTO::getFullQualifiedName,
+		createColumn(1, "Type / Return Type", 200, InnerElementRepresentationDTO::getTypeOrReturnType,
 				this::getTypeIcon);
 
 		// 2: Value / Info
@@ -212,12 +212,10 @@ public class ClassMembersAtBreakpoint {
 	}
 
 	private boolean isEditable(InnerElementRepresentationDTO dto) {
-		if (dto == null)
-			return false;
-
-		// Разрешаем редактировать только стандартные типы Java (примитивы + String)
-		// Используем полное имя элемента как идентификатор типа
-		return JAVA_STANDARD_TYPES.contains(dto.getFullQualifiedName());
+		System.out.println(dto);
+	    return dto != null &&
+	           dto.getTypeOrReturnType() != null &&
+	           JAVA_STANDARD_TYPES.contains(dto.getTypeOrReturnType());
 	}
 
 	private class ValueEditingSupport extends EditingSupport {

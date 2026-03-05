@@ -149,16 +149,25 @@ public class TargetApplicationRepresentation {
 			return false;
 
 		// Получаем представление метода
-		UniversalElementRepresentation methodRepresentation = targetApplicationSnapshot.values().stream()
-				.filter(c -> c.getReferenceType() != null && c.getReferenceType().equals(method.declaringType())
-						&& c.getElementName().equals(method.name() + "()"))
-				.findFirst().orElse(null);
+	//	Method method = frame.location().method();
+		ReferenceType type = method.declaringType();
+
+		UniversalElementRepresentation methodRepresentation =
+		    targetApplicationSnapshot.values().stream()
+		        .filter(e ->
+		            e.getReferenceType() != null &&
+		            e.getReferenceType().equals(type) &&
+		            e.getElementType() == UniversalElementType.METHOD &&
+		            e.getElementName().startsWith(method.name())
+		        )
+		        .findFirst()
+		        .orElse(null);
 		if (methodRepresentation == null)
 			return false;
-		List<LocalVariable> arguments = Collections.EMPTY_LIST;
+		// List<LocalVariable> arguments = Collections.EMPTY_LIST;
 		List<LocalVariable> locals = Collections.EMPTY_LIST;
 		try {
-			arguments = method.arguments();
+		//	arguments = method.arguments();
 			locals = frame.visibleVariables();
 		} catch (AbsentInformationException e) {
 			// TODO Auto-generated catch block
@@ -166,28 +175,12 @@ public class TargetApplicationRepresentation {
 		}
 
 		List<UniversalElementRepresentation> localVariables = new ArrayList<>();
-		for (LocalVariable argument : arguments) {
-
-			String valueText = argument == null ? "<null>" : argument.toString();
-			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
-					.elementName(argument.name()).additionalInfo(argument.typeName()) // используем тип переменной
-					.elementType(UniversalElementType.METHOD_PARAMETER).currentRole(CurrentRole.INNER)
-					.value(DebugUtils.getLocalVariableValueAsString(frame, argument)).isStatic(false)
-					.valueCategory(DebugUtils.determineValueCategory(frame.getValue(argument))).typeOrReturnType(null)
-					.uniqueId(UUID.randomUUID()).parentUniqueId(methodRepresentation.getTag().getUniqueId()).build();
-
-			targetApplicationSnapshot.put(variable.getTag(), variable);
-			localVariables.add(variable);
-		}
-
 		for (LocalVariable local : locals) {
-
-			String valueText = local == null ? "<null>" : local.toString();
 			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
 					.elementName(local.name()).additionalInfo(local.typeName()) // используем тип переменной
 					.elementType(UniversalElementType.LOCAL_VARIABLE).currentRole(CurrentRole.INNER).value(DebugUtils.getLocalVariableValueAsString(frame, local))
 					.isStatic(false).valueCategory(DebugUtils.determineValueCategory(frame.getValue(local)))
-					.typeOrReturnType(null).uniqueId(UUID.randomUUID())
+					.typeOrReturnType(local.typeName()).uniqueId(UUID.randomUUID())
 					.parentUniqueId(methodRepresentation.getTag().getUniqueId()).build();
 
 			targetApplicationSnapshot.put(variable.getTag(), variable);
