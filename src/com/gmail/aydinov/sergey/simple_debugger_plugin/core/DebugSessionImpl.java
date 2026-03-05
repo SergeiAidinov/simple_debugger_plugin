@@ -324,8 +324,6 @@ public class DebugSessionImpl implements DebugSession {
 			e.printStackTrace();
 			return false;
 		}
-		// if (thisObjectRef.get() == null) return false;
-		try {
 			Optional<UniversalElementRepresentation> anchorElement = targetApplicationRepresentation
 					.getTargetApplicationSnapshot().values().stream().filter(v -> {
 						ObjectReference objRef = v.getObjectReference();
@@ -372,9 +370,6 @@ public class DebugSessionImpl implements DebugSession {
 					}
 				});
 			}
-		} catch (Exception e) {
-			System.out.println(e);
-		}
 		return true;
 	}
 
