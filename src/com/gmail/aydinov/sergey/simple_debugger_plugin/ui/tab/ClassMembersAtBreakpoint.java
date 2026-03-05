@@ -336,6 +336,7 @@ public class ClassMembersAtBreakpoint {
 	// =========================================================
 
 	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
+		try {
 		if (dto == null || dto.getInnerElements().isEmpty())
 			return;
 		// Копируем и сортируем элементы
@@ -351,6 +352,9 @@ public class ClassMembersAtBreakpoint {
 				viewer.refresh(); // обязательно обновляем таблицу
 			}
 		});
+	} catch (Exception e) {
+		System.out.println(e);
+	}
 	}
 
 	public List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {

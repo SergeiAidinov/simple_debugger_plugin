@@ -102,10 +102,16 @@ public class TargetApplicationRepresentation {
             if (elementType == null) continue;
 
             String fqName = referenceType.name();
-
+            ObjectReference instance = null;
+            if (referenceType instanceof ClassType classType) {
+                try {
+                    List<ObjectReference> instances = classType.instances(1);
+                    if (!instances.isEmpty()) instance = instances.get(0);
+                } catch (Exception ignored) {}
+            }
             UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
                     .referenceType(referenceType)       // сам ReferenceType
-                    .objectReference(null)              // у класса пока нет ObjectReference
+                    .objectReference(instance)              // у класса пока нет ObjectReference
                     .elementName(DebugUtils.extractSimpleName(fqName))
                     .additionalInfo(fqName)
                     .elementType(elementType)
@@ -175,7 +181,7 @@ public class TargetApplicationRepresentation {
         } catch (AbsentInformationException ignored) { }
 
         // -----------------------------
-        // 3️⃣ Формируем элементы для UI
+       
         List<UniversalElementRepresentation> localVariables = new ArrayList<>();
         for (Map.Entry<LocalVariable, Value> entry : locals.entrySet()) {
             LocalVariable localVar = entry.getKey();
