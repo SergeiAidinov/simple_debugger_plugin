@@ -83,6 +83,7 @@ public class DebugSessionImpl implements DebugSession {
 	private final CurrentLineHighlighter currentLineHighlighter;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventCollector.instance();
+	private boolean shouldRefreshSnapsotAndUi = true;
 
 	public DebugSessionImpl(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			TargetApplicationRepresentation targetApplicationRepresentation, EventSet eventSet,
@@ -161,13 +162,15 @@ public class DebugSessionImpl implements DebugSession {
 				if (Objects.isNull(uiEvent))
 					continue;
 				try {
-
+					shouldRefreshSnapsotAndUi = true;
 					handleSingleUiEvent(uiEvent, breakpointEvent);
+					if (shouldRefreshSnapsotAndUi) {
 					targetApplicationRepresentation
 							.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
 					targetApplicationRepresentation
 							.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 					updateUI(breakpointEvent);
+					}
 				} catch (Throwable exception) {
 					logError("Breakpoint handler error", exception);
 				}
@@ -206,7 +209,7 @@ public class DebugSessionImpl implements DebugSession {
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO)) {
 				UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
-				//initiateInspectionSeanceIfPossible(userRequestedAdditionalInfo.getPayload());
+				shouldRefreshSnapsotAndUi = false;
 				provideAdditionalInfo(userRequestedAdditionalInfo);
 			} else {
 				SimpleDebuggerLogger
@@ -216,17 +219,20 @@ public class DebugSessionImpl implements DebugSession {
 			SimpleDebuggerLogger.error(exception.getMessage(), exception);
 		}
 	}
-	
-	private void provideAdditionalInfo(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo){
+
+	private void provideAdditionalInfo(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
 		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
-		UniversalElementRepresentation topLevelElement = targetApplicationRepresentation.getTargetApplicationSnapshot().get(anchorElement.getTag());
-		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream().forEach(e -> System.out.println(e));
-		 Set<UniversalElementRepresentation> init = new HashSet();
-		 init.add(topLevelElement);
+		UniversalElementRepresentation topLevelElement = targetApplicationRepresentation.getTargetApplicationSnapshot()
+				.get(anchorElement.getTag());
+		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+				.forEach(e -> System.out.println(e));
+		Set<UniversalElementRepresentation> init = new HashSet();
+		init.add(topLevelElement);
 		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(init);
 	}
 
-	private Set<UniversalElementRepresentation> compileAdditionalInfo(Set<UniversalElementRepresentation> collectedElementd) {
+	private Set<UniversalElementRepresentation> compileAdditionalInfo(
+			Set<UniversalElementRepresentation> collectedElementd) {
 		Set<UniversalElementRepresentation> thisIterationAddedElements = new HashSet<>();
 		for (UniversalElementRepresentation element : collectedElementd) {
 			targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
@@ -350,58 +356,57 @@ public class DebugSessionImpl implements DebugSession {
 			e.printStackTrace();
 			return false;
 		}
-			Optional<UniversalElementRepresentation> anchorElement = targetApplicationRepresentation
-					.getTargetApplicationSnapshot().values().stream().filter(v -> {
-						ObjectReference objRef = v.getObjectReference();
-						if (objRef != null && thisObjectRef.get() != null) {
-							return Objects.equals(objRef, thisObjectRef.get());
-						} else {
-							// хотя бы один null — сравниваем по ReferenceType
-							return Objects.equals(v.getReferenceType(), breakpointEvent.location().declaringType());
-						}
-					}).findAny();
-			Map<Tag, UniversalElementRepresentation> qq = targetApplicationRepresentation
-					.getTargetApplicationSnapshot();
-			System.out.println(qq);
-			if (anchorElement.isEmpty())
-				return false;
-			ThreadReference thread = breakpointEvent.thread();
-			Set<UniversalElementRepresentation> relevantElements = selectRelevantElements(Set.of(anchorElement.get()),
-					new HashSet<UniversalElementRepresentation>());
-			relevantElements.add(anchorElement.get());
-			Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
-			for (UniversalElementRepresentation element : relevantElements) {
-				InnerElementRepresentationDTO elementRepresentation = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-						.fromUniversalElement(element);
-				innerElementDTOs.add(elementRepresentation);
-			}
-			String methodName = location.declaringType().name() + "." + location.method().name() + "()";
-			DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,
-					DebugUtils.compileStackInfo(thread), innerElementDTOs);
-			simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
-					SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
-			simpleDebugEventCollector
-					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-			Display display = Display.getDefault();
-			if (Objects.nonNull(display) && !display.isDisposed()) {
-				display.asyncExec(() -> {
-					try {
-						ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-						if (Objects.nonNull(editor)) {
-							int lineNumber = breakpointEvent.location().lineNumber() - 1;
-							currentLineHighlighter.highlight(editor, lineNumber);
-						}
-					} catch (Throwable exception) {
-						logError("Cannot highlight breakpoint location", exception);
+		Optional<UniversalElementRepresentation> anchorElement = targetApplicationRepresentation
+				.getTargetApplicationSnapshot().values().stream().filter(v -> {
+					ObjectReference objRef = v.getObjectReference();
+					if (objRef != null && thisObjectRef.get() != null) {
+						return Objects.equals(objRef, thisObjectRef.get());
+					} else {
+						// хотя бы один null — сравниваем по ReferenceType
+						return Objects.equals(v.getReferenceType(), breakpointEvent.location().declaringType());
 					}
-				});
-			}
+				}).findAny();
+		Map<Tag, UniversalElementRepresentation> qq = targetApplicationRepresentation.getTargetApplicationSnapshot();
+		System.out.println(qq);
+		if (anchorElement.isEmpty())
+			return false;
+		ThreadReference thread = breakpointEvent.thread();
+		Set<UniversalElementRepresentation> relevantElements = selectRelevantElements(Set.of(anchorElement.get()),
+				new HashSet<UniversalElementRepresentation>(), 0);
+		relevantElements.add(anchorElement.get());
+		Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
+		for (UniversalElementRepresentation element : relevantElements) {
+			InnerElementRepresentationDTO elementRepresentation = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+					.fromUniversalElement(element);
+			innerElementDTOs.add(elementRepresentation);
+		}
+		String methodName = location.declaringType().name() + "." + location.method().name() + "()";
+		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,
+				DebugUtils.compileStackInfo(thread), innerElementDTOs);
+		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
+				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
+		simpleDebugEventCollector
+				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+		Display display = Display.getDefault();
+		if (Objects.nonNull(display) && !display.isDisposed()) {
+			display.asyncExec(() -> {
+				try {
+					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
+					if (Objects.nonNull(editor)) {
+						int lineNumber = breakpointEvent.location().lineNumber() - 1;
+						currentLineHighlighter.highlight(editor, lineNumber);
+					}
+				} catch (Throwable exception) {
+					logError("Cannot highlight breakpoint location", exception);
+				}
+			});
+		}
 		return true;
 	}
 
 	private Set<UniversalElementRepresentation> selectRelevantElements(
 			Set<UniversalElementRepresentation> lastIterationAddedElements,
-			Set<UniversalElementRepresentation> innerElements) {
+			Set<UniversalElementRepresentation> innerElements, int depth) {
 		Set<UniversalElementRepresentation> thisIterationAddedElements = new HashSet<>();
 		for (UniversalElementRepresentation element : lastIterationAddedElements) {
 			targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
@@ -410,9 +415,9 @@ public class DebugSessionImpl implements DebugSession {
 					.filter(e -> !innerElements.contains(e)) // защита от циклов
 					.forEach(thisIterationAddedElements::add);
 		}
-		if (!thisIterationAddedElements.isEmpty()) {
+		if (!thisIterationAddedElements.isEmpty() && depth < 2) {
 			innerElements.addAll(thisIterationAddedElements);
-			selectRelevantElements(thisIterationAddedElements, innerElements);
+			selectRelevantElements(thisIterationAddedElements, innerElements, ++depth);
 		}
 		return innerElements;
 	}
