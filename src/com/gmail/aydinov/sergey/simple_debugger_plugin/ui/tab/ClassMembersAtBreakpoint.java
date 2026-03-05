@@ -197,21 +197,28 @@ public class ClassMembersAtBreakpoint {
 
 	// Пример исправления опечатки в getValueCategoty()
 	private Image getIcon(InnerElementRepresentationDTO dto) {
-		if (Objects.isNull(dto))
-			return null;
+	    if (dto == null)
+	        return null;
 
-		ValueCategory category = dto.getValueCategory(); // <=== исправлено
-		if (Objects.isNull(category))
-			return null;
+	    ValueCategory category = dto.getValueCategory();
+	    if (category == null)
+	        return null;
 
-		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
-			return DebugWindowsManager.instance().icons.get("lens").getFirst();
-		}
-		if (category == ValueCategory.USER_OBJECT && !dto.getElementType().equals(UniversalElementType.NON_STATIC_FIELD)
-				&& !dto.getElementType().equals(UniversalElementType.STATIC_FIELD)) {
-			return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
-		}
-		return null;
+	    // коллекции и мапы
+	    if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
+	        return DebugWindowsManager.instance().icons.get("lens").getFirst();
+	    }
+
+	    // Только поля пользовательского типа, которые реально инициализированы
+	    if ((dto.getElementType() == UniversalElementType.NON_STATIC_FIELD
+	            || dto.getElementType() == UniversalElementType.STATIC_FIELD)
+	            && category == ValueCategory.USER_OBJECT
+	            && dto.getValue() != null
+	            && !JAVA_STANDARD_TYPES.contains(dto.getTypeOrReturnType())) {
+	        return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
+	    }
+
+	    return null;
 	}
 
 	private boolean isEditable(InnerElementRepresentationDTO dto) {
