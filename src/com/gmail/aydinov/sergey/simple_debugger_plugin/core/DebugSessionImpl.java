@@ -204,9 +204,10 @@ public class DebugSessionImpl implements DebugSession {
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUGGER_STOPPED);
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
-					SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT)) {
-				UIEvent<InnerElementRepresentationDTO> userStartedInspectionSeanceEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
-				initiateInspectionSeanceIfPossible(userStartedInspectionSeanceEvent.getPayload());
+					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO)) {
+				UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
+				//initiateInspectionSeanceIfPossible(userRequestedAdditionalInfo.getPayload());
+				provideAdditionalInfo(userRequestedAdditionalInfo);
 			} else {
 				SimpleDebuggerLogger
 						.info("Unhandled UI event: " + abstractSimpleDebuggerUIEvent.getClass().getSimpleName());
@@ -214,6 +215,32 @@ public class DebugSessionImpl implements DebugSession {
 		} catch (Exception exception) {
 			SimpleDebuggerLogger.error(exception.getMessage(), exception);
 		}
+	}
+	
+	private void provideAdditionalInfo(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo){
+		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
+		UniversalElementRepresentation topLevelElement = targetApplicationRepresentation.getTargetApplicationSnapshot().get(anchorElement.getTag());
+		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream().forEach(e -> System.out.println(e));
+		 Set<UniversalElementRepresentation> init = new HashSet();
+		 init.add(topLevelElement);
+		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(init);
+	}
+
+	private Set<UniversalElementRepresentation> compileAdditionalInfo(Set<UniversalElementRepresentation> collectedElementd) {
+		Set<UniversalElementRepresentation> thisIterationAddedElements = new HashSet<>();
+		for (UniversalElementRepresentation element : collectedElementd) {
+			targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+					.filter(e -> Objects.equals(e.getTag().getParentId(), element.getTag().getUniqueId()))
+					.filter(e -> !collectedElementd.contains(e)) // защита от циклов
+					.forEach(thisIterationAddedElements::add);
+		}
+		if (!thisIterationAddedElements.isEmpty()) {
+			collectedElementd.addAll(thisIterationAddedElements);
+			compileAdditionalInfo(collectedElementd);
+		}
+		System.out.print("COLLECTED: ");
+		collectedElementd.stream().forEach(e -> System.out.println(e));
+		return collectedElementd;
 	}
 
 	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {

@@ -57,7 +57,7 @@ public class DebugWindow {
 		Display display = Display.getDefault();
 		shell = new Shell(display);
 		shell.setText("Simple Debugger");
-		shell.setSize(800, 600);
+		shell.setSize(1024, 600);
 		shell.setLayout(new GridLayout(1, false));
 
 		// ----------------- Top panel -----------------
