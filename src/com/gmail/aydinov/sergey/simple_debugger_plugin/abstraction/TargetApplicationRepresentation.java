@@ -257,12 +257,17 @@ public class TargetApplicationRepresentation {
 	    }
 
 	    // ---------------- Методы ----------------
+	 // ---------------- Методы ----------------
 	    for (Method method : refType.allMethods()) {
 	        try {
 	            if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
 	                continue;
 
-	            // Игнорируем стандартные методы JDK
+	            // Игнорируем методы Object
+	            if (method.declaringType().name().equals("java.lang.Object"))
+	                continue;
+
+	            // Игнорируем стандартные JDK-статические методы
 	            if (method.declaringType().name().startsWith("java.") && method.isStatic())
 	                continue;
 
