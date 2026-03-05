@@ -51,7 +51,7 @@ public class UniversalElementRepresentation {
 
     // =================== Энумы ===================
     public enum UniversalElementType {
-        INTERFACE, CLASS, ENUM, STATIC_FIELD, NON_STATIC_FIELD, METHOD, VARIABLE, OBJECT_INSTANCE, UNKNOWN
+        INTERFACE, CLASS, ENUM, STATIC_FIELD, NON_STATIC_FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, OBJECT_INSTANCE, UNKNOWN
     }
 
     public enum CurrentRole { OUTER, INNER, LOCAL }

@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -56,323 +57,326 @@ import com.sun.jdi.request.EventRequestManager;
 
 public class TargetApplicationRepresentation {
 
-    private final Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> targetApplicationSnapshot = new ConcurrentHashMap<>();
-    private final TargetApplicationBreakpointRepresentation targetApplicationBreakepointRepresentation;
-    private final VirtualMachine virtualMachine;
-    private final DebugConfiguration debugConfiguration;
+	private final Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> targetApplicationSnapshot = new ConcurrentHashMap<>();
+	private final TargetApplicationBreakpointRepresentation targetApplicationBreakepointRepresentation;
+	private final VirtualMachine virtualMachine;
+	private final DebugConfiguration debugConfiguration;
 
-    public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
-                                           EventRequestManager eventRequestManager,
-                                           VirtualMachine virtualMachine,
-                                           BreakpointSubscriberRegistrar breakpointSubscriberRegistrar,
-                                           DebugConfiguration debugConfiguration) {
-        this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakpointRepresentation(iBreakpointManager, virtualMachine);
-        breakpointSubscriberRegistrar.register(targetApplicationBreakepointRepresentation);
-        this.virtualMachine = virtualMachine;
-        this.debugConfiguration = debugConfiguration;
-    }
+	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
+			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
+			BreakpointSubscriberRegistrar breakpointSubscriberRegistrar, DebugConfiguration debugConfiguration) {
+		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakpointRepresentation(
+				iBreakpointManager, virtualMachine);
+		breakpointSubscriberRegistrar.register(targetApplicationBreakepointRepresentation);
+		this.virtualMachine = virtualMachine;
+		this.debugConfiguration = debugConfiguration;
+	}
 
-    public TargetApplicationBreakpointRepresentation getTargetApplicationBreakepointRepresentation() {
-        return targetApplicationBreakepointRepresentation;
-    }
+	public TargetApplicationBreakpointRepresentation getTargetApplicationBreakepointRepresentation() {
+		return targetApplicationBreakepointRepresentation;
+	}
 
-    public Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> getTargetApplicationSnapshot() {
-        return targetApplicationSnapshot;
-    }
+	public Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> getTargetApplicationSnapshot() {
+		return targetApplicationSnapshot;
+	}
 
-    public void takeSnapshotOfTargetApplication(VirtualMachine virtualMachine) {
-        targetApplicationSnapshot.clear();
-        SimpleDebuggerLogger.info("Waiting for target classes to load...");
+	public void takeSnapshotOfTargetApplication(VirtualMachine virtualMachine) {
+		targetApplicationSnapshot.clear();
+		SimpleDebuggerLogger.info("Waiting for target classes to load...");
 
-        // 1. Ждем загрузки всех классов
-        List<ReferenceType> loadedReferenceTypes = waitUntilClassesAreLoaded(virtualMachine);
+		// 1. Ждем загрузки всех классов
+		List<ReferenceType> loadedReferenceTypes = waitUntilClassesAreLoaded(virtualMachine);
 
-        // 2. Фильтруем только нужные классы таргета
-        List<ReferenceType> targetClasses = filterTargetClasses(loadedReferenceTypes);
-        SimpleDebuggerLogger.info("Loaded " + targetClasses.size() + " classes.");
+		// 2. Фильтруем только нужные классы таргета
+		List<ReferenceType> targetClasses = filterTargetClasses(loadedReferenceTypes);
+		SimpleDebuggerLogger.info("Loaded " + targetClasses.size() + " classes.");
 
-        // 3. Собираем только определенные загрузчиками
-        Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
+		// 3. Собираем только определенные загрузчиками
+		Set<ReferenceType> definedByLoaders = collectDefinedClasses(targetClasses);
 
-        Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> topLevelElements = new HashMap<>();
+		Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> topLevelElements = new HashMap<>();
 
-        // 4. Создаем top-level элементы (классы)
-        for (ReferenceType referenceType : definedByLoaders) {
-            UniversalElementRepresentation.UniversalElementType elementType = determineElementType(referenceType);
-            if (elementType == null) continue;
+		// 4. Создаем top-level элементы (классы)
+		for (ReferenceType referenceType : definedByLoaders) {
+			UniversalElementRepresentation.UniversalElementType elementType = determineElementType(referenceType);
+			if (elementType == null)
+				continue;
 
-            String fqName = referenceType.name();
-            ObjectReference instance = null;
-            if (referenceType instanceof ClassType classType) {
-                try {
-                    List<ObjectReference> instances = classType.instances(1);
-                    if (!instances.isEmpty()) instance = instances.get(0);
-                } catch (Exception ignored) {}
-            }
-            UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
-                    .referenceType(referenceType)       // сам ReferenceType
-                    .objectReference(instance)              // у класса пока нет ObjectReference
-                    .elementName(DebugUtils.extractSimpleName(fqName))
-                    .additionalInfo(fqName)
-                    .elementType(elementType)
-                    .currentRole(UniversalElementRepresentation.CurrentRole.OUTER)
-                    .value(fqName)
-                    .isStatic(referenceType.isStatic())
-                    .valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-                    .typeOrReturnType(fqName)
-                    .uniqueId(UUID.randomUUID())
-                    .parentUniqueId(null)
-                    .build();
+			String fqName = referenceType.name();
+			ObjectReference instance = null;
+			if (referenceType instanceof ClassType classType) {
+				try {
+					List<ObjectReference> instances = classType.instances(1);
+					if (!instances.isEmpty())
+						instance = instances.get(0);
+				} catch (Exception ignored) {
+				}
+			}
+			UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
+					.referenceType(referenceType) // сам ReferenceType
+					.objectReference(instance) // у класса пока нет ObjectReference
+					.elementName(DebugUtils.extractSimpleName(fqName)).additionalInfo(fqName).elementType(elementType)
+					.currentRole(UniversalElementRepresentation.CurrentRole.OUTER).value(fqName)
+					.isStatic(referenceType.isStatic())
+					.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED).typeOrReturnType(fqName)
+					.uniqueId(UUID.randomUUID()).parentUniqueId(null).build();
 
-            topLevelElements.put(topLevelElement.getTag(), topLevelElement);
-        }
+			topLevelElements.put(topLevelElement.getTag(), topLevelElement);
+		}
 
-        // 5. Добавляем в общий snapshot
-        targetApplicationSnapshot.putAll(topLevelElements);
+		// 5. Добавляем в общий snapshot
+		targetApplicationSnapshot.putAll(topLevelElements);
 
-        // 6. Заполняем внутренние элементы (методы, поля)
-        for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
-            populateInnerElements(topLevelElement, topLevelElement.getReferenceType());
-        }
+		// 6. Заполняем внутренние элементы (методы, поля)
+		for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
+			populateInnerElements(topLevelElement, topLevelElement.getReferenceType());
+		}
 
-        SimpleDebuggerLogger.info("LOADED TOP-LEVEL ELEMENTS: " + targetApplicationSnapshot.size());
-    }
+		SimpleDebuggerLogger.info("LOADED TOP-LEVEL ELEMENTS: " + targetApplicationSnapshot.size());
+	}
 
-    public boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
-        StackFrame frame;
-        try {
-            frame = breakpointEvent.thread().frame(0);
-        } catch (IncompatibleThreadStateException e) {
-            SimpleDebuggerLogger.error(e.getMessage(), e);
-            return false;
-        }
+	public boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
+		StackFrame frame;
+		try {
+			frame = breakpointEvent.thread().frame(0);
+		} catch (IncompatibleThreadStateException e) {
+			SimpleDebuggerLogger.error(e.getMessage(), e);
+			return false;
+		}
+		Location location = breakpointEvent.location();
+		Method method = location.method();
+		if (method == null)
+			return false;
 
-        Location location = breakpointEvent.location();
-        Method method = location.method();
-        if (method == null) return false;
+		// Получаем представление метода
+		UniversalElementRepresentation methodRepresentation = targetApplicationSnapshot.values().stream()
+				.filter(c -> c.getReferenceType() != null && c.getReferenceType().equals(method.declaringType())
+						&& c.getElementName().equals(method.name() + "()"))
+				.findFirst().orElse(null);
+		if (methodRepresentation == null)
+			return false;
+		List<LocalVariable> arguments = Collections.EMPTY_LIST;
+		List<LocalVariable> locals = Collections.EMPTY_LIST;
+		try {
+			arguments = method.arguments();
+			locals = frame.visibleVariables();
+		} catch (AbsentInformationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
-        // Получаем представление метода
-        UniversalElementRepresentation methodRepresentation = targetApplicationSnapshot.values().stream()
-                .filter(c -> c.getReferenceType() != null &&
-                        c.getReferenceType().equals(method.declaringType()))
-                .findFirst().orElse(null);
-        if (methodRepresentation == null) return false;
+		List<UniversalElementRepresentation> localVariables = new ArrayList<>();
+		for (LocalVariable argument : arguments) {
 
-        Map<LocalVariable, Value> locals = new HashMap<>();
+			String valueText = argument == null ? "<null>" : argument.toString();
+			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
+					.elementName(argument.name()).additionalInfo(argument.typeName()) // используем тип переменной
+					.elementType(UniversalElementType.METHOD_PARAMETER).currentRole(CurrentRole.INNER)
+					.value(DebugUtils.getLocalVariableValueAsString(frame, argument)).isStatic(false)
+					.valueCategory(DebugUtils.determineValueCategory(frame.getValue(argument))).typeOrReturnType(null)
+					.uniqueId(UUID.randomUUID()).parentUniqueId(methodRepresentation.getTag().getUniqueId()).build();
 
-        // -----------------------------
-        // 1️⃣ Добавляем параметры метода
-        try {
-            for (LocalVariable param : method.arguments()) {
-                if (!locals.containsKey(param)) {
-                    locals.put(param, frame.getValue(param));
-                }
-            }
-        } catch (AbsentInformationException ignored) { }
+			targetApplicationSnapshot.put(variable.getTag(), variable);
+			localVariables.add(variable);
+		}
 
-        // -----------------------------
-        // 2️⃣ Добавляем видимые локальные переменные
-        try {
-            for (LocalVariable local : frame.visibleVariables()) {
-                if (!locals.containsKey(local)) {
-                    locals.put(local, frame.getValue(local));
-                }
-            }
-        } catch (AbsentInformationException ignored) { }
+		for (LocalVariable local : locals) {
 
-        // -----------------------------
-       
-        List<UniversalElementRepresentation> localVariables = new ArrayList<>();
-        for (Map.Entry<LocalVariable, Value> entry : locals.entrySet()) {
-            LocalVariable localVar = entry.getKey();
-            Value value = entry.getValue();
+			String valueText = local == null ? "<null>" : local.toString();
+			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
+					.elementName(local.name()).additionalInfo(local.typeName()) // используем тип переменной
+					.elementType(UniversalElementType.LOCAL_VARIABLE).currentRole(CurrentRole.INNER).value(DebugUtils.getLocalVariableValueAsString(frame, local))
+					.isStatic(false).valueCategory(DebugUtils.determineValueCategory(frame.getValue(local)))
+					.typeOrReturnType(null).uniqueId(UUID.randomUUID())
+					.parentUniqueId(methodRepresentation.getTag().getUniqueId()).build();
 
-            String valueText = value == null ? "<null>" : value.toString();
-            UniversalElementRepresentation variable = UniversalElementRepresentation.builder()
-                    .referenceType(null)
-                    .elementName(localVar.name())
-                    .additionalInfo(localVar.typeName()) // используем тип переменной
-                    .elementType(UniversalElementType.VARIABLE)
-                    .currentRole(CurrentRole.INNER)
-                    .value(valueText)
-                    .isStatic(false)
-                    .valueCategory(DebugUtils.determineValueCategory(value))
-                    .typeOrReturnType(localVar.typeName())
-                    .uniqueId(UUID.randomUUID())
-                    .parentUniqueId(methodRepresentation.getTag().getUniqueId())
-                    .build();
+			targetApplicationSnapshot.put(variable.getTag(), variable);
+			localVariables.add(variable);
+		}
 
-            targetApplicationSnapshot.put(variable.getTag(), variable);
-            localVariables.add(variable);
-        }
+		return true;
+	}
 
-        return true;
-    }
+	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
+		if (parentElement == null || refType == null)
+			return;
 
-    private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
-        if (parentElement == null || refType == null) return;
+		// Получаем объект-экземпляр, если класс — ClassType
+		ObjectReference instance = null;
+		if (refType instanceof ClassType classType) {
+			try {
+				List<ObjectReference> instances = classType.instances(1);
+				if (!instances.isEmpty())
+					instance = instances.get(0);
+			} catch (Exception ignored) {
+			}
+		}
 
-        // Получаем объект-экземпляр, если класс — ClassType
-        ObjectReference instance = null;
-        if (refType instanceof ClassType classType) {
-            try {
-                List<ObjectReference> instances = classType.instances(1);
-                if (!instances.isEmpty()) instance = instances.get(0);
-            } catch (Exception ignored) {}
-        }
+		// ---------------- Поля ----------------
+		for (Field field : refType.allFields()) {
+			try {
+				if (field.isSynthetic())
+					continue;
 
-        // ---------------- Поля ----------------
-        for (Field field : refType.allFields()) {
-            try {
-                if (field.isSynthetic()) continue;
+				boolean isStatic = field.isStatic();
+				UniversalElementRepresentation.UniversalElementType elementType = isStatic
+						? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
+						: UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
 
-                boolean isStatic = field.isStatic();
-                UniversalElementRepresentation.UniversalElementType elementType =
-                        isStatic ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
-                                 : UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
+				UniversalElementRepresentation.ValueCategory category = determineValueCategory(field.typeName());
+				String valueText = field.name();
 
-                UniversalElementRepresentation.ValueCategory category = determineValueCategory(field.typeName());
-                String valueText = field.name();
+				if (category == UniversalElementRepresentation.ValueCategory.PRIMITIVE
+						|| category == UniversalElementRepresentation.ValueCategory.STRING) {
+					valueText = extractPrimitiveOrStringAsText(field, instance);
+				}
 
-                if (category == UniversalElementRepresentation.ValueCategory.PRIMITIVE ||
-                    category == UniversalElementRepresentation.ValueCategory.STRING) {
-                    valueText = extractPrimitiveOrStringAsText(field, instance);
-                }
+				UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
+						.referenceType(refType).objectReference(isStatic ? null : instance) // для нестатических полей
+																							// назначаем экземпляр
+						.elementName(field.name()).additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
+						.elementType(elementType).currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+						.value(valueText).isStatic(isStatic).valueCategory(category).typeOrReturnType(field.typeName())
+						.uniqueId(UUID.randomUUID()).parentUniqueId(parentElement.getTag().getUniqueId()).build();
 
-                UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
-                        .referenceType(refType)
-                        .objectReference(isStatic ? null : instance) // для нестатических полей назначаем экземпляр
-                        .elementName(field.name())
-                        .additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
-                        .elementType(elementType)
-                        .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-                        .value(valueText)
-                        .isStatic(isStatic)
-                        .valueCategory(category)
-                        .typeOrReturnType(field.typeName())
-                        .uniqueId(UUID.randomUUID())
-                        .parentUniqueId(parentElement.getTag().getUniqueId())
-                        .build();
+				targetApplicationSnapshot.put(fieldElement.getTag(), fieldElement);
+			} catch (Exception ignored) {
+			}
+		}
 
-                targetApplicationSnapshot.put(fieldElement.getTag(), fieldElement);
-            } catch (Exception ignored) {}
-        }
+		// ---------------- Методы ----------------
+		for (Method method : refType.allMethods()) {
+			try {
+				if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
+					continue;
 
-        // ---------------- Методы ----------------
-        for (Method method : refType.allMethods()) {
-            try {
-                if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
-                    continue;
+				if (isObjectMethodUnoverridden(refType, method))
+					continue;
 
-                if (isObjectMethodUnoverridden(refType, method)) continue;
+				String methodArgs = method.argumentTypes().stream().map(Type::name).collect(Collectors.joining(", "));
 
-                String methodArgs = method.argumentTypes().stream()
-                        .map(Type::name)
-                        .collect(Collectors.joining(", "));
+				UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
+						.referenceType(refType).objectReference(instance) // для методов можем назначить экземпляр (null
+																			// для статических)
+						.elementName(method.name() + "()").additionalInfo(method.returnTypeName())
+						.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
+						.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+						.value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
+						.isStatic(method.isStatic())
+						.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
+						.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID())
+						.parentUniqueId(parentElement.getTag().getUniqueId()).build();
 
-                UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
-                        .referenceType(refType)
-                        .objectReference(instance) // для методов можем назначить экземпляр (null для статических)
-                        .elementName(method.name() + "()")
-                        .additionalInfo(method.returnTypeName())
-                        .elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
-                        .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-                        .value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
-                        .isStatic(method.isStatic())
-                        .valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-                        .typeOrReturnType(method.returnTypeName())
-                        .uniqueId(UUID.randomUUID())
-                        .parentUniqueId(parentElement.getTag().getUniqueId())
-                        .build();
+				targetApplicationSnapshot.put(methodElement.getTag(), methodElement);
+			} catch (Exception ignored) {
+			}
+		}
+	}
 
-                targetApplicationSnapshot.put(methodElement.getTag(), methodElement);
-            } catch (Exception ignored) {}
-        }
-    }
+	private String extractPrimitiveOrStringAsText(Field field, ObjectReference instance) {
+		if (field == null)
+			return null;
+		Value value = field.isStatic() ? field.declaringType().getValue(field) : instance.getValue(field);
+		if (value == null)
+			return "null";
+		if (value instanceof StringReference sRef)
+			return sRef.value();
+		if (value instanceof PrimitiveValue pVal)
+			return pVal.toString();
+		return "<null>";
+	}
 
-    private String extractPrimitiveOrStringAsText(Field field, ObjectReference instance) {
-        if (field == null) return null;
-        Value value = field.isStatic() ? field.declaringType().getValue(field) : instance.getValue(field);
-        if (value == null) return "null";
-        if (value instanceof StringReference sRef) return sRef.value();
-        if (value instanceof PrimitiveValue pVal) return pVal.toString();
-        return "<null>";
-    }
+	private ValueCategory determineValueCategory(String typeName) {
+		if (typeName == null || typeName.equals("void"))
+			return ValueCategory.NULL;
+		if (Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char").contains(typeName))
+			return ValueCategory.PRIMITIVE;
+		if (Set.of("java.lang.Byte", "java.lang.Short", "java.lang.Integer", "java.lang.Long", "java.lang.Float",
+				"java.lang.Double", "java.lang.Boolean", "java.lang.Character").contains(typeName))
+			return ValueCategory.WRAPPER;
+		if ("java.lang.String".equals(typeName))
+			return ValueCategory.STRING;
+		if (typeName.startsWith("java.util.List") || typeName.startsWith("java.util.Set"))
+			return ValueCategory.COLLECTION;
+		if (typeName.endsWith("[]"))
+			return ValueCategory.ARRAY;
+		if (typeName.startsWith("java.util.Map"))
+			return ValueCategory.MAP;
+		return ValueCategory.USER_OBJECT;
+	}
 
-    private ValueCategory determineValueCategory(String typeName) {
-        if (typeName == null || typeName.equals("void")) return ValueCategory.NULL;
-        if (Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char").contains(typeName))
-            return ValueCategory.PRIMITIVE;
-        if (Set.of("java.lang.Byte","java.lang.Short","java.lang.Integer","java.lang.Long","java.lang.Float",
-                "java.lang.Double","java.lang.Boolean","java.lang.Character").contains(typeName))
-            return ValueCategory.WRAPPER;
-        if ("java.lang.String".equals(typeName)) return ValueCategory.STRING;
-        if (typeName.startsWith("java.util.List") || typeName.startsWith("java.util.Set")) return ValueCategory.COLLECTION;
-        if (typeName.endsWith("[]")) return ValueCategory.ARRAY;
-        if (typeName.startsWith("java.util.Map")) return ValueCategory.MAP;
-        return ValueCategory.USER_OBJECT;
-    }
+	private boolean isObjectMethodUnoverridden(ReferenceType refType, Method method) {
+		try {
+			if ("java.lang.Object".equals(refType.name()))
+				return false;
+			List<ReferenceType> objectClasses = method.virtualMachine().classesByName("java.lang.Object");
+			if (objectClasses.isEmpty())
+				return false;
+			ReferenceType objectRef = objectClasses.get(0);
+			for (Method objMethod : objectRef.allMethods()) {
+				if (objMethod.name().equals(method.name()) && objMethod.signature().equals(method.signature())) {
+					for (Method classMethod : refType.allMethods()) {
+						if (classMethod.name().equals(method.name())
+								&& classMethod.signature().equals(method.signature())
+								&& classMethod.declaringType().equals(refType))
+							return false;
+					}
+					return true;
+				}
+			}
+		} catch (Exception ignored) {
+		}
+		return false;
+	}
 
-    private boolean isObjectMethodUnoverridden(ReferenceType refType, Method method) {
-        try {
-            if ("java.lang.Object".equals(refType.name())) return false;
-            List<ReferenceType> objectClasses = method.virtualMachine().classesByName("java.lang.Object");
-            if (objectClasses.isEmpty()) return false;
-            ReferenceType objectRef = objectClasses.get(0);
-            for (Method objMethod : objectRef.allMethods()) {
-                if (objMethod.name().equals(method.name()) && objMethod.signature().equals(method.signature())) {
-                    for (Method classMethod : refType.allMethods()) {
-                        if (classMethod.name().equals(method.name()) &&
-                            classMethod.signature().equals(method.signature()) &&
-                            classMethod.declaringType().equals(refType)) return false;
-                    }
-                    return true;
-                }
-            }
-        } catch (Exception ignored) {}
-        return false;
-    }
+	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
+		List<ReferenceType> referenceTypes = new ArrayList<>();
+		while (referenceTypes.isEmpty()) {
+			referenceTypes.addAll(virtualMachine.allClasses());
+			if (!referenceTypes.isEmpty())
+				break;
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException ignored) {
+			}
+		}
+		return referenceTypes;
+	}
 
-    private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
-        List<ReferenceType> referenceTypes = new ArrayList<>();
-        while (referenceTypes.isEmpty()) {
-            referenceTypes.addAll(virtualMachine.allClasses());
-            if (!referenceTypes.isEmpty()) break;
-            try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
-        }
-        return referenceTypes;
-    }
+	private List<ReferenceType> filterTargetClasses(List<ReferenceType> referenceTypes) {
+		String targetPackage = debugConfiguration.getTargetRootPackage();
+		if (targetPackage == null || targetPackage.isBlank()) {
+			String mainClass = debugConfiguration.getMainClassName();
+			int lastDot = mainClass.lastIndexOf('.');
+			targetPackage = lastDot > 0 ? mainClass.substring(0, lastDot) : "";
+		}
+		String finalTargetPackage = targetPackage;
+		return referenceTypes.stream().filter(rt -> rt.name().startsWith(finalTargetPackage + ".")).toList();
+	}
 
-    private List<ReferenceType> filterTargetClasses(List<ReferenceType> referenceTypes) {
-        String targetPackage = debugConfiguration.getTargetRootPackage();
-        if (targetPackage == null || targetPackage.isBlank()) {
-            String mainClass = debugConfiguration.getMainClassName();
-            int lastDot = mainClass.lastIndexOf('.');
-            targetPackage = lastDot > 0 ? mainClass.substring(0, lastDot) : "";
-        }
-        String finalTargetPackage = targetPackage;
-        return referenceTypes.stream().filter(rt -> rt.name().startsWith(finalTargetPackage + ".")).toList();
-    }
+	private Set<ReferenceType> collectDefinedClasses(List<ReferenceType> referenceTypes) {
+		Set<ReferenceType> result = new HashSet<>();
+		for (ReferenceType referenceType : referenceTypes) {
+			ClassLoaderReference classLoaderReference = referenceType.classLoader();
+			if (Objects.isNull(classLoaderReference))
+				continue;
+			for (ReferenceType definedReferenceType : classLoaderReference.definedClasses()) {
+				if (Objects.nonNull(definedReferenceType))
+					result.add(definedReferenceType);
+			}
+		}
+		return result;
+	}
 
-    private Set<ReferenceType> collectDefinedClasses(List<ReferenceType> referenceTypes) {
-        Set<ReferenceType> result = new HashSet<>();
-        for (ReferenceType referenceType : referenceTypes) {
-            ClassLoaderReference classLoaderReference = referenceType.classLoader();
-            if (Objects.isNull(classLoaderReference)) continue;
-            for (ReferenceType definedReferenceType : classLoaderReference.definedClasses()) {
-                if (Objects.nonNull(definedReferenceType)) result.add(definedReferenceType);
-            }
-        }
-        return result;
-    }
+	private UniversalElementType determineElementType(ReferenceType referenceType) {
+		if (referenceType instanceof ClassType)
+			return UniversalElementType.CLASS;
+		if (referenceType instanceof InterfaceType)
+			return UniversalElementType.INTERFACE;
+		return null;
+	}
 
-    private UniversalElementType determineElementType(ReferenceType referenceType) {
-        if (referenceType instanceof ClassType) return UniversalElementType.CLASS;
-        if (referenceType instanceof InterfaceType) return UniversalElementType.INTERFACE;
-        return null;
-    }
-
-    public void detachDebugger() {
+	public void detachDebugger() {
 		if (Objects.isNull(virtualMachine)) {
 			return;
 		}
@@ -395,12 +399,13 @@ public class TargetApplicationRepresentation {
 		}
 	}
 
-    public ReferenceType findReferenceTypeForClass(UniversalElementRepresentation universalElementRepresentation) {
+	public ReferenceType findReferenceTypeForClass(UniversalElementRepresentation universalElementRepresentation) {
 		if (Objects.isNull(universalElementRepresentation)) {
 			return null;
 		}
 		String className = universalElementRepresentation.getElementName();
-		for (Entry<UniversalElementRepresentation.Tag, UniversalElementRepresentation> entry : targetApplicationSnapshot.entrySet()) {
+		for (Entry<UniversalElementRepresentation.Tag, UniversalElementRepresentation> entry : targetApplicationSnapshot
+				.entrySet()) {
 			ReferenceType referenceType = entry.getValue().getReferenceType();
 			if (Objects.nonNull(referenceType) && className.equals(referenceType.name())) {
 				return referenceType;
@@ -409,7 +414,7 @@ public class TargetApplicationRepresentation {
 		return null;
 	}
 
-    public ObjectReference createObjectInstance(ClassType classType) {
+	public ObjectReference createObjectInstance(ClassType classType) {
 		try {
 			Method constructor = classType.concreteMethodByName("<init>", "()V");
 			if (Objects.isNull(constructor)) {
@@ -422,7 +427,7 @@ public class TargetApplicationRepresentation {
 		}
 	}
 
-    public IFile findIFileForLocation(Location location) {
+	public IFile findIFileForLocation(Location location) {
 		ReferenceType referenceType = location.declaringType();
 		if (Objects.isNull(referenceType)) {
 			return null;
