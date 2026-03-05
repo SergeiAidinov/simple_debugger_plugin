@@ -98,8 +98,8 @@ public class DebugSessionImpl implements DebugSession {
 		try {
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 			SimpleDebuggerLogger.info("DEBUG SESSION STARTED");
-			simpleDebugEventCollector.collectDebugEvent(
-					new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+			simpleDebugEventCollector
+					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 			processEvents();
 		} catch (Throwable exception) {
 			logError("Fatal error in JDI event loop", exception);
@@ -319,65 +319,67 @@ public class DebugSessionImpl implements DebugSession {
 		Location location = breakpointEvent.location();
 		AtomicReference<ObjectReference> thisObjectRef = new AtomicReference<>();
 		try {
-		    thisObjectRef.set(breakpointEvent.thread().frame(0).thisObject());
+			thisObjectRef.set(breakpointEvent.thread().frame(0).thisObject());
 		} catch (IncompatibleThreadStateException e) {
-		    e.printStackTrace();
-		    return false;
-		}
-		//if (thisObjectRef.get() == null) return false;
-
-		Optional<UniversalElementRepresentation> anchorElement = targetApplicationRepresentation
-		        .getTargetApplicationSnapshot()
-		        .values()
-		        .stream()
-		        .filter(v -> {
-		            ObjectReference objRef = v.getObjectReference();
-		            if (objRef != null && thisObjectRef.get() != null) {
-		                return Objects.equals(objRef, thisObjectRef.get());
-		            } else {
-		                // хотя бы один null — сравниваем по ReferenceType
-		                return Objects.equals(v.getReferenceType(), breakpointEvent.location().declaringType());
-		            }
-		        })
-		        .findAny();
-		Map<Tag, UniversalElementRepresentation> qq = targetApplicationRepresentation.getTargetApplicationSnapshot();
-		System.out.println(qq);
-		if (anchorElement.isEmpty())
+			e.printStackTrace();
 			return false;
-		ThreadReference thread = breakpointEvent.thread();
-		Set<UniversalElementRepresentation> relevantElements = selectRelevantElements(Set.of(anchorElement.get()), new HashSet<UniversalElementRepresentation>());
-		relevantElements.add(anchorElement.get());
-		Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
-		for (UniversalElementRepresentation element : relevantElements) {
-			InnerElementRepresentationDTO elementRepresentation = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-					.fromUniversalElement(element);
-			innerElementDTOs.add(elementRepresentation);
 		}
-		String methodName = location.declaringType().name() + "." + location.method().name() + "()";
-		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,
-				DebugUtils.compileStackInfo(thread), innerElementDTOs);
-		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
-				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
-		simpleDebugEventCollector
-				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-		Display display = Display.getDefault();
-		if (Objects.nonNull(display) && !display.isDisposed()) {
-			display.asyncExec(() -> {
-				try {
-					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-					if (Objects.nonNull(editor)) {
-						int lineNumber = breakpointEvent.location().lineNumber() - 1;
-						currentLineHighlighter.highlight(editor, lineNumber);
+		// if (thisObjectRef.get() == null) return false;
+		try {
+			Optional<UniversalElementRepresentation> anchorElement = targetApplicationRepresentation
+					.getTargetApplicationSnapshot().values().stream().filter(v -> {
+						ObjectReference objRef = v.getObjectReference();
+						if (objRef != null && thisObjectRef.get() != null) {
+							return Objects.equals(objRef, thisObjectRef.get());
+						} else {
+							// хотя бы один null — сравниваем по ReferenceType
+							return Objects.equals(v.getReferenceType(), breakpointEvent.location().declaringType());
+						}
+					}).findAny();
+			Map<Tag, UniversalElementRepresentation> qq = targetApplicationRepresentation
+					.getTargetApplicationSnapshot();
+			System.out.println(qq);
+			if (anchorElement.isEmpty())
+				return false;
+			ThreadReference thread = breakpointEvent.thread();
+			Set<UniversalElementRepresentation> relevantElements = selectRelevantElements(Set.of(anchorElement.get()),
+					new HashSet<UniversalElementRepresentation>());
+			relevantElements.add(anchorElement.get());
+			Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
+			for (UniversalElementRepresentation element : relevantElements) {
+				InnerElementRepresentationDTO elementRepresentation = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+						.fromUniversalElement(element);
+				innerElementDTOs.add(elementRepresentation);
+			}
+			String methodName = location.declaringType().name() + "." + location.method().name() + "()";
+			DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,
+					DebugUtils.compileStackInfo(thread), innerElementDTOs);
+			simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
+					SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
+			simpleDebugEventCollector
+					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+			Display display = Display.getDefault();
+			if (Objects.nonNull(display) && !display.isDisposed()) {
+				display.asyncExec(() -> {
+					try {
+						ITextEditor editor = openEditorForLocation(breakpointEvent.location());
+						if (Objects.nonNull(editor)) {
+							int lineNumber = breakpointEvent.location().lineNumber() - 1;
+							currentLineHighlighter.highlight(editor, lineNumber);
+						}
+					} catch (Throwable exception) {
+						logError("Cannot highlight breakpoint location", exception);
 					}
-				} catch (Throwable exception) {
-					logError("Cannot highlight breakpoint location", exception);
-				}
-			});
+				});
+			}
+		} catch (Exception e) {
+			System.out.println(e);
 		}
 		return true;
 	}
 
-	private Set<UniversalElementRepresentation> selectRelevantElements(Set<UniversalElementRepresentation> lastIterationAddedElements,
+	private Set<UniversalElementRepresentation> selectRelevantElements(
+			Set<UniversalElementRepresentation> lastIterationAddedElements,
 			Set<UniversalElementRepresentation> innerElements) {
 		Set<UniversalElementRepresentation> thisIterationAddedElements = new HashSet<>();
 		for (UniversalElementRepresentation element : lastIterationAddedElements) {
