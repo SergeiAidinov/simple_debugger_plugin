@@ -7,10 +7,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 
 /**
- * UniversalElementRepresentation — представление элемента (класс, метод, поле)
+ * UniversalElementRepresentation — представление элемента (класс, метод, поле, объект)
  * с уникальным UUID и parentUUID.
  */
 public class UniversalElementRepresentation {
@@ -50,7 +51,7 @@ public class UniversalElementRepresentation {
 
     // =================== Энумы ===================
     public enum UniversalElementType {
-        INTERFACE, CLASS, ENUM, STATIC_FIELD, NON_STATIC_FIELD, METHOD, VARIABLE, UNKNOWN
+        INTERFACE, CLASS, ENUM, STATIC_FIELD, NON_STATIC_FIELD, METHOD, VARIABLE, OBJECT_INSTANCE, UNKNOWN
     }
 
     public enum CurrentRole { OUTER, INNER, LOCAL }
@@ -61,25 +62,32 @@ public class UniversalElementRepresentation {
 
     // =================== Поля ===================
     private final Tag tag;
-    private final ReferenceType referenceType;
+    private final ReferenceType referenceType;       // класс объекта (ReferenceType)
+    private final ObjectReference objectReference;   // конкретный объект (ObjectReference)
     private final String elementName;
     private final String additionalInfo;
     private final UniversalElementType elementType;
     private CurrentRole currentRole;
     private final String value;
-   // private final Set<UniversalElementRepresentation> innerElements = new HashSet<>();
     private final boolean isStatic;
     private final ValueCategory valueCategory;
     private final String typeOrReturnType;
 
     // =================== Конструктор ===================
-    private UniversalElementRepresentation(Tag tag, ReferenceType referenceType,
-                                           String elementName, String additionalInfo,
-                                           UniversalElementType elementType, CurrentRole currentRole,
-                                           String value, boolean isStatic, ValueCategory valueCategory,
+    private UniversalElementRepresentation(Tag tag,
+                                           ReferenceType referenceType,
+                                           ObjectReference objectReference,
+                                           String elementName,
+                                           String additionalInfo,
+                                           UniversalElementType elementType,
+                                           CurrentRole currentRole,
+                                           String value,
+                                           boolean isStatic,
+                                           ValueCategory valueCategory,
                                            String typeOrReturnType) {
         this.tag = tag;
         this.referenceType = referenceType;
+        this.objectReference = objectReference;
         this.elementName = elementName;
         this.additionalInfo = additionalInfo;
         this.elementType = elementType;
@@ -93,13 +101,13 @@ public class UniversalElementRepresentation {
     // =================== Геттеры ===================
     public Tag getTag() { return tag; }
     public ReferenceType getReferenceType() { return referenceType; }
+    public ObjectReference getObjectReference() { return objectReference; }
     public String getElementName() { return elementName; }
     public String getAdditionalInfo() { return additionalInfo; }
     public UniversalElementType getElementType() { return elementType; }
     public CurrentRole getCurrentRole() { return currentRole; }
     public void setCurrentRole(CurrentRole currentRole) { this.currentRole = currentRole; }
     public String getValue() { return value; }
-   // public Set<UniversalElementRepresentation> getInnerElements() { return innerElements; }
     public boolean isStatic() { return isStatic; }
     public ValueCategory getValueCategory() { return valueCategory; }
     public String gettypeOrReturnType() { return typeOrReturnType; }
@@ -114,26 +122,25 @@ public class UniversalElementRepresentation {
                elementType == other.elementType &&
                currentRole == other.currentRole &&
                Objects.equals(value, other.value) &&
-            //   Objects.equals(innerElements, other.innerElements) &&
                isStatic == other.isStatic &&
                valueCategory == other.valueCategory &&
                Objects.equals(typeOrReturnType, other.typeOrReturnType);
     }
 
     public int hashCodeByBusinessLogic() {
-        return Objects.hash(elementName, additionalInfo, elementType, currentRole, value, /*innerElements,*/
+        return Objects.hash(elementName, additionalInfo, elementType, currentRole, value,
                             isStatic, valueCategory, typeOrReturnType);
     }
 
     // =================== Builder ===================
     public static class Builder {
         private ReferenceType referenceType = null;
+        private ObjectReference objectReference = null;
         private String elementName = "";
         private String additionalInfo = "";
         private UniversalElementType elementType = UniversalElementType.UNKNOWN;
         private CurrentRole currentRole = CurrentRole.OUTER;
         private String value = null;
-       // private Set<UniversalElementRepresentation> innerElements = new HashSet<>();
         private boolean isStatic = false;
         private ValueCategory valueCategory = ValueCategory.NOT_SPECIFIED;
         private String typeOrReturnType = "";
@@ -141,6 +148,7 @@ public class UniversalElementRepresentation {
         private UUID parentUniqueId = null;
 
         public Builder referenceType(ReferenceType referenceType) { this.referenceType = referenceType; return this; }
+        public Builder objectReference(ObjectReference objectReference) { this.objectReference = objectReference; return this; }
         public Builder elementName(String elementName) { this.elementName = elementName; return this; }
         public Builder additionalInfo(String additionalInfo) { this.additionalInfo = additionalInfo; return this; }
         public Builder elementType(UniversalElementType elementType) { this.elementType = elementType; return this; }
@@ -154,12 +162,19 @@ public class UniversalElementRepresentation {
 
         public UniversalElementRepresentation build() {
             Tag tag = new Tag(uniqueId, parentUniqueId);
-            UniversalElementRepresentation element = new UniversalElementRepresentation(
-                    tag, referenceType, elementName, additionalInfo, elementType, currentRole,
-                    value, isStatic, valueCategory, typeOrReturnType
+            return new UniversalElementRepresentation(
+                    tag,
+                    referenceType,
+                    objectReference,
+                    elementName,
+                    additionalInfo,
+                    elementType,
+                    currentRole,
+                    value,
+                    isStatic,
+                    valueCategory,
+                    typeOrReturnType
             );
-          //  element.getInnerElements().addAll(innerElements);
-            return element;
         }
     }
 
