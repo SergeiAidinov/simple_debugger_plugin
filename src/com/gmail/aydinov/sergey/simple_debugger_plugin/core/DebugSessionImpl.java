@@ -36,6 +36,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.FieldInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -229,6 +230,12 @@ public class DebugSessionImpl implements DebugSession {
 		Set<UniversalElementRepresentation> init = new HashSet();
 		init.add(topLevelElement);
 		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(init);
+		for (UniversalElementRepresentation element : relevantElements) {
+			FieldInspectionDTO fieldInspectionDTO = FieldInspectionDTO.FieldInspectionDTOFactory.fromUniversalElement(element);
+			System.out.println("@@@@@@@@@" + fieldInspectionDTO);
+		}
+		System.out.println(relevantElements);
+
 	}
 
 	private Set<UniversalElementRepresentation> compileAdditionalInfo(

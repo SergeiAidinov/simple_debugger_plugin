@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
+import java.awt.Label;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,6 +25,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 
@@ -33,6 +35,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.FieldInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -492,5 +495,45 @@ public class ClassMembersAtBreakpoint {
 
 			uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto));
 		});
+	}
+	
+	private void showFieldInfoPopup(FieldInspectionDTO dto, Point location) {
+	    if (dto == null || dto.getValue() == null)
+	        return;
+
+	    Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.NO_FOCUS | SWT.TOOL);
+	    popup.setLayout(new GridLayout(1, false));
+
+	    StringBuilder info = new StringBuilder();
+	    info.append("Field: ").append(dto.getFieldName()).append("\n");
+	    info.append("Type: ").append(dto.getType()).append("\n");
+	    info.append("Value: ").append(dto.getValue()).append("\n");
+
+	    // Если можно, добавим методы объекта (имена)
+	    if (dto.getMethods() != null && !dto.getMethods().isEmpty()) {
+	        info.append("Methods:\n");
+	        for (String method : dto.getMethods()) {
+	            info.append("  ").append(method).append("\n");
+	        }
+	    }
+
+	    Label label = new Label(null);
+	    label.setText(info.toString());
+
+	    popup.pack();
+
+	    // Позиционируем относительно курсора
+	    popup.setLocation(root.getDisplay().map(root, null, location.x + 10, location.y + 10));
+
+	    popup.open();
+
+	    // Закрываем через 3 секунды или при выходе курсора
+	    root.getDisplay().timerExec(3000, popup::dispose);
+
+	    root.getDisplay().addFilter(SWT.MouseMove, e -> {
+	        if (!popup.isDisposed()) {
+	            popup.dispose();
+	        }
+	    });
 	}
 }
