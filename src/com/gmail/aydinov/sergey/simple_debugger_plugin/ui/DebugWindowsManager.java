@@ -35,7 +35,7 @@ public class DebugWindowsManager implements Runnable {
 				TripletDTO.of("enum", "/icons/enum.png", "enum"),
 				TripletDTO.of("fieldIcon", "/icons/field.png", "non-static field"),
 				TripletDTO.of("debugger", "/icons/icon.png", "debugger_icon"),
-				TripletDTO.of("inspectIcon", "/icons/inspect.png", "inspect element"),
+				TripletDTO.of("inspectIcon", "/icons/inspect.png", null),
 				TripletDTO.of("interface", "/icons/method.png", "interface"),
 				TripletDTO.of("method", "/icons/method.png", "non-static method"),
 				TripletDTO.of("static_field", "/icons/static_field.png", "static field"),
