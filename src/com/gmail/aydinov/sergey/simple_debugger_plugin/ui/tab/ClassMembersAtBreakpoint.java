@@ -23,6 +23,7 @@ import org.eclipse.jface.viewers.TextCellEditor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -59,6 +60,7 @@ public class ClassMembersAtBreakpoint {
 	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private InnerElementRepresentationDTO lastInspectedElement;
 	private Shell currentPopup;
+	private UUID currentElementId;
 //	private InstanceInspectionPopupManager popupManager;
 
 	private static final Set<String> JAVA_STANDARD_TYPES = Set.of("int", "long", "short", "byte", "float", "double",
@@ -532,62 +534,103 @@ public class ClassMembersAtBreakpoint {
 	}
 
 	public void showFieldInfoPopup(UserInstanceInspectionDTO dto, Point location) {
-		Display display = root.getDisplay();
 
-		display.asyncExec(() -> {
-			if (dto == null || root.isDisposed())
-				return;
+	    Display display = root.getDisplay();
 
-			// Закрываем старый popup, если есть
-//	        if (popupManager.getCurrentPopup()  != null && !popupManager.getCurrentPopup().isDisposed()) {
-//	        	popupManager.getCurrentPopup().dispose();
-//	        }
+	    display.asyncExec(() -> {
 
-			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.NO_FOCUS | SWT.TOOL);
-			popup.setLayout(new GridLayout(1, false));
+	        if (root.isDisposed() || dto == null)
+	            return;
 
-			StringBuilder info = new StringBuilder();
-			info.append("Instance: ").append(dto.getInstanceName()).append("\n\n");
+	        closePopup();
 
-			if (dto.getInstanceElements() != null && !dto.getInstanceElements().isEmpty()) {
-				for (FieldInspectionDTO field : dto.getInstanceElements()) {
-					info.append("Field: ").append(field.getFieldName()).append("\n");
-					info.append("Type: ").append(field.getType()).append("\n");
+	        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
+	        popup.setLayout(new GridLayout(1, false));
 
-					if (field.getValue() != null) {
-						info.append("Value: ").append(field.getValue()).append("\n");
-					}
+	        StringBuilder info = new StringBuilder();
+	        info.append("Instance: ").append(dto.getInstanceName()).append("\n\n");
 
-					if (field.getMethods() != null && !field.getMethods().isEmpty()) {
-						info.append("Methods:\n");
-						for (String method : field.getMethods()) {
-							info.append("   ").append(method).append("\n");
-						}
-					}
-					info.append("\n");
-				}
-			}
+	        if (dto.getInstanceElements() != null) {
+	            for (FieldInspectionDTO field : dto.getInstanceElements()) {
 
-			org.eclipse.swt.widgets.Label label = new org.eclipse.swt.widgets.Label(popup, SWT.NONE);
-			label.setText(info.toString());
+	                info.append("Field: ").append(field.getFieldName()).append("\n");
+	                info.append("Type: ").append(field.getType()).append("\n");
 
-			popup.pack();
+	                if (field.getValue() != null)
+	                    info.append("Value: ").append(field.getValue()).append("\n");
 
-			popup.setLocation(location.x + OFFSET_X, location.y + OFFSET_Y
-			// display.root.getDisplay().map(root, null, location.x + 10, location.y + 10)
-			);
-			currentPopup = popup;
-			popup.open();
+	                if (field.getMethods() != null && !field.getMethods().isEmpty()) {
+	                    info.append("Methods:\n");
+	                    for (String method : field.getMethods()) {
+	                        info.append("   ").append(method).append("\n");
+	                    }
+	                }
 
-			// popupManager.setCurrentPopup(popup); // сохраняем ссылку
+	                info.append("\n");
+	            }
+	        }
 
-			// Закрываем popup, если курсор ушел с родителя root
-			root.addListener(SWT.MouseExit, e -> {
-				if (currentPopup != null && !currentPopup.isDisposed()) {
-					currentPopup.dispose();
-					currentPopup = null;
-				}
-			});
-		});
+	        org.eclipse.swt.widgets.Label label =
+	                new org.eclipse.swt.widgets.Label(popup, SWT.NONE);
+
+	        label.setText(info.toString());
+
+	        popup.pack();
+
+	        Point cursor = display.getCursorLocation();
+
+	        popup.setLocation(
+	                cursor.x + OFFSET_X,
+	                cursor.y + OFFSET_Y
+	        );
+
+	        popup.open();
+
+	        currentPopup = popup;
+
+	        popup.addListener(SWT.Dispose, e -> currentPopup = null);
+
+	        display.timerExec(150, this::checkPopupCursor);
+	    });
+	}
+	
+	private void closePopup() {
+
+	    if (currentPopup != null && !currentPopup.isDisposed()) {
+	        currentPopup.dispose();
+	    }
+
+	    currentPopup = null;
+	}
+	
+	private void checkPopupCursor() {
+
+	    if (currentPopup == null || currentPopup.isDisposed())
+	        return;
+
+	    Display display = root.getDisplay();
+
+	    Point cursor = display.getCursorLocation();
+
+	    Rectangle popupBounds = currentPopup.getBounds();
+
+	    Point rootLocation = root.toDisplay(0, 0);
+
+	    Rectangle rootBounds = new Rectangle(
+	            rootLocation.x,
+	            rootLocation.y,
+	            root.getSize().x,
+	            root.getSize().y
+	    );
+
+	    boolean cursorInsidePopup = popupBounds.contains(cursor);
+	    boolean cursorInsideTable = rootBounds.contains(cursor);
+
+	    if (!cursorInsidePopup && !cursorInsideTable) {
+	        closePopup();
+	        return;
+	    }
+
+	    display.timerExec(150, this::checkPopupCursor);
 	}
 }
