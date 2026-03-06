@@ -38,6 +38,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEven
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.FieldInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
@@ -166,11 +167,11 @@ public class DebugSessionImpl implements DebugSession {
 					shouldRefreshSnapsotAndUi = true;
 					handleSingleUiEvent(uiEvent, breakpointEvent);
 					if (shouldRefreshSnapsotAndUi) {
-					targetApplicationRepresentation
-							.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-					targetApplicationRepresentation
-							.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
-					updateUI(breakpointEvent);
+						targetApplicationRepresentation.takeSnapshotOfTargetApplication(
+								targetVirtualMachineRepresentation.getVirtualMachine());
+						targetApplicationRepresentation.addLocalVariables(
+								targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+						updateUI(breakpointEvent);
 					}
 				} catch (Throwable exception) {
 					logError("Breakpoint handler error", exception);
@@ -230,11 +231,17 @@ public class DebugSessionImpl implements DebugSession {
 		Set<UniversalElementRepresentation> init = new HashSet();
 		init.add(topLevelElement);
 		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(init);
+		List<FieldInspectionDTO> instanceElements = new ArrayList<FieldInspectionDTO>();
 		for (UniversalElementRepresentation element : relevantElements) {
-			FieldInspectionDTO fieldInspectionDTO = FieldInspectionDTO.FieldInspectionDTOFactory.fromUniversalElement(element);
+			FieldInspectionDTO fieldInspectionDTO = FieldInspectionDTO.FieldInspectionDTOFactory
+					.fromUniversalElement(element);
 			System.out.println("@@@@@@@@@" + fieldInspectionDTO);
+			instanceElements.add(fieldInspectionDTO);
 		}
 		System.out.println(relevantElements);
+		simpleDebugEventCollector
+				.collectDebugEvent(new DebugEvent<UserInstanceInspectionDTO>(SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO,
+						new UserInstanceInspectionDTO(topLevelElement.getElementName(), instanceElements)));
 
 	}
 

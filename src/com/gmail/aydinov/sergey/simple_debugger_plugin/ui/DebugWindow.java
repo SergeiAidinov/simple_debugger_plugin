@@ -15,6 +15,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -40,7 +41,7 @@ public class DebugWindow {
 	private CTabFolder tabFolder;
 
 	// Combined Variables + Fields tab
-	private ClassMembersAtBreakpoint variablesFieldsTabContent;
+	private ClassMembersAtBreakpoint classMembersAtBreakpoint;
 	private StackTabContent stackTabContent;
 	private ConsoleTabContent consoleTabContent;
 
@@ -91,10 +92,10 @@ public class DebugWindow {
 		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		// Combined Variables + Fields tab
-		variablesFieldsTabContent = new ClassMembersAtBreakpoint(tabFolder);
+		classMembersAtBreakpoint = new ClassMembersAtBreakpoint(tabFolder);
 		CTabItem varsFieldsTabItem = new CTabItem(tabFolder, SWT.NONE);
 		varsFieldsTabItem.setText("Class Members at Breakpoint");
-		varsFieldsTabItem.setControl(variablesFieldsTabContent.getControl());
+		varsFieldsTabItem.setControl(classMembersAtBreakpoint.getControl());
 
 		// Stack tab
 		stackTabContent = new StackTabContent(tabFolder);
@@ -173,6 +174,9 @@ public class DebugWindow {
 			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE)) {
 				DebugEvent<Boolean> simpleDebugEvent = (DebugEvent<Boolean>) event;
 				resumeButton.setEnabled(simpleDebugEvent.getPayload());
+			} else if(Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO)) {
+				DebugEvent<UserInstanceInspectionDTO> simpleDebugEvent = (DebugEvent<UserInstanceInspectionDTO>) event;
+				classMembersAtBreakpoint.showFieldInfoPopupFromBackend(simpleDebugEvent.getPayload());
 			}
 		});
 	}
@@ -183,7 +187,7 @@ public class DebugWindow {
 		locationLabel.setText(
 				STOP_INFO + debugWindowDataDTO.getMethodName() + " line: " + debugWindowDataDTO.getLineNumber());
 		resumeButton.setEnabled(true);
-		variablesFieldsTabContent.showInnerElementsInTable(debugWindowDataDTO);
+		classMembersAtBreakpoint.showInnerElementsInTable(debugWindowDataDTO);
 		stackTabContent.updateStack(debugWindowDataDTO.getCompileStackInfo());
 	}
 

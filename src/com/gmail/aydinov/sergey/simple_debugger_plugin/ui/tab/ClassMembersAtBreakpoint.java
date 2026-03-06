@@ -25,6 +25,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
@@ -37,6 +38,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.FieldInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
@@ -497,43 +499,68 @@ public class ClassMembersAtBreakpoint {
 		});
 	}
 	
-	private void showFieldInfoPopup(FieldInspectionDTO dto, Point location) {
-	    if (dto == null || dto.getValue() == null)
-	        return;
+	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO dto) {
+	    Display display = root.getDisplay();
+	    display.asyncExec(() -> {
+	        if (root.isDisposed())
+	            return;
 
-	    Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.NO_FOCUS | SWT.TOOL);
-	    popup.setLayout(new GridLayout(1, false));
+	        Point location = display.getCursorLocation();
+	        showFieldInfoPopup(dto, location);
+	    });
+	}
+	
+	public void showFieldInfoPopup(UserInstanceInspectionDTO dto, Point location) {
+	    Display display = root.getDisplay();
 
-	    StringBuilder info = new StringBuilder();
-	    info.append("Field: ").append(dto.getFieldName()).append("\n");
-	    info.append("Type: ").append(dto.getType()).append("\n");
-	    info.append("Value: ").append(dto.getValue()).append("\n");
+	    display.asyncExec(() -> {
+	        if (dto == null || root.isDisposed())
+	            return;
 
-	    // Если можно, добавим методы объекта (имена)
-	    if (dto.getMethods() != null && !dto.getMethods().isEmpty()) {
-	        info.append("Methods:\n");
-	        for (String method : dto.getMethods()) {
-	            info.append("  ").append(method).append("\n");
+	        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.NO_FOCUS | SWT.TOOL);
+	        popup.setLayout(new GridLayout(1, false));
+
+	        StringBuilder info = new StringBuilder();
+
+	        info.append("Instance: ").append(dto.getInstanceName()).append("\n\n");
+
+	        if (dto.getInstanceElements() != null && !dto.getInstanceElements().isEmpty()) {
+	            for (FieldInspectionDTO field : dto.getInstanceElements()) {
+
+	                info.append("Field: ").append(field.getFieldName()).append("\n");
+	                info.append("Type: ").append(field.getType()).append("\n");
+
+	                if (field.getValue() != null) {
+	                    info.append("Value: ").append(field.getValue()).append("\n");
+	                }
+
+	                if (field.getMethods() != null && !field.getMethods().isEmpty()) {
+	                    info.append("Methods:\n");
+	                    for (String method : field.getMethods()) {
+	                        info.append("   ").append(method).append("\n");
+	                    }
+	                }
+
+	                info.append("\n");
+	            }
 	        }
-	    }
 
-	    Label label = new Label(null);
-	    label.setText(info.toString());
+	        org.eclipse.swt.widgets.Label label = new org.eclipse.swt.widgets.Label(popup, SWT.NONE);
+	        label.setText(info.toString());
 
-	    popup.pack();
+	        popup.pack();
 
-	    // Позиционируем относительно курсора
-	    popup.setLocation(root.getDisplay().map(root, null, location.x + 10, location.y + 10));
+	        popup.setLocation(
+	            root.getDisplay().map(root, null, location.x + 10, location.y + 10)
+	        );
 
-	    popup.open();
+	        popup.open();
 
-	    // Закрываем через 3 секунды или при выходе курсора
-	    root.getDisplay().timerExec(3000, popup::dispose);
-
-	    root.getDisplay().addFilter(SWT.MouseMove, e -> {
-	        if (!popup.isDisposed()) {
-	            popup.dispose();
-	        }
+	        display.timerExec(3000, () -> {
+	            if (!popup.isDisposed()) {
+	                popup.dispose();
+	            }
+	        });
 	    });
 	}
 }

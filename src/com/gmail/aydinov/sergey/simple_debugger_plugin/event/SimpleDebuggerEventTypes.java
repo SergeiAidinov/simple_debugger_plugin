@@ -8,6 +8,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
 
 /**
  * Types of events emitted by the simple debugger.
@@ -37,6 +38,8 @@ public final class SimpleDebuggerEventTypes {
 
         /** Event triggered when a method is invoked in the target application */
         METHOD_INVOKE(String.class),
+        
+        DISPLAY_ADDITIONAL_INFO(UserInstanceInspectionDTO.class),
 
         DISPLAY_INSPECTION_WINDOW(Boolean.class),
         
@@ -61,6 +64,8 @@ public final class SimpleDebuggerEventTypes {
         USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementRepresentationDTO.class),
         
         USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class)
+        
+        
         ;
 
         private final Class<?> payloadType;
