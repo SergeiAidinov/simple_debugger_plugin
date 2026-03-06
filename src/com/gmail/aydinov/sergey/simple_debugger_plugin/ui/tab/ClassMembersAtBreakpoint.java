@@ -469,57 +469,45 @@ public class ClassMembersAtBreakpoint {
 		return root;
 	}
 
+	
 	private void setupHoverInspectionListener() {
-		Table table = viewer.getTable();
 
-		table.addListener(SWT.MouseMove, event -> {
-			TableItem item = table.getItem(new Point(event.x, event.y));
+	    Table table = viewer.getTable();
 
-			InnerElementRepresentationDTO dto = null;
-			if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
-				int colIndex = getColumnIndexAtPoint(table, event.x);
-				// Смотрим только третью колонку с inspectIcon
-				if (colIndex == 2
-						&& getIcon(dataDto) == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-					dto = dataDto;
-				}
-			}
+	    table.addListener(SWT.MouseMove, event -> {
 
-			// Если курсор переместился на другой элемент или ушёл с inspectable ячейки
-			if (!Objects.equals(dto, lastInspectedElement)) {
-				lastInspectedElement = dto;
+	        TableItem item = table.getItem(new Point(event.x, event.y));
 
-				// Закрываем текущий popup
-				// popupManager.closePopup();
+	        InnerElementRepresentationDTO dto = null;
 
-				// Генерируем событие только если новый dto != null
-				if (dto != null) {
-					uiEventCollector
-							.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto));
-				}
-			}
-		});
+	        if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
 
-		// Закрываем popup, если курсор покинул таблицу
-		table.addListener(SWT.MouseMove, event -> {
-			TableItem item = table.getItem(new Point(event.x, event.y));
-			InnerElementRepresentationDTO dto = null;
-			if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
-				int colIndex = getColumnIndexAtPoint(table, event.x);
-				if (colIndex == 2
-						&& getIcon(dataDto) == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-					dto = dataDto;
-				}
-			}
+	            int colIndex = getColumnIndexAtPoint(table, event.x);
 
-			// Если курсор ушёл с inspectable ячейки и есть popup — закрываем
-			if (dto == null && currentPopup != null && !currentPopup.isDisposed()) {
-				currentPopup.dispose();
-				currentPopup = null;
-			}
+	            if (colIndex == 2 &&
+	                getIcon(dataDto) ==
+	                DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
 
-			lastInspectedElement = dto;
-		});
+	                dto = dataDto;
+	            }
+	        }
+
+	        if (!Objects.equals(dto, lastInspectedElement)) {
+
+	            lastInspectedElement = dto;
+
+	            closePopup();
+
+	            if (dto != null) {
+	                uiEventCollector.collectUiEvent(
+	                        new UIEvent<>(
+	                                SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO,
+	                                dto
+	                        )
+	                );
+	            }
+	        }
+	    });
 	}
 
 	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO dto) {
