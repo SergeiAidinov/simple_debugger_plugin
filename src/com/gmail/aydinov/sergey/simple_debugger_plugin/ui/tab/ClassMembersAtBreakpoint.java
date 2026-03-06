@@ -1,14 +1,17 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -32,13 +35,15 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.widgets.Label;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.FieldInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceElementInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -54,6 +59,8 @@ public class ClassMembersAtBreakpoint {
 
 	public static final int OFFSET_X = -100;
 	public static final int OFFSET_Y = OFFSET_X;
+	private static String GAP = "  ";
+	private static String SEPARATOR = "---------------------------------------------- \n";
 
 	private final Composite root;
 	private final TableViewer viewer;
@@ -226,22 +233,27 @@ public class ClassMembersAtBreakpoint {
 
 	private class ValueEditingSupport extends EditingSupport {
 		private final TextCellEditor editor;
+
 		ValueEditingSupport(TableViewer viewer) {
 			super(viewer);
 			this.editor = new TextCellEditor(viewer.getTable());
 		}
+
 		@Override
 		protected CellEditor getCellEditor(Object element) {
 			return editor;
 		}
+
 		@Override
 		protected boolean canEdit(Object element) {
 			return element instanceof InnerElementRepresentationDTO dto && isEditable(dto);
 		}
+
 		@Override
 		protected Object getValue(Object element) {
 			return ((InnerElementRepresentationDTO) element).getValue();
 		}
+
 		@Override
 		protected void setValue(Object element, Object value) {
 			if (!(element instanceof InnerElementRepresentationDTO dto))
@@ -431,143 +443,153 @@ public class ClassMembersAtBreakpoint {
 		return root;
 	}
 
-	
 	private void setupHoverInspectionListener() {
-	    Table table = viewer.getTable();
-	    table.addListener(SWT.MouseMove, event -> {
-	        TableItem item = table.getItem(new Point(event.x, event.y));
-	        InnerElementRepresentationDTO dto = null;
-	        if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
-	            int colIndex = getColumnIndexAtPoint(table, event.x);
-	            if (colIndex == 2 &&
-	                getIcon(dataDto) ==
-	                DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-	                dto = dataDto;
-	            }
-	        }
+		Table table = viewer.getTable();
+		table.addListener(SWT.MouseMove, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			InnerElementRepresentationDTO dto = null;
+			if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
+				int colIndex = getColumnIndexAtPoint(table, event.x);
+				if (colIndex == 2
+						&& getIcon(dataDto) == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+					dto = dataDto;
+				}
+			}
 
-	        if (!Objects.equals(dto, lastInspectedElement)) {
-	            lastInspectedElement = dto;
-	            closePopup();
-	            if (dto != null) {
-	                uiEventCollector.collectUiEvent(
-	                        new UIEvent<>(
-	                                SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO,
-	                                dto
-	                        )
-	                );
-	            }
-	        }
-	    });
+			if (!Objects.equals(dto, lastInspectedElement)) {
+				lastInspectedElement = dto;
+				closePopup();
+				if (dto != null) {
+					uiEventCollector
+							.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto));
+				}
+			}
+		});
 	}
 
-	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO dto) {
+	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO userInstanceInspectionDTO) {
 		Display display = root.getDisplay();
 		display.asyncExec(() -> {
 			if (root.isDisposed())
 				return;
 			Point location = display.getCursorLocation();
-			showFieldInfoPopup(dto, location);
+			showFieldInfoPopup(userInstanceInspectionDTO, location);
 		});
 	}
 
-	public void showFieldInfoPopup(UserInstanceInspectionDTO dto, Point location) {
-	    Display display = root.getDisplay();
-	    display.asyncExec(() -> {
-	        if (root.isDisposed() || dto == null)
-	            return;
-	        closePopup();
-	        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
-	        popup.setLayout(new GridLayout(1, false));
-	        StringBuilder info = new StringBuilder();
-	        info.append("Instance: ").append(dto.getInstanceName()).append("\n\n");
-	        if (dto.getInstanceElements() != null) {
-	            for (FieldInspectionDTO field : dto.getInstanceElements()) {
-	                info.append("Field: ").append(field.getFieldName()).append("\n");
-	                info.append("Type: ").append(field.getType()).append("\n");
-	                if (field.getValue() != null)
-	                    info.append("Value: ").append(field.getValue()).append("\n");
-	                if (field.getMethods() != null && !field.getMethods().isEmpty()) {
-	                    info.append("Methods:\n");
-	                    for (String method : field.getMethods()) {
-	                        info.append("   ").append(method).append("\n");
-	                    }
-	                }
-	                info.append("\n");
-	            }
-	        }
+	public void showFieldInfoPopup(UserInstanceInspectionDTO userInstanceInspectionDTO, Point location) {
+		Display display = root.getDisplay();
+		display.asyncExec(() -> {
+			if (root.isDisposed() || userInstanceInspectionDTO == null)
+				return;
+			closePopup();
+			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
+			popup.setLayout(new GridLayout(1, false));
+			StringBuilder info = new StringBuilder();
+			info.append("Field name: ").append(userInstanceInspectionDTO.getFieldName()).append("\n");
+			info.append("Field type: ").append(userInstanceInspectionDTO.getTypeName()).append("\n\n");
+			info.append("INFO: \n");
+				info.append("Fields: \n");
+				addGroupOfElements(info, userInstanceInspectionDTO.getInnerElementsByGroups().get(1),
+						List.of("name: ", "type: ", "value: "));
+				info.append("Metods: \n");
+				addGroupOfElements(info, userInstanceInspectionDTO.getInnerElementsByGroups().get(2),
+						new ArrayList<>(Arrays.asList("name: ", "return type: ", null)));
+				info.append("Others: \n");
+				addGroupOfElements(info, userInstanceInspectionDTO.getInnerElementsByGroups().get(3),
+						List.of("name: ", "type: ", "value: "));
+			ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
+			scrolled.setLayoutData(new GridData(400, 300)); // размер окна
+			Composite content = new Composite(scrolled, SWT.NONE);
+			content.setLayout(new GridLayout(1, false));
+			Label label = new Label(content, SWT.WRAP);
+			label.setText(info.toString());
+			label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			scrolled.setContent(content);
+			scrolled.setExpandHorizontal(true);
+			scrolled.setExpandVertical(true);
+			scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+			popup.pack();
+			Point popupSize = popup.getSize();
+			Point adjustedLocation = adjustToScreen(location, popupSize);
+			popup.setLocation(adjustedLocation);
+			popup.open();
+			currentPopup = popup;
+			popup.addListener(SWT.Dispose, e -> currentPopup = null);
+			display.timerExec(150, this::checkPopupCursor);
+		});
+	}
 
-	        ScrolledComposite scrolled = new ScrolledComposite(
-	                popup,
-	                SWT.V_SCROLL | SWT.H_SCROLL
-	        );
-	        scrolled.setLayoutData(new GridData(400, 300)); // размер окна
-	        Composite content = new Composite(scrolled, SWT.NONE);
-	        content.setLayout(new GridLayout(1, false));
-	        Label label = new Label(content, SWT.WRAP);
-	        label.setText(info.toString());
-	        label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-	        scrolled.setContent(content);
-	        scrolled.setExpandHorizontal(true);
-	        scrolled.setExpandVertical(true);
-	        scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-	        popup.pack();
-	        Point popupSize = popup.getSize();
-	        Point adjustedLocation = adjustToScreen(location, popupSize);
-	        popup.setLocation(adjustedLocation);
-	        popup.open();
-	        currentPopup = popup;
-	        popup.addListener(SWT.Dispose, e -> currentPopup = null);
-	        display.timerExec(150, this::checkPopupCursor);
-	    });
+	private void addGroupOfElements(StringBuilder stringBuilder, List<UserInstanceInnerElementInspectionDTO> list,
+			List<String> markers) {
+		
+		for (int outer = 0; outer < list.size(); outer++) {
+			UserInstanceInnerElementInspectionDTO innerElement = list.get(outer);
+			for (int i = 0; i < markers.size(); i++) {
+				String announce = markers.get(i);
+				if (i == 0) {
+					Optional.ofNullable(announce)
+							.ifPresent(e -> stringBuilder.append(GAP)
+									.append(announce)
+									.append(innerElement.getName()).append("\n"));
+				} else if (i == 1) {
+					Optional.ofNullable(announce).ifPresent(
+							e -> stringBuilder.append(GAP)
+							.append(announce)
+							.append(innerElement.getTypeOrReturnType()).append("\n"));
+				} else if (i == 2) {
+					Optional.ofNullable(announce).ifPresent(
+							e -> stringBuilder.append(GAP)
+							.append(announce)
+							.append(innerElement.getValue()).append("\n"));
+				}
+				if (i == 2 && (list.size() - outer != 1)) stringBuilder.append("\n");
+			}
+		}
+		stringBuilder.append(SEPARATOR + "\n");
 	}
-	
+
 	private void closePopup() {
-	    if (currentPopup != null && !currentPopup.isDisposed()) {
-	        currentPopup.dispose();
-	    }
-	    currentPopup = null;
+		if (currentPopup != null && !currentPopup.isDisposed()) {
+			currentPopup.dispose();
+		}
+		currentPopup = null;
 	}
-	
+
 	private void checkPopupCursor() {
-	    if (currentPopup == null || currentPopup.isDisposed())
-	        return;
-	    Display display = root.getDisplay();
-	    Point cursor = display.getCursorLocation();
-	    Rectangle popupBounds = currentPopup.getBounds();
-	    Point rootLocation = root.toDisplay(0, 0);
-	    Rectangle rootBounds = new Rectangle(
-	            rootLocation.x,
-	            rootLocation.y,
-	            root.getSize().x,
-	            root.getSize().y
-	    );
-	    boolean cursorInsidePopup = popupBounds.contains(cursor);
-	    boolean cursorInsideTable = rootBounds.contains(cursor);
-	    if (!cursorInsidePopup && !cursorInsideTable) {
-	        closePopup();
-	        return;
-	    }
-	    display.timerExec(150, this::checkPopupCursor);
+		if (currentPopup == null || currentPopup.isDisposed())
+			return;
+		Display display = root.getDisplay();
+		Point cursor = display.getCursorLocation();
+		Rectangle popupBounds = currentPopup.getBounds();
+		Point rootLocation = root.toDisplay(0, 0);
+		Rectangle rootBounds = new Rectangle(rootLocation.x, rootLocation.y, root.getSize().x, root.getSize().y);
+		boolean cursorInsidePopup = popupBounds.contains(cursor);
+		boolean cursorInsideTable = rootBounds.contains(cursor);
+		if (!cursorInsidePopup && !cursorInsideTable) {
+			closePopup();
+			return;
+		}
+		display.timerExec(150, this::checkPopupCursor);
 	}
-	
+
 	private Point adjustToScreen(Point desiredLocation, Point popupSize) {
-	    Display display = root.getDisplay();
-	    Rectangle screen = display.getPrimaryMonitor().getClientArea();
-	    int x = desiredLocation.x;
-	    int y = desiredLocation.y;
-	    if (x + popupSize.x > screen.x + screen.width) {
-	        x = screen.x + screen.width - popupSize.x;
-	    }
-	    if (y + popupSize.y > screen.y + screen.height) {
-	        y = screen.y + screen.height - popupSize.y;
-	    }
-	    if (x < screen.x) {
-	        x = screen.x;
-	    }
-	    if (y < screen.y) {
-	        y = screen.y;
-	    }
-	    return new Point(x, y);
+		Display display = root.getDisplay();
+		Rectangle screen = display.getPrimaryMonitor().getClientArea();
+		int x = desiredLocation.x;
+		int y = desiredLocation.y;
+		if (x + popupSize.x > screen.x + screen.width) {
+			x = screen.x + screen.width - popupSize.x;
+		}
+		if (y + popupSize.y > screen.y + screen.height) {
+			y = screen.y + screen.height - popupSize.y;
+		}
+		if (x < screen.x) {
+			x = screen.x;
+		}
+		if (y < screen.y) {
+			y = screen.y;
+		}
+		return new Point(x, y);
 	}
 }

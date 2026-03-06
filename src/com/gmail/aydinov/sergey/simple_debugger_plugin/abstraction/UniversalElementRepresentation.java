@@ -14,7 +14,7 @@ import com.sun.jdi.ReferenceType;
  * UniversalElementRepresentation — представление элемента (класс, метод, поле, объект)
  * с уникальным UUID и parentUUID.
  */
-public class UniversalElementRepresentation {
+public class UniversalElementRepresentation implements Comparable<UniversalElementRepresentation>{
 
     // =================== Вложенный класс Tag ===================
     public static final class Tag {
@@ -130,6 +130,14 @@ public class UniversalElementRepresentation {
     public int hashCodeByBusinessLogic() {
         return Objects.hash(elementName, additionalInfo, elementType, currentRole, value,
                             isStatic, valueCategory, typeOrReturnType);
+    }
+    
+    @Override
+    public int compareTo(UniversalElementRepresentation other) {
+        if (other == null) return 1; // null всегда в конце
+        int cmp = Integer.compare(this.elementType.ordinal(), other.elementType.ordinal());
+        if (cmp != 0) return cmp;
+        return this.elementName.compareToIgnoreCase(other.elementName);
     }
 
     // =================== Builder ===================
