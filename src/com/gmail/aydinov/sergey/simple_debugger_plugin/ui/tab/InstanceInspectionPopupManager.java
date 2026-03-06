@@ -30,8 +30,22 @@ public class InstanceInspectionPopupManager {
     public InstanceInspectionPopupManager(Composite root) {
         this.root = root;
     }
+    
+    
 
-    /**
+    public Shell getCurrentPopup() {
+		return currentPopup;
+	}
+
+
+
+	public void setCurrentPopup(Shell currentPopup) {
+		this.currentPopup = currentPopup;
+	}
+
+
+
+	/**
      * Показывает popup для inspectable элемента.
      * Если уже открыт popup для другого элемента — закрывает его.
      * @param dto данные инстанса
