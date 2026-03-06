@@ -118,11 +118,11 @@ public class InstanceInspectionPopupManager {
             });
 
             // автозакрытие через 3 сек (по желанию)
-            display.timerExec(3000, () -> {
-                if (currentPopup != null && !currentPopup.isDisposed()) {
-                    currentPopup.dispose();
-                }
-            });
+//            display.timerExec(3000, () -> {
+//                if (currentPopup != null && !currentPopup.isDisposed()) {
+//                    currentPopup.dispose();
+//                }
+//            });
         });
     }
 

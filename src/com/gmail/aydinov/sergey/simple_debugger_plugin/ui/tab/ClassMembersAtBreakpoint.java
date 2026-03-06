@@ -56,6 +56,7 @@ public class ClassMembersAtBreakpoint {
 	private InnerElementRepresentationDTO lastInspectedElement;
 	private InstanceInspectionPopupManager popupManager;
 	private Runnable hoverDebounceRunnable;
+	private Shell currentPopup;
 	private static final int HOVER_DELAY_MS = 200; // пауза перед открытием popup
 
 	private static final Set<String> JAVA_STANDARD_TYPES = Set.of("int", "long", "short", "byte", "float", "double",
@@ -471,42 +472,36 @@ public class ClassMembersAtBreakpoint {
 
 	    table.addListener(SWT.MouseMove, event -> {
 	        TableItem item = table.getItem(new Point(event.x, event.y));
-	        if (item == null) {
-	            lastInspectedElement = null;
-	            popupManager.closePopup();
-	            return;
+
+	        InnerElementRepresentationDTO dto = null;
+	        if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
+	            int colIndex = getColumnIndexAtPoint(table, event.x);
+	            // Смотрим только третью колонку с inspectIcon
+	            if (colIndex == 2 && getIcon(dataDto) == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+	                dto = dataDto;
+	            }
 	        }
 
-	        int colIndex = getColumnIndexAtPoint(table, event.x);
-	        if (colIndex != 2) { // третья колонка
-	            lastInspectedElement = null;
+	        // Если курсор переместился на другой элемент или ушёл с inspectable ячейки
+	        if (!Objects.equals(dto, lastInspectedElement)) {
+	            lastInspectedElement = dto;
+
+	            // Закрываем текущий popup
 	            popupManager.closePopup();
-	            return;
+
+	            // Генерируем событие только если новый dto != null
+	            if (dto != null) {
+	                uiEventCollector.collectUiEvent(
+	                    new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto)
+	                );
+	            }
 	        }
+	    });
 
-	        Object data = item.getData();
-	        if (!(data instanceof InnerElementRepresentationDTO dto)) {
-	            lastInspectedElement = null;
-	            popupManager.closePopup();
-	            return;
-	        }
-
-	        Image icon = getIcon(dto);
-	        if (icon != DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-	            lastInspectedElement = null;
-	            popupManager.closePopup();
-	            return;
-	        }
-
-	        // Чтобы событие не генерировалось повторно на том же элементе
-	        if (dto.equals(lastInspectedElement)) return;
-
-	        lastInspectedElement = dto;
-
-	        // 1️⃣ Генерируем запрос к бэку на получение информации об элементе
-	        uiEventCollector.collectUiEvent(
-	            new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto)
-	        );
+	    // Закрываем popup, если курсор покинул таблицу
+	    table.addListener(SWT.MouseExit, e -> {
+	        lastInspectedElement = null;
+	        popupManager.closePopup();
 	    });
 	}
 	
@@ -528,16 +523,19 @@ public class ClassMembersAtBreakpoint {
 	        if (dto == null || root.isDisposed())
 	            return;
 
+	        // Закрываем старый popup, если есть
+	        if (currentPopup != null && !currentPopup.isDisposed()) {
+	            currentPopup.dispose();
+	        }
+
 	        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.NO_FOCUS | SWT.TOOL);
 	        popup.setLayout(new GridLayout(1, false));
 
 	        StringBuilder info = new StringBuilder();
-
 	        info.append("Instance: ").append(dto.getInstanceName()).append("\n\n");
 
 	        if (dto.getInstanceElements() != null && !dto.getInstanceElements().isEmpty()) {
 	            for (FieldInspectionDTO field : dto.getInstanceElements()) {
-
 	                info.append("Field: ").append(field.getFieldName()).append("\n");
 	                info.append("Type: ").append(field.getType()).append("\n");
 
@@ -551,7 +549,6 @@ public class ClassMembersAtBreakpoint {
 	                        info.append("   ").append(method).append("\n");
 	                    }
 	                }
-
 	                info.append("\n");
 	            }
 	        }
@@ -567,9 +564,13 @@ public class ClassMembersAtBreakpoint {
 
 	        popup.open();
 
-	        display.timerExec(3000, () -> {
-	            if (!popup.isDisposed()) {
-	                popup.dispose();
+	        currentPopup = popup; // сохраняем ссылку
+
+	        // Закрываем popup, если курсор ушел с родителя root
+	        root.addListener(SWT.MouseExit, e -> {
+	            if (currentPopup != null && !currentPopup.isDisposed()) {
+	                currentPopup.dispose();
+	                currentPopup = null;
 	            }
 	        });
 	    });
