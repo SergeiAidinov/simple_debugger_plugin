@@ -16,6 +16,7 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CellEditor;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.EditingSupport;
+import org.eclipse.jface.viewers.IContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.TextCellEditor;
@@ -50,14 +51,15 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
  */
 public class ClassMembersAtBreakpoint {
 
+	public static final int OFFSET_X = -100;
+	public static final int OFFSET_Y = OFFSET_X;
+
 	private final Composite root;
 	private final TableViewer viewer;
 	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private InnerElementRepresentationDTO lastInspectedElement;
-	private InstanceInspectionPopupManager popupManager;
-	//private Runnable hoverDebounceRunnable;
-//	private Shell currentPopup;
-	//private static final int HOVER_DELAY_MS = 200; // пауза перед открытием popup
+	private Shell currentPopup;
+//	private InstanceInspectionPopupManager popupManager;
 
 	private static final Set<String> JAVA_STANDARD_TYPES = Set.of("int", "long", "short", "byte", "float", "double",
 			"boolean", "char", "java.lang.Integer", "java.lang.Long", "java.lang.Short", "java.lang.Byte",
@@ -79,7 +81,7 @@ public class ClassMembersAtBreakpoint {
 		setupTooltips(table);
 		setupColumnClickListeners();
 		setupHoverInspectionListener();
-		popupManager = new InstanceInspectionPopupManager(root);
+		// popupManager = new InstanceInspectionPopupManager(root);
 	}
 
 	// =========================================================
@@ -207,28 +209,26 @@ public class ClassMembersAtBreakpoint {
 
 	// Пример исправления опечатки в getValueCategoty()
 	private Image getIcon(InnerElementRepresentationDTO dto) {
-	    if (dto == null)
-	        return null;
+		if (dto == null)
+			return null;
 
-	    ValueCategory category = dto.getValueCategory();
-	    if (category == null)
-	        return null;
+		ValueCategory category = dto.getValueCategory();
+		if (category == null)
+			return null;
 
-	    // коллекции и мапы
-	    if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
-	        return DebugWindowsManager.instance().icons.get("lens").getFirst();
-	    }
+		// коллекции и мапы
+		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
+			return DebugWindowsManager.instance().icons.get("lens").getFirst();
+		}
 
-	    // Только поля пользовательского типа, которые реально инициализированы
-	    if ((dto.getElementType() == UniversalElementType.NON_STATIC_FIELD
-	            || dto.getElementType() == UniversalElementType.STATIC_FIELD)
-	            && category == ValueCategory.USER_OBJECT
-	            && dto.getValue() != null
-	            && !JAVA_STANDARD_TYPES.contains(dto.getTypeOrReturnType())) {
-	        return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
-	    }
+		// Только поля пользовательского типа, которые реально инициализированы
+		if ((dto.getElementType() == UniversalElementType.NON_STATIC_FIELD
+				|| dto.getElementType() == UniversalElementType.STATIC_FIELD) && category == ValueCategory.USER_OBJECT
+				&& dto.getValue() != null && !JAVA_STANDARD_TYPES.contains(dto.getTypeOrReturnType())) {
+			return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
+		}
 
-	    return null;
+		return null;
 	}
 
 	private boolean isEditable(InnerElementRepresentationDTO dto) {
@@ -468,111 +468,126 @@ public class ClassMembersAtBreakpoint {
 	}
 
 	private void setupHoverInspectionListener() {
-	    Table table = viewer.getTable();
+		Table table = viewer.getTable();
 
-	    table.addListener(SWT.MouseMove, event -> {
-	        TableItem item = table.getItem(new Point(event.x, event.y));
+		table.addListener(SWT.MouseMove, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
 
-	        InnerElementRepresentationDTO dto = null;
-	        if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
-	            int colIndex = getColumnIndexAtPoint(table, event.x);
-	            // Смотрим только третью колонку с inspectIcon
-	            if (colIndex == 2 && getIcon(dataDto) == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-	                dto = dataDto;
-	            }
-	        }
+			InnerElementRepresentationDTO dto = null;
+			if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
+				int colIndex = getColumnIndexAtPoint(table, event.x);
+				// Смотрим только третью колонку с inspectIcon
+				if (colIndex == 2
+						&& getIcon(dataDto) == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+					dto = dataDto;
+				}
+			}
 
-	        // Если курсор переместился на другой элемент или ушёл с inspectable ячейки
-	        if (!Objects.equals(dto, lastInspectedElement)) {
-	            lastInspectedElement = dto;
+			// Если курсор переместился на другой элемент или ушёл с inspectable ячейки
+			if (!Objects.equals(dto, lastInspectedElement)) {
+				lastInspectedElement = dto;
 
-	            // Закрываем текущий popup
-	            popupManager.closePopup();
+				// Закрываем текущий popup
+				// popupManager.closePopup();
 
-	            // Генерируем событие только если новый dto != null
-	            if (dto != null) {
-	                uiEventCollector.collectUiEvent(
-	                    new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto)
-	                );
-	            }
-	        }
-	    });
+				// Генерируем событие только если новый dto != null
+				if (dto != null) {
+					uiEventCollector
+							.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto));
+				}
+			}
+		});
 
-	    // Закрываем popup, если курсор покинул таблицу
-	    table.addListener(SWT.MouseExit, e -> {
-	        lastInspectedElement = null;
-	        popupManager.closePopup();
-	    });
+		// Закрываем popup, если курсор покинул таблицу
+		table.addListener(SWT.MouseMove, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			InnerElementRepresentationDTO dto = null;
+			if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
+				int colIndex = getColumnIndexAtPoint(table, event.x);
+				if (colIndex == 2
+						&& getIcon(dataDto) == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+					dto = dataDto;
+				}
+			}
+
+			// Если курсор ушёл с inspectable ячейки и есть popup — закрываем
+			if (dto == null && currentPopup != null && !currentPopup.isDisposed()) {
+				currentPopup.dispose();
+				currentPopup = null;
+			}
+
+			lastInspectedElement = dto;
+		});
 	}
-	
+
 	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO dto) {
-	    Display display = root.getDisplay();
-	    display.asyncExec(() -> {
-	        if (root.isDisposed())
-	            return;
+		Display display = root.getDisplay();
+		display.asyncExec(() -> {
+			if (root.isDisposed())
+				return;
 
-	        Point location = display.getCursorLocation();
-	        showFieldInfoPopup(dto, location);
-	    });
+			Point location = display.getCursorLocation();
+			showFieldInfoPopup(dto, location);
+		});
 	}
-	
+
 	public void showFieldInfoPopup(UserInstanceInspectionDTO dto, Point location) {
-	    Display display = root.getDisplay();
+		Display display = root.getDisplay();
 
-	    display.asyncExec(() -> {
-	        if (dto == null || root.isDisposed())
-	            return;
+		display.asyncExec(() -> {
+			if (dto == null || root.isDisposed())
+				return;
 
-	        // Закрываем старый popup, если есть
-	        if (popupManager.getCurrentPopup()  != null && !popupManager.getCurrentPopup().isDisposed()) {
-	        	popupManager.getCurrentPopup().dispose();
-	        }
+			// Закрываем старый popup, если есть
+//	        if (popupManager.getCurrentPopup()  != null && !popupManager.getCurrentPopup().isDisposed()) {
+//	        	popupManager.getCurrentPopup().dispose();
+//	        }
 
-	        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.NO_FOCUS | SWT.TOOL);
-	        popup.setLayout(new GridLayout(1, false));
+			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.NO_FOCUS | SWT.TOOL);
+			popup.setLayout(new GridLayout(1, false));
 
-	        StringBuilder info = new StringBuilder();
-	        info.append("Instance: ").append(dto.getInstanceName()).append("\n\n");
+			StringBuilder info = new StringBuilder();
+			info.append("Instance: ").append(dto.getInstanceName()).append("\n\n");
 
-	        if (dto.getInstanceElements() != null && !dto.getInstanceElements().isEmpty()) {
-	            for (FieldInspectionDTO field : dto.getInstanceElements()) {
-	                info.append("Field: ").append(field.getFieldName()).append("\n");
-	                info.append("Type: ").append(field.getType()).append("\n");
+			if (dto.getInstanceElements() != null && !dto.getInstanceElements().isEmpty()) {
+				for (FieldInspectionDTO field : dto.getInstanceElements()) {
+					info.append("Field: ").append(field.getFieldName()).append("\n");
+					info.append("Type: ").append(field.getType()).append("\n");
 
-	                if (field.getValue() != null) {
-	                    info.append("Value: ").append(field.getValue()).append("\n");
-	                }
+					if (field.getValue() != null) {
+						info.append("Value: ").append(field.getValue()).append("\n");
+					}
 
-	                if (field.getMethods() != null && !field.getMethods().isEmpty()) {
-	                    info.append("Methods:\n");
-	                    for (String method : field.getMethods()) {
-	                        info.append("   ").append(method).append("\n");
-	                    }
-	                }
-	                info.append("\n");
-	            }
-	        }
+					if (field.getMethods() != null && !field.getMethods().isEmpty()) {
+						info.append("Methods:\n");
+						for (String method : field.getMethods()) {
+							info.append("   ").append(method).append("\n");
+						}
+					}
+					info.append("\n");
+				}
+			}
 
-	        org.eclipse.swt.widgets.Label label = new org.eclipse.swt.widgets.Label(popup, SWT.NONE);
-	        label.setText(info.toString());
+			org.eclipse.swt.widgets.Label label = new org.eclipse.swt.widgets.Label(popup, SWT.NONE);
+			label.setText(info.toString());
 
-	        popup.pack();
+			popup.pack();
 
-	        popup.setLocation(
-	            root.getDisplay().map(root, null, location.x + 10, location.y + 10)
-	        );
+			popup.setLocation(location.x + OFFSET_X, location.y + OFFSET_Y
+			// display.root.getDisplay().map(root, null, location.x + 10, location.y + 10)
+			);
+			currentPopup = popup;
+			popup.open();
 
-	        popup.open();
+			// popupManager.setCurrentPopup(popup); // сохраняем ссылку
 
-	        popupManager.setCurrentPopup(popup); // сохраняем ссылку
-
-	        // Закрываем popup, если курсор ушел с родителя root
-	        root.addListener(SWT.MouseExit, e -> {
-	            if (popupManager.getCurrentPopup() != null && !popupManager.getCurrentPopup().isDisposed()) {
-	            	popupManager.getCurrentPopup().dispose();
-	            	popupManager.setCurrentPopup(null);
-	            }
-	        });
-	    });
+			// Закрываем popup, если курсор ушел с родителя root
+			root.addListener(SWT.MouseExit, e -> {
+				if (currentPopup != null && !currentPopup.isDisposed()) {
+					currentPopup.dispose();
+					currentPopup = null;
+				}
+			});
+		});
 	}
 }
