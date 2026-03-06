@@ -54,6 +54,9 @@ public class ClassMembersAtBreakpoint {
 	private final TableViewer viewer;
 	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private InnerElementRepresentationDTO lastInspectedElement;
+	private InstanceInspectionPopupManager popupManager;
+	private Runnable hoverDebounceRunnable;
+	private static final int HOVER_DELAY_MS = 200; // пауза перед открытием popup
 
 	private static final Set<String> JAVA_STANDARD_TYPES = Set.of("int", "long", "short", "byte", "float", "double",
 			"boolean", "char", "java.lang.Integer", "java.lang.Long", "java.lang.Short", "java.lang.Byte",
@@ -75,6 +78,7 @@ public class ClassMembersAtBreakpoint {
 		setupTooltips(table);
 		setupColumnClickListeners();
 		setupHoverInspectionListener();
+		popupManager = new InstanceInspectionPopupManager(root);
 	}
 
 	// =========================================================
@@ -463,40 +467,47 @@ public class ClassMembersAtBreakpoint {
 	}
 
 	private void setupHoverInspectionListener() {
+	    Table table = viewer.getTable();
 
-		Table table = viewer.getTable();
+	    table.addListener(SWT.MouseMove, event -> {
+	        TableItem item = table.getItem(new Point(event.x, event.y));
+	        if (item == null) {
+	            lastInspectedElement = null;
+	            popupManager.closePopup();
+	            return;
+	        }
 
-		table.addListener(SWT.MouseMove, event -> {
+	        int colIndex = getColumnIndexAtPoint(table, event.x);
+	        if (colIndex != 2) { // третья колонка
+	            lastInspectedElement = null;
+	            popupManager.closePopup();
+	            return;
+	        }
 
-			TableItem item = table.getItem(new Point(event.x, event.y));
-			if (item == null) {
-				lastInspectedElement = null;
-				return;
-			}
+	        Object data = item.getData();
+	        if (!(data instanceof InnerElementRepresentationDTO dto)) {
+	            lastInspectedElement = null;
+	            popupManager.closePopup();
+	            return;
+	        }
 
-			int colIndex = getColumnIndexAtPoint(table, event.x);
-			if (colIndex != 2)
-				return;
+	        Image icon = getIcon(dto);
+	        if (icon != DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+	            lastInspectedElement = null;
+	            popupManager.closePopup();
+	            return;
+	        }
 
-			Object data = item.getData();
-			if (!(data instanceof InnerElementRepresentationDTO dto))
-				return;
+	        // Чтобы событие не генерировалось повторно на том же элементе
+	        if (dto.equals(lastInspectedElement)) return;
 
-			Image icon = getIcon(dto);
+	        lastInspectedElement = dto;
 
-			if (icon == null || icon != DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-				lastInspectedElement = null;
-				return;
-			}
-
-			// чтобы событие не генерировалось постоянно
-			if (dto.equals(lastInspectedElement))
-				return;
-
-			lastInspectedElement = dto;
-
-			uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto));
-		});
+	        // 1️⃣ Генерируем запрос к бэку на получение информации об элементе
+	        uiEventCollector.collectUiEvent(
+	            new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto)
+	        );
+	    });
 	}
 	
 	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO dto) {
