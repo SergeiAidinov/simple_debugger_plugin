@@ -55,9 +55,9 @@ public class ClassMembersAtBreakpoint {
 	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private InnerElementRepresentationDTO lastInspectedElement;
 	private InstanceInspectionPopupManager popupManager;
-	private Runnable hoverDebounceRunnable;
-	private Shell currentPopup;
-	private static final int HOVER_DELAY_MS = 200; // пауза перед открытием popup
+	//private Runnable hoverDebounceRunnable;
+//	private Shell currentPopup;
+	//private static final int HOVER_DELAY_MS = 200; // пауза перед открытием popup
 
 	private static final Set<String> JAVA_STANDARD_TYPES = Set.of("int", "long", "short", "byte", "float", "double",
 			"boolean", "char", "java.lang.Integer", "java.lang.Long", "java.lang.Short", "java.lang.Byte",
@@ -524,8 +524,8 @@ public class ClassMembersAtBreakpoint {
 	            return;
 
 	        // Закрываем старый popup, если есть
-	        if (currentPopup != null && !currentPopup.isDisposed()) {
-	            currentPopup.dispose();
+	        if (popupManager.getCurrentPopup()  != null && !popupManager.getCurrentPopup().isDisposed()) {
+	        	popupManager.getCurrentPopup().dispose();
 	        }
 
 	        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.NO_FOCUS | SWT.TOOL);
@@ -564,13 +564,13 @@ public class ClassMembersAtBreakpoint {
 
 	        popup.open();
 
-	        currentPopup = popup; // сохраняем ссылку
+	        popupManager.setCurrentPopup(popup); // сохраняем ссылку
 
 	        // Закрываем popup, если курсор ушел с родителя root
 	        root.addListener(SWT.MouseExit, e -> {
-	            if (currentPopup != null && !currentPopup.isDisposed()) {
-	                currentPopup.dispose();
-	                currentPopup = null;
+	            if (popupManager.getCurrentPopup() != null && !popupManager.getCurrentPopup().isDisposed()) {
+	            	popupManager.getCurrentPopup().dispose();
+	            	popupManager.setCurrentPopup(null);
 	            }
 	        });
 	    });
