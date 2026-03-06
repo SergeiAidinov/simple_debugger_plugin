@@ -581,11 +581,10 @@ public class ClassMembersAtBreakpoint {
 
 	        Point cursor = display.getCursorLocation();
 
-	        popup.setLocation(
-	                cursor.x + OFFSET_X,
-	                cursor.y + OFFSET_Y
-	        );
+	        Point popupSize = popup.getSize();
+	        Point adjustedLocation = adjustToScreen(location, popupSize);
 
+	        popup.setLocation(adjustedLocation);
 	        popup.open();
 
 	        currentPopup = popup;
@@ -634,5 +633,31 @@ public class ClassMembersAtBreakpoint {
 	    }
 
 	    display.timerExec(150, this::checkPopupCursor);
+	}
+	
+	private Point adjustToScreen(Point desiredLocation, Point popupSize) {
+	    Display display = root.getDisplay();
+	    Rectangle screen = display.getPrimaryMonitor().getClientArea();
+
+	    int x = desiredLocation.x;
+	    int y = desiredLocation.y;
+
+	    if (x + popupSize.x > screen.x + screen.width) {
+	        x = screen.x + screen.width - popupSize.x;
+	    }
+
+	    if (y + popupSize.y > screen.y + screen.height) {
+	        y = screen.y + screen.height - popupSize.y;
+	    }
+
+	    if (x < screen.x) {
+	        x = screen.x;
+	    }
+
+	    if (y < screen.y) {
+	        y = screen.y;
+	    }
+
+	    return new Point(x, y);
 	}
 }
