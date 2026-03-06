@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IStatus;
@@ -36,7 +38,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.FieldInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceElementInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
@@ -231,17 +234,42 @@ public class DebugSessionImpl implements DebugSession {
 		Set<UniversalElementRepresentation> init = new HashSet();
 		init.add(topLevelElement);
 		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(init);
-		List<FieldInspectionDTO> instanceElements = new ArrayList<FieldInspectionDTO>();
-		for (UniversalElementRepresentation element : relevantElements) {
-			FieldInspectionDTO fieldInspectionDTO = FieldInspectionDTO.FieldInspectionDTOFactory
-					.fromUniversalElement(element);
-			System.out.println("@@@@@@@@@" + fieldInspectionDTO);
-			instanceElements.add(fieldInspectionDTO);
+		relevantElements.remove(topLevelElement);
+		String typeOrReturnType = topLevelElement.gettypeOrReturnType();
+		Optional<UniversalElementRepresentation> ee = relevantElements.stream()
+				.filter(e -> Objects.equals(e.gettypeOrReturnType(), typeOrReturnType)).findAny();
+		String type = "N/A";
+		if (ee.isPresent()) {
+			type = ee.get().gettypeOrReturnType();
+			relevantElements.remove(ee.get());
 		}
+		List<UniversalElementRepresentation> elements = new ArrayList<UniversalElementRepresentation>(relevantElements);
+		Collections.sort(elements);
+		// List<UserInstanceElementInspectionDTO> instanceElements = new
+		// ArrayList<UserInstanceElementInspectionDTO>();
+//		Map<UniversalElementRepresentation.UniversalElementType, List<UniversalElementRepresentation>> grouped = elements
+//				.stream().collect(Collectors.groupingBy(UniversalElementRepresentation::getElementType));
+		// System.out.println(grouped);
+//		List<UniversalElementType> groups = List.of(UniversalElementType.INTERFACE, UniversalElementType.CLASS,
+//				UniversalElementType.ENUM, UniversalElementType.METHOD);
+		Map<Integer, ArrayList<UserInstanceInnerElementInspectionDTO>> separatedIntoGroups = Map.of(
+				1, new ArrayList<UserInstanceInnerElementInspectionDTO>(), 
+				2, new ArrayList<UserInstanceInnerElementInspectionDTO>(), 
+				3, new ArrayList<UserInstanceInnerElementInspectionDTO>());
+		for (UniversalElementRepresentation element : elements) {
+			UserInstanceInnerElementInspectionDTO userInstanceInnerElementInspectionDTO = 
+					new UserInstanceInnerElementInspectionDTO(element.getElementName() , element.gettypeOrReturnType() , element.getValue());
+			if (element.getElementType().ordinal() < 5) separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
+			//else if (element.getElementType().ordinal() == 3 &&  element.getElementType().ordinal() == 4) separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
+			else if (element.getElementType().ordinal() == 5) separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
+			else if (element.getElementType().ordinal() > 5) separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
+		}
+
 		System.out.println(relevantElements);
-		simpleDebugEventCollector
-				.collectDebugEvent(new DebugEvent<UserInstanceInspectionDTO>(SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO,
-						new UserInstanceInspectionDTO(topLevelElement.getElementName(), instanceElements)));
+		UserInstanceInspectionDTO qq = new UserInstanceInspectionDTO(topLevelElement.getElementName(), type,
+				separatedIntoGroups);
+		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<UserInstanceInspectionDTO>(
+				SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, qq));
 
 	}
 
