@@ -70,15 +70,12 @@ public class ClassMembersAtBreakpoint {
 	public ClassMembersAtBreakpoint(Composite parent) {
 		root = new Composite(parent, SWT.NONE);
 		root.setLayout(new GridLayout(1, false));
-
 		Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		table.setLayoutData(new GridData(GridData.FILL_BOTH));
-
 		viewer = new TableViewer(table);
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
-
 		setupColumns();
 		setupTooltips(table);
 		setupColumnClickListeners();
@@ -91,7 +88,6 @@ public class ClassMembersAtBreakpoint {
 	// =========================================================
 
 	private void setupColumns() {
-
 		// 0: Name
 		char arrow = '⮡';
 		createColumn(0, "Name", 250, e -> {
@@ -101,23 +97,19 @@ public class ClassMembersAtBreakpoint {
 				indent = indent + arrow;
 			return indent + dto.getElementName();
 		}, e -> null);
-
 		// 1: Type / Return Type
 		createColumn(1, "Type / Return Type", 300, InnerElementRepresentationDTO::getTypeOrReturnType,
 				this::getTypeIcon);
-
 		// 2: Value / Info
 		TableViewerColumn valueColumn = createColumn(2, "Value / Info", 400, dto -> {
 			String v = dto.getValue();
 			if (v != null)
 				return v;
-
 			// Если поле или статическое поле, показываем тип
 			if (dto.getElementType() == UniversalElementType.STATIC_FIELD
 					|| dto.getElementType() == UniversalElementType.NON_STATIC_FIELD) {
 				return dto.getAdditionalInfo();
 			}
-
 			return ""; // иначе пусто
 		}, this::getIcon);
 
@@ -127,12 +119,10 @@ public class ClassMembersAtBreakpoint {
 	private TableViewerColumn createColumn(int index, String title, int width,
 			Function<InnerElementRepresentationDTO, String> textExtractor,
 			Function<InnerElementRepresentationDTO, Image> imageExtractor) {
-
 		TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
 		column.getColumn().setText(title);
 		column.getColumn().setWidth(width);
 		column.getColumn().setResizable(true);
-
 		column.setLabelProvider(new ColumnLabelProvider() {
 
 			@Override
@@ -184,7 +174,6 @@ public class ClassMembersAtBreakpoint {
 	// =========================================================
 	// Icons & tooltips
 	// =========================================================
-
 	private Image getTypeIcon(InnerElementRepresentationDTO dto) {
 		String key = switch (dto.getElementType()) {
 		case INTERFACE -> "interface";
@@ -213,23 +202,19 @@ public class ClassMembersAtBreakpoint {
 	private Image getIcon(InnerElementRepresentationDTO dto) {
 		if (dto == null)
 			return null;
-
 		ValueCategory category = dto.getValueCategory();
 		if (category == null)
 			return null;
-
 		// коллекции и мапы
 		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
 			return DebugWindowsManager.instance().icons.get("lens").getFirst();
 		}
-
 		// Только поля пользовательского типа, которые реально инициализированы
 		if ((dto.getElementType() == UniversalElementType.NON_STATIC_FIELD
 				|| dto.getElementType() == UniversalElementType.STATIC_FIELD) && category == ValueCategory.USER_OBJECT
 				&& dto.getValue() != null && !JAVA_STANDARD_TYPES.contains(dto.getTypeOrReturnType())) {
 			return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
 		}
-
 		return null;
 	}
 
@@ -240,50 +225,39 @@ public class ClassMembersAtBreakpoint {
 	}
 
 	private class ValueEditingSupport extends EditingSupport {
-
 		private final TextCellEditor editor;
-
 		ValueEditingSupport(TableViewer viewer) {
 			super(viewer);
 			this.editor = new TextCellEditor(viewer.getTable());
 		}
-
 		@Override
 		protected CellEditor getCellEditor(Object element) {
 			return editor;
 		}
-
 		@Override
 		protected boolean canEdit(Object element) {
 			return element instanceof InnerElementRepresentationDTO dto && isEditable(dto);
 		}
-
 		@Override
 		protected Object getValue(Object element) {
 			return ((InnerElementRepresentationDTO) element).getValue();
 		}
-
 		@Override
 		protected void setValue(Object element, Object value) {
 			if (!(element instanceof InnerElementRepresentationDTO dto))
 				return;
-
 			if (value == null)
 				return;
-
 			String newValue = value.toString();
-
 			// Попробуем преобразовать строку в нужный тип, если это примитив
 			String type = dto.getAdditionalInfo();
 			Object convertedValue = convertToType(newValue, type);
-
 			switch (dto.getElementType()) {
 			case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, convertedValue.toString());
 			case LOCAL_VARIABLE -> updateVariableValue(dto, convertedValue.toString());
 			default -> {
 			}
 			}
-
 			viewer.update(dto, null);
 		}
 	}
@@ -369,7 +343,6 @@ public class ClassMembersAtBreakpoint {
 		allElements.stream().forEach(e -> System.out.println(e));
 		Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<>();
 		Set<InnerElementRepresentationDTO> elementsToDelete = new HashSet<>();
-
 		// 1️⃣ root элементы
 		for (InnerElementRepresentationDTO element : allElements) {
 			if (element.getTag().getParentId() == null) {
@@ -377,7 +350,6 @@ public class ClassMembersAtBreakpoint {
 				elementsToDelete.add(element);
 			}
 		}
-
 		// 2️⃣ второй уровень
 		for (InnerElementRepresentationDTO rootElement : tree.keySet()) {
 			for (InnerElementRepresentationDTO secondLevelElement : allElements) {
@@ -389,7 +361,6 @@ public class ClassMembersAtBreakpoint {
 		}
 		allElements.removeAll(elementsToDelete);
 		elementsToDelete.clear();
-
 		// 3️⃣ третий уровень
 		for (PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>> pair : tree.values()) {
 			for (InnerElementRepresentationDTO secondLevelElement : pair.getFirst()) {
@@ -402,20 +373,16 @@ public class ClassMembersAtBreakpoint {
 			}
 		}
 		allElements.removeAll(elementsToDelete);
-
 		// 4️⃣ сборка результата
 		List<InnerElementRepresentationDTO> result = new ArrayList<>();
 		List<InnerElementRepresentationDTO> secondLevelElements = new ArrayList<>();
 		List<InnerElementRepresentationDTO> thirdLevelElements = new ArrayList<>();
-
 		for (Entry<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> triplet : tree
 				.entrySet()) {
 			triplet.getKey().setLevel(0);
 			result.add(triplet.getKey());
-
 			secondLevelElements
 					.addAll(triplet.getValue().getFirst().stream().sorted().peek(e -> e.setLevel(1)).toList());
-
 			thirdLevelElements
 					.addAll(triplet.getValue().getSecond().stream().sorted().peek(e -> e.setLevel(2)).toList());
 		}
@@ -433,7 +400,6 @@ public class ClassMembersAtBreakpoint {
 		if (!allElements.isEmpty()) {
 			result.addAll(allElements.stream().sorted().peek(e -> e.setLevel(0)).toList());
 		}
-
 		return result;
 	}
 
@@ -443,22 +409,18 @@ public class ClassMembersAtBreakpoint {
 			TableItem item = table.getItem(new Point(event.x, event.y));
 			if (item == null)
 				return;
-
 			int colIndex = getColumnIndexAtPoint(table, event.x);
 			// Наша третья колонка — индекс 2
 			if (colIndex != 2)
 				return;
-
 			Object data = item.getData();
 			if (!(data instanceof InnerElementRepresentationDTO dto))
 				return;
-
 			// Проверяем, что клик именно по inspectIcon (значение колонки совпадает с
 			// иконкой)
 			Image clickedImage = getIcon(dto);
 			if (clickedImage == null)
 				return; // нет inspectIcon — ничего не делаем
-
 			// Генерируем событие
 			uiEventCollector.collectUiEvent(
 					new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto));
@@ -471,33 +433,22 @@ public class ClassMembersAtBreakpoint {
 
 	
 	private void setupHoverInspectionListener() {
-
 	    Table table = viewer.getTable();
-
 	    table.addListener(SWT.MouseMove, event -> {
-
 	        TableItem item = table.getItem(new Point(event.x, event.y));
-
 	        InnerElementRepresentationDTO dto = null;
-
 	        if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
-
 	            int colIndex = getColumnIndexAtPoint(table, event.x);
-
 	            if (colIndex == 2 &&
 	                getIcon(dataDto) ==
 	                DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-
 	                dto = dataDto;
 	            }
 	        }
 
 	        if (!Objects.equals(dto, lastInspectedElement)) {
-
 	            lastInspectedElement = dto;
-
 	            closePopup();
-
 	            if (dto != null) {
 	                uiEventCollector.collectUiEvent(
 	                        new UIEvent<>(
@@ -515,45 +466,33 @@ public class ClassMembersAtBreakpoint {
 		display.asyncExec(() -> {
 			if (root.isDisposed())
 				return;
-
 			Point location = display.getCursorLocation();
 			showFieldInfoPopup(dto, location);
 		});
 	}
 
 	public void showFieldInfoPopup(UserInstanceInspectionDTO dto, Point location) {
-
 	    Display display = root.getDisplay();
-
 	    display.asyncExec(() -> {
-
 	        if (root.isDisposed() || dto == null)
 	            return;
-
 	        closePopup();
-
 	        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
 	        popup.setLayout(new GridLayout(1, false));
-
 	        StringBuilder info = new StringBuilder();
 	        info.append("Instance: ").append(dto.getInstanceName()).append("\n\n");
-
 	        if (dto.getInstanceElements() != null) {
 	            for (FieldInspectionDTO field : dto.getInstanceElements()) {
-
 	                info.append("Field: ").append(field.getFieldName()).append("\n");
 	                info.append("Type: ").append(field.getType()).append("\n");
-
 	                if (field.getValue() != null)
 	                    info.append("Value: ").append(field.getValue()).append("\n");
-
 	                if (field.getMethods() != null && !field.getMethods().isEmpty()) {
 	                    info.append("Methods:\n");
 	                    for (String method : field.getMethods()) {
 	                        info.append("   ").append(method).append("\n");
 	                    }
 	                }
-
 	                info.append("\n");
 	            }
 	        }
@@ -562,102 +501,73 @@ public class ClassMembersAtBreakpoint {
 	                popup,
 	                SWT.V_SCROLL | SWT.H_SCROLL
 	        );
-
 	        scrolled.setLayoutData(new GridData(400, 300)); // размер окна
-
 	        Composite content = new Composite(scrolled, SWT.NONE);
 	        content.setLayout(new GridLayout(1, false));
-
 	        Label label = new Label(content, SWT.WRAP);
 	        label.setText(info.toString());
 	        label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
 	        scrolled.setContent(content);
 	        scrolled.setExpandHorizontal(true);
 	        scrolled.setExpandVertical(true);
 	        scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-
 	        popup.pack();
-
-	        Point cursor = display.getCursorLocation();
-
 	        Point popupSize = popup.getSize();
 	        Point adjustedLocation = adjustToScreen(location, popupSize);
-
 	        popup.setLocation(adjustedLocation);
 	        popup.open();
-
 	        currentPopup = popup;
-
 	        popup.addListener(SWT.Dispose, e -> currentPopup = null);
-
 	        display.timerExec(150, this::checkPopupCursor);
 	    });
 	}
 	
 	private void closePopup() {
-
 	    if (currentPopup != null && !currentPopup.isDisposed()) {
 	        currentPopup.dispose();
 	    }
-
 	    currentPopup = null;
 	}
 	
 	private void checkPopupCursor() {
-
 	    if (currentPopup == null || currentPopup.isDisposed())
 	        return;
-
 	    Display display = root.getDisplay();
-
 	    Point cursor = display.getCursorLocation();
-
 	    Rectangle popupBounds = currentPopup.getBounds();
-
 	    Point rootLocation = root.toDisplay(0, 0);
-
 	    Rectangle rootBounds = new Rectangle(
 	            rootLocation.x,
 	            rootLocation.y,
 	            root.getSize().x,
 	            root.getSize().y
 	    );
-
 	    boolean cursorInsidePopup = popupBounds.contains(cursor);
 	    boolean cursorInsideTable = rootBounds.contains(cursor);
-
 	    if (!cursorInsidePopup && !cursorInsideTable) {
 	        closePopup();
 	        return;
 	    }
-
 	    display.timerExec(150, this::checkPopupCursor);
 	}
 	
 	private Point adjustToScreen(Point desiredLocation, Point popupSize) {
 	    Display display = root.getDisplay();
 	    Rectangle screen = display.getPrimaryMonitor().getClientArea();
-
 	    int x = desiredLocation.x;
 	    int y = desiredLocation.y;
-
 	    if (x + popupSize.x > screen.x + screen.width) {
 	        x = screen.x + screen.width - popupSize.x;
 	    }
-
 	    if (y + popupSize.y > screen.y + screen.height) {
 	        y = screen.y + screen.height - popupSize.y;
 	    }
-
 	    if (x < screen.x) {
 	        x = screen.x;
 	    }
-
 	    if (y < screen.y) {
 	        y = screen.y;
 	    }
-
 	    return new Point(x, y);
 	}
 }
