@@ -1,6 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
-import java.awt.Label;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,7 +15,6 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CellEditor;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.EditingSupport;
-import org.eclipse.jface.viewers.IContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.TextCellEditor;
@@ -31,6 +29,8 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.widgets.Label;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
@@ -558,10 +558,24 @@ public class ClassMembersAtBreakpoint {
 	            }
 	        }
 
-	        org.eclipse.swt.widgets.Label label =
-	                new org.eclipse.swt.widgets.Label(popup, SWT.NONE);
+	        ScrolledComposite scrolled = new ScrolledComposite(
+	                popup,
+	                SWT.V_SCROLL | SWT.H_SCROLL
+	        );
 
+	        scrolled.setLayoutData(new GridData(400, 300)); // размер окна
+
+	        Composite content = new Composite(scrolled, SWT.NONE);
+	        content.setLayout(new GridLayout(1, false));
+
+	        Label label = new Label(content, SWT.WRAP);
 	        label.setText(info.toString());
+	        label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+	        scrolled.setContent(content);
+	        scrolled.setExpandHorizontal(true);
+	        scrolled.setExpandVertical(true);
+	        scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 
 	        popup.pack();
 
