@@ -229,8 +229,8 @@ public class DebugSessionImpl implements DebugSession {
 		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
 		UniversalElementRepresentation topLevelElement = targetApplicationRepresentation.getTargetApplicationSnapshot()
 				.get(anchorElement.getTag());
-//		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-//				.forEach(e -> System.out.println(">>> " + e));
+		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+				.forEach(e -> System.out.println(">>> " + e));
 		Set<UniversalElementRepresentation> init = new HashSet();
 		init.add(topLevelElement);
 		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(init);
