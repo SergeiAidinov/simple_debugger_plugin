@@ -21,33 +21,47 @@ public class DebuggerContext {
      * Represents the possible states of the debugger.
      */
     public enum SimpleDebuggerStatus {
-        WILL_NOT_START,
-        STARTING,
+        DEBUGGER_WILL_NOT_START,
+        DEBUGGER_STARTING,
         VM_AWAITING_CONNECTION,
         VM_CONNECTED,
-        PREPARING,
-        PREPARED,
-        RUNNING,
-        SESSION_STARTED,
-        SESSION_FINISHED,
-        STOPPED
+        DEBUGGER_STARTED,
+        DEBUG_SESSION_PREPARING,
+        DEBUG_SESSION_PREPARED,
+        DEBUG_SESSION_RUNNING,
+        INSPECTION_SEANCE_STARTING,
+        INSPECTION_SEANCE_RUNNING,
+        INSPECTION_SEANCE_CLOSING,
+        INSPECTION_SEANCE_STOPPED,
+        DEBUG_SESSION_FINISHED,
+        DEBUGGER_STOPPED
     }
 
     private static final DebuggerContext INSTANCE = new DebuggerContext();
     private final ReentrantLock lock = new ReentrantLock(true); // fair lock
     private volatile SimpleDebuggerStatus status;
-    private static final Set<SimpleDebuggerStatus> RUNNING_STATES = EnumSet.of(
-            SimpleDebuggerStatus.RUNNING,
-            SimpleDebuggerStatus.SESSION_STARTED,
-            SimpleDebuggerStatus.SESSION_FINISHED
+    private static final Set<SimpleDebuggerStatus> DEBUGGER_RUNNING_STATES = EnumSet.of(
+    		SimpleDebuggerStatus.DEBUGGER_STARTED,
+    		SimpleDebuggerStatus.DEBUG_SESSION_RUNNING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_STOPPED,
+    		SimpleDebuggerStatus.DEBUG_SESSION_FINISHED
     );
     private static final Set<SimpleDebuggerStatus> TERMINAL_STATES = EnumSet.of(
-            SimpleDebuggerStatus.WILL_NOT_START,
-            SimpleDebuggerStatus.STOPPED
+            SimpleDebuggerStatus.DEBUGGER_WILL_NOT_START,
+            SimpleDebuggerStatus.DEBUGGER_STOPPED
+    );
+    
+    private static final Set<SimpleDebuggerStatus> INSPECTION_SEANCE_RUNNING_STATES = EnumSet.of(
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING
     );
 
     private DebuggerContext() {
-        status = SimpleDebuggerStatus.STARTING;
+        status = SimpleDebuggerStatus.DEBUGGER_STARTING;
     }
 
     /**
@@ -109,7 +123,7 @@ public class DebuggerContext {
     public boolean isRunning() {
         lock.lock();
         try {
-            return RUNNING_STATES.contains(status);
+            return DEBUGGER_RUNNING_STATES.contains(status);
         } finally {
             lock.unlock();
         }
@@ -120,8 +134,8 @@ public class DebuggerContext {
      * <p>
      * A terminal state is a status from which the debugger cannot transition
      * to a running or startable state. This includes
-     * {@link SimpleDebuggerStatus#STOPPED} and
-     * {@link SimpleDebuggerStatus#WILL_NOT_START}.
+     * {@link SimpleDebuggerStatus#DEBUGGER_STOPPED} and
+     * {@link SimpleDebuggerStatus#DEBUGGER_WILL_NOT_START}.
      * </p>
      *
      * @return {@code true} if the debugger is in a terminal state and cannot be started or resumed,
@@ -141,10 +155,19 @@ public class DebuggerContext {
      *
      * @return true if the debugger session has started
      */
-    public boolean isSessionActive() {
+    public boolean isDebugSessionActive() {
         lock.lock();
         try {
-            return status.equals(SimpleDebuggerStatus.SESSION_STARTED);
+            return status.equals(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
+        } finally {
+            lock.unlock();
+        }
+    }
+    
+    public boolean isInspectionSeanceActive() {
+        lock.lock();
+        try {
+            return INSPECTION_SEANCE_RUNNING_STATES.contains(status);
         } finally {
             lock.unlock();
         }

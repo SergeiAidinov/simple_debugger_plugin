@@ -19,9 +19,14 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.Simp
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.OnWorkflowReadyListener;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.Location;
@@ -83,6 +88,7 @@ public class SimpleDebuggerWorkFlow {
 	private final IBreakpointManager breakpointManager; // do NOT remove
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove
 	private final CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
+	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager breakpointManager, BreakpointSubscriberRegistrar breakpointListener,
@@ -99,7 +105,7 @@ public class SimpleDebuggerWorkFlow {
 	/** Starts the debug workflow */
 	public void debug(String mainClassName) {
 		prepareDebug(targetVirtualMachineRepresentation.getVirtualMachine().eventQueue(), mainClassName);
-		if (!DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.PREPARED)) {
+		if (!DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.DEBUG_SESSION_PREPARED)) {
 			Display.getDefault().asyncExec(() -> {
 				Shell shell = Display.getDefault().getActiveShell();
 				MessageDialog.openError(
@@ -108,17 +114,16 @@ public class SimpleDebuggerWorkFlow {
 				        "Failed to start the debug session."
 				);
 			});
-			DebuggerContext.context().setStatus(SimpleDebuggerStatus.WILL_NOT_START);
+			DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUGGER_WILL_NOT_START);
 			return;
 		}
 		SimpleDebuggerLogger.info("DEBUGGER STARTED");
-		DebuggerContext.context().setStatus(SimpleDebuggerStatus.RUNNING);
-		openDebugWindow();
+		DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUGGER_STARTED);
 		targetVirtualMachineRepresentation.getVirtualMachine().resume();
 
 		while (DebuggerContext.context().isRunning()) {
 			targetApplicationRepresentation
-					.refreshReferencesToClassesOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
 			targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakpoints();
 
 			EventSet eventSet = null;
@@ -134,7 +139,7 @@ public class SimpleDebuggerWorkFlow {
 				continue;
 
 			for (Event event : eventSet) {
-				if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.STOPPED)) break;
+				if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.DEBUGGER_STOPPED)) break;
 				if (event instanceof ClassPrepareEvent classPrepareEvent) {
 					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
 							.onClassPrepared(classPrepareEvent.referenceType());
@@ -156,8 +161,8 @@ public class SimpleDebuggerWorkFlow {
 
 	private void prepareDebug(EventQueue queue, String mainClassName) {
 		SimpleDebuggerLogger.info("Debug preparation...");
-		DebuggerContext.context().setStatus(SimpleDebuggerStatus.PREPARING);
-		openDebugWindow();
+		DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_PREPARING);
+		DebugWindowsManager.instance().getOrCreateDebugWindow();
 		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
 		ClassPrepareRequest classPrepareRequest = eventRequestManager.createClassPrepareRequest();
 		classPrepareRequest.addClassFilter(mainClassName);
@@ -199,16 +204,8 @@ public class SimpleDebuggerWorkFlow {
 				}
 			}
 			SimpleDebuggerLogger.info("Debug preparation complete");
-			DebuggerContext.context().setStatus(SimpleDebuggerStatus.PREPARED);
+			DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_PREPARED);
 		}
-	}
-
-	private void openDebugWindow() {
-		Display.getDefault().asyncExec(() -> {
-			DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateWindow();
-			if (Objects.nonNull(debugWindow) && !debugWindow.isOpen())
-				debugWindow.open();
-		});
 	}
 
 	/** Factory for creating a debug workflow asynchronously */
@@ -220,13 +217,13 @@ public class SimpleDebuggerWorkFlow {
 
 			CompletableFuture.runAsync(() -> {
 				if (isDebugPortBusy(debugConfiguration.getPort())) {
-					DebuggerContext.context().setStatus(SimpleDebuggerStatus.WILL_NOT_START);
+					DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUGGER_WILL_NOT_START);
 					SimpleDebuggerLogger.warn("Debug port " + debugConfiguration.getPort() + " is already in use");
 					notifyAlreadyRunning(debugConfiguration);
 					return;
 				}
 
-				DebuggerContext.context().setStatus(SimpleDebuggerStatus.STARTING);
+				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUGGER_STARTING);
 				VirtualMachine virtualMachine = launchVirtualMachine(debugConfiguration);
 
 				IBreakpointManager breakpointManager = waitForBreakpointManager();
@@ -299,9 +296,10 @@ public class SimpleDebuggerWorkFlow {
 			} catch (Exception ex) {
 				SimpleDebuggerLogger.error("Cannot launch VM", ex);
 				Display.getDefault().asyncExec(() -> {
-					DebugWindow debugWindow = DebugWindowManager.instance().getOrCreateWindow();
+					DebugWindow debugWindow = DebugWindowsManager.instance().getOrCreateDebugWindow();
 					debugWindow.showError("Cannot launch VM", ex.getMessage());
 				});
+				
 			}
 			return virtualMachine;
 		}
