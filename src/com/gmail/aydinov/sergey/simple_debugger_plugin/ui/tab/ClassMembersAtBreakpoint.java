@@ -1,17 +1,14 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -24,32 +21,27 @@ import org.eclipse.jface.viewers.TextCellEditor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.custom.ScrolledComposite;
-import org.eclipse.swt.widgets.Label;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceElementInspectionDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.manager.TooltipManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 
 /**
  * Вкладка отображения полей, методов и переменных на breakpoint с поддержкой
@@ -57,22 +49,16 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
  */
 public class ClassMembersAtBreakpoint {
 
-	public static final int OFFSET_X = -100;
-	public static final int OFFSET_Y = OFFSET_X;
-	private static String GAP = "  ";
-	private static String SEPARATOR = "---------------------------------------------- \n";
-
 	private final Composite root;
 	private final TableViewer viewer;
 	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private InnerElementRepresentationDTO lastInspectedElement;
-	private Shell currentPopup;
+	
 	private UUID currentElementId;
+	private TooltipManager tooltipManager;
 //	private InstanceInspectionPopupManager popupManager;
 
-	private static final Set<String> JAVA_STANDARD_TYPES = Set.of("int", "long", "short", "byte", "float", "double",
-			"boolean", "char", "java.lang.Integer", "java.lang.Long", "java.lang.Short", "java.lang.Byte",
-			"java.lang.Float", "java.lang.Double", "java.lang.Boolean", "java.lang.Character", "java.lang.String");
+	
 
 	public ClassMembersAtBreakpoint(Composite parent) {
 		root = new Composite(parent, SWT.NONE);
@@ -219,7 +205,7 @@ public class ClassMembersAtBreakpoint {
 		// Только поля пользовательского типа, которые реально инициализированы
 		if ((dto.getElementType() == UniversalElementType.NON_STATIC_FIELD
 				|| dto.getElementType() == UniversalElementType.STATIC_FIELD) && category == ValueCategory.USER_OBJECT
-				&& dto.getValue() != null && !JAVA_STANDARD_TYPES.contains(dto.getTypeOrReturnType())) {
+				&& dto.getValue() != null && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
 			return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
 		}
 		return null;
@@ -228,7 +214,7 @@ public class ClassMembersAtBreakpoint {
 	private boolean isEditable(InnerElementRepresentationDTO dto) {
 		System.out.println(dto);
 		return dto != null && dto.getTypeOrReturnType() != null
-				&& JAVA_STANDARD_TYPES.contains(dto.getTypeOrReturnType());
+				&& UiUtils.isStandartJavaType(dto.getTypeOrReturnType());
 	}
 
 	private class ValueEditingSupport extends EditingSupport {
@@ -263,7 +249,7 @@ public class ClassMembersAtBreakpoint {
 			String newValue = value.toString();
 			// Попробуем преобразовать строку в нужный тип, если это примитив
 			String type = dto.getAdditionalInfo();
-			Object convertedValue = convertToType(newValue, type);
+			Object convertedValue = UiUtils.convertToType(newValue, type);
 			switch (dto.getElementType()) {
 			case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, convertedValue.toString());
 			case LOCAL_VARIABLE -> updateVariableValue(dto, convertedValue.toString());
@@ -271,28 +257,6 @@ public class ClassMembersAtBreakpoint {
 			}
 			}
 			viewer.update(dto, null);
-		}
-	}
-
-	/**
-	 * Преобразование строки в нужный примитив / объект
-	 */
-	private Object convertToType(String value, String type) {
-		try {
-			return switch (type) {
-			case "int", "java.lang.Integer" -> Integer.parseInt(value);
-			case "long", "java.lang.Long" -> Long.parseLong(value);
-			case "short", "java.lang.Short" -> Short.parseShort(value);
-			case "byte", "java.lang.Byte" -> Byte.parseByte(value);
-			case "float", "java.lang.Float" -> Float.parseFloat(value);
-			case "double", "java.lang.Double" -> Double.parseDouble(value);
-			case "boolean", "java.lang.Boolean" -> Boolean.parseBoolean(value);
-			case "char", "java.lang.Character" -> value.length() > 0 ? value.charAt(0) : '\0';
-			case "java.lang.String" -> value;
-			default -> value; // fallback для неизвестных типов
-			};
-		} catch (Exception e) {
-			return value; // если не удалось преобразовать, оставляем как строку
 		}
 	}
 
@@ -311,16 +275,14 @@ public class ClassMembersAtBreakpoint {
 	// =========================================================
 
 	private void setupTooltips(Table table) {
-		table.addListener(SWT.MouseHover, event -> {
-			TableItem item = table.getItem(new Point(event.x, event.y));
-			if (item == null) {
-				table.setToolTipText(null);
-				return;
-			}
-			int col = getColumnIndexAtPoint(table, event.x);
-			Object tip = item.getData("tooltip_col_" + col);
-			table.setToolTipText(tip instanceof String ? (String) tip : null);
-		});
+	    TooltipManager tooltipManager = new TooltipManager(table, root);
+	    tooltipManager.setTooltipProvider(item -> {
+	        int col = TooltipManager.getColumnIndexAtPoint(table, table.getDisplay().getCursorLocation().x
+	                - table.toDisplay(0, 0).x);
+	        Object tip = item.getData("tooltip_col_" + col);
+	        return tip instanceof String ? (String) tip : null;
+	    });
+	    this.tooltipManager = tooltipManager;
 	}
 
 	private int getColumnIndexAtPoint(Table table, int x) {
@@ -458,7 +420,7 @@ public class ClassMembersAtBreakpoint {
 
 			if (!Objects.equals(dto, lastInspectedElement)) {
 				lastInspectedElement = dto;
-				closePopup();
+				tooltipManager.closePopup();
 				if (dto != null) {
 					uiEventCollector
 							.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto));
@@ -473,123 +435,14 @@ public class ClassMembersAtBreakpoint {
 			if (root.isDisposed())
 				return;
 			Point location = display.getCursorLocation();
-			showFieldInfoPopup(userInstanceInspectionDTO, location);
+			tooltipManager.showFieldInfoPopup(userInstanceInspectionDTO, location);
 		});
 	}
 
-	public void showFieldInfoPopup(UserInstanceInspectionDTO userInstanceInspectionDTO, Point location) {
-		Display display = root.getDisplay();
-		display.asyncExec(() -> {
-			if (root.isDisposed() || userInstanceInspectionDTO == null)
-				return;
-			closePopup();
-			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
-			popup.setLayout(new GridLayout(1, false));
-			StringBuilder info = new StringBuilder();
-			info.append("Field name: ").append(userInstanceInspectionDTO.getFieldName()).append("\n");
-			info.append("Field type: ").append(userInstanceInspectionDTO.getTypeName()).append("\n\n");
-			info.append("INFO: \n");
-				info.append("Fields: \n");
-				addGroupOfElements(info, userInstanceInspectionDTO.getInnerElementsByGroups().get(1),
-						List.of("name: ", "type: ", "value: "));
-				info.append("Metods: \n");
-				addGroupOfElements(info, userInstanceInspectionDTO.getInnerElementsByGroups().get(2),
-						new ArrayList<>(Arrays.asList("name: ", "return type: ", null)));
-				info.append("Others: \n");
-				addGroupOfElements(info, userInstanceInspectionDTO.getInnerElementsByGroups().get(3),
-						List.of("name: ", "type: ", "value: "));
-			ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
-			scrolled.setLayoutData(new GridData(400, 300)); // размер окна
-			Composite content = new Composite(scrolled, SWT.NONE);
-			content.setLayout(new GridLayout(1, false));
-			Label label = new Label(content, SWT.WRAP);
-			label.setText(info.toString());
-			label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-			scrolled.setContent(content);
-			scrolled.setExpandHorizontal(true);
-			scrolled.setExpandVertical(true);
-			scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-			popup.pack();
-			Point popupSize = popup.getSize();
-			Point adjustedLocation = adjustToScreen(location, popupSize);
-			popup.setLocation(adjustedLocation);
-			popup.open();
-			currentPopup = popup;
-			popup.addListener(SWT.Dispose, e -> currentPopup = null);
-			display.timerExec(150, this::checkPopupCursor);
-		});
-	}
+	
 
-	private void addGroupOfElements(StringBuilder stringBuilder, List<UserInstanceInnerElementInspectionDTO> list,
-			List<String> markers) {
-		
-		for (int outer = 0; outer < list.size(); outer++) {
-			UserInstanceInnerElementInspectionDTO innerElement = list.get(outer);
-			for (int i = 0; i < markers.size(); i++) {
-				String announce = markers.get(i);
-				if (i == 0) {
-					Optional.ofNullable(announce)
-							.ifPresent(e -> stringBuilder.append(GAP)
-									.append(announce)
-									.append(innerElement.getName()).append("\n"));
-				} else if (i == 1) {
-					Optional.ofNullable(announce).ifPresent(
-							e -> stringBuilder.append(GAP)
-							.append(announce)
-							.append(innerElement.getTypeOrReturnType()).append("\n"));
-				} else if (i == 2) {
-					Optional.ofNullable(announce).ifPresent(
-							e -> stringBuilder.append(GAP)
-							.append(announce)
-							.append(innerElement.getValue()).append("\n"));
-				}
-				if (i == 2 && (list.size() - outer != 1)) stringBuilder.append("\n");
-			}
-		}
-		stringBuilder.append(SEPARATOR + "\n");
-	}
+	
 
-	private void closePopup() {
-		if (currentPopup != null && !currentPopup.isDisposed()) {
-			currentPopup.dispose();
-		}
-		currentPopup = null;
-	}
-
-	private void checkPopupCursor() {
-		if (currentPopup == null || currentPopup.isDisposed())
-			return;
-		Display display = root.getDisplay();
-		Point cursor = display.getCursorLocation();
-		Rectangle popupBounds = currentPopup.getBounds();
-		Point rootLocation = root.toDisplay(0, 0);
-		Rectangle rootBounds = new Rectangle(rootLocation.x, rootLocation.y, root.getSize().x, root.getSize().y);
-		boolean cursorInsidePopup = popupBounds.contains(cursor);
-		boolean cursorInsideTable = rootBounds.contains(cursor);
-		if (!cursorInsidePopup && !cursorInsideTable) {
-			closePopup();
-			return;
-		}
-		display.timerExec(150, this::checkPopupCursor);
-	}
-
-	private Point adjustToScreen(Point desiredLocation, Point popupSize) {
-		Display display = root.getDisplay();
-		Rectangle screen = display.getPrimaryMonitor().getClientArea();
-		int x = desiredLocation.x;
-		int y = desiredLocation.y;
-		if (x + popupSize.x > screen.x + screen.width) {
-			x = screen.x + screen.width - popupSize.x;
-		}
-		if (y + popupSize.y > screen.y + screen.height) {
-			y = screen.y + screen.height - popupSize.y;
-		}
-		if (x < screen.x) {
-			x = screen.x;
-		}
-		if (y < screen.y) {
-			y = screen.y;
-		}
-		return new Point(x, y);
-	}
+	
+	
 }
