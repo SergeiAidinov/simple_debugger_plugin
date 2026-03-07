@@ -16,39 +16,6 @@ import com.sun.jdi.ReferenceType;
  */
 public class UniversalElementRepresentation implements Comparable<UniversalElementRepresentation>{
 
-    // =================== Вложенный класс Tag ===================
-    public static final class Tag {
-        private final UUID uniqueId;
-        private final UUID parentId;
-
-        public Tag(UUID uniqueId, UUID parentId) {
-            this.uniqueId = uniqueId;
-            this.parentId = parentId;
-        }
-
-        public UUID getUniqueId() { return uniqueId; }
-        public UUID getParentId() { return parentId; }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (obj == null || getClass() != obj.getClass()) return false;
-            Tag other = (Tag) obj;
-            return Objects.equals(uniqueId, other.uniqueId) &&
-                   Objects.equals(parentId, other.parentId);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(uniqueId, parentId);
-        }
-
-        @Override
-        public String toString() {
-            return "Tag{uniqueId=" + uniqueId + ", parentId=" + parentId + "}";
-        }
-    }
-
     // =================== Энумы ===================
     public enum UniversalElementType {
         INTERFACE, CLASS, ENUM, STATIC_FIELD, NON_STATIC_FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, OBJECT_INSTANCE, UNKNOWN
@@ -111,8 +78,18 @@ public class UniversalElementRepresentation implements Comparable<UniversalEleme
     public boolean isStatic() { return isStatic; }
     public ValueCategory getValueCategory() { return valueCategory; }
     public String gettypeOrReturnType() { return typeOrReturnType; }
+    
+    
 
-    // =================== Equals и hashCode по бизнес-логике (без UUID) ===================
+    @Override
+	public String toString() {
+		return "UniversalElementRepresentation [tag=" + tag + ", referenceType=" + referenceType + ", objectReference="
+				+ objectReference + ", elementName=" + elementName + ", additionalInfo=" + additionalInfo
+				+ ", elementType=" + elementType + ", currentRole=" + currentRole + ", value=" + value + ", isStatic="
+				+ isStatic + ", valueCategory=" + valueCategory + ", typeOrReturnType=" + typeOrReturnType + "]";
+	}
+
+	// =================== Equals и hashCode по бизнес-логике (без UUID) ===================
     public boolean equalsByBusinessLogic(Object obj) {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
@@ -209,5 +186,38 @@ public class UniversalElementRepresentation implements Comparable<UniversalEleme
         snapshot.put(method.getTag(), method);
 
         System.out.println(snapshot);
+    }
+    
+ // =================== Вложенный класс Tag ===================
+    public static final class Tag {
+        private final UUID uniqueId;
+        private final UUID parentId;
+
+        public Tag(UUID uniqueId, UUID parentId) {
+            this.uniqueId = uniqueId;
+            this.parentId = parentId;
+        }
+
+        public UUID getUniqueId() { return uniqueId; }
+        public UUID getParentId() { return parentId; }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            Tag other = (Tag) obj;
+            return Objects.equals(uniqueId, other.uniqueId) &&
+                   Objects.equals(parentId, other.parentId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(uniqueId, parentId);
+        }
+
+        @Override
+        public String toString() {
+            return "Tag{uniqueId=" + uniqueId + ", parentId=" + parentId + "}";
+        }
     }
 }

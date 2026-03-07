@@ -58,8 +58,6 @@ public class ClassMembersAtBreakpoint {
 	private TooltipManager tooltipManager;
 //	private InstanceInspectionPopupManager popupManager;
 
-	
-
 	public ClassMembersAtBreakpoint(Composite parent) {
 		root = new Composite(parent, SWT.NONE);
 		root.setLayout(new GridLayout(1, false));
@@ -74,6 +72,34 @@ public class ClassMembersAtBreakpoint {
 		setupColumnClickListeners();
 		setupHoverInspectionListener();
 		// popupManager = new InstanceInspectionPopupManager(root);
+	}
+	
+	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
+		if (dto == null || dto.getInnerElements().isEmpty())
+			return;
+		// Копируем и сортируем элементы
+		List<InnerElementRepresentationDTO> sorted = buildOrderedList(dto.getInnerElements());
+		// Обновляем TableViewer в UI-потоке
+		root.getDisplay().asyncExec(() -> {
+			if (!viewer.getTable().isDisposed()) {
+				viewer.setInput(sorted);
+				viewer.refresh(); // обязательно обновляем таблицу
+			}
+		});
+	}
+	
+	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO userInstanceInspectionDTO) {
+		Display display = root.getDisplay();
+		display.asyncExec(() -> {
+			if (root.isDisposed())
+				return;
+			Point location = display.getCursorLocation();
+			tooltipManager.showFieldInfoPopup(userInstanceInspectionDTO, location);
+		});
+	}
+	
+	public Composite getControl() {
+		return root;
 	}
 
 	// =========================================================
@@ -217,49 +243,6 @@ public class ClassMembersAtBreakpoint {
 				&& UiUtils.isStandartJavaType(dto.getTypeOrReturnType());
 	}
 
-	private class ValueEditingSupport extends EditingSupport {
-		private final TextCellEditor editor;
-
-		ValueEditingSupport(TableViewer viewer) {
-			super(viewer);
-			this.editor = new TextCellEditor(viewer.getTable());
-		}
-
-		@Override
-		protected CellEditor getCellEditor(Object element) {
-			return editor;
-		}
-
-		@Override
-		protected boolean canEdit(Object element) {
-			return element instanceof InnerElementRepresentationDTO dto && isEditable(dto);
-		}
-
-		@Override
-		protected Object getValue(Object element) {
-			return ((InnerElementRepresentationDTO) element).getValue();
-		}
-
-		@Override
-		protected void setValue(Object element, Object value) {
-			if (!(element instanceof InnerElementRepresentationDTO dto))
-				return;
-			if (value == null)
-				return;
-			String newValue = value.toString();
-			// Попробуем преобразовать строку в нужный тип, если это примитив
-			String type = dto.getAdditionalInfo();
-			Object convertedValue = UiUtils.convertToType(newValue, type);
-			switch (dto.getElementType()) {
-			case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, convertedValue.toString());
-			case LOCAL_VARIABLE -> updateVariableValue(dto, convertedValue.toString());
-			default -> {
-			}
-			}
-			viewer.update(dto, null);
-		}
-	}
-
 	private void updateFieldValue(InnerElementRepresentationDTO dto, String newValue) {
 		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CHANGED_FIELD,
 				new UserChangedFieldEventDTO(dto.getElementName(), dto.getAdditionalInfo(), newValue)));
@@ -299,21 +282,7 @@ public class ClassMembersAtBreakpoint {
 	// Display
 	// =========================================================
 
-	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
-		if (dto == null || dto.getInnerElements().isEmpty())
-			return;
-		// Копируем и сортируем элементы
-		List<InnerElementRepresentationDTO> sorted = buildOrderedList(dto.getInnerElements());
-		// Обновляем TableViewer в UI-потоке
-		root.getDisplay().asyncExec(() -> {
-			if (!viewer.getTable().isDisposed()) {
-				viewer.setInput(sorted);
-				viewer.refresh(); // обязательно обновляем таблицу
-			}
-		});
-	}
-
-	public List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
+	private List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
 		allElements.stream().forEach(e -> System.out.println(e));
 		Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<>();
 		Set<InnerElementRepresentationDTO> elementsToDelete = new HashSet<>();
@@ -401,10 +370,6 @@ public class ClassMembersAtBreakpoint {
 		});
 	}
 
-	public Composite getControl() {
-		return root;
-	}
-
 	private void setupHoverInspectionListener() {
 		Table table = viewer.getTable();
 		table.addListener(SWT.MouseMove, event -> {
@@ -428,21 +393,47 @@ public class ClassMembersAtBreakpoint {
 			}
 		});
 	}
+	
+	private class ValueEditingSupport extends EditingSupport {
+		private final TextCellEditor editor;
 
-	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO userInstanceInspectionDTO) {
-		Display display = root.getDisplay();
-		display.asyncExec(() -> {
-			if (root.isDisposed())
+		ValueEditingSupport(TableViewer viewer) {
+			super(viewer);
+			this.editor = new TextCellEditor(viewer.getTable());
+		}
+
+		@Override
+		protected CellEditor getCellEditor(Object element) {
+			return editor;
+		}
+
+		@Override
+		protected boolean canEdit(Object element) {
+			return element instanceof InnerElementRepresentationDTO dto && isEditable(dto);
+		}
+
+		@Override
+		protected Object getValue(Object element) {
+			return ((InnerElementRepresentationDTO) element).getValue();
+		}
+
+		@Override
+		protected void setValue(Object element, Object value) {
+			if (!(element instanceof InnerElementRepresentationDTO dto))
 				return;
-			Point location = display.getCursorLocation();
-			tooltipManager.showFieldInfoPopup(userInstanceInspectionDTO, location);
-		});
+			if (value == null)
+				return;
+			String newValue = value.toString();
+			// Попробуем преобразовать строку в нужный тип, если это примитив
+			String type = dto.getAdditionalInfo();
+			Object convertedValue = UiUtils.convertToType(newValue, type);
+			switch (dto.getElementType()) {
+			case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, convertedValue.toString());
+			case LOCAL_VARIABLE -> updateVariableValue(dto, convertedValue.toString());
+			default -> {
+			}
+			}
+			viewer.update(dto, null);
+		}
 	}
-
-	
-
-	
-
-	
-	
 }
