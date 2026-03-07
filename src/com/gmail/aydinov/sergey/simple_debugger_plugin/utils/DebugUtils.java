@@ -9,20 +9,26 @@ import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMethodParameterDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.VariableDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UserInvokedMethodEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.sun.jdi.AbsentInformationException;
+import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.InterfaceType;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.PrimitiveType;
+import com.sun.jdi.PrimitiveValue;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
+import com.sun.jdi.StringReference;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
@@ -31,8 +37,7 @@ import com.sun.jdi.VirtualMachine;
 /**
  * Utility class for JDI (Java Debug Interface) operations
  * <p>
- * Author: Sergei Aidinov
- * <br>
+ * Author: Sergei Aidinov <br>
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
@@ -68,10 +73,10 @@ public class DebugUtils {
 	/**
 	 * Creates a JDI Value from a string to set it to a local variable or field.
 	 *
-	 * @param virtualMachine        Target process VirtualMachine
-	 * @param varType   Variable type (LocalVariable.type() or Field.type())
-	 * @param textValue String value from UI
-	 * @param threadReference    Thread where boxed objects are created
+	 * @param virtualMachine  Target process VirtualMachine
+	 * @param varType         Variable type (LocalVariable.type() or Field.type())
+	 * @param textValue       String value from UI
+	 * @param threadReference Thread where boxed objects are created
 	 */
 	public static Value createJdiObjectFromString(VirtualMachine virtualMachine, Type varType, String textValue,
 			ThreadReference threadReference) {
@@ -126,15 +131,20 @@ public class DebugUtils {
 		// 4. Boxing types
 		switch (typeName) {
 		case "java.lang.Integer":
-			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Integer.parseInt(trimmed)), threadReference);
+			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Integer.parseInt(trimmed)),
+					threadReference);
 		case "java.lang.Long":
-			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Long.parseLong(trimmed)), threadReference);
+			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Long.parseLong(trimmed)),
+					threadReference);
 		case "java.lang.Boolean":
-			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Boolean.parseBoolean(trimmed)), threadReference);
+			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Boolean.parseBoolean(trimmed)),
+					threadReference);
 		case "java.lang.Double":
-			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Double.parseDouble(trimmed)), threadReference);
+			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Double.parseDouble(trimmed)),
+					threadReference);
 		case "java.lang.Float":
-			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Float.parseFloat(trimmed)), threadReference);
+			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(Float.parseFloat(trimmed)),
+					threadReference);
 		case "java.lang.Character":
 			char c = trimmed.length() == 1 ? trimmed.charAt(0) : trimmed.charAt(1);
 			return newBoxed(virtualMachine, (ClassType) varType, virtualMachine.mirrorOf(c), threadReference);
@@ -171,7 +181,8 @@ public class DebugUtils {
 				}
 				if (Objects.nonNull(args) && args.size() == 1) {
 					try {
-						return classType.newInstance(thread, method, List.of(primitive), ObjectReference.INVOKE_SINGLE_THREADED);
+						return classType.newInstance(thread, method, List.of(primitive),
+								ObjectReference.INVOKE_SINGLE_THREADED);
 					} catch (Exception e) {
 						throw new RuntimeException("Error creating boxed " + classType.name(), e);
 					}
@@ -182,17 +193,17 @@ public class DebugUtils {
 		throw new RuntimeException("No suitable constructor found for boxed type: " + classType.name());
 	}
 
-	private static VariableDTO mapField(Map.Entry<Field, Value> entry) {
-		Field field = entry.getKey();
-		Value value = entry.getValue();
-		return new VariableDTO(field.name(), field.typeName(), valueToString(value));
-	}
+//	private static VariableDTO mapField(Map.Entry<Field, Value> entry) {
+//		Field field = entry.getKey();
+//		Value value = entry.getValue();
+//		return new VariableDTO(field.name(), field.typeName(), valueToString(value));
+//	}
 
-	private static VariableDTO mapLocal(Map.Entry<LocalVariable, Value> entry) {
-		LocalVariable localVariable = entry.getKey();
-		Value value = entry.getValue();
-		return new VariableDTO(localVariable.name(), localVariable.typeName(), valueToString(value));
-	}
+//	private static VariableDTO mapLocal(Map.Entry<LocalVariable, Value> entry) {
+//		LocalVariable localVariable = entry.getKey();
+//		Value value = entry.getValue();
+//		return new VariableDTO(localVariable.name(), localVariable.typeName(), valueToString(value));
+//	}
 
 	/**
 	 * Converts {@code Map<Field, Value>} to {@code List<VariableDTO>}.
@@ -200,13 +211,14 @@ public class DebugUtils {
 	 * @param fields the map of fields and their values
 	 * @return list of VariableDTO representing fields
 	 */
-	public static List<VariableDTO> mapFields(Map<Field, Value> fields) {
-		if (Objects.isNull(fields))
-			return List.of();
-
-		return fields.entrySet().stream().map(entry -> new VariableDTO(entry.getKey().name(), entry.getKey().typeName(),
-				valueToString(entry.getValue()))).collect(Collectors.toList());
-	}
+//	public static List<InnerElementDTO> mapFields(Map<Field, Value> fields) {
+//		if (Objects.isNull(fields))
+//			return List.of();
+//		return fields.entrySet().stream()
+//				.map(entry -> new InnerElementDTO(entry.getKey().name(), entry.getKey().typeName(),
+//						valueToString(entry.getValue()), FieldOrVariableType.NON_STATIC_FIELD))
+//				.collect(Collectors.toList());
+//	}
 
 	/**
 	 * Converts {@code Map<LocalVariable, Value>} to {@code List<VariableDTO>}.
@@ -214,27 +226,29 @@ public class DebugUtils {
 	 * @param locals the map of local variables and their values
 	 * @return list of VariableDTO representing local variables
 	 */
-	public static List<VariableDTO> mapLocals(Map<LocalVariable, Value> locals) {
-		if (Objects.isNull(locals))
-			return List.of();
-
-		return locals.entrySet().stream().map(entry -> new VariableDTO(entry.getKey().name(), entry.getKey().typeName(),
-				valueToString(entry.getValue()))).collect(Collectors.toList());
-	}
+//	public static List<InnerElementDTO> mapLocals(Map<LocalVariable, Value> locals) {
+//		if (Objects.isNull(locals))
+//			return List.of();
+//
+//		return locals.entrySet().stream().map(entry -> new InnerElementDTO(entry.getKey().name(),
+//				entry.getKey().typeName(), valueToString(entry.getValue()), FieldOrVariableType.VARIABLE))
+//				.collect(Collectors.toList());
+//	}
 
 	/**
 	 * Converts Value to string safely handling null
 	 */
-	private static String valueToString(Value value) {
+	public static String valueToString(Value value) {
 		return Objects.isNull(value) ? "null" : value.toString();
 	}
 
 	/**
 	 * Converts argumentsText to a list of JDI values for method invocation
 	 */
-	public static List<Value> parseArguments(VirtualMachine virtualMachine, UserInvokedMethodEvent userInvokedMethodEvent) {
+	public static List<Value> parseArguments(VirtualMachine virtualMachine,
+			UserInvokedMethodEventDTO userInvokedMethodEventDTO) {
 		List<Value> values = new ArrayList<>();
-		String argsText = userInvokedMethodEvent.getArgumentsText().trim();
+		String argsText = userInvokedMethodEventDTO.getArgumentsText().trim();
 		// Remove parentheses if method specified as method(arg1, arg2)
 		int start = argsText.indexOf('(');
 		int end = argsText.lastIndexOf(')');
@@ -244,7 +258,7 @@ public class DebugUtils {
 		if (argsText.isEmpty())
 			return values;
 		String[] argStrings = argsText.split("\\s*,\\s*");
-		List<TargetApplicationMethodParameterDTO> params = userInvokedMethodEvent.getMethod().getParameters();
+		List<TargetApplicationMethodParameterDTO> params = userInvokedMethodEventDTO.getMethod().getParameters();
 		if (argStrings.length != params.size()) {
 			throw new IllegalArgumentException("Argument count does not match method parameter count");
 		}
@@ -273,7 +287,8 @@ public class DebugUtils {
 		return values;
 	}
 
-	private static Value convertStringToValue(String argument, String typeName, VirtualMachine virtualMachine) throws Exception {
+	private static Value convertStringToValue(String argument, String typeName, VirtualMachine virtualMachine)
+			throws Exception {
 		switch (typeName) {
 		case "int":
 			return virtualMachine.mirrorOf(Integer.parseInt(argument));
@@ -333,7 +348,8 @@ public class DebugUtils {
 			try {
 				Location location = frame.location();
 				if (Objects.nonNull(location)) {
-					String className = Objects.nonNull(location.declaringType()) ? location.declaringType().name() : "Unknown";
+					String className = Objects.nonNull(location.declaringType()) ? location.declaringType().name()
+							: "Unknown";
 					String methodName = Objects.nonNull(location.method()) ? location.method().name() : "unknown";
 					int line = location.lineNumber();
 
@@ -379,5 +395,283 @@ public class DebugUtils {
 		}
 		return localVariables;
 	}
+
+	/**
+	 * Determines if the DTO can be inspected (non-primitive, non-String, non-null)
+	 */
+//	public static boolean isInspectable(DebugWindowDataDTO dto) {
+//		if (dto == null || dto.getElementType() == null /* || dto.getValue() == null */)
+//			return false;
+//
+//		switch (dto.getElementType().toString()) {
+//		case "int", "long", "double", "float", "boolean", "byte", "short", "char":
+//			return false;
+//		}
+//		if ("java.lang.String".equals(dto.getElementType()))
+//			return false;
+//
+//		return true;
+//	}
+
+	public static boolean isStandardJavaCollection(Object object) {
+		if (Objects.isNull(object))
+			return false;
+		return object instanceof java.util.Collection || object instanceof java.util.Map;
+	}
+
+	public static UniversalElementRepresentation.UniversalElementType determineUniversalElementType(Object jdiElement) {
+
+	    if (jdiElement == null) {
+	        return null;
+	    }
+
+	    // ---------- Types ----------
+	    if (jdiElement instanceof com.sun.jdi.InterfaceType) {
+	        return UniversalElementRepresentation.UniversalElementType.INTERFACE;
+	    }
+
+	    if (jdiElement instanceof com.sun.jdi.ClassType classType) {
+	        if (classType.isEnum()) {
+	            return UniversalElementRepresentation.UniversalElementType.ENUM;
+	        }
+	        return UniversalElementRepresentation.UniversalElementType.CLASS;
+	    }
+
+	    // ---------- Fields ----------
+	    if (jdiElement instanceof com.sun.jdi.Field field) {
+	        return field.isStatic()
+	                ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
+	                : UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
+	    }
+
+	    // ---------- Methods ----------
+	    if (jdiElement instanceof com.sun.jdi.Method) {
+	        return UniversalElementRepresentation.UniversalElementType.METHOD;
+	    }
+
+	    // ---------- Local variables ----------
+	    if (jdiElement instanceof com.sun.jdi.LocalVariable) {
+	        return UniversalElementRepresentation.UniversalElementType.LOCAL_VARIABLE;
+	    }
+
+	    return null;
+	}
+	
+	public static String extractSimpleName(String fullQualifiedName) {
+	    if (fullQualifiedName == null || fullQualifiedName.isBlank()) {
+	        return "";
+	    }
+
+	    int lastDot = fullQualifiedName.lastIndexOf('.');
+	    String name = (lastDot >= 0)
+	            ? fullQualifiedName.substring(lastDot + 1)
+	            : fullQualifiedName;
+
+	    // Для inner / anonymous классов: Outer$Inner → Inner
+	    int lastDollar = name.lastIndexOf('$');
+	    if (lastDollar >= 0 && lastDollar < name.length() - 1) {
+	        name = name.substring(lastDollar + 1);
+	    }
+
+	    return name;
+	}
+	
+	public static ValueCategory determineValueCategory(Value value) {
+
+	    if (value == null) {
+	        return ValueCategory.NULL;
+	    }
+
+	    // ---------- Primitive ----------
+	    if (value instanceof com.sun.jdi.PrimitiveValue) {
+	        return ValueCategory.PRIMITIVE;
+	    }
+
+	    if (!(value instanceof com.sun.jdi.ObjectReference objectReference)) {
+	        return ValueCategory.NOT_SPECIFIED;
+	    }
+
+	    ReferenceType referenceType = objectReference.referenceType();
+	    String typeName = referenceType.name();
+
+	    // ---------- String ----------
+	    if ("java.lang.String".equals(typeName)) {
+	        return ValueCategory.STRING;
+	    }
+
+	    // ---------- Wrapper ----------
+	    if (typeName.startsWith("java.lang.")
+	            && (typeName.endsWith("Integer")
+	            || typeName.endsWith("Long")
+	            || typeName.endsWith("Double")
+	            || typeName.endsWith("Float")
+	            || typeName.endsWith("Boolean")
+	            || typeName.endsWith("Character")
+	            || typeName.endsWith("Byte")
+	            || typeName.endsWith("Short"))) {
+	        return ValueCategory.WRAPPER;
+	    }
+
+	    // ---------- Array ----------
+	    if (referenceType instanceof com.sun.jdi.ArrayType) {
+	        return ValueCategory.ARRAY;
+	    }
+
+	    // ---------- Collection ----------
+	    if (implementsInterface(referenceType, "java.util.Collection")) {
+	        return ValueCategory.COLLECTION;
+	    }
+
+	    // ---------- Map ----------
+	    if (implementsInterface(referenceType, "java.util.Map")) {
+	        return ValueCategory.MAP;
+	    }
+
+	    // ---------- User object ----------
+	    return ValueCategory.USER_OBJECT;
+	}
+	
+//	private static boolean implementsInterface(ReferenceType referenceType, String interfaceName) {
+//	    return ((ClassType) referenceType).allInterfaces()
+//	            .stream()
+//	            .anyMatch(i -> i.name().equals(interfaceName));
+//	}
+	
+	public static String getLocalVariableValueAsString(StackFrame frame, LocalVariable variable) {
+	    try {
+	        Value value = frame.getValue(variable); // получаем Value из фрейма
+	        if (value == null) return "null";
+
+	        // ---------- Примитивы ----------
+	        if (value instanceof PrimitiveValue pv) {
+	            return pv.toString();
+	        }
+
+	        // ---------- String ----------
+	        if (value instanceof StringReference sr) {
+	            return sr.value();
+	        }
+
+	        // ---------- Object ----------
+	        if (value instanceof ObjectReference objRef) {
+	            return objRef.toString(); // по умолчанию toString() объекта
+	            // если нужно можно получать className: objRef.referenceType().name()
+	        }
+
+	        return value.toString();
+	    } catch (Exception e) {
+	        return "<error>";
+	    }
+	}
+
+	public static List<ObjectReference> getCollectionElements(ObjectReference objRef) {
+        List<ObjectReference> result = new ArrayList<>();
+        if (objRef == null) return result;
+
+        ReferenceType refType = objRef.referenceType();
+
+        try {
+            // Проверяем, является ли объект Collection
+            if (implementsInterface(refType, "java.util.Collection")) {
+                // Collection.toArray() вызываем через invokeMethod
+                Method toArray = findMethod(refType, "toArray", "()[Ljava/lang/Object;");
+                if (toArray != null) {
+                    Value arrayValue = objRef.invokeMethod(
+                        objRef.virtualMachine().allThreads().get(0), // текущий поток (в твоем случае можно адаптировать)
+                        toArray,
+                        Collections.emptyList(),
+                        ObjectReference.INVOKE_SINGLE_THREADED
+                    );
+                    if (arrayValue instanceof ArrayReference arrayRef) {
+                        for (Value val : arrayRef.getValues()) {
+                            if (val instanceof ObjectReference childObj) {
+                                result.add(childObj);
+                            }
+                        }
+                    }
+                }
+            }
+            // Проверяем, является ли объект Map
+            else if (implementsInterface(refType, "java.util.Map")) {
+                Method entrySetMethod = findMethod(refType, "entrySet", "()Ljava/util/Set;");
+                if (entrySetMethod != null) {
+                    Value entrySetValue = objRef.invokeMethod(
+                        objRef.virtualMachine().allThreads().get(0),
+                        entrySetMethod,
+                        Collections.emptyList(),
+                        ObjectReference.INVOKE_SINGLE_THREADED
+                    );
+                    if (entrySetValue instanceof ObjectReference entrySetRef) {
+                        // Получаем все Map.Entry через toArray()
+                        Method toArray = findMethod(entrySetRef.referenceType(), "toArray", "()[Ljava/lang/Object;");
+                        if (toArray != null) {
+                            Value arrayValue = entrySetRef.invokeMethod(
+                                objRef.virtualMachine().allThreads().get(0),
+                                toArray,
+                                Collections.emptyList(),
+                                ObjectReference.INVOKE_SINGLE_THREADED
+                            );
+                            if (arrayValue instanceof ArrayReference arrayRef) {
+                                for (Value val : arrayRef.getValues()) {
+                                    if (val instanceof ObjectReference entryObj) {
+                                        // Берем ключ и значение
+                                        Field keyField = entryObj.referenceType().fieldByName("key");
+                                        Field valueField = entryObj.referenceType().fieldByName("value");
+                                        if (keyField != null) {
+                                            Value keyVal = entryObj.getValue(keyField);
+                                            if (keyVal instanceof ObjectReference keyObj)
+                                                result.add(keyObj);
+                                        }
+                                        if (valueField != null) {
+                                            Value valueVal = entryObj.getValue(valueField);
+                                            if (valueVal instanceof ObjectReference valueObj)
+                                                result.add(valueObj);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // Безопасно игнорируем любые ошибки, чтобы не ломать debugger
+        }
+
+        return result;
+    }
+
+    /**
+     * Проверка, реализует ли объект интерфейс (с учетом суперклассов)
+     */
+    private static boolean implementsInterface(ReferenceType refType, String interfaceName) {
+        try {
+            for (Field iType : refType.allFields()) {
+                if (iType.name().equals(interfaceName)) {
+                    return true;
+                }
+            }
+            ClassType superClass = refType instanceof ClassType c ? c.superclass() : null;
+            while (superClass != null) {
+                for (InterfaceType iType : superClass.allInterfaces()) {
+                    if (iType.name().equals(interfaceName)) return true;
+                }
+                superClass = superClass.superclass();
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    /**
+     * Ищет метод в ReferenceType по имени и сигнатуре
+     */
+    private static Method findMethod(ReferenceType refType, String name, String signature) {
+        for (Method m : refType.methodsByName(name, signature)) {
+            return m;
+        }
+        return null;
+    }
+	
 
 }
