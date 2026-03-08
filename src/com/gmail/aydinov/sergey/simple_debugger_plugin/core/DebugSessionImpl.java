@@ -234,6 +234,8 @@ public class DebugSessionImpl implements DebugSession {
 		Set<UniversalElementRepresentation> init = new HashSet();
 		init.add(topLevelElement);
 		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(topLevelElement);
+		relevantElements.stream()
+		.forEach(e -> System.out.println("RELEVANT: " + e));
 		relevantElements.remove(topLevelElement);
 		String typeOrReturnType = topLevelElement.gettypeOrReturnType();
 		Optional<UniversalElementRepresentation> ee = relevantElements.stream()
@@ -275,30 +277,40 @@ public class DebugSessionImpl implements DebugSession {
 
 	private Set<UniversalElementRepresentation> compileAdditionalInfo(UniversalElementRepresentation topLevelElement) {
 		 Set<UniversalElementRepresentation> selectedElements = new HashSet<UniversalElementRepresentation>();
-//		Optional<UniversalElementRepresentation> rootElement = targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-//		.filter(e -> Objects.equals(e.getElementName(), anchorElement.getElementName())).findAny();
-//		
-//		rootElement.ifPresent(root -> {
-//			boolean found = true;
-//			Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
-//			iterationElements.add(root);
-//			while (found) {
-//				for (UniversalElementRepresentation iterationElement : iterationElements) {
-//			iterationElements.addAll(targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-//				.filter(e -> Objects.equals(e.getTag().getParentId(), iterationElement.getTag().getUniqueId())).toList());
-//				}
-//				iterationElements.remove(root);
-//				if (iterationElements.isEmpty()) found = false;
-//				selectedElements.addAll(iterationElements);
-//				iterationElements.clear();
-//			}
-//		});
-		 ObjectReference rootReference = topLevelElement.getObjectReference();
-		 List<UniversalElementRepresentation> person1Elements =
-				 targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-			                .filter(e -> Objects.equals(e.getObjectReference(), rootReference))
-			                .toList();
-		selectedElements.addAll(person1Elements);
+			Optional<UniversalElementRepresentation> ww = targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+			                .filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName()))
+			                .findAny();
+		System.out.println(ww);
+		ww.get().getTag().getUniqueId();
+		UniversalElementRepresentation rr = ww.get();
+		Optional<UniversalElementRepresentation> ee = targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+                .filter(e -> Objects.equals(e.getTag().getParentId(), rr.getTag().getUniqueId()))
+                .findAny();
+		ee.ifPresent(root -> {
+			boolean found = true;
+			Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
+			
+			iterationElements.add(root);
+			while (found) {
+				for (UniversalElementRepresentation iterationElement : iterationElements) {
+			iterationElements.addAll(targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+				.filter(e -> Objects.equals(e.getObjectReference(), iterationElement.getObjectReference())).toList());
+				}
+				iterationElements.remove(root);
+				if (iterationElements.isEmpty()) found = false;
+				selectedElements.addAll(iterationElements);
+				iterationElements.clear();
+			}
+//		 ObjectReference rootReference = root.getObjectReference();
+//		 List<UniversalElementRepresentation> foundElements =
+//				 targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+//			                .filter(e -> Objects.equals(e.getElementName(), root.getElementName()))
+//			                .toList();
+		 
+			selectedElements.addAll(iterationElements);
+		});
+		 
+		
 		return selectedElements;
 	}
 
