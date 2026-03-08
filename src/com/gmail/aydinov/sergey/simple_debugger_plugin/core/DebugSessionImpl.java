@@ -237,23 +237,8 @@ public class DebugSessionImpl implements DebugSession {
 		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(topLevelElement);
 		relevantElements.stream().forEach(e -> System.out.println("RELEVANT: " + e));
 		relevantElements.remove(topLevelElement);
-		String typeOrReturnType = topLevelElement.gettypeOrReturnType();
-		Optional<UniversalElementRepresentation> ee = relevantElements.stream()
-				.filter(e -> Objects.equals(e.gettypeOrReturnType(), typeOrReturnType)).findAny();
-		String type = "N/A";
-		if (ee.isPresent()) {
-			type = ee.get().gettypeOrReturnType();
-			relevantElements.remove(ee.get());
-		}
 		List<UniversalElementRepresentation> elements = new ArrayList<UniversalElementRepresentation>(relevantElements);
 		Collections.sort(elements);
-		// List<UserInstanceElementInspectionDTO> instanceElements = new
-		// ArrayList<UserInstanceElementInspectionDTO>();
-//		Map<UniversalElementRepresentation.UniversalElementType, List<UniversalElementRepresentation>> grouped = elements
-//				.stream().collect(Collectors.groupingBy(UniversalElementRepresentation::getElementType));
-		// System.out.println(grouped);
-//		List<UniversalElementType> groups = List.of(UniversalElementType.INTERFACE, UniversalElementType.CLASS,
-//				UniversalElementType.ENUM, UniversalElementType.METHOD);
 		Map<Integer, ArrayList<UserInstanceInnerElementInspectionDTO>> separatedIntoGroups = Map.of(1,
 				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 2,
 				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 3,
@@ -263,17 +248,13 @@ public class DebugSessionImpl implements DebugSession {
 					element.getElementName(), element.gettypeOrReturnType(), element.getValue());
 			if (element.getElementType().ordinal() < 5)
 				separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
-			// else if (element.getElementType().ordinal() == 3 &&
-			// element.getElementType().ordinal() == 4)
-			// separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
 			else if (element.getElementType().ordinal() == 5)
 				separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
 			else if (element.getElementType().ordinal() > 5)
 				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
 		}
 
-		System.out.println(relevantElements);
-		UserInstanceInspectionDTO qq = new UserInstanceInspectionDTO(topLevelElement.getElementName(), type,
+		UserInstanceInspectionDTO qq = new UserInstanceInspectionDTO(topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(),
 				separatedIntoGroups);
 		simpleDebugEventCollector.collectDebugEvent(
 				new DebugEvent<UserInstanceInspectionDTO>(SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, qq));
