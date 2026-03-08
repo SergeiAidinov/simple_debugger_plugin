@@ -89,27 +89,34 @@ public class UniversalElementRepresentation implements Comparable<UniversalEleme
 				+ isStatic + ", valueCategory=" + valueCategory + ", typeOrReturnType=" + typeOrReturnType + "]";
 	}
 
-	// =================== Equals и hashCode по бизнес-логике (без UUID) ===================
-    public boolean equalsByBusinessLogic(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        UniversalElementRepresentation other = (UniversalElementRepresentation) obj;
-        return Objects.equals(elementName, other.elementName) &&
-               Objects.equals(additionalInfo, other.additionalInfo) &&
-               elementType == other.elementType &&
-               currentRole == other.currentRole &&
-               Objects.equals(value, other.value) &&
-               isStatic == other.isStatic &&
-               valueCategory == other.valueCategory &&
-               Objects.equals(typeOrReturnType, other.typeOrReturnType);
-    }
-
-    public int hashCodeByBusinessLogic() {
-        return Objects.hash(elementName, additionalInfo, elementType, currentRole, value,
-                            isStatic, valueCategory, typeOrReturnType);
-    }
+	
     
-    @Override
+    
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(additionalInfo, currentRole, elementName, elementType, isStatic, objectReference,
+				referenceType, typeOrReturnType, value, valueCategory);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		UniversalElementRepresentation other = (UniversalElementRepresentation) obj;
+		return Objects.equals(additionalInfo, other.additionalInfo) && currentRole == other.currentRole
+				&& Objects.equals(elementName, other.elementName) && elementType == other.elementType
+				&& isStatic == other.isStatic && Objects.equals(objectReference, other.objectReference)
+				&& Objects.equals(referenceType, other.referenceType)
+				&& Objects.equals(typeOrReturnType, other.typeOrReturnType) && Objects.equals(value, other.value)
+				&& valueCategory == other.valueCategory;
+	}
+
+	@Override
     public int compareTo(UniversalElementRepresentation other) {
         if (other == null) return 1; // null всегда в конце
         int cmp = Integer.compare(this.elementType.ordinal(), other.elementType.ordinal());
