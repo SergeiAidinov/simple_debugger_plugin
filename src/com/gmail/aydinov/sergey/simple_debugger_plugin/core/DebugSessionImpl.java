@@ -11,7 +11,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;import java.util.stream.Collector;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
@@ -234,8 +235,7 @@ public class DebugSessionImpl implements DebugSession {
 		Set<UniversalElementRepresentation> init = new HashSet();
 		init.add(topLevelElement);
 		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(topLevelElement);
-		relevantElements.stream()
-		.forEach(e -> System.out.println("RELEVANT: " + e));
+		relevantElements.stream().forEach(e -> System.out.println("RELEVANT: " + e));
 		relevantElements.remove(topLevelElement);
 		String typeOrReturnType = topLevelElement.gettypeOrReturnType();
 		Optional<UniversalElementRepresentation> ee = relevantElements.stream()
@@ -254,63 +254,66 @@ public class DebugSessionImpl implements DebugSession {
 		// System.out.println(grouped);
 //		List<UniversalElementType> groups = List.of(UniversalElementType.INTERFACE, UniversalElementType.CLASS,
 //				UniversalElementType.ENUM, UniversalElementType.METHOD);
-		Map<Integer, ArrayList<UserInstanceInnerElementInspectionDTO>> separatedIntoGroups = Map.of(
-				1, new ArrayList<UserInstanceInnerElementInspectionDTO>(), 
-				2, new ArrayList<UserInstanceInnerElementInspectionDTO>(), 
-				3, new ArrayList<UserInstanceInnerElementInspectionDTO>());
+		Map<Integer, ArrayList<UserInstanceInnerElementInspectionDTO>> separatedIntoGroups = Map.of(1,
+				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 2,
+				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 3,
+				new ArrayList<UserInstanceInnerElementInspectionDTO>());
 		for (UniversalElementRepresentation element : elements) {
-			UserInstanceInnerElementInspectionDTO userInstanceInnerElementInspectionDTO = 
-					new UserInstanceInnerElementInspectionDTO(element.getElementName() , element.gettypeOrReturnType() , element.getValue());
-			if (element.getElementType().ordinal() < 5) separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
-			//else if (element.getElementType().ordinal() == 3 &&  element.getElementType().ordinal() == 4) separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
-			else if (element.getElementType().ordinal() == 5) separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
-			else if (element.getElementType().ordinal() > 5) separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
+			UserInstanceInnerElementInspectionDTO userInstanceInnerElementInspectionDTO = new UserInstanceInnerElementInspectionDTO(
+					element.getElementName(), element.gettypeOrReturnType(), element.getValue());
+			if (element.getElementType().ordinal() < 5)
+				separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
+			// else if (element.getElementType().ordinal() == 3 &&
+			// element.getElementType().ordinal() == 4)
+			// separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
+			else if (element.getElementType().ordinal() == 5)
+				separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
+			else if (element.getElementType().ordinal() > 5)
+				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
 		}
 
 		System.out.println(relevantElements);
 		UserInstanceInspectionDTO qq = new UserInstanceInspectionDTO(topLevelElement.getElementName(), type,
 				separatedIntoGroups);
-		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<UserInstanceInspectionDTO>(
-				SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, qq));
+		simpleDebugEventCollector.collectDebugEvent(
+				new DebugEvent<UserInstanceInspectionDTO>(SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, qq));
 
 	}
 
 	private Set<UniversalElementRepresentation> compileAdditionalInfo(UniversalElementRepresentation topLevelElement) {
-		 Set<UniversalElementRepresentation> selectedElements = new HashSet<UniversalElementRepresentation>();
-			Optional<UniversalElementRepresentation> ww = targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-			                .filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName()))
-			                .findAny();
-		System.out.println(ww);
-		ww.get().getTag().getUniqueId();
-		UniversalElementRepresentation rr = ww.get();
-		Optional<UniversalElementRepresentation> ee = targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-                .filter(e -> Objects.equals(e.getTag().getParentId(), rr.getTag().getUniqueId()))
-                .findAny();
-		ee.ifPresent(root -> {
-			boolean found = true;
-			Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
-			
-			iterationElements.add(root);
-			while (found) {
-				for (UniversalElementRepresentation iterationElement : iterationElements) {
-			iterationElements.addAll(targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-				.filter(e -> Objects.equals(e.getObjectReference(), iterationElement.getObjectReference())).toList());
-				}
-				iterationElements.remove(root);
-				if (iterationElements.isEmpty()) found = false;
-				selectedElements.addAll(iterationElements);
-				iterationElements.clear();
-			}
-//		 ObjectReference rootReference = root.getObjectReference();
-//		 List<UniversalElementRepresentation> foundElements =
-//				 targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-//			                .filter(e -> Objects.equals(e.getElementName(), root.getElementName()))
-//			                .toList();
-		 
-			selectedElements.addAll(iterationElements);
-		});
-		 
-		
+		Set<UniversalElementRepresentation> selectedElements = new HashSet<UniversalElementRepresentation>();
+		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+				.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
+				.ifPresent(elementName -> {
+					elementName.getTag().getUniqueId();
+					targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+							.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
+							.ifPresent(rr -> {
+								targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream().filter(
+										e -> Objects.equals(e.getTag().getParentId(), rr.getTag().getUniqueId()))
+										.findAny().ifPresent(root -> {
+											boolean found = true;
+											Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
+											iterationElements.add(root);
+											while (found) {
+												for (UniversalElementRepresentation iterationElement : iterationElements) {
+													iterationElements
+															.addAll(targetApplicationRepresentation
+																	.getTargetApplicationSnapshot().values().stream()
+																	.filter(e -> Objects.equals(e.getObjectReference(),
+																			iterationElement.getObjectReference()))
+																	.toList());
+												}
+												iterationElements.remove(root);
+												if (iterationElements.isEmpty())
+													found = false;
+												selectedElements.addAll(iterationElements);
+												iterationElements.clear();
+											}
+											selectedElements.addAll(iterationElements);
+										});
+							});
+				});
 		return selectedElements;
 	}
 
