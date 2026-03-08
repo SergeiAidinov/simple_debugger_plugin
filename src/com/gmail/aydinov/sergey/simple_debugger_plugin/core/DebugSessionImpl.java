@@ -248,16 +248,16 @@ public class DebugSessionImpl implements DebugSession {
 			else if (element.getElementType().ordinal() > 5)
 				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
 		}
-		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(),
-				separatedIntoGroups);
-		simpleDebugEventCollector.collectDebugEvent(
-				new DebugEvent<UserInstanceInspectionDTO>(SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, userInstanceInspectionDTO));
+		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
+				topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(), separatedIntoGroups);
+		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<UserInstanceInspectionDTO>(
+				SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, userInstanceInspectionDTO));
 
 	}
 
 	private Set<UniversalElementRepresentation> compileAdditionalInfo(UniversalElementRepresentation topLevelElement) {
 		Set<UniversalElementRepresentation> selectedElements = new HashSet<UniversalElementRepresentation>();
-		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream().filter(e -> Objects.nonNull(e))
 				.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
 				.ifPresent(elementName -> {
 					elementName.getTag().getUniqueId();
@@ -277,6 +277,7 @@ public class DebugSessionImpl implements DebugSession {
 																	.getTargetApplicationSnapshot().values().stream()
 																	.filter(e -> Objects.equals(e.getObjectReference(),
 																			iterationElement.getObjectReference()))
+																	.filter(e -> !Objects.equals(e.getAdditionalInfo(), topLevelElement.gettypeOrReturnType()))
 																	.toList());
 												}
 												iterationElements.remove(root);
@@ -285,7 +286,6 @@ public class DebugSessionImpl implements DebugSession {
 												selectedElements.addAll(iterationElements);
 												iterationElements.clear();
 											}
-											selectedElements.addAll(iterationElements);
 										});
 							});
 				});
@@ -423,6 +423,7 @@ public class DebugSessionImpl implements DebugSession {
 					.fromUniversalElement(element);
 			innerElementDTOs.add(elementRepresentation);
 		}
+		System.out.println("INNER_ELS:" + innerElementDTOs);
 		String methodName = location.declaringType().name() + "." + location.method().name() + "()";
 		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,
 				DebugUtils.compileStackInfo(thread), innerElementDTOs);

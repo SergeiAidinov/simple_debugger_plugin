@@ -283,7 +283,7 @@ public class ClassMembersAtBreakpoint {
 	// =========================================================
 
 	private List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
-		allElements.stream().forEach(e -> System.out.println(e));
+	//	allElements.stream().forEach(e -> System.out.println(e));
 		Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<>();
 		Set<InnerElementRepresentationDTO> elementsToDelete = new HashSet<>();
 		// 1️⃣ root элементы
