@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReference;import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
@@ -233,7 +233,7 @@ public class DebugSessionImpl implements DebugSession {
 				.forEach(e -> System.out.println(">>> " + e));
 		Set<UniversalElementRepresentation> init = new HashSet();
 		init.add(topLevelElement);
-		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(init);
+		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(topLevelElement);
 		relevantElements.remove(topLevelElement);
 		String typeOrReturnType = topLevelElement.gettypeOrReturnType();
 		Optional<UniversalElementRepresentation> ee = relevantElements.stream()
@@ -273,22 +273,33 @@ public class DebugSessionImpl implements DebugSession {
 
 	}
 
-	private Set<UniversalElementRepresentation> compileAdditionalInfo(
-			Set<UniversalElementRepresentation> collectedElementd) {
-		Set<UniversalElementRepresentation> thisIterationAddedElements = new HashSet<>();
-		for (UniversalElementRepresentation element : collectedElementd) {
-			targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-					.filter(e -> Objects.equals(e.getTag().getParentId(), element.getTag().getUniqueId()))
-					.filter(e -> !collectedElementd.contains(e)) // защита от циклов
-					.forEach(thisIterationAddedElements::add);
-		}
-		if (!thisIterationAddedElements.isEmpty()) {
-			collectedElementd.addAll(thisIterationAddedElements);
-			compileAdditionalInfo(collectedElementd);
-		}
-		System.out.print("COLLECTED: ");
-		collectedElementd.stream().forEach(e -> System.out.println(e));
-		return collectedElementd;
+	private Set<UniversalElementRepresentation> compileAdditionalInfo(UniversalElementRepresentation topLevelElement) {
+		 Set<UniversalElementRepresentation> selectedElements = new HashSet<UniversalElementRepresentation>();
+//		Optional<UniversalElementRepresentation> rootElement = targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+//		.filter(e -> Objects.equals(e.getElementName(), anchorElement.getElementName())).findAny();
+//		
+//		rootElement.ifPresent(root -> {
+//			boolean found = true;
+//			Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
+//			iterationElements.add(root);
+//			while (found) {
+//				for (UniversalElementRepresentation iterationElement : iterationElements) {
+//			iterationElements.addAll(targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+//				.filter(e -> Objects.equals(e.getTag().getParentId(), iterationElement.getTag().getUniqueId())).toList());
+//				}
+//				iterationElements.remove(root);
+//				if (iterationElements.isEmpty()) found = false;
+//				selectedElements.addAll(iterationElements);
+//				iterationElements.clear();
+//			}
+//		});
+		 ObjectReference rootReference = topLevelElement.getObjectReference();
+		 List<UniversalElementRepresentation> person1Elements =
+				 targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
+			                .filter(e -> Objects.equals(e.getObjectReference(), rootReference))
+			                .toList();
+		selectedElements.addAll(person1Elements);
+		return selectedElements;
 	}
 
 	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {
