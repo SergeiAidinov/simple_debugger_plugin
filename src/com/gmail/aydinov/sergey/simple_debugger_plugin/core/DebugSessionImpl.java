@@ -230,12 +230,7 @@ public class DebugSessionImpl implements DebugSession {
 		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
 		UniversalElementRepresentation topLevelElement = targetApplicationRepresentation.getTargetApplicationSnapshot()
 				.get(anchorElement.getTag());
-		targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-				.forEach(e -> System.out.println(">>> " + e));
-		Set<UniversalElementRepresentation> init = new HashSet();
-		init.add(topLevelElement);
 		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(topLevelElement);
-		relevantElements.stream().forEach(e -> System.out.println("RELEVANT: " + e));
 		relevantElements.remove(topLevelElement);
 		List<UniversalElementRepresentation> elements = new ArrayList<UniversalElementRepresentation>(relevantElements);
 		Collections.sort(elements);
@@ -253,11 +248,10 @@ public class DebugSessionImpl implements DebugSession {
 			else if (element.getElementType().ordinal() > 5)
 				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
 		}
-
-		UserInstanceInspectionDTO qq = new UserInstanceInspectionDTO(topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(),
+		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(),
 				separatedIntoGroups);
 		simpleDebugEventCollector.collectDebugEvent(
-				new DebugEvent<UserInstanceInspectionDTO>(SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, qq));
+				new DebugEvent<UserInstanceInspectionDTO>(SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, userInstanceInspectionDTO));
 
 	}
 
@@ -269,9 +263,9 @@ public class DebugSessionImpl implements DebugSession {
 					elementName.getTag().getUniqueId();
 					targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
 							.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
-							.ifPresent(rr -> {
+							.ifPresent(field -> {
 								targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream().filter(
-										e -> Objects.equals(e.getTag().getParentId(), rr.getTag().getUniqueId()))
+										e -> Objects.equals(e.getTag().getParentId(), field.getTag().getUniqueId()))
 										.findAny().ifPresent(root -> {
 											boolean found = true;
 											Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
