@@ -470,7 +470,9 @@ public class DebugSessionImpl implements DebugSession {
 			for (UniversalElementRepresentation earlierFoundElement: foundElements) {
 				List<UniversalElementRepresentation> justFoundElements = new ArrayList<UniversalElementRepresentation>();
 				justFoundElements.addAll(targetApplicationRepresentation.getTargetApplicationSnapshot().values()
-						.stream().filter(e -> Objects.equals(e.getTag().getParentId(), earlierFoundElement.getTag().getUniqueId())).toList());
+						.stream()
+						.filter(e -> Objects.equals(e.getObjectReference(), initElement.getObjectReference()))
+						.filter(e -> Objects.equals(e.getTag().getParentId(), earlierFoundElement.getTag().getUniqueId())).toList());
 				if (justFoundElements.isEmpty()) {
 					found = false;
 					break;
