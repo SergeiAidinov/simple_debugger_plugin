@@ -55,9 +55,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
+import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.IntegerValue;
+import com.sun.jdi.InterfaceType;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -239,33 +242,108 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private void provideAdditionalInfoAboutCollection(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
-		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
-		UniversalElementRepresentation topLevelElement = targetApplicationRepresentation.getTargetApplicationSnapshot()
-				.get(anchorElement.getTag());
-		System.out.println(topLevelElement);
-		Optional<UniversalElementRepresentation> instanceOptional = targetApplicationRepresentation.getTargetApplicationSnapshot().values()
-				.stream().filter(e -> Objects.equals(e.getObjectReference(), topLevelElement.getObjectReference())).findAny();
-		if (instanceOptional.isPresent()) {
-			String type = anchorElement.getTypeOrReturnType();
-			Class<?> clazz = null;
-			try {
-				clazz = Class.forName(type);
-			} catch (ClassNotFoundException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
 
-			if (Iterable.class.isAssignableFrom(clazz)) {
-			    System.out.println("ITERABLE");
-			}
+	    InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
+	    UniversalElementRepresentation parentInstance =
+	            targetApplicationRepresentation.getTargetApplicationSnapshot()
+	                    .get(anchorElement.getTag());
 
-			if (Map.class.isAssignableFrom(clazz)) {
-			    System.out.println("MAP");
-			}
-		}
-		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
-				topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(), Collections.emptyMap());
-		System.out.println(userInstanceInspectionDTO);
+	    if (parentInstance == null)
+	        return;
+
+	    ObjectReference parentRef = parentInstance.getObjectReference();
+
+	    // Получаем поле, которое содержит коллекцию или map
+	    Field collectionField = parentRef.referenceType().fieldByName(anchorElement.getElementName());
+	    if (collectionField == null)
+	        return;
+
+	    Object value = parentRef.getValue(collectionField);
+	    if (!(value instanceof ObjectReference collectionRef))
+	        return;
+
+	    // Получаем размер через метод, который мы сделали
+	    int size = getCollectionSize(collectionRef);
+
+	    System.out.println("Collection/Map size = " + size);
+
+	    // Собираем DTO для UI
+	    UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
+	            anchorElement.getElementName(),
+	            anchorElement.getTypeOrReturnType() + " (size = " + size + ")",
+	            Collections.emptyMap()
+	    );
+
+	    System.out.println(userInstanceInspectionDTO);
+	}
+	
+	private int getCollectionSize(ObjectReference ref) {
+	    if (ref == null)
+	        return -1;
+
+	    ReferenceType refType = ref.referenceType();
+	    try {
+	        // ===== Если это массив =====
+	        if (ref instanceof ArrayReference arrayRef) {
+	            return arrayRef.length();
+	        }
+
+	        // ===== Если это объект класса =====
+	        if (refType instanceof ClassType classType) {
+
+	            // Сначала пробуем Map
+	            for (InterfaceType iface : classType.allInterfaces()) {
+	                if ("java.util.Map".equals(iface.name())) {
+	                    Field sizeField = refType.fieldByName("size");
+	                    if (sizeField != null) {
+	                        IntegerValue intValue = (IntegerValue) ref.getValue(sizeField);
+	                        return intValue.value();
+	                    }
+	                }
+	            }
+
+	            // Потом Collection (List/Set)
+	            for (InterfaceType iface : classType.allInterfaces()) {
+	            	System.out.println("IFACE: " + iface.name());
+	                if ("java.util.Collection".equals(iface.name())) {
+	                    Field sizeField = refType.fieldByName("size");
+	                    if (sizeField != null) {
+	                        IntegerValue intValue = (IntegerValue) ref.getValue(sizeField);
+	                        return intValue.value();
+	                    }
+	                }
+	            }
+
+	            // fallback: ArrayList/LinkedList (проверка поля size напрямую)
+	            Field sizeField = refType.fieldByName("size");
+	            if (sizeField != null) {
+	                Value val = ref.getValue(sizeField);
+	                if (val instanceof IntegerValue intValue)
+	                    return intValue.value();
+	            }
+	        }
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+
+	    return -1; // неизвестный тип
+	}
+
+	private int getMapSize(ObjectReference mapRef) {
+	    if (mapRef == null)
+	        return -1;
+	    try {
+	        ReferenceType mapType = mapRef.referenceType();
+	        Field sizeField = mapType.fieldByName("size"); // у HashMap есть поле "size"
+	        if (sizeField != null) {
+	            IntegerValue intValue = (IntegerValue) mapRef.getValue(sizeField);
+	            return intValue.value();
+	        }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+	    return -1;
 	}
 
 	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
