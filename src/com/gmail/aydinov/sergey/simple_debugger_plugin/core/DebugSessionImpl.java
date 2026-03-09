@@ -232,7 +232,7 @@ public class DebugSessionImpl implements DebugSession {
 				shouldRefreshSnapsotAndUi = false;
 				System.out.println(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION.name()
 						+ userRequestedAdditionalInfo.toString());
-				provideAdditionalInfoAboutCollection(userRequestedAdditionalInfo);
+			//	provideAdditionalInfoAboutCollection(userRequestedAdditionalInfo);
 			} else {
 				SimpleDebuggerLogger
 						.info("Unhandled UI event: " + abstractSimpleDebuggerUIEvent.getClass().getSimpleName());
@@ -242,110 +242,9 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void provideAdditionalInfoAboutCollection(
-			UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
+	
 
-		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
-		UniversalElementRepresentation parentInstance = targetApplicationRepresentation.getTargetApplicationSnapshot()
-				.get(anchorElement.getTag());
-
-		if (parentInstance == null)
-			return;
-
-		ObjectReference parentRef = parentInstance.getObjectReference();
-
-		List<UniversalElementRepresentation> qq = targetApplicationRepresentation.getTargetApplicationSnapshot()
-				.values().stream()
-				.filter(e -> Objects.equals(e.getElementName(),
-						userRequestedAdditionalInfo.getPayload().getElementName()))
-				.filter(e -> Objects.equals(e.getTag().getParentId(),
-						userRequestedAdditionalInfo.getPayload().getTag().getParentId()))
-				.toList();
-		
-		if (qq.size() != 1) return;
-
-		// Получаем размер через метод, который мы сделали
-		int size = getCollectionSize(qq.get(0).getObjectReference());
-
-		System.out.println("Collection/Map size = " + size);
-
-		// Собираем DTO для UI
-		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
-				anchorElement.getElementName(), anchorElement.getTypeOrReturnType() + " (size = " + size + ")",
-				Collections.emptyMap());
-
-		System.out.println(userInstanceInspectionDTO);
-	}
-
-	private int getCollectionSize(ObjectReference ref) {
-		if (ref == null)
-			return -1;
-
-		ReferenceType refType = ref.referenceType();
-		try {
-			// ===== Если это массив =====
-			if (ref instanceof ArrayReference arrayRef) {
-				return arrayRef.length();
-			}
-
-			// ===== Если это объект класса =====
-			if (refType instanceof ClassType classType) {
-
-				// Сначала пробуем Map
-				for (InterfaceType iface : classType.allInterfaces()) {
-					System.out.println("IFACE: " + iface.name());
-					if ("java.util.Map".equals(iface.name())) {
-						Field sizeField = refType.fieldByName("size");
-						if (sizeField != null) {
-							IntegerValue intValue = (IntegerValue) ref.getValue(sizeField);
-							return intValue.value();
-						}
-					}
-				}
-
-				// Потом Collection (List/Set)
-				for (InterfaceType iface : classType.allInterfaces()) {
-					System.out.println("IFACE: " + iface.name());
-					if ("java.util.Collection".equals(iface.name())) {
-						Field sizeField = refType.fieldByName("size");
-						if (sizeField != null) {
-							IntegerValue intValue = (IntegerValue) ref.getValue(sizeField);
-							return intValue.value();
-						}
-					}
-				}
-
-				// fallback: ArrayList/LinkedList (проверка поля size напрямую)
-				Field sizeField = refType.fieldByName("size");
-				if (sizeField != null) {
-					Value val = ref.getValue(sizeField);
-					if (val instanceof IntegerValue intValue)
-						return intValue.value();
-				}
-			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		return -1; // неизвестный тип
-	}
-
-	private int getMapSize(ObjectReference mapRef) {
-		if (mapRef == null)
-			return -1;
-		try {
-			ReferenceType mapType = mapRef.referenceType();
-			Field sizeField = mapType.fieldByName("size"); // у HashMap есть поле "size"
-			if (sizeField != null) {
-				IntegerValue intValue = (IntegerValue) mapRef.getValue(sizeField);
-				return intValue.value();
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return -1;
-	}
+	
 
 	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
 		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
