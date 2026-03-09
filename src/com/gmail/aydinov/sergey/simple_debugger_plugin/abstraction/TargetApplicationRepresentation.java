@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +29,9 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
@@ -37,10 +41,14 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ClassLoaderReference;
+import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.IntegerValue;
 import com.sun.jdi.InterfaceType;
+import com.sun.jdi.InvalidTypeException;
+import com.sun.jdi.InvocationException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -49,6 +57,7 @@ import com.sun.jdi.PrimitiveValue;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.StringReference;
+import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
@@ -235,13 +244,33 @@ public class TargetApplicationRepresentation {
 	                        : UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
 
 	                UniversalElementRepresentation.ValueCategory category = determineValueCategory(field.typeName());
+	                
 	                String valueText = field.name();
 
 	                if (category == UniversalElementRepresentation.ValueCategory.PRIMITIVE
 	                        || category == UniversalElementRepresentation.ValueCategory.STRING) {
 	                    valueText = extractPrimitiveOrStringAsText(field, instance);
 	                }
+	                if (Objects.equals(category, UniversalElementRepresentation.ValueCategory.COLLECTION)) {
+	                	System.out.println("COLLECTION FOUND: " + field.name());
+	                	Value value;
 
+	                	if (field.isStatic()) {
+	                	    value = field.declaringType().getValue(field);
+	                	} else {
+	                	    value = instance.getValue(field);
+	                	}
+
+	                	ObjectReference objRef = (value instanceof ObjectReference)
+	                	        ? (ObjectReference) value
+	                	        : null;
+	                	int q = getCollectionSize(objRef);
+	                	
+	                	System.out.println("SIZE_COLLECTION: " + field.name() + " " + q);
+	                }
+	                
+	              
+	                
 	                UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
 	                        .referenceType(refType)
 	                        .objectReference(isStatic ? null : instance)
@@ -315,7 +344,26 @@ public class TargetApplicationRepresentation {
 	    ReferenceType refType = objRef.referenceType();
 	    if (refType.name().startsWith("java.") || refType.name().startsWith("javax."))
 	        return;
+	    
+	    boolean isIterable = false;
+	    boolean isMap = false;
 
+	    if (refType instanceof ClassType classType) {
+	        isIterable = classType.allInterfaces()
+	                .stream()
+	                .anyMatch(i -> i.name().equals("java.lang.Iterable"));
+
+	        isMap = classType.allInterfaces()
+	                .stream()
+	                .anyMatch(i -> i.name().equals("java.util.Map"));
+	    }
+	    
+	    if (isIterable) {
+	    	System.out.println("ITERABLE FOUND");
+	    } else if (isMap) {
+	    	System.out.println("MAP FOUND");
+	    }
+	    
 	    UniversalElementRepresentation objElement = UniversalElementRepresentation.builder()
 	            .referenceType(refType)
 	            .objectReference(objRef)
@@ -338,18 +386,109 @@ public class TargetApplicationRepresentation {
 
 	    // Для коллекций и map добавляем элементы
 	    UniversalElementRepresentation.ValueCategory category = determineValueCategory(refType.name());
-	    if (category == UniversalElementRepresentation.ValueCategory.COLLECTION
-	            || category == UniversalElementRepresentation.ValueCategory.MAP) {
-	    	
-	    	// develop only
-	    	if (category == UniversalElementRepresentation.ValueCategory.MAP) {
-	    		System.out.println(objElement);
-	    	}
+	   
 	        List<ObjectReference> children = DebugUtils.getCollectionElements(objRef);
 	        for (ObjectReference child : children) {
 	            populateObjectReference(objElement, child);
 	        }
 	    }
+	
+	
+	private String provideAdditionalInfoAboutCollection(ObjectReference objRef) {
+		
+		return new String("default value");
+	}
+	
+	private int getCollectionSize(ObjectReference ref) {
+		if (ref == null)
+			return -1;
+		ClassType classType11 = (ClassType) ref.referenceType();
+		ReferenceType refType = ref.referenceType();
+		
+			// ===== Если это массив =====
+			if (ref instanceof ArrayReference arrayRef) {
+				return arrayRef.length();
+			}
+
+			// ===== Если это объект класса =====
+			if (refType instanceof ClassType classType) {
+
+				// Сначала пробуем Map
+				for (InterfaceType iface : classType.allInterfaces()) {
+					System.out.println("IFACE: " + iface.name());
+					Method sizeMethod = ((ClassType) ref.referenceType()).concreteMethodByName("size", "()I");
+					//Iterable.class.isAssignableFrom(classType11);
+					Value sizeValue = null;
+					if ("java.util.Map".equals(iface.name()) || "java.util.Collection".equals(iface.name())) {
+						if (sizeMethod != null) {
+					        try {
+					            ThreadReference thread = ref.virtualMachine().allThreads().get(0);
+
+					           sizeValue = ref.invokeMethod(
+					                thread,
+					                sizeMethod,
+					                List.of(),
+					                ObjectReference.INVOKE_SINGLE_THREADED
+					            );
+
+					            if (sizeValue instanceof IntegerValue intVal) {
+					                int size = intVal.value();
+					                System.out.println("Размер Map: " + size);
+					            }
+					        } catch (InvalidTypeException | ClassNotLoadedException |
+					                 IncompatibleThreadStateException | InvocationException e) {
+					            e.printStackTrace();
+					        }
+					    }
+
+//					        if (sizeValue instanceof IntegerValue intVal) {
+//					            int size = intVal.value();
+					            System.out.println("COLLECTION SIZE: " + sizeValue);
+			//		}
+				}
+				}
+				// Потом Collection (List/Set)
+//				for (InterfaceType iface : classType.allInterfaces()) {
+//					System.out.println("IFACE: " + iface.name());
+//					if ("java.util.Collection".equals(iface.name())) {
+//						Field sizeField = refType.fieldByName("size");
+//						if (sizeField != null) {
+//							IntegerValue intValue = (IntegerValue) ref.getValue(sizeField);
+//							return intValue.value();
+//						}
+//					}
+//				}
+
+				// fallback: ArrayList/LinkedList (проверка поля size напрямую)
+				Field sizeField = refType.fieldByName("size");
+				if (sizeField != null) {
+					Value val = ref.getValue(sizeField);
+					if (val instanceof IntegerValue intValue)
+						return intValue.value();
+				}
+			//}
+
+
+		//return -1; // неизвестный тип
+			}
+			return -1;
+	}
+
+	private int getMapSize(ObjectReference mapRef) {
+		if (mapRef == null)
+			return -1;
+		try {
+			ReferenceType mapType = mapRef.referenceType();
+			Field sizeField = mapType.fieldByName("size"); // у HashMap есть поле "size"
+			if (sizeField != null) {
+				IntegerValue intValue = (IntegerValue) mapRef.getValue(sizeField);
+				return intValue.value();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	
+		return -1;
 	}
 
 	// ---------------- helper для элементов коллекции ----------------
