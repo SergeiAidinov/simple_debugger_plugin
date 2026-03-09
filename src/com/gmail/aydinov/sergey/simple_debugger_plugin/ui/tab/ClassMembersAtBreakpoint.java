@@ -372,26 +372,36 @@ public class ClassMembersAtBreakpoint {
 
 	private void setupHoverInspectionListener() {
 		Table table = viewer.getTable();
-		table.addListener(SWT.MouseMove, event -> {
-			TableItem item = table.getItem(new Point(event.x, event.y));
-			InnerElementRepresentationDTO dto = null;
-			if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
-				int colIndex = getColumnIndexAtPoint(table, event.x);
-				if (colIndex == 2
-						&& getIcon(dataDto) == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-					dto = dataDto;
-				}
-			}
+	    table.addListener(SWT.MouseMove, event -> {
+	        TableItem item = table.getItem(new Point(event.x, event.y));
+	        InnerElementRepresentationDTO dto = null;
+	        if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
+	            int colIndex = getColumnIndexAtPoint(table, event.x);
+	            if (colIndex == 2) {
+	                Image icon = getIcon(dataDto);
+	                if (icon == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst() ||
+	                    icon == DebugWindowsManager.instance().icons.get("lens").getFirst()) {
+	                    dto = dataDto;
+	                }
+	            }
+	        }
 
-			if (!Objects.equals(dto, lastInspectedElement)) {
-				lastInspectedElement = dto;
-				tooltipManager.closePopup();
-				if (dto != null) {
-					uiEventCollector
-							.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO, dto));
-				}
-			}
-		});
+	        if (!Objects.equals(dto, lastInspectedElement)) {
+	            lastInspectedElement = dto;
+	            tooltipManager.closePopup();
+	            if (dto != null) {
+	                if (getIcon(dto) == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+	                    uiEventCollector.collectUiEvent(
+	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto)
+	                    );
+	                } else if (getIcon(dto) == DebugWindowsManager.instance().icons.get("lens").getFirst()) {
+	                    uiEventCollector.collectUiEvent(
+	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto)
+	                    );
+	                }
+	            }
+	        }
+	    });
 	}
 	
 	private class ValueEditingSupport extends EditingSupport {

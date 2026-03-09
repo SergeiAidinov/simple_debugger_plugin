@@ -219,10 +219,16 @@ public class DebugSessionImpl implements DebugSession {
 				targetVirtualMachineRepresentation.getVirtualMachine().dispose();
 				shouldRefreshSnapsotAndUi = false;
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
-					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO)) {
+					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT)) {
 				UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
 				shouldRefreshSnapsotAndUi = false;
-				provideAdditionalInfo(userRequestedAdditionalInfo);
+				provideAdditionalInfoAboutObject(userRequestedAdditionalInfo);
+			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
+					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION)) {
+				UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
+				shouldRefreshSnapsotAndUi = false;
+				System.out.println(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION.name() + userRequestedAdditionalInfo.toString());
+				provideAdditionalInfoAboutCollection(userRequestedAdditionalInfo);
 			} else {
 				SimpleDebuggerLogger
 						.info("Unhandled UI event: " + abstractSimpleDebuggerUIEvent.getClass().getSimpleName());
@@ -232,7 +238,37 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void provideAdditionalInfo(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
+	private void provideAdditionalInfoAboutCollection(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
+		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
+		UniversalElementRepresentation topLevelElement = targetApplicationRepresentation.getTargetApplicationSnapshot()
+				.get(anchorElement.getTag());
+		System.out.println(topLevelElement);
+		Optional<UniversalElementRepresentation> instanceOptional = targetApplicationRepresentation.getTargetApplicationSnapshot().values()
+				.stream().filter(e -> Objects.equals(e.getObjectReference(), topLevelElement.getObjectReference())).findAny();
+		if (instanceOptional.isPresent()) {
+			String type = anchorElement.getTypeOrReturnType();
+			Class<?> clazz = null;
+			try {
+				clazz = Class.forName(type);
+			} catch (ClassNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+			if (Iterable.class.isAssignableFrom(clazz)) {
+			    System.out.println("ITERABLE");
+			}
+
+			if (Map.class.isAssignableFrom(clazz)) {
+			    System.out.println("MAP");
+			}
+		}
+		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
+				topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(), Collections.emptyMap());
+		System.out.println(userInstanceInspectionDTO);
+	}
+
+	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
 		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
 		UniversalElementRepresentation topLevelElement = targetApplicationRepresentation.getTargetApplicationSnapshot()
 				.get(anchorElement.getTag());
