@@ -230,7 +230,8 @@ public class DebugSessionImpl implements DebugSession {
 					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION)) {
 				UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
 				shouldRefreshSnapsotAndUi = false;
-				System.out.println(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION.name() + userRequestedAdditionalInfo.toString());
+				System.out.println(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION.name()
+						+ userRequestedAdditionalInfo.toString());
 				provideAdditionalInfoAboutCollection(userRequestedAdditionalInfo);
 			} else {
 				SimpleDebuggerLogger
@@ -241,109 +242,109 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void provideAdditionalInfoAboutCollection(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
+	private void provideAdditionalInfoAboutCollection(
+			UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
 
-	    InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
-	    UniversalElementRepresentation parentInstance =
-	            targetApplicationRepresentation.getTargetApplicationSnapshot()
-	                    .get(anchorElement.getTag());
+		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
+		UniversalElementRepresentation parentInstance = targetApplicationRepresentation.getTargetApplicationSnapshot()
+				.get(anchorElement.getTag());
 
-	    if (parentInstance == null)
-	        return;
+		if (parentInstance == null)
+			return;
 
-	    ObjectReference parentRef = parentInstance.getObjectReference();
+		ObjectReference parentRef = parentInstance.getObjectReference();
 
-	    // Получаем поле, которое содержит коллекцию или map
-	    Field collectionField = parentRef.referenceType().fieldByName(anchorElement.getElementName());
-	    if (collectionField == null)
-	        return;
+		List<UniversalElementRepresentation> qq = targetApplicationRepresentation.getTargetApplicationSnapshot()
+				.values().stream()
+				.filter(e -> Objects.equals(e.getElementName(),
+						userRequestedAdditionalInfo.getPayload().getElementName()))
+				.filter(e -> Objects.equals(e.getTag().getParentId(),
+						userRequestedAdditionalInfo.getPayload().getTag().getParentId()))
+				.toList();
+		
+		if (qq.size() != 1) return;
 
-	    Object value = parentRef.getValue(collectionField);
-	    if (!(value instanceof ObjectReference collectionRef))
-	        return;
+		// Получаем размер через метод, который мы сделали
+		int size = getCollectionSize(qq.get(0).getObjectReference());
 
-	    // Получаем размер через метод, который мы сделали
-	    int size = getCollectionSize(collectionRef);
+		System.out.println("Collection/Map size = " + size);
 
-	    System.out.println("Collection/Map size = " + size);
+		// Собираем DTO для UI
+		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
+				anchorElement.getElementName(), anchorElement.getTypeOrReturnType() + " (size = " + size + ")",
+				Collections.emptyMap());
 
-	    // Собираем DTO для UI
-	    UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
-	            anchorElement.getElementName(),
-	            anchorElement.getTypeOrReturnType() + " (size = " + size + ")",
-	            Collections.emptyMap()
-	    );
-
-	    System.out.println(userInstanceInspectionDTO);
+		System.out.println(userInstanceInspectionDTO);
 	}
-	
+
 	private int getCollectionSize(ObjectReference ref) {
-	    if (ref == null)
-	        return -1;
+		if (ref == null)
+			return -1;
 
-	    ReferenceType refType = ref.referenceType();
-	    try {
-	        // ===== Если это массив =====
-	        if (ref instanceof ArrayReference arrayRef) {
-	            return arrayRef.length();
-	        }
+		ReferenceType refType = ref.referenceType();
+		try {
+			// ===== Если это массив =====
+			if (ref instanceof ArrayReference arrayRef) {
+				return arrayRef.length();
+			}
 
-	        // ===== Если это объект класса =====
-	        if (refType instanceof ClassType classType) {
+			// ===== Если это объект класса =====
+			if (refType instanceof ClassType classType) {
 
-	            // Сначала пробуем Map
-	            for (InterfaceType iface : classType.allInterfaces()) {
-	                if ("java.util.Map".equals(iface.name())) {
-	                    Field sizeField = refType.fieldByName("size");
-	                    if (sizeField != null) {
-	                        IntegerValue intValue = (IntegerValue) ref.getValue(sizeField);
-	                        return intValue.value();
-	                    }
-	                }
-	            }
+				// Сначала пробуем Map
+				for (InterfaceType iface : classType.allInterfaces()) {
+					System.out.println("IFACE: " + iface.name());
+					if ("java.util.Map".equals(iface.name())) {
+						Field sizeField = refType.fieldByName("size");
+						if (sizeField != null) {
+							IntegerValue intValue = (IntegerValue) ref.getValue(sizeField);
+							return intValue.value();
+						}
+					}
+				}
 
-	            // Потом Collection (List/Set)
-	            for (InterfaceType iface : classType.allInterfaces()) {
-	            	System.out.println("IFACE: " + iface.name());
-	                if ("java.util.Collection".equals(iface.name())) {
-	                    Field sizeField = refType.fieldByName("size");
-	                    if (sizeField != null) {
-	                        IntegerValue intValue = (IntegerValue) ref.getValue(sizeField);
-	                        return intValue.value();
-	                    }
-	                }
-	            }
+				// Потом Collection (List/Set)
+				for (InterfaceType iface : classType.allInterfaces()) {
+					System.out.println("IFACE: " + iface.name());
+					if ("java.util.Collection".equals(iface.name())) {
+						Field sizeField = refType.fieldByName("size");
+						if (sizeField != null) {
+							IntegerValue intValue = (IntegerValue) ref.getValue(sizeField);
+							return intValue.value();
+						}
+					}
+				}
 
-	            // fallback: ArrayList/LinkedList (проверка поля size напрямую)
-	            Field sizeField = refType.fieldByName("size");
-	            if (sizeField != null) {
-	                Value val = ref.getValue(sizeField);
-	                if (val instanceof IntegerValue intValue)
-	                    return intValue.value();
-	            }
-	        }
+				// fallback: ArrayList/LinkedList (проверка поля size напрямую)
+				Field sizeField = refType.fieldByName("size");
+				if (sizeField != null) {
+					Value val = ref.getValue(sizeField);
+					if (val instanceof IntegerValue intValue)
+						return intValue.value();
+				}
+			}
 
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
-	    return -1; // неизвестный тип
+		return -1; // неизвестный тип
 	}
 
 	private int getMapSize(ObjectReference mapRef) {
-	    if (mapRef == null)
-	        return -1;
-	    try {
-	        ReferenceType mapType = mapRef.referenceType();
-	        Field sizeField = mapType.fieldByName("size"); // у HashMap есть поле "size"
-	        if (sizeField != null) {
-	            IntegerValue intValue = (IntegerValue) mapRef.getValue(sizeField);
-	            return intValue.value();
-	        }
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
-	    return -1;
+		if (mapRef == null)
+			return -1;
+		try {
+			ReferenceType mapType = mapRef.referenceType();
+			Field sizeField = mapType.fieldByName("size"); // у HashMap есть поле "size"
+			if (sizeField != null) {
+				IntegerValue intValue = (IntegerValue) mapRef.getValue(sizeField);
+				return intValue.value();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return -1;
 	}
 
 	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
@@ -527,17 +528,19 @@ public class DebugSessionImpl implements DebugSession {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if (Objects.isNull(frame)) return false;
+		if (Objects.isNull(frame))
+			return false;
 		ObjectReference inctance = frame.thisObject();
-		Optional<UniversalElementRepresentation> anchorInstanceOptional = targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-		.filter(e -> Objects.equals(e.getObjectReference(), inctance))
-		.filter(e -> Objects.isNull(e.getTag().getParentId()))
-		.findAny();
-		if (anchorInstanceOptional.isEmpty()) return false;
+		Optional<UniversalElementRepresentation> anchorInstanceOptional = targetApplicationRepresentation
+				.getTargetApplicationSnapshot().values().stream()
+				.filter(e -> Objects.equals(e.getObjectReference(), inctance))
+				.filter(e -> Objects.isNull(e.getTag().getParentId())).findAny();
+		if (anchorInstanceOptional.isEmpty())
+			return false;
 		UniversalElementRepresentation anchorElement = anchorInstanceOptional.get();
 		Set<UniversalElementRepresentation> relevantElements = selectFieldsAndMethods(anchorElement);
-		List<UniversalElementRepresentation> locals = targetApplicationRepresentation.getTargetApplicationSnapshot().values().stream()
-		.filter(e -> e.getElementType().equals(UniversalElementType.LOCAL_VARIABLE)).toList();
+		List<UniversalElementRepresentation> locals = targetApplicationRepresentation.getTargetApplicationSnapshot()
+				.values().stream().filter(e -> e.getElementType().equals(UniversalElementType.LOCAL_VARIABLE)).toList();
 		relevantElements.stream().forEach(e -> System.out.println("RL:" + e));
 		relevantElements.addAll(locals);
 		Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
@@ -575,18 +578,21 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private Set<UniversalElementRepresentation> selectFieldsAndMethods(UniversalElementRepresentation initElement) {
-		if (Objects.isNull(initElement)) return Collections.emptySet();
+		if (Objects.isNull(initElement))
+			return Collections.emptySet();
 		Set<UniversalElementRepresentation> foundElements = new HashSet<>();
 		foundElements.add(initElement);
 		boolean found = true;
-		while(found) {
-		//	Set<UniversalElementRepresentation> currentIterationFoundElements = new HashSet<>();
-			for (UniversalElementRepresentation earlierFoundElement: foundElements) {
+		while (found) {
+			// Set<UniversalElementRepresentation> currentIterationFoundElements = new
+			// HashSet<>();
+			for (UniversalElementRepresentation earlierFoundElement : foundElements) {
 				List<UniversalElementRepresentation> justFoundElements = new ArrayList<UniversalElementRepresentation>();
 				justFoundElements.addAll(targetApplicationRepresentation.getTargetApplicationSnapshot().values()
-						.stream()
-						.filter(e -> Objects.equals(e.getObjectReference(), initElement.getObjectReference()))
-						.filter(e -> Objects.equals(e.getTag().getParentId(), earlierFoundElement.getTag().getUniqueId())).toList());
+						.stream().filter(e -> Objects.equals(e.getObjectReference(), initElement.getObjectReference()))
+						.filter(e -> Objects.equals(e.getTag().getParentId(),
+								earlierFoundElement.getTag().getUniqueId()))
+						.toList());
 				if (justFoundElements.isEmpty()) {
 					found = false;
 					break;
@@ -596,7 +602,7 @@ public class DebugSessionImpl implements DebugSession {
 				}
 			}
 		}
-		
+
 		return foundElements;
 	}
 

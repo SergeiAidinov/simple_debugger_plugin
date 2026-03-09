@@ -185,10 +185,14 @@ public class TargetApplicationRepresentation {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
+		
+		
 		List<UniversalElementRepresentation> localVariables = new ArrayList<>();
 		for (LocalVariable local : locals) {
+			Value val = frame.getValue(local);
+			ObjectReference objRef = val instanceof ObjectReference ? (ObjectReference) val : null;
 			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
+					.objectReference(objRef)
 					.elementName(local.name()).additionalInfo(local.typeName()) // используем тип переменной
 					.elementType(UniversalElementType.LOCAL_VARIABLE).currentRole(CurrentRole.INNER).value(DebugUtils.getLocalVariableValueAsString(frame, local))
 					.isStatic(false).valueCategory(DebugUtils.determineValueCategory(frame.getValue(local)))
@@ -336,6 +340,11 @@ public class TargetApplicationRepresentation {
 	    UniversalElementRepresentation.ValueCategory category = determineValueCategory(refType.name());
 	    if (category == UniversalElementRepresentation.ValueCategory.COLLECTION
 	            || category == UniversalElementRepresentation.ValueCategory.MAP) {
+	    	
+	    	// develop only
+	    	if (category == UniversalElementRepresentation.ValueCategory.MAP) {
+	    		System.out.println(objElement);
+	    	}
 	        List<ObjectReference> children = DebugUtils.getCollectionElements(objRef);
 	        for (ObjectReference child : children) {
 	            populateObjectReference(objElement, child);
