@@ -60,7 +60,9 @@ public final class SimpleDebuggerEventTypes {
         
         SHOW_ANCHOR_ELEMENT(TopLevelElementRepresentationDTO.class),
         
-        USER_REQUESTED_ADDITIONAL_INFO(InnerElementRepresentationDTO.class),
+        USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT(InnerElementRepresentationDTO.class),
+        
+        USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class),
         
         USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementRepresentationDTO.class),
         
