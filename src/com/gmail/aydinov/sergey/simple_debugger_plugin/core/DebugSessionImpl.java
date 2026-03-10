@@ -122,7 +122,7 @@ public class DebugSessionImpl implements DebugSession {
 
 	/** Processes all events in the EventSet */
 	private void processEvents() {
-
+		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakpoints();
 		for (Event event : eventSet) {
 			if (!DebuggerContext.context().isRunning())
 				return;
