@@ -122,8 +122,8 @@ public class SimpleDebuggerWorkFlow {
 		targetVirtualMachineRepresentation.getVirtualMachine().resume();
 
 		while (DebuggerContext.context().isRunning()) {
-//			targetApplicationRepresentation
-//					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
+			targetApplicationRepresentation
+					.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine(), null);
 			targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakpoints();
 
 			EventSet eventSet = null;
