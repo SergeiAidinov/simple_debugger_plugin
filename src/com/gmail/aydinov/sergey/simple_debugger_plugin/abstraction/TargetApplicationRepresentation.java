@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +30,9 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
@@ -37,10 +42,14 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ClassLoaderReference;
+import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.IntegerValue;
 import com.sun.jdi.InterfaceType;
+import com.sun.jdi.InvalidTypeException;
+import com.sun.jdi.InvocationException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -49,6 +58,7 @@ import com.sun.jdi.PrimitiveValue;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.StringReference;
+import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
@@ -81,7 +91,7 @@ public class TargetApplicationRepresentation {
 		return targetApplicationSnapshot;
 	}
 
-	public void takeSnapshotOfTargetApplication(VirtualMachine virtualMachine) {
+	public void takeSnapshotOfTargetApplication(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
 		targetApplicationSnapshot.clear();
 		SimpleDebuggerLogger.info("Waiting for target classes to load...");
 
@@ -99,41 +109,35 @@ public class TargetApplicationRepresentation {
 
 		// 4. Создаем top-level элементы (классы)
 		for (ReferenceType referenceType : definedByLoaders) {
-		    String fqName = referenceType.name();
+			String fqName = referenceType.name();
 
-		    // Пропускаем JDK-классы
-		    if (fqName.startsWith("java.") || fqName.startsWith("javax."))
-		        continue;
+			// Пропускаем JDK-классы
+			if (fqName.startsWith("java.") || fqName.startsWith("javax."))
+				continue;
 
-		    UniversalElementRepresentation.UniversalElementType elementType = determineElementType(referenceType);
-		    if (elementType == null)
-		        continue;
+			UniversalElementRepresentation.UniversalElementType elementType = determineElementType(referenceType);
+			if (elementType == null)
+				continue;
 
-		    ObjectReference instance = null;
-		    if (referenceType instanceof ClassType classType) {
-		        try {
-		            List<ObjectReference> instances = classType.instances(1);
-		            if (!instances.isEmpty())
-		                instance = instances.get(0);
-		        } catch (Exception ignored) {}
-		    }
+			ObjectReference instance = null;
+			if (referenceType instanceof ClassType classType) {
+				try {
+					List<ObjectReference> instances = classType.instances(1);
+					if (!instances.isEmpty())
+						instance = instances.get(0);
+				} catch (Exception ignored) {
+				}
+			}
 
-		    UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
-		            .referenceType(referenceType)
-		            .objectReference(instance)
-		            .elementName(DebugUtils.extractSimpleName(fqName))
-		            .additionalInfo(fqName)
-		            .elementType(elementType)
-		            .currentRole(UniversalElementRepresentation.CurrentRole.OUTER)
-		            .value(fqName)
-		            .isStatic(referenceType.isStatic())
-		            .valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-		            .typeOrReturnType(fqName)
-		            .uniqueId(UUID.randomUUID())
-		            .parentUniqueId(null)
-		            .build();
+			UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
+					.referenceType(referenceType).objectReference(instance)
+					.elementName(DebugUtils.extractSimpleName(fqName)).additionalInfo(fqName).elementType(elementType)
+					.currentRole(UniversalElementRepresentation.CurrentRole.OUTER).value(fqName)
+					.isStatic(referenceType.isStatic())
+					.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED).typeOrReturnType(fqName)
+					.uniqueId(UUID.randomUUID()).parentUniqueId(null).build();
 
-		    topLevelElements.put(topLevelElement.getTag(), topLevelElement);
+			topLevelElements.put(topLevelElement.getTag(), topLevelElement);
 		}
 
 		// 5. Добавляем в общий snapshot
@@ -141,13 +145,15 @@ public class TargetApplicationRepresentation {
 
 		// 6. Заполняем внутренние элементы (методы, поля)
 		for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
-			populateInnerElements(topLevelElement, topLevelElement.getReferenceType());
+			populateInnerElements(topLevelElement, topLevelElement.getReferenceType(), breakpointEvent);
 		}
 
+		addLocalVariables(virtualMachine, breakpointEvent);
 		SimpleDebuggerLogger.info("LOADED TOP-LEVEL ELEMENTS: " + targetApplicationSnapshot.size());
 	}
 
-	public boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
+	private boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
+		if (Objects.isNull(breakpointEvent)) return false;
 		StackFrame frame;
 		try {
 			frame = breakpointEvent.thread().frame(0);
@@ -161,37 +167,46 @@ public class TargetApplicationRepresentation {
 			return false;
 
 		// Получаем представление метода
-	//	Method method = frame.location().method();
+		// Method method = frame.location().method();
 		ReferenceType type = method.declaringType();
 
-		UniversalElementRepresentation methodRepresentation =
-		    targetApplicationSnapshot.values().stream()
-		        .filter(e ->
-		            e.getReferenceType() != null &&
-		            e.getReferenceType().equals(type) &&
-		            e.getElementType() == UniversalElementType.METHOD &&
-		            e.getElementName().startsWith(method.name())
-		        )
-		        .findFirst()
-		        .orElse(null);
+		UniversalElementRepresentation methodRepresentation = targetApplicationSnapshot.values().stream()
+				.filter(e -> e.getReferenceType() != null && e.getReferenceType().equals(type)
+						&& e.getElementType() == UniversalElementType.METHOD
+						&& e.getElementName().startsWith(method.name()))
+				.findFirst().orElse(null);
 		if (methodRepresentation == null)
 			return false;
-		// List<LocalVariable> arguments = Collections.EMPTY_LIST;
 		List<LocalVariable> locals = Collections.EMPTY_LIST;
 		try {
-		//	arguments = method.arguments();
+			// arguments = method.arguments();
 			locals = frame.visibleVariables();
 		} catch (AbsentInformationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
+		String valueText = null;
 		List<UniversalElementRepresentation> localVariables = new ArrayList<>();
 		for (LocalVariable local : locals) {
+			Value val = frame.getValue(local);
+			valueText = "";
+			ObjectReference objRef = val instanceof ObjectReference ? (ObjectReference) val : null;
+			if (Objects.isNull(objRef)) {
+			valueText =	DebugUtils.getLocalVariableValueAsString(frame, local);
+			} else {
+				int q = getCollectionSize(objRef, breakpointEvent);
+				 valueText =  q == -1
+					? DebugUtils.getLocalVariableValueAsString(frame, local)
+					:"size:" + q + "; " + DebugUtils.getLocalVariableValueAsString(frame, local);
+				 System.out.println("INNER COLLECTIONS: " + q);
+			}
+			
 			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
-					.elementName(local.name()).additionalInfo(local.typeName()) // используем тип переменной
-					.elementType(UniversalElementType.LOCAL_VARIABLE).currentRole(CurrentRole.INNER).value(DebugUtils.getLocalVariableValueAsString(frame, local))
-					.isStatic(false).valueCategory(DebugUtils.determineValueCategory(frame.getValue(local)))
+					.objectReference(objRef).elementName(local.name()).additionalInfo(local.typeName()) 
+					.elementType(UniversalElementType.LOCAL_VARIABLE).currentRole(CurrentRole.INNER)
+					.value(valueText).isStatic(false)
+					.valueCategory(DebugUtils.determineValueCategory(frame.getValue(local)))
 					.typeOrReturnType(local.typeName()).uniqueId(UUID.randomUUID())
 					.parentUniqueId(methodRepresentation.getTag().getUniqueId()).build();
 
@@ -202,170 +217,237 @@ public class TargetApplicationRepresentation {
 		return true;
 	}
 
-	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
-	    if (parentElement == null || refType == null)
-	        return;
+	private int getCollectionSize(ObjectReference instance, BreakpointEvent breakpointEvent) {
+		if (instance == null)
+			return -1;
 
-	    String className = refType.name();
-	    if (className.startsWith("java.") || className.startsWith("javax."))
-	        return;
+		// ===== Если массив =====
+		if (instance instanceof ArrayReference arrayRef) {
+			return arrayRef.length();
+		}
 
-	    // ---------------- Получаем все экземпляры класса ----------------
-	    List<ObjectReference> instances = new ArrayList<>();
-	    if (refType instanceof ClassType classType) {
-	        try {
-	            instances = classType.instances(10); // максимум 10 объектов, можно увеличить
-	        } catch (Exception ignored) {}
-	    }
+		ReferenceType refType = instance.referenceType();
+		if (!(refType instanceof ClassType classType))
+			return -1;
 
-	    // ---------------- Проходим по всем экземплярам ----------------
-	    for (ObjectReference instance : instances) {
-	        // ---------------- Поля ----------------
-	        for (Field field : refType.allFields()) {
-	            try {
-	                if (field.isSynthetic()) continue;
+		// ===== Попытка получить через поле "size" =====
+		// Для стандартных mutable коллекций
+		Field sizeField = refType.fieldByName("size");
+		if (sizeField != null) {
+			Value sizeValue = instance.getValue(sizeField);
+			if (sizeValue instanceof IntegerValue intVal) {
+				return intVal.value();
+			}
+		}
 
-	                boolean isStatic = field.isStatic();
-	                UniversalElementRepresentation.UniversalElementType elementType = isStatic
-	                        ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
-	                        : UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
+		// ===== Попытка через метод size() =====
+		Method sizeMethod = classType.concreteMethodByName("size", "()I");
+		if (sizeMethod != null && breakpointEvent.thread() != null) {
+			try {
+				// Оборачиваем вызов для защиты от ошибок JDI
+				Value result = instance.invokeMethod(breakpointEvent.thread(), sizeMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
+				if (result instanceof IntegerValue intVal) {
+					return intVal.value();
+				}
+			} catch (Exception e) {
 
-	                UniversalElementRepresentation.ValueCategory category = determineValueCategory(field.typeName());
-	                String valueText = field.name();
+			}
+		}
 
-	                if (category == UniversalElementRepresentation.ValueCategory.PRIMITIVE
-	                        || category == UniversalElementRepresentation.ValueCategory.STRING) {
-	                    valueText = extractPrimitiveOrStringAsText(field, instance);
-	                }
+		// ===== Проверка известных immutable коллекций (Java 9+) через внутренние поля
+		// =====
+		List<String> knownFields = Arrays.asList("a", "table", "elements"); // возможные внутренние поля массивов
+		for (String fieldName : knownFields) {
+			Field field = refType.fieldByName(fieldName);
+			if (field != null) {
+				Value value = instance.getValue(field);
+				if (value instanceof ArrayReference innerArray) {
+					return innerArray.length();
+				}
+			}
+		}
 
-	                UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
-	                        .referenceType(refType)
-	                        .objectReference(isStatic ? null : instance)
-	                        .elementName(field.name())
-	                        .additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
-	                        .elementType(elementType)
-	                        .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-	                        .value(valueText)
-	                        .isStatic(isStatic)
-	                        .valueCategory(category)
-	                        .typeOrReturnType(field.typeName())
-	                        .uniqueId(UUID.randomUUID())
-	                        .parentUniqueId(parentElement.getTag().getUniqueId())
-	                        .build();
+		// Если не удалось определить размер
+		return -1;
+	}
 
-	                targetApplicationSnapshot.put(fieldElement.getTag(), fieldElement);
+	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType,
+			BreakpointEvent breakpointEvent) {
+		if (parentElement == null || refType == null)
+			return;
 
-	                // ---------------- Рекурсивно собираем объекты ----------------
-	                if (instance != null && !isStatic && category == UniversalElementRepresentation.ValueCategory.USER_OBJECT) {
-	                    Value fieldValue = instance.getValue(field);
-	                    if (fieldValue instanceof ObjectReference childRef) {
-	                        populateObjectReference(fieldElement, childRef);
-	                    }
-	                }
+		String className = refType.name();
+		if (className.startsWith("java.") || className.startsWith("javax."))
+			return;
 
-	            } catch (Exception ignored) {}
-	        }
+		// ---------------- Получаем все экземпляры класса ----------------
+		List<ObjectReference> instances = new ArrayList<>();
+		if (refType instanceof ClassType classType) {
+			try {
+				instances = classType.instances(10); // максимум 10 объектов, можно увеличить
+			} catch (Exception ignored) {
+			}
+		}
 
-	        // ---------------- Методы ----------------
-	        for (Method method : refType.allMethods()) {
-	            try {
-	                if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
-	                    continue;
-	                if (method.declaringType().name().equals("java.lang.Object"))
-	                    continue;
-	                if (method.declaringType().name().startsWith("java.") && method.isStatic())
-	                    continue;
+		// ---------------- Проходим по всем экземплярам ----------------
+		for (ObjectReference instance : instances) {
+			// ---------------- Поля ----------------
+			for (Field field : refType.allFields()) {
+				try {
+					if (field.isSynthetic())
+						continue;
 
-	                String methodArgs = method.argumentTypes().stream()
-	                        .map(Type::name)
-	                        .collect(Collectors.joining(","));
+					boolean isStatic = field.isStatic();
+					UniversalElementRepresentation.UniversalElementType elementType = isStatic
+							? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
+							: UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
 
-	                UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
-	                        .referenceType(refType)
-	                        .objectReference(instance)
-	                        .elementName(method.name() + "()")
-	                        .additionalInfo(method.returnTypeName())
-	                        .elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
-	                        .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-	                        .value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
-	                        .isStatic(method.isStatic())
-	                        .valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-	                        .typeOrReturnType(method.returnTypeName())
-	                        .uniqueId(UUID.randomUUID())
-	                        .parentUniqueId(parentElement.getTag().getUniqueId())
-	                        .build();
+					UniversalElementRepresentation.ValueCategory category = determineValueCategory(field.typeName());
 
-	                targetApplicationSnapshot.put(methodElement.getTag(), methodElement);
+					String valueText = field.name();
 
-	            } catch (Exception ignored) {}
-	        }
-	    }
+					if (category == UniversalElementRepresentation.ValueCategory.PRIMITIVE
+							|| category == UniversalElementRepresentation.ValueCategory.STRING) {
+						valueText = extractPrimitiveOrStringAsText(field, instance);
+					}
+					if (Objects.equals(category, UniversalElementRepresentation.ValueCategory.COLLECTION)) {
+						System.out.println("COLLECTION FOUND: " + field.name());
+						Value value;
+
+						if (field.isStatic()) {
+							value = field.declaringType().getValue(field);
+						} else {
+							value = instance.getValue(field);
+						}
+
+						ObjectReference objRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
+						int q = getCollectionSize(objRef, breakpointEvent);
+						// int q = -1;
+						if (q != -1)
+							valueText = field.name() + " Size: " + q;
+						System.out.println("SIZE_COLLECTION: " + field.name() + " " + q);
+					}
+
+					UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
+							.referenceType(refType).objectReference(isStatic ? null : instance)
+							.elementName(field.name()).additionalInfo(DebugUtils.extractSimpleName(field.typeName()))
+							.elementType(elementType).currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+							.value(valueText).isStatic(isStatic).valueCategory(category)
+							.typeOrReturnType(field.typeName()).uniqueId(UUID.randomUUID())
+							.parentUniqueId(parentElement.getTag().getUniqueId()).build();
+
+					targetApplicationSnapshot.put(fieldElement.getTag(), fieldElement);
+
+					// ---------------- Рекурсивно собираем объекты ----------------
+					if (instance != null && !isStatic
+							&& category == UniversalElementRepresentation.ValueCategory.USER_OBJECT) {
+						Value fieldValue = instance.getValue(field);
+						if (fieldValue instanceof ObjectReference childRef) {
+							populateObjectReference(fieldElement, childRef, breakpointEvent);
+						}
+					}
+
+				} catch (Exception ignored) {
+				}
+			}
+
+			// ---------------- Методы ----------------
+			for (Method method : refType.allMethods()) {
+				try {
+					if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
+						continue;
+					if (method.declaringType().name().equals("java.lang.Object"))
+						continue;
+					if (method.declaringType().name().startsWith("java.") && method.isStatic())
+						continue;
+
+					String methodArgs = method.argumentTypes().stream().map(Type::name)
+							.collect(Collectors.joining(","));
+
+					UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
+							.referenceType(refType).objectReference(instance).elementName(method.name() + "()")
+							.additionalInfo(method.returnTypeName())
+							.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
+							.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+							.value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
+							.isStatic(method.isStatic())
+							.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
+							.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID())
+							.parentUniqueId(parentElement.getTag().getUniqueId()).build();
+
+					targetApplicationSnapshot.put(methodElement.getTag(), methodElement);
+
+				} catch (Exception ignored) {
+				}
+			}
+		}
 	}
 
 	/**
 	 * Рекурсивно добавляет объект, на который ссылается поле
 	 */
-	private void populateObjectReference(UniversalElementRepresentation parentFieldElement, ObjectReference objRef) {
-	    if (objRef == null) return;
+	private void populateObjectReference(UniversalElementRepresentation parentFieldElement, ObjectReference objRef,
+			BreakpointEvent breakpointEvent) {
+		if (objRef == null)
+			return;
 
-	    ReferenceType refType = objRef.referenceType();
-	    if (refType.name().startsWith("java.") || refType.name().startsWith("javax."))
-	        return;
+		ReferenceType refType = objRef.referenceType();
+		if (refType.name().startsWith("java.") || refType.name().startsWith("javax."))
+			return;
 
-	    UniversalElementRepresentation objElement = UniversalElementRepresentation.builder()
-	            .referenceType(refType)
-	            .objectReference(objRef)
-	            .elementName(refType.name()) // имя класса как elementName
-	            .additionalInfo(refType.name())
-	            .elementType(UniversalElementRepresentation.UniversalElementType.CLASS)
-	            .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-	            .value(refType.name())
-	            .isStatic(false)
-	            .valueCategory(UniversalElementRepresentation.ValueCategory.USER_OBJECT)
-	            .typeOrReturnType(refType.name())
-	            .uniqueId(UUID.randomUUID())
-	            .parentUniqueId(parentFieldElement.getTag().getUniqueId())
-	            .build();
+		boolean isIterable = false;
+		boolean isMap = false;
 
-	    targetApplicationSnapshot.put(objElement.getTag(), objElement);
+		if (refType instanceof ClassType classType) {
+			isIterable = classType.allInterfaces().stream().anyMatch(i -> i.name().equals("java.lang.Iterable"));
 
-	    // Собираем внутренние поля объекта
-	    populateInnerElements(objElement, refType);
+			isMap = classType.allInterfaces().stream().anyMatch(i -> i.name().equals("java.util.Map"));
+		}
 
-	    // Для коллекций и map добавляем элементы
-	    UniversalElementRepresentation.ValueCategory category = determineValueCategory(refType.name());
-	    if (category == UniversalElementRepresentation.ValueCategory.COLLECTION
-	            || category == UniversalElementRepresentation.ValueCategory.MAP) {
-	        List<ObjectReference> children = DebugUtils.getCollectionElements(objRef);
-	        for (ObjectReference child : children) {
-	            populateObjectReference(objElement, child);
-	        }
-	    }
+		if (isIterable) {
+			System.out.println("ITERABLE FOUND");
+		} else if (isMap) {
+			System.out.println("MAP FOUND");
+		}
+
+		UniversalElementRepresentation objElement = UniversalElementRepresentation.builder().referenceType(refType)
+				.objectReference(objRef).elementName(refType.name()) // имя класса как elementName
+				.additionalInfo(refType.name()).elementType(UniversalElementRepresentation.UniversalElementType.CLASS)
+				.currentRole(UniversalElementRepresentation.CurrentRole.INNER).value(refType.name()).isStatic(false)
+				.valueCategory(UniversalElementRepresentation.ValueCategory.USER_OBJECT)
+				.typeOrReturnType(refType.name()).uniqueId(UUID.randomUUID())
+				.parentUniqueId(parentFieldElement.getTag().getUniqueId()).build();
+
+		targetApplicationSnapshot.put(objElement.getTag(), objElement);
+
+		// Собираем внутренние поля объекта
+		populateInnerElements(objElement, refType, breakpointEvent);
+
+		// Для коллекций и map добавляем элементы
+		UniversalElementRepresentation.ValueCategory category = determineValueCategory(refType.name());
+
+		List<ObjectReference> children = DebugUtils.getCollectionElements(objRef);
+		for (ObjectReference child : children) {
+			populateObjectReference(objElement, child, breakpointEvent);
+		}
 	}
 
-	// ---------------- helper для элементов коллекции ----------------
-	private void processCollectionElement(Value val, UniversalElementRepresentation parentFieldElement) {
-	    if (val instanceof ObjectReference objRef) {
-	        UniversalElementRepresentation childElement = UniversalElementRepresentation.builder()
-	                .referenceType((ReferenceType) objRef.referenceType())
-	                .objectReference(objRef)
-	                .elementName(DebugUtils.extractSimpleName(objRef.referenceType().name()))
-	                .additionalInfo(objRef.referenceType().name())
-	                .elementType(UniversalElementRepresentation.UniversalElementType.CLASS)
-	                .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-	                .value(objRef.toString())
-	                .isStatic(false)
-	                .valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-	                .typeOrReturnType(objRef.referenceType().name())
-	                .uniqueId(UUID.randomUUID())
-	                .parentUniqueId(parentFieldElement.getTag().getUniqueId())
-	                .build();
-
-	        targetApplicationSnapshot.put(childElement.getTag(), childElement);
-
-	        // рекурсивно собираем внутренние элементы объекта
-	        populateInnerElements(childElement, (ReferenceType) objRef.referenceType());
-	    }
+	/**
+	 * Ищет поле в классе и всех суперклассах
+	 */
+	private Field findFieldInHierarchy(ClassType classType, String fieldName) {
+		ClassType current = classType;
+		while (current != null) {
+			Field field = current.fieldByName(fieldName);
+			if (field != null)
+				return field;
+			ReferenceType superRef = current.superclass();
+			if (!(superRef instanceof ClassType))
+				break;
+			current = (ClassType) superRef;
+		}
+		return null;
 	}
 
 	private String extractPrimitiveOrStringAsText(Field field, ObjectReference instance) {
