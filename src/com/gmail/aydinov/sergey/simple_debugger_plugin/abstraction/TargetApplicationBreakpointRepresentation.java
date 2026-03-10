@@ -16,7 +16,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLog
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Location;
 import com.sun.jdi.ReferenceType;
-import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.BreakpointRequest;
 import com.sun.jdi.request.EventRequestManager;
@@ -66,11 +65,7 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 
 		if (locationOptional.isPresent()) {
 			BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(locationOptional.get());
-			try {
-				breakpointRequest.enable();
-			} catch (VMDisconnectedException ex) {
-			    SimpleDebuggerLogger.warn("Cannot add breakpoint — VM disconnected");
-			}
+			breakpointRequest.enable();
 			breakpoints.add(new BreakpointWrapper(iBreakpoint, breakpointRequest));
 		} else {
 			// Class is not loaded yet

@@ -672,6 +672,45 @@ public class DebugUtils {
         }
         return null;
     }
+
+	public static ObjectReference wrapValueAsObjectReference(Value val) {
+		if (val == null) {
+            return null;
+        }
+
+        // 1. Если уже ObjectReference — просто вернуть
+        if (val instanceof ObjectReference objRef) {
+            return objRef;
+        }
+
+        // 2. Если массив — ArrayReference наследует ObjectReference
+        if (val instanceof ArrayReference arrayRef) {
+            return arrayRef;
+        }
+
+        // 3. Если это объект коллекции, упакованный как внутренний wrapper
+        Type type = val.type();
+        if (type instanceof ReferenceType refType) {
+            try {
+                // Попытка привести к ClassType и создать ObjectReference
+                if (refType instanceof ClassType classType) {
+                    // Берем первый поток виртуальной машины для создания экземпляра
+                    VirtualMachine vm = classType.virtualMachine();
+                    return classType.newInstance(
+                            vm.allThreads().get(0),
+                            classType.concreteMethodByName("<init>", "()V"),
+                            java.util.Collections.emptyList(),
+                            ClassType.INVOKE_SINGLE_THREADED
+                    );
+                }
+            } catch (Exception ignored) {
+                // Если не удалось создать, просто возвращаем null
+                return null;
+            }
+        }
+
+        return null;
+	}
 	
 
 }
