@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -144,7 +145,7 @@ public class TargetApplicationRepresentation {
 
 		// 6. Заполняем внутренние элементы (методы, поля)
 		for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
-			populateInnerElements(topLevelElement, topLevelElement.getReferenceType());
+			populateInnerElements(topLevelElement, topLevelElement.getReferenceType(), breakpointEvent);
 		}
 
 		addLocalVariables(virtualMachine, breakpointEvent);
@@ -176,7 +177,7 @@ public class TargetApplicationRepresentation {
 		if (methodRepresentation == null)
 			return false;
 		// List<LocalVariable> arguments = Collections.EMPTY_LIST;
-		List<LocalVariable> locals = Collections.EMPTY_LIST;
+		List<LocalVariable> locals = Collections.emptyList();
 		try {
 			// arguments = method.arguments();
 			locals = frame.visibleVariables();
@@ -189,10 +190,10 @@ public class TargetApplicationRepresentation {
 		for (LocalVariable local : locals) {
 			Value val = frame.getValue(local);
 			ObjectReference objRef = val instanceof ObjectReference ? (ObjectReference) val : null;
-//			if (Objects.nonNull(objRef)) {
-//				int q = getCollectionSize(objRef);
-//				System.out.println("INNER COLLECTION: " + q);
-//			}
+			if (Objects.nonNull(objRef)) {
+				int q = getCollectionSize(objRef, breakpointEvent);
+				System.out.println("INNER COLLECTION: " + q);
+			}
 
 			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
 					.objectReference(objRef).elementName(local.name()).additionalInfo(local.typeName()) // используем
@@ -211,7 +212,63 @@ public class TargetApplicationRepresentation {
 		return true;
 	}
 
-	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType) {
+	private int getCollectionSize(ObjectReference instance, BreakpointEvent breakpointEvent) {
+		if (instance == null) return -1;
+
+        // ===== Если массив =====
+        if (instance instanceof ArrayReference arrayRef) {
+            return arrayRef.length();
+        }
+
+        ReferenceType refType = instance.referenceType();
+        if (!(refType instanceof ClassType classType)) return -1;
+
+        // ===== Попытка получить через поле "size" =====
+        // Для стандартных mutable коллекций
+        Field sizeField = refType.fieldByName("size");
+        if (sizeField != null) {
+            Value sizeValue = instance.getValue(sizeField);
+            if (sizeValue instanceof IntegerValue intVal) {
+                return intVal.value();
+            }
+        }
+
+        // ===== Попытка через метод size() =====
+        Method sizeMethod = classType.concreteMethodByName("size", "()I");
+        if (sizeMethod != null && breakpointEvent.thread() != null) {
+            try {
+                // Оборачиваем вызов для защиты от ошибок JDI
+                Value result = instance.invokeMethod(
+                		breakpointEvent.thread(),
+                        sizeMethod,
+                        Collections.emptyList(),
+                        ObjectReference.INVOKE_SINGLE_THREADED
+                );
+                if (result instanceof IntegerValue intVal) {
+                    return intVal.value();
+                }
+            } catch (Exception e) {
+                // Если вызов метода невозможен, игнорируем
+            }
+        }
+
+        // ===== Проверка известных immutable коллекций (Java 9+) через внутренние поля =====
+        List<String> knownFields = Arrays.asList("a", "table", "elements"); // возможные внутренние поля массивов
+        for (String fieldName : knownFields) {
+            Field field = refType.fieldByName(fieldName);
+            if (field != null) {
+                Value value = instance.getValue(field);
+                if (value instanceof ArrayReference innerArray) {
+                    return innerArray.length();
+                }
+            }
+        }
+
+        // Если не удалось определить размер
+        return -1;
+	}
+
+	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType, BreakpointEvent breakpointEvent) {
 		if (parentElement == null || refType == null)
 			return;
 
@@ -260,7 +317,7 @@ public class TargetApplicationRepresentation {
 						}
 
 						ObjectReference objRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
-						int q = getCollectionSize(objRef);
+						int q = getCollectionSize(objRef, breakpointEvent);
 						// int q = -1;
 						if (q != -1)
 							valueText = field.name() + " Size: " + q;
@@ -282,7 +339,7 @@ public class TargetApplicationRepresentation {
 							&& category == UniversalElementRepresentation.ValueCategory.USER_OBJECT) {
 						Value fieldValue = instance.getValue(field);
 						if (fieldValue instanceof ObjectReference childRef) {
-							populateObjectReference(fieldElement, childRef);
+							populateObjectReference(fieldElement, childRef, breakpointEvent);
 						}
 					}
 
@@ -325,7 +382,7 @@ public class TargetApplicationRepresentation {
 	/**
 	 * Рекурсивно добавляет объект, на который ссылается поле
 	 */
-	private void populateObjectReference(UniversalElementRepresentation parentFieldElement, ObjectReference objRef) {
+	private void populateObjectReference(UniversalElementRepresentation parentFieldElement, ObjectReference objRef, BreakpointEvent breakpointEvent) {
 		if (objRef == null)
 			return;
 
@@ -359,60 +416,18 @@ public class TargetApplicationRepresentation {
 		targetApplicationSnapshot.put(objElement.getTag(), objElement);
 
 		// Собираем внутренние поля объекта
-		populateInnerElements(objElement, refType);
+		populateInnerElements(objElement, refType, breakpointEvent);
 
 		// Для коллекций и map добавляем элементы
 		UniversalElementRepresentation.ValueCategory category = determineValueCategory(refType.name());
 
 		List<ObjectReference> children = DebugUtils.getCollectionElements(objRef);
 		for (ObjectReference child : children) {
-			populateObjectReference(objElement, child);
+			populateObjectReference(objElement, child, breakpointEvent);
 		}
 	}
 
-	private int getCollectionSize(ObjectReference ref) {
-		if (ref == null)
-			return -1;
-		int size = -1;
-		ReferenceType refType = ref.referenceType();
-
-		// ===== Если это массив =====
-		if (ref instanceof ArrayReference arrayRef) {
-			return arrayRef.length();
-		}
-
-		// ===== Если это объект класса =====
-		if (refType instanceof ClassType classType) {
-
-			// ===== Проверяем Map =====
-			for (InterfaceType iface : classType.allInterfaces()) {
-				System.out.println("IFACE: " + iface.name());
-				Method sizeMethod = ((ClassType) ref.referenceType()).concreteMethodByName("size", "()I");
-				// Iterable.class.isAssignableFrom(classType11);
-				Value sizeValue = null;
-				if ("java.util.Map".equals(iface.name()) || "java.lang.Iterable".equals(iface.name())) {
-					if (sizeMethod != null) {
-						try {
-							ThreadReference thread = ref.virtualMachine().allThreads().get(0);
-
-							sizeValue = ref.invokeMethod(thread, sizeMethod, List.of(),
-									ObjectReference.INVOKE_SINGLE_THREADED);
-
-							if (sizeValue instanceof IntegerValue intVal) {
-								size = intVal.value();
-								System.out.println("Размер: " + ref.referenceType().name() + " " + size);
-							}
-						} catch (InvalidTypeException | ClassNotLoadedException | IncompatibleThreadStateException
-								| InvocationException e) {
-							e.printStackTrace();
-						}
-					}
-				}
-			}
-		}
-
-		return size; // неизвестный тип
-	}
+	
 
 	/**
 	 * Ищет поле в классе и всех суперклассах
@@ -448,26 +463,6 @@ public class TargetApplicationRepresentation {
 		return -1;
 	}
 
-	// ---------------- helper для элементов коллекции ----------------
-	private void processCollectionElement(Value val, UniversalElementRepresentation parentFieldElement) {
-		if (val instanceof ObjectReference objRef) {
-			UniversalElementRepresentation childElement = UniversalElementRepresentation.builder()
-					.referenceType((ReferenceType) objRef.referenceType()).objectReference(objRef)
-					.elementName(DebugUtils.extractSimpleName(objRef.referenceType().name()))
-					.additionalInfo(objRef.referenceType().name())
-					.elementType(UniversalElementRepresentation.UniversalElementType.CLASS)
-					.currentRole(UniversalElementRepresentation.CurrentRole.INNER).value(objRef.toString())
-					.isStatic(false).valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-					.typeOrReturnType(objRef.referenceType().name()).uniqueId(UUID.randomUUID())
-					.parentUniqueId(parentFieldElement.getTag().getUniqueId()).build();
-
-			targetApplicationSnapshot.put(childElement.getTag(), childElement);
-
-			// рекурсивно собираем внутренние элементы объекта
-			populateInnerElements(childElement, (ReferenceType) objRef.referenceType());
-		}
-	}
-
 	private String extractPrimitiveOrStringAsText(Field field, ObjectReference instance) {
 		if (field == null)
 			return null;
@@ -500,6 +495,8 @@ public class TargetApplicationRepresentation {
 		return ValueCategory.USER_OBJECT;
 	}
 
+	
+	
 	private boolean isObjectMethodUnoverridden(ReferenceType refType, Method method) {
 		try {
 			if ("java.lang.Object".equals(refType.name()))
