@@ -200,17 +200,17 @@ public class DebugSessionImpl implements DebugSession {
 					SimpleDebuggerEventType.USER_CHANGED_VARIABLE)) {
 				UIEvent<UserChangedVariableEventDTO> userChangedVariableEvent = (UIEvent<UserChangedVariableEventDTO>) abstractSimpleDebuggerUIEvent;
 				updateLocalVariable(userChangedVariableEvent.getPayload(), currentFrame);
-				shouldRefreshSnapsotAndUi = false;
+				shouldRefreshSnapsotAndUi = true;
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_CHANGED_FIELD)) {
 				UIEvent<UserChangedFieldEventDTO> userChangedFieldEvent = (UIEvent<UserChangedFieldEventDTO>) abstractSimpleDebuggerUIEvent;
 				updateField(userChangedFieldEvent.getPayload(), currentFrame);
-				shouldRefreshSnapsotAndUi = false;
+				shouldRefreshSnapsotAndUi = true;
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_INVOKED_METHOD)) {
 				UIEvent<UserInvokedMethodEventDTO> userInvokedMethodEvent = (UIEvent<UserInvokedMethodEventDTO>) abstractSimpleDebuggerUIEvent;
 				invokeMethod(userInvokedMethodEvent.getPayload(), breakpointEvent, currentFrame);
-				shouldRefreshSnapsotAndUi = false;
+				shouldRefreshSnapsotAndUi = true;
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_PRESSED_RESUME_BUTTON)) {
 				SimpleDebuggerLogger.info("User pressed RESUME");
