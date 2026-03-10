@@ -117,6 +117,7 @@ public class DebugSessionImpl implements DebugSession {
 		} finally {
 			SimpleDebuggerLogger.info("DEBUG SESSION FINISHED");
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_FINISHED);
+		//	 eventSet.resume();
 		}
 	}
 
@@ -387,7 +388,7 @@ public class DebugSessionImpl implements DebugSession {
 					? targetApplicationRepresentation.createObjectInstance((ClassType) referenceType)
 					: null;
 			Value result = Objects.nonNull(instance)
-					? instance.invokeMethod(targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0),
+					? instance.invokeMethod(breakpointEvent.thread(),
 							method, methodArguments, ObjectReference.INVOKE_SINGLE_THREADED)
 					: ((ClassType) referenceType).invokeMethod(
 							targetVirtualMachineRepresentation.getVirtualMachine().allThreads().get(0), method,
