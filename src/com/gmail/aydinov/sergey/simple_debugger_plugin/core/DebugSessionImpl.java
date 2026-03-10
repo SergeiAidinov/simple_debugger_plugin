@@ -150,9 +150,9 @@ public class DebugSessionImpl implements DebugSession {
 
 	private void doWorkAtBreakpoint(BreakpointEvent breakpointEvent) {
 		targetApplicationRepresentation
-				.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine());
-		targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
-				breakpointEvent);
+				.takeSnapshotOfTargetApplication(targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+//		targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
+//				breakpointEvent);
 		updateUI(breakpointEvent);
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
@@ -176,9 +176,9 @@ public class DebugSessionImpl implements DebugSession {
 					handleSingleUiEvent(uiEvent, breakpointEvent);
 					if (shouldRefreshSnapsotAndUi) {
 						targetApplicationRepresentation.takeSnapshotOfTargetApplication(
-								targetVirtualMachineRepresentation.getVirtualMachine());
-						targetApplicationRepresentation.addLocalVariables(
 								targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
+//						targetApplicationRepresentation.addLocalVariables(
+//								targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 						updateUI(breakpointEvent);
 					}
 				} catch (Throwable exception) {
