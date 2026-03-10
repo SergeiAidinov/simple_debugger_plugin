@@ -153,6 +153,7 @@ public class TargetApplicationRepresentation {
 	}
 
 	private boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
+		if (Objects.isNull(breakpointEvent)) return false;
 		StackFrame frame;
 		try {
 			frame = breakpointEvent.thread().frame(0);
