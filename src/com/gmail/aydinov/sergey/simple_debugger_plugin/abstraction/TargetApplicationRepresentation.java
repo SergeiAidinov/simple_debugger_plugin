@@ -90,7 +90,7 @@ public class TargetApplicationRepresentation {
 		return targetApplicationSnapshot;
 	}
 
-	public void takeSnapshotOfTargetApplication(VirtualMachine virtualMachine) {
+	public void takeSnapshotOfTargetApplication(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
 		targetApplicationSnapshot.clear();
 		SimpleDebuggerLogger.info("Waiting for target classes to load...");
 
@@ -146,11 +146,12 @@ public class TargetApplicationRepresentation {
 		for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
 			populateInnerElements(topLevelElement, topLevelElement.getReferenceType());
 		}
-
+		
+		addLocalVariables(virtualMachine, breakpointEvent);
 		SimpleDebuggerLogger.info("LOADED TOP-LEVEL ELEMENTS: " + targetApplicationSnapshot.size());
 	}
 
-	public boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
+	private boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
 		StackFrame frame;
 		try {
 			frame = breakpointEvent.thread().frame(0);
@@ -188,10 +189,10 @@ public class TargetApplicationRepresentation {
 		for (LocalVariable local : locals) {
 			Value val = frame.getValue(local);
 			ObjectReference objRef = val instanceof ObjectReference ? (ObjectReference) val : null;
-			if (Objects.nonNull(objRef)) {
-				int q = getCollectionSize(objRef);
-				System.out.println("INNER COLLECTION: " + q);
-			}
+//			if (Objects.nonNull(objRef)) {
+//				int q = getCollectionSize(objRef);
+//				System.out.println("INNER COLLECTION: " + q);
+//			}
 			
 			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
 					.objectReference(objRef).elementName(local.name()).additionalInfo(local.typeName()) // используем
@@ -367,10 +368,6 @@ public class TargetApplicationRepresentation {
 		}
 	}
 
-	private String provideAdditionalInfoAboutCollection(ObjectReference objRef) {
-
-		return new String("default value");
-	}
 
 	private int getCollectionSize(ObjectReference ref) {
 	    if (ref == null) return -1;
@@ -386,17 +383,34 @@ public class TargetApplicationRepresentation {
 	    if (refType instanceof ClassType classType) {
 
 	        // ===== Проверяем Map =====
-	        for (InterfaceType iface : classType.allInterfaces()) {
-	            if ("java.util.Map".equals(iface.name())) {
-	                // Попробуем получить size через поле
-	                Field sizeField = findFieldInHierarchy(classType, "size");
-	                if (sizeField != null) {
-	                    Value val = ref.getValue(sizeField);
-	                    if (val instanceof IntegerValue intVal) return intVal.value();
-	                }
-	                return -1;
-	            }
-	        }
+	    	for (InterfaceType iface : classType.allInterfaces()) {
+				System.out.println("IFACE: " + iface.name());
+				Method sizeMethod = ((ClassType) ref.referenceType()).concreteMethodByName("size", "()I");
+				//Iterable.class.isAssignableFrom(classType11);
+				Value sizeValue = null;
+				if ("java.util.Map".equals(iface.name()) || "java.util.Collection".equals(iface.name())) {
+					if (sizeMethod != null) {
+				        try {
+				            ThreadReference thread = ref.virtualMachine().allThreads().get(0);
+
+				           sizeValue = ref.invokeMethod(
+				                thread,
+				                sizeMethod,
+				                List.of(),
+				                ObjectReference.INVOKE_SINGLE_THREADED
+				            );
+
+				            if (sizeValue instanceof IntegerValue intVal) {
+				                int size = intVal.value();
+				                System.out.println("Размер Map: " + size);
+				            }
+				        } catch (InvalidTypeException | ClassNotLoadedException |
+				                 IncompatibleThreadStateException | InvocationException e) {
+				            e.printStackTrace();
+				        }
+				    }
+				}
+	    	}
 
 	        // ===== Проверяем Collection (List/Set) =====
 	        for (InterfaceType iface : classType.allInterfaces()) {
