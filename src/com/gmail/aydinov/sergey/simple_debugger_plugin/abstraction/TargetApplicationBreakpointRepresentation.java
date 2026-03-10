@@ -142,13 +142,20 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 
 	/** Full resynchronization with Eclipse */
 	public synchronized void refreshBreakpoints() {
-		// Remove all JDI breakpoints from VM
-		for (BreakpointWrapper breakpointWrapper : breakpoints) {
-			deleteJdiRequest(breakpointWrapper);
-		}
-		breakpoints.clear();
+	    // Получаем текущие брейкпойнты из Eclipse
+	    List<IBreakpoint> eclipseBreakpoints = Arrays.asList(breakpointManager.getBreakpoints());
 
-		Arrays.stream(breakpointManager.getBreakpoints()).forEach(this::addBreakepoint);
+	    // Обновляем существующие Wrapper: удаляем те, которых больше нет
+	    breakpoints.removeIf(wrapper -> !eclipseBreakpoints.contains(wrapper.getBreakpoint()));
+
+	    // Добавляем новые брейкпойнты
+	    for (IBreakpoint iBreakpoint : eclipseBreakpoints) {
+	        boolean alreadyExists = breakpoints.stream()
+	                .anyMatch(wrapper -> wrapper.getBreakpoint().equals(iBreakpoint));
+	        if (!alreadyExists) {
+	            addBreakepoint(iBreakpoint); // здесь либо создастся JDI-брейкпоинт, либо pending
+	        }
+	    }
 	}
 
 	// ======================================================================

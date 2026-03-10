@@ -176,10 +176,9 @@ public class TargetApplicationRepresentation {
 				.findFirst().orElse(null);
 		if (methodRepresentation == null)
 			return false;
-		// List<LocalVariable> arguments = Collections.EMPTY_LIST;
-		List<LocalVariable> locals = Collections.emptyList();
+		List<LocalVariable> locals = Collections.EMPTY_LIST;
 		try {
-			// arguments = method.arguments();
+		//	arguments = method.arguments();
 			locals = frame.visibleVariables();
 		} catch (AbsentInformationException e) {
 			// TODO Auto-generated catch block
@@ -190,18 +189,15 @@ public class TargetApplicationRepresentation {
 		for (LocalVariable local : locals) {
 			Value val = frame.getValue(local);
 			ObjectReference objRef = val instanceof ObjectReference ? (ObjectReference) val : null;
-			if (Objects.nonNull(objRef)) {
+			
 				int q = getCollectionSize(objRef, breakpointEvent);
-				System.out.println("INNER COLLECTION: " + q);
-			}
-
+				System.out.println("INNER COLLECTIONS: " + q);
+			
 			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
-					.objectReference(objRef).elementName(local.name()).additionalInfo(local.typeName()) // используем
-																										// тип
-																										// переменной
-					.elementType(UniversalElementType.LOCAL_VARIABLE).currentRole(CurrentRole.INNER)
-					.value(DebugUtils.getLocalVariableValueAsString(frame, local)).isStatic(false)
-					.valueCategory(DebugUtils.determineValueCategory(frame.getValue(local)))
+					.objectReference(objRef)
+					.elementName(local.name()).additionalInfo(local.typeName()) // используем тип переменной
+					.elementType(UniversalElementType.LOCAL_VARIABLE).currentRole(CurrentRole.INNER).value(DebugUtils.getLocalVariableValueAsString(frame, local))
+					.isStatic(false).valueCategory(DebugUtils.determineValueCategory(frame.getValue(local)))
 					.typeOrReturnType(local.typeName()).uniqueId(UUID.randomUUID())
 					.parentUniqueId(methodRepresentation.getTag().getUniqueId()).build();
 
@@ -248,7 +244,7 @@ public class TargetApplicationRepresentation {
                     return intVal.value();
                 }
             } catch (Exception e) {
-                // Если вызов метода невозможен, игнорируем
+            	
             }
         }
 
@@ -444,23 +440,6 @@ public class TargetApplicationRepresentation {
 			current = (ClassType) superRef;
 		}
 		return null;
-	}
-
-	private int getMapSize(ObjectReference mapRef) {
-		if (mapRef == null)
-			return -1;
-		try {
-			ReferenceType mapType = mapRef.referenceType();
-			Field sizeField = mapType.fieldByName("size"); // у HashMap есть поле "size"
-			if (sizeField != null) {
-				IntegerValue intValue = (IntegerValue) mapRef.getValue(sizeField);
-				return intValue.value();
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		return -1;
 	}
 
 	private String extractPrimitiveOrStringAsText(Field field, ObjectReference instance) {
