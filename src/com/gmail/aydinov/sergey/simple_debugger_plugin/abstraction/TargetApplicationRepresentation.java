@@ -146,7 +146,7 @@ public class TargetApplicationRepresentation {
 		for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
 			populateInnerElements(topLevelElement, topLevelElement.getReferenceType());
 		}
-		
+
 		addLocalVariables(virtualMachine, breakpointEvent);
 		SimpleDebuggerLogger.info("LOADED TOP-LEVEL ELEMENTS: " + targetApplicationSnapshot.size());
 	}
@@ -193,7 +193,7 @@ public class TargetApplicationRepresentation {
 //				int q = getCollectionSize(objRef);
 //				System.out.println("INNER COLLECTION: " + q);
 //			}
-			
+
 			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
 					.objectReference(objRef).elementName(local.name()).additionalInfo(local.typeName()) // используем
 																										// тип
@@ -261,7 +261,9 @@ public class TargetApplicationRepresentation {
 
 						ObjectReference objRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
 						int q = getCollectionSize(objRef);
-						if (q != -1) valueText =  field.name() + " Size: "  + q;
+						// int q = -1;
+						if (q != -1)
+							valueText = field.name() + " Size: " + q;
 						System.out.println("SIZE_COLLECTION: " + field.name() + " " + q);
 					}
 
@@ -368,86 +370,65 @@ public class TargetApplicationRepresentation {
 		}
 	}
 
-
 	private int getCollectionSize(ObjectReference ref) {
-	    if (ref == null) return -1;
+		if (ref == null)
+			return -1;
+		int size = -1;
+		ReferenceType refType = ref.referenceType();
 
-	    ReferenceType refType = ref.referenceType();
+		// ===== Если это массив =====
+		if (ref instanceof ArrayReference arrayRef) {
+			return arrayRef.length();
+		}
 
-	    // ===== Если это массив =====
-	    if (ref instanceof ArrayReference arrayRef) {
-	        return arrayRef.length();
-	    }
+		// ===== Если это объект класса =====
+		if (refType instanceof ClassType classType) {
 
-	    // ===== Если это объект класса =====
-	    if (refType instanceof ClassType classType) {
-
-	        // ===== Проверяем Map =====
-	    	for (InterfaceType iface : classType.allInterfaces()) {
+			// ===== Проверяем Map =====
+			for (InterfaceType iface : classType.allInterfaces()) {
 				System.out.println("IFACE: " + iface.name());
 				Method sizeMethod = ((ClassType) ref.referenceType()).concreteMethodByName("size", "()I");
-				//Iterable.class.isAssignableFrom(classType11);
+				// Iterable.class.isAssignableFrom(classType11);
 				Value sizeValue = null;
-				if ("java.util.Map".equals(iface.name()) || "java.util.Collection".equals(iface.name())) {
+				if ("java.util.Map".equals(iface.name()) || "java.lang.Iterable".equals(iface.name())) {
 					if (sizeMethod != null) {
-				        try {
-				            ThreadReference thread = ref.virtualMachine().allThreads().get(0);
+						try {
+							ThreadReference thread = ref.virtualMachine().allThreads().get(0);
 
-				           sizeValue = ref.invokeMethod(
-				                thread,
-				                sizeMethod,
-				                List.of(),
-				                ObjectReference.INVOKE_SINGLE_THREADED
-				            );
+							sizeValue = ref.invokeMethod(thread, sizeMethod, List.of(),
+									ObjectReference.INVOKE_SINGLE_THREADED);
 
-				            if (sizeValue instanceof IntegerValue intVal) {
-				                int size = intVal.value();
-				                System.out.println("Размер Map: " + size);
-				            }
-				        } catch (InvalidTypeException | ClassNotLoadedException |
-				                 IncompatibleThreadStateException | InvocationException e) {
-				            e.printStackTrace();
-				        }
-				    }
+							if (sizeValue instanceof IntegerValue intVal) {
+								size = intVal.value();
+								System.out.println("Размер: " + ref.referenceType().name() + " " + size);
+							}
+						} catch (InvalidTypeException | ClassNotLoadedException | IncompatibleThreadStateException
+								| InvocationException e) {
+							e.printStackTrace();
+						}
+					}
 				}
-	    	}
+			}
+		}
 
-	        // ===== Проверяем Collection (List/Set) =====
-	        for (InterfaceType iface : classType.allInterfaces()) {
-	            if ("java.util.Collection".equals(iface.name())) {
-	                Field sizeField = findFieldInHierarchy(classType, "size");
-	                if (sizeField != null) {
-	                    Value val = ref.getValue(sizeField);
-	                    if (val instanceof IntegerValue intVal) return intVal.value();
-	                }
-	                return -1;
-	            }
-	        }
-
-	        // ===== fallback =====
-	        Field sizeField = findFieldInHierarchy(classType, "size");
-	        if (sizeField != null) {
-	            Value val = ref.getValue(sizeField);
-	            if (val instanceof IntegerValue intVal) return intVal.value();
-	        }
-	    }
-
-	    return -1; // неизвестный тип
+		return size; // неизвестный тип
 	}
 
 	/**
 	 * Ищет поле в классе и всех суперклассах
 	 */
 	private Field findFieldInHierarchy(ClassType classType, String fieldName) {
-	    ClassType current = classType;
-	    while (current != null) {
-	        Field field = current.fieldByName(fieldName);
-	        if (field != null) return field;
-	        ReferenceType superRef = current.superclass();
-	        if (!(superRef instanceof ClassType)) break;
-	        current = (ClassType) superRef;
-	    }
-	    return null;
+		ClassType current = classType;
+		while (current != null) {
+			Field field = current.fieldByName(fieldName);
+			if (field != null)
+				return field;
+			ReferenceType superRef = current.superclass();
+			if (!(superRef instanceof ClassType))
+				break;
+			current = (ClassType) superRef;
+		}
+		return null;
 	}
 
 	private int getMapSize(ObjectReference mapRef) {
