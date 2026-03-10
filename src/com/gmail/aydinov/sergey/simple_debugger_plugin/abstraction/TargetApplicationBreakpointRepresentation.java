@@ -16,7 +16,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLog
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Location;
 import com.sun.jdi.ReferenceType;
-import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.BreakpointRequest;
 import com.sun.jdi.request.EventRequestManager;
@@ -66,11 +65,7 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 
 		if (locationOptional.isPresent()) {
 			BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(locationOptional.get());
-			try {
-				breakpointRequest.enable();
-			} catch (VMDisconnectedException ex) {
-			    SimpleDebuggerLogger.warn("Cannot add breakpoint — VM disconnected");
-			}
+			breakpointRequest.enable();
 			breakpoints.add(new BreakpointWrapper(iBreakpoint, breakpointRequest));
 		} else {
 			// Class is not loaded yet
@@ -142,20 +137,13 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 
 	/** Full resynchronization with Eclipse */
 	public synchronized void refreshBreakpoints() {
-	    // Получаем текущие брейкпойнты из Eclipse
-	    List<IBreakpoint> eclipseBreakpoints = Arrays.asList(breakpointManager.getBreakpoints());
+		// Remove all JDI breakpoints from VM
+		for (BreakpointWrapper breakpointWrapper : breakpoints) {
+			deleteJdiRequest(breakpointWrapper);
+		}
+		breakpoints.clear();
 
-	    // Обновляем существующие Wrapper: удаляем те, которых больше нет
-	    breakpoints.removeIf(wrapper -> !eclipseBreakpoints.contains(wrapper.getBreakpoint()));
-
-	    // Добавляем новые брейкпойнты
-	    for (IBreakpoint iBreakpoint : eclipseBreakpoints) {
-	        boolean alreadyExists = breakpoints.stream()
-	                .anyMatch(wrapper -> wrapper.getBreakpoint().equals(iBreakpoint));
-	        if (!alreadyExists) {
-	            addBreakepoint(iBreakpoint); // здесь либо создастся JDI-брейкпоинт, либо pending
-	        }
-	    }
+		Arrays.stream(breakpointManager.getBreakpoints()).forEach(this::addBreakepoint);
 	}
 
 	// ======================================================================
