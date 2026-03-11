@@ -34,17 +34,17 @@ import com.sun.jdi.request.EventRequestManager;
 public class TargetApplicationBreakpointRepresentation implements BreakpointSubscriber {
 
 	private final IBreakpointManager breakpointManager;
-	private final VirtualMachine virtualMachine;
-	private final EventRequestManager eventRequestManager;
+//	private final VirtualMachine virtualMachine;
+//	private final EventRequestManager eventRequestManager;
+
 
 	/** All breakpoints (active + pending) */
 	private final Set<BreakpointWrapper> breakpoints = ConcurrentHashMap.newKeySet();
 
-	public TargetApplicationBreakpointRepresentation(IBreakpointManager breakpointManager,
-			VirtualMachine virtualMachine) {
+	public TargetApplicationBreakpointRepresentation(IBreakpointManager breakpointManager) {
 		this.breakpointManager = breakpointManager;
-		this.virtualMachine = virtualMachine;
-		this.eventRequestManager = virtualMachine.eventRequestManager();
+//		this.virtualMachine = virtualMachine;
+//		this.eventRequestManager = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager();
 	}
 
 	// ======================================================================
@@ -64,7 +64,7 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 		Optional<Location> locationOptional = findLocation(iBreakpoint);
 
 		if (locationOptional.isPresent()) {
-			BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(locationOptional.get());
+			BreakpointRequest breakpointRequest = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().createBreakpointRequest(locationOptional.get());
 			breakpointRequest.enable();
 			breakpoints.add(new BreakpointWrapper(iBreakpoint, breakpointRequest));
 		} else {
@@ -87,9 +87,9 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 					e.printStackTrace();
 				}
 
-				for (BreakpointRequest breakpointRequest : eventRequestManager.breakpointRequests()) {
+				for (BreakpointRequest breakpointRequest : TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().breakpointRequests()) {
 					if (breakpointRequest.equals(breakpointWrapper.getBreakpointRequest())) {
-						eventRequestManager.deleteEventRequest(breakpointRequest);
+						TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().deleteEventRequest(breakpointRequest);
 					}
 				}
 			}
@@ -129,7 +129,7 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 			if (locationOptional.isEmpty())
 				continue;
 
-			BreakpointRequest breakpointRequest = eventRequestManager.createBreakpointRequest(locationOptional.get());
+			BreakpointRequest breakpointRequest = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().createBreakpointRequest(locationOptional.get());
 			breakpointRequest.enable();
 			breakpointWrapper.setBreakpointRequest(breakpointRequest);
 		}
@@ -156,7 +156,7 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 		if (Objects.nonNull(breakpointRequest)) {
 			try {
 				breakpointRequest.disable();
-				eventRequestManager.deleteEventRequest(breakpointRequest);
+				TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().deleteEventRequest(breakpointRequest);
 			} catch (Exception ignored) {
 			}
 			breakpointWrapper.setBreakpointRequest(null);
@@ -171,7 +171,7 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 			return Optional.empty();
 		}
 
-		List<ReferenceType> classes = virtualMachine.classesByName(className);
+		List<ReferenceType> classes =  TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().classesByName(className);
 		if (classes.isEmpty())
 			return Optional.empty();
 

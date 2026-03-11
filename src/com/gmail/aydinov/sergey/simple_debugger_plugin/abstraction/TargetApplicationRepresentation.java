@@ -77,7 +77,7 @@ public class TargetApplicationRepresentation {
 			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
 			BreakpointSubscriberRegistrar breakpointSubscriberRegistrar, DebugConfiguration debugConfiguration) {
 		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakpointRepresentation(
-				iBreakpointManager, virtualMachine);
+				iBreakpointManager);
 		breakpointSubscriberRegistrar.register(targetApplicationBreakepointRepresentation);
 		this.virtualMachine = virtualMachine;
 		this.debugConfiguration = debugConfiguration;
