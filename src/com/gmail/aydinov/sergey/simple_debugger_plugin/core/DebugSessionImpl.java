@@ -24,11 +24,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
@@ -36,18 +33,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
-import com.sun.jdi.ClassType;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.Location;
-import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
-import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
-import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 import com.sun.jdi.event.Event;
 import com.sun.jdi.event.EventSet;
@@ -148,31 +140,18 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private void handleSingleUiEvent(AbstractUIEvent abstractSimpleDebuggerUIEvent, BreakpointEvent breakpointEvent) {
-	    StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
-	    if (currentFrame == null) return;
-	    try {
-	        SimpleDebuggerEventTypes.SimpleDebuggerEventType eventType = abstractSimpleDebuggerUIEvent.getType();
-	        switch (eventType) {
-	            case USER_CHANGED_VARIABLE,
-	                 USER_CHANGED_FIELD,
-	                 USER_INVOKED_METHOD,
-	                 USER_PRESSED_RESUME_BUTTON,
-	                 USER_CLOSED_DEBUG_WINDOW,
-	                 USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
-	                 USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION -> {
-	                // универсальный вызов хендлера
-	                shouldRefreshSnapsotAndUi = eventType.getUiEventHandler()
-	                        .handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-	            }
-	            default -> SimpleDebuggerLogger.info(
-	                    "Unhandled UI event: " + abstractSimpleDebuggerUIEvent.getClass().getSimpleName()
-	            );
-	        }
-	    } catch (Exception exception) {
-	        SimpleDebuggerLogger.error(exception.getMessage(), exception);
-	    }
+		StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
+		if (currentFrame == null)
+			return;
+		try {
+			shouldRefreshSnapsotAndUi = abstractSimpleDebuggerUIEvent.getType().getUiEventHandler()
+					.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
+
+		} catch (Exception exception) {
+			SimpleDebuggerLogger.error(exception.getMessage(), exception);
+		}
 	}
-	
+
 	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
 				|| DebuggerContext.context().isInspectionSeanceActive())
@@ -201,7 +180,6 @@ public class DebugSessionImpl implements DebugSession {
 						e.printStackTrace();
 					}
 				});
-
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
@@ -295,7 +273,6 @@ public class DebugSessionImpl implements DebugSession {
 				}
 			}
 		}
-
 		return foundElements;
 	}
 
