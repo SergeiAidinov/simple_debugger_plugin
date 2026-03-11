@@ -181,7 +181,7 @@ public class DebugSessionImpl implements DebugSession {
 //				updateLocalVariable(userChangedVariableEvent.getPayload(), currentFrame);
 				System.out.println(SimpleDebuggerEventType.USER_CHANGED_VARIABLE);
 				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_CHANGED_VARIABLE.getUiEventHandler()
-						.handle(userChangedVariableEvent, currentFrame, breakpointEvent);
+						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_CHANGED_FIELD)) {
 				UIEvent<UserChangedFieldEventDTO> userChangedFieldEvent = (UIEvent<UserChangedFieldEventDTO>) abstractSimpleDebuggerUIEvent;

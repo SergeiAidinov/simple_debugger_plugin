@@ -85,7 +85,7 @@ public final class SimpleDebuggerEventTypes {
             return payloadType;
         }
 
-		public UIEventHandler getUiEventHandler() {
+		public UIEventHandler<?> getUiEventHandler() {
 			return uiEventHandler;
 		}
         
