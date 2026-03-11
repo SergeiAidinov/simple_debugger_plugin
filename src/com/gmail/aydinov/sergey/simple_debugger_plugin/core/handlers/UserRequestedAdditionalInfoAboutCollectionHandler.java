@@ -8,7 +8,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.event.BreakpointEvent;
 
-public class UserRequestedAdditionalInfoAboutCollection implements UIEventHandler{
+public class UserRequestedAdditionalInfoAboutCollectionHandler implements UIEventHandler{
 
 	@Override
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
