@@ -1,8 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -10,23 +8,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jdt.internal.core.InitializerElementInfo;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.statushandlers.StatusManager;
-import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationBreakpointRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
@@ -36,14 +23,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceElementInspectionDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -54,15 +38,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
-import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ClassType;
-import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
-import com.sun.jdi.IntegerValue;
-import com.sun.jdi.InterfaceType;
-import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
@@ -87,7 +65,7 @@ import com.sun.jdi.event.VMDisconnectEvent;
  */
 public class DebugSessionImpl implements DebugSession {
 
-	private static final AtomicReference<String> methodInvocationResult = new AtomicReference<>("");
+	public static final AtomicReference<String> methodInvocationResult = new AtomicReference<>("");
 	private final EventSet eventSet;
 	private final CurrentLineHighlighterImpl currentLineHighlighter;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
@@ -181,30 +159,25 @@ public class DebugSessionImpl implements DebugSession {
 						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_CHANGED_FIELD)) {
-				UIEvent<UserChangedFieldEventDTO> userChangedFieldEvent = (UIEvent<UserChangedFieldEventDTO>) abstractSimpleDebuggerUIEvent;
-				updateField(userChangedFieldEvent.getPayload(), currentFrame);
-				shouldRefreshSnapsotAndUi = true;
+				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_CHANGED_FIELD.getUiEventHandler()
+						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_INVOKED_METHOD)) {
-				UIEvent<UserInvokedMethodEventDTO> userInvokedMethodEvent = (UIEvent<UserInvokedMethodEventDTO>) abstractSimpleDebuggerUIEvent;
-				invokeMethod(userInvokedMethodEvent.getPayload(), breakpointEvent, currentFrame);
-				shouldRefreshSnapsotAndUi = true;
+				//  !!!!!!! UNDER CONSTRUCTION !!!!!!!
+				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_INVOKED_METHOD.getUiEventHandler()
+						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_PRESSED_RESUME_BUTTON)) {
-				SimpleDebuggerLogger.info("User pressed RESUME");
-				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_FINISHED);
-				shouldRefreshSnapsotAndUi = false;
+				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_PRESSED_RESUME_BUTTON.getUiEventHandler()
+						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_CLOSED_DEBUG_WINDOW)) {
-				SimpleDebuggerLogger.info("User closed debug window → stopping debug session");
-				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUGGER_STOPPED);
-				TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().dispose();
-				shouldRefreshSnapsotAndUi = false;
+				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_CLOSED_DEBUG_WINDOW.getUiEventHandler()
+						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT)) {
-				UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
-				shouldRefreshSnapsotAndUi = false;
-				provideAdditionalInfoAboutObject(userRequestedAdditionalInfo);
+				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT.getUiEventHandler()
+						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION)) {
 				UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
@@ -220,71 +193,71 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
-		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
-		UniversalElementRepresentation topLevelElement = TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot()
-				.get(anchorElement.getTag());
-		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(topLevelElement);
-		relevantElements.remove(topLevelElement);
-		List<UniversalElementRepresentation> elements = new ArrayList<UniversalElementRepresentation>(relevantElements);
-		Collections.sort(elements);
-		Map<Integer, ArrayList<UserInstanceInnerElementInspectionDTO>> separatedIntoGroups = Map.of(1,
-				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 2,
-				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 3,
-				new ArrayList<UserInstanceInnerElementInspectionDTO>());
-		for (UniversalElementRepresentation element : elements) {
-			UserInstanceInnerElementInspectionDTO userInstanceInnerElementInspectionDTO = new UserInstanceInnerElementInspectionDTO(
-					element.getElementName(), element.gettypeOrReturnType(), element.getValue());
-			if (element.getElementType().ordinal() < 5)
-				separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
-			else if (element.getElementType().ordinal() == 5)
-				separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
-			else if (element.getElementType().ordinal() > 5)
-				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
-		}
-		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
-				topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(), separatedIntoGroups);
-		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<UserInstanceInspectionDTO>(
-				SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, userInstanceInspectionDTO));
+//	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
+//		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
+//		UniversalElementRepresentation topLevelElement = TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot()
+//				.get(anchorElement.getTag());
+//		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(topLevelElement);
+//		relevantElements.remove(topLevelElement);
+//		List<UniversalElementRepresentation> elements = new ArrayList<UniversalElementRepresentation>(relevantElements);
+//		Collections.sort(elements);
+//		Map<Integer, ArrayList<UserInstanceInnerElementInspectionDTO>> separatedIntoGroups = Map.of(1,
+//				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 2,
+//				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 3,
+//				new ArrayList<UserInstanceInnerElementInspectionDTO>());
+//		for (UniversalElementRepresentation element : elements) {
+//			UserInstanceInnerElementInspectionDTO userInstanceInnerElementInspectionDTO = new UserInstanceInnerElementInspectionDTO(
+//					element.getElementName(), element.gettypeOrReturnType(), element.getValue());
+//			if (element.getElementType().ordinal() < 5)
+//				separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
+//			else if (element.getElementType().ordinal() == 5)
+//				separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
+//			else if (element.getElementType().ordinal() > 5)
+//				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
+//		}
+//		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
+//				topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(), separatedIntoGroups);
+//		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<UserInstanceInspectionDTO>(
+//				SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, userInstanceInspectionDTO));
+//
+//	}
 
-	}
-
-	private Set<UniversalElementRepresentation> compileAdditionalInfo(UniversalElementRepresentation topLevelElement) {
-		Set<UniversalElementRepresentation> selectedElements = new HashSet<UniversalElementRepresentation>();
-		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream().filter(e -> Objects.nonNull(e))
-				.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
-				.ifPresent(elementName -> {
-					elementName.getTag().getUniqueId();
-					TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
-							.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
-							.ifPresent(field -> {
-								TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream().filter(
-										e -> Objects.equals(e.getTag().getParentId(), field.getTag().getUniqueId()))
-										.findAny().ifPresent(root -> {
-											boolean found = true;
-											Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
-											iterationElements.add(root);
-											while (found) {
-												for (UniversalElementRepresentation iterationElement : iterationElements) {
-													iterationElements.addAll(TargetApplicationRepresentation.getInstance()
-															.getTargetApplicationSnapshot().values().stream()
-															.filter(e -> Objects.equals(e.getObjectReference(),
-																	iterationElement.getObjectReference()))
-															.filter(e -> !Objects.equals(e.getAdditionalInfo(),
-																	topLevelElement.gettypeOrReturnType()))
-															.toList());
-												}
-												iterationElements.remove(root);
-												if (iterationElements.isEmpty())
-													found = false;
-												selectedElements.addAll(iterationElements);
-												iterationElements.clear();
-											}
-										});
-							});
-				});
-		return selectedElements;
-	}
+//	private Set<UniversalElementRepresentation> compileAdditionalInfo(UniversalElementRepresentation topLevelElement) {
+//		Set<UniversalElementRepresentation> selectedElements = new HashSet<UniversalElementRepresentation>();
+//		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream().filter(e -> Objects.nonNull(e))
+//				.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
+//				.ifPresent(elementName -> {
+//					elementName.getTag().getUniqueId();
+//					TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
+//							.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
+//							.ifPresent(field -> {
+//								TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream().filter(
+//										e -> Objects.equals(e.getTag().getParentId(), field.getTag().getUniqueId()))
+//										.findAny().ifPresent(root -> {
+//											boolean found = true;
+//											Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
+//											iterationElements.add(root);
+//											while (found) {
+//												for (UniversalElementRepresentation iterationElement : iterationElements) {
+//													iterationElements.addAll(TargetApplicationRepresentation.getInstance()
+//															.getTargetApplicationSnapshot().values().stream()
+//															.filter(e -> Objects.equals(e.getObjectReference(),
+//																	iterationElement.getObjectReference()))
+//															.filter(e -> !Objects.equals(e.getAdditionalInfo(),
+//																	topLevelElement.gettypeOrReturnType()))
+//															.toList());
+//												}
+//												iterationElements.remove(root);
+//												if (iterationElements.isEmpty())
+//													found = false;
+//												selectedElements.addAll(iterationElements);
+//												iterationElements.clear();
+//											}
+//										});
+//							});
+//				});
+//		return selectedElements;
+//	}
 
 	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
@@ -317,61 +290,6 @@ public class DebugSessionImpl implements DebugSession {
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-	}
-
-//	private void updateLocalVariable(UserChangedVariableEventDTO userChangedVariableEventDTO, StackFrame currentFrame) {
-//		try {
-//			LocalVariable localVariable = currentFrame.visibleVariables().stream()
-//					.filter(v -> v.name().equals(userChangedVariableEventDTO.getName())).findFirst().orElse(null);
-//			if (Objects.isNull(localVariable))
-//				return;
-//			Value value = DebugUtils.createJdiValueFromString(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(),
-//					localVariable, userChangedVariableEventDTO.getNewValue().toString());
-//			currentFrame.setValue(localVariable, value);
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//	}
-
-	private void updateField(UserChangedFieldEventDTO fieldEvent, StackFrame currentFrame) throws Exception {
-		ReferenceType referenceType = Objects.nonNull(currentFrame.thisObject())
-				? currentFrame.thisObject().referenceType()
-				: currentFrame.location().declaringType();
-		Field field = referenceType.fieldByName(fieldEvent.getFieldName());
-		if (Objects.isNull(field))
-			return;
-		Value value = DebugUtils.createJdiObjectFromString(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(),
-				field.type(), fieldEvent.getNewValue(), currentFrame.thread());
-		if (Modifier.isStatic(field.modifiers()) && referenceType instanceof ClassType classType) {
-			classType.setValue(field, value);
-		} else if (Objects.nonNull(currentFrame.thisObject())) {
-			currentFrame.thisObject().setValue(field, value);
-		}
-	}
-
-	private void invokeMethod(UserInvokedMethodEventDTO invokeEvent, BreakpointEvent breakpointEvent,
-			StackFrame currentFrame) {
-		try {
-			List<Value> methodArguments = DebugUtils
-					.parseArguments(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), invokeEvent);
-			ReferenceType referenceType = TargetApplicationRepresentation.getInstance()
-					.findReferenceTypeForClass(invokeEvent.getTargetClass());
-			Method method = referenceType.methodsByName(invokeEvent.getMethod().getMethodName()).get(0);
-			ObjectReference instance = !method.isStatic()
-					? TargetApplicationRepresentation.getInstance().createObjectInstance((ClassType) referenceType)
-					: null;
-			Value result = Objects.nonNull(instance)
-					? instance.invokeMethod(breakpointEvent.thread(),
-							method, methodArguments, ObjectReference.INVOKE_SINGLE_THREADED)
-					: ((ClassType) referenceType).invokeMethod(
-							TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().allThreads().get(0), method,
-							methodArguments, ClassType.INVOKE_SINGLE_THREADED);
-			methodInvocationResult.set(String.valueOf(result));
-			simpleDebugEventCollector.collectDebugEvent(new DebugEvent<String>(
-					SimpleDebuggerEventTypes.SimpleDebuggerEventType.METHOD_INVOKE, methodInvocationResult.get()));
-		} catch (Exception exception) {
-			exception.printStackTrace();
-		}
 	}
 
 	private StackFrame getTopFrame(ThreadReference thread) {
