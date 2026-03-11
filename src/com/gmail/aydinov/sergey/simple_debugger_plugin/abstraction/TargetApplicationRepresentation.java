@@ -69,23 +69,41 @@ import com.sun.jdi.request.EventRequestManager;
 public class TargetApplicationRepresentation {
 
 	private final Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> targetApplicationSnapshot = new ConcurrentHashMap<>();
-//	private final TargetApplicationBreakpointRepresentation targetApplicationBreakepointRepresentation;
-//	private final VirtualMachine virtualMachine;
 	private final DebugConfiguration debugConfiguration;
+	private static TargetApplicationRepresentation INSTANCE;
 
-	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
-			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
-			BreakpointSubscriberRegistrar breakpointSubscriberRegistrar, DebugConfiguration debugConfiguration) {
-//		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakpointRepresentation(
-//				iBreakpointManager);
-		breakpointSubscriberRegistrar.register(TargetApplicationBreakpointRepresentation.getInstance());
-	//	this.virtualMachine = virtualMachine;
-		this.debugConfiguration = debugConfiguration;
-	}
+	private TargetApplicationRepresentation(
+            IBreakpointManager iBreakpointManager,
+          //  EventRequestManager eventRequestManager,
+            BreakpointSubscriberRegistrar breakpointSubscriberRegistrar,
+            DebugConfiguration debugConfiguration) {
 
-//	public TargetApplicationBreakpointRepresentation getTargetApplicationBreakepointRepresentation() {
-//		return targetApplicationBreakepointRepresentation;
-//	}
+        // Регистрируем синглтон брейкпоинтов
+        breakpointSubscriberRegistrar.register(TargetApplicationBreakpointRepresentation.getInstance());
+        this.debugConfiguration = debugConfiguration;
+    }
+
+    /** Создаём синглтон с параметрами */
+    public static synchronized TargetApplicationRepresentation getInstanceFor(
+            IBreakpointManager iBreakpointManager,
+           // EventRequestManager eventRequestManager,
+            BreakpointSubscriberRegistrar breakpointSubscriberRegistrar,
+            DebugConfiguration debugConfiguration) {
+
+        if (INSTANCE != null) {
+            throw new IllegalStateException("TargetApplicationRepresentation уже создан");
+        }
+        INSTANCE = new TargetApplicationRepresentation(iBreakpointManager, breakpointSubscriberRegistrar, debugConfiguration);
+        return INSTANCE;
+    }
+
+    /** Получаем уже созданный синглтон */
+    public static TargetApplicationRepresentation getInstance() {
+        if (INSTANCE == null) {
+            throw new IllegalStateException("TargetApplicationRepresentation ещё не создан");
+        }
+        return INSTANCE;
+    }
 
 	public Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> getTargetApplicationSnapshot() {
 		return targetApplicationSnapshot;

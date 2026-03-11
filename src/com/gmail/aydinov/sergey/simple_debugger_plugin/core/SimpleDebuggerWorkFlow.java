@@ -85,21 +85,23 @@ import com.sun.jdi.request.EventRequestManager;
 public class SimpleDebuggerWorkFlow {
 
 	// private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
-	private final TargetApplicationRepresentation targetApplicationRepresentation;
+	//private final TargetApplicationRepresentation targetApplicationRepresentation;
 	private final IBreakpointManager breakpointManager; // do NOT remove
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove
 //	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 
-	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
+	private SimpleDebuggerWorkFlow(
 			IBreakpointManager breakpointManager, BreakpointSubscriberRegistrar breakpointListener,
 			DebugConfiguration debugConfiguration) {
 	//	this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
 		this.breakpointManager = breakpointManager;
 		this.breakpointListener = breakpointListener;
-
-		EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
-		this.targetApplicationRepresentation = new TargetApplicationRepresentation(breakpointManager, eventRequestManager,
-				targetVirtualMachineRepresentation.getVirtualMachine(), breakpointListener, debugConfiguration);
+		
+	//	EventRequestManager eventRequestManager = targetVirtualMachineRepresentation.getVirtualMachine().eventRequestManager();
+//		this.targetApplicationRepresentation = new TargetApplicationRepresentation(breakpointManager,
+//				breakpointListener, debugConfiguration);
+		TargetApplicationRepresentation.getInstanceFor(breakpointManager,
+				breakpointListener, debugConfiguration);
 	}
 
 	/** Starts the debug workflow */
@@ -122,7 +124,7 @@ public class SimpleDebuggerWorkFlow {
 		TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(). resume();
 
 		while (DebuggerContext.context().isRunning()) {
-			targetApplicationRepresentation
+			TargetApplicationRepresentation.getInstance()
 					.takeSnapshotOfTargetApplication(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), null);
 			TargetApplicationBreakpointRepresentation.getInstance().refreshBreakpoints();
 
@@ -144,8 +146,7 @@ public class SimpleDebuggerWorkFlow {
 					TargetApplicationBreakpointRepresentation.getInstance()
 							.onClassPrepared(classPrepareEvent.referenceType());
 				} else if (event instanceof BreakpointEvent) {
-					DebugSession debugSession = new DebugSessionImpl(TargetVirtualMachineRepresentation.getInstance(), targetApplicationRepresentation,
-							eventSet);
+					DebugSession debugSession = new DebugSessionImpl(eventSet);
 					Thread sessionThread = new Thread(debugSession);
 					sessionThread.setDaemon(true);
 					sessionThread.start();
@@ -232,12 +233,11 @@ public class SimpleDebuggerWorkFlow {
 				breakpointManager.setEnabled(true);
 				breakpointManager.addBreakpointListener(breakpointListener);
 
-				TargetVirtualMachineRepresentation targetVirtualMachineRepresentation = TargetVirtualMachineRepresentation.getInstanceFor("localhost", debugConfiguration.getPort(), virtualMachine);
+				TargetVirtualMachineRepresentation.getInstanceFor("localhost", debugConfiguration.getPort(), virtualMachine);
 				if (Objects.nonNull(onWorkflowReadyListener)) {
 					Display.getDefault()
 							.asyncExec(() -> onWorkflowReadyListener
-									.onReady(new SimpleDebuggerWorkFlow(targetVirtualMachineRepresentation,
-											breakpointManager, breakpointListener, debugConfiguration)));
+									.onReady(new SimpleDebuggerWorkFlow(breakpointManager, breakpointListener, debugConfiguration)));
 				}
 				SimpleDebuggerLogger.info("VM launched: " + virtualMachine.description());
 			});

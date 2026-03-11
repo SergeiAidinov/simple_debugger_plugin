@@ -36,10 +36,9 @@ public class CurrentLineHighlighterImpl implements CurrentLineHighlighter {
 
     private static final String ANNOTATION_TYPE = "com.gmail.aydinov.sergey.simple_debugger_plugin.currentLine";
 
-    private final TargetApplicationRepresentation targetApplicationRepresentation;
+  //  private final TargetApplicationRepresentation targetApplicationRepresentation;
 
-    public CurrentLineHighlighterImpl(TargetApplicationRepresentation targetApplicationRepresentation) {
-        this.targetApplicationRepresentation = targetApplicationRepresentation;
+    public CurrentLineHighlighterImpl() {
     }
 
     /**
@@ -124,7 +123,7 @@ public class CurrentLineHighlighterImpl implements CurrentLineHighlighter {
         IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
         if (workbenchPage == null) return null;
 
-        IFile file = targetApplicationRepresentation.findIFileForLocation(location);
+        IFile file = TargetApplicationRepresentation.getInstance().findIFileForLocation(location);
         if (file == null) throw new IllegalStateException("Cannot map location to IFile: " + location);
 
         IEditorPart editorPart = IDE.openEditor(workbenchPage, file, true);
