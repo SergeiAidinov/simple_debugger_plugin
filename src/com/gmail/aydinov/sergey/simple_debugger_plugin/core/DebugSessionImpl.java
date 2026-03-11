@@ -147,50 +147,32 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private void handleSingleUiEvent(AbstractUIEvent abstractSimpleDebuggerUIEvent, BreakpointEvent breakpointEvent) {
-		StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
-		if (Objects.isNull(currentFrame))
-			return;
-		try {
-			if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
-					SimpleDebuggerEventType.USER_CHANGED_VARIABLE)) {
-				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_CHANGED_VARIABLE.getUiEventHandler()
-						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
-					SimpleDebuggerEventType.USER_CHANGED_FIELD)) {
-				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_CHANGED_FIELD.getUiEventHandler()
-						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
-					SimpleDebuggerEventType.USER_INVOKED_METHOD)) {
-				// !!!!!!! UNDER CONSTRUCTION !!!!!!!
-				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_INVOKED_METHOD.getUiEventHandler()
-						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
-					SimpleDebuggerEventType.USER_PRESSED_RESUME_BUTTON)) {
-				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_PRESSED_RESUME_BUTTON.getUiEventHandler()
-						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
-					SimpleDebuggerEventType.USER_CLOSED_DEBUG_WINDOW)) {
-				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_CLOSED_DEBUG_WINDOW.getUiEventHandler()
-						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
-					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT)) {
-				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT
-						.getUiEventHandler().handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
-					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION)) {
-				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION
-						.getUiEventHandler().handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-			} else {
-				SimpleDebuggerLogger
-						.info("Unhandled UI event: " + abstractSimpleDebuggerUIEvent.getClass().getSimpleName());
-			}
-		} catch (Exception exception) {
-			SimpleDebuggerLogger.error(exception.getMessage(), exception);
-		}
+	    StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
+	    if (currentFrame == null) return;
+	    try {
+	        SimpleDebuggerEventTypes.SimpleDebuggerEventType eventType = abstractSimpleDebuggerUIEvent.getType();
+	        switch (eventType) {
+	            case USER_CHANGED_VARIABLE,
+	                 USER_CHANGED_FIELD,
+	                 USER_INVOKED_METHOD,
+	                 USER_PRESSED_RESUME_BUTTON,
+	                 USER_CLOSED_DEBUG_WINDOW,
+	                 USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
+	                 USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION -> {
+	                // универсальный вызов хендлера
+	                shouldRefreshSnapsotAndUi = eventType.getUiEventHandler()
+	                        .handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
+	            }
+	            default -> SimpleDebuggerLogger.info(
+	                    "Unhandled UI event: " + abstractSimpleDebuggerUIEvent.getClass().getSimpleName()
+	            );
+	        }
+	    } catch (Exception exception) {
+	        SimpleDebuggerLogger.error(exception.getMessage(), exception);
+	    }
 	}
-
+	
 	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
 				|| DebuggerContext.context().isInspectionSeanceActive())
