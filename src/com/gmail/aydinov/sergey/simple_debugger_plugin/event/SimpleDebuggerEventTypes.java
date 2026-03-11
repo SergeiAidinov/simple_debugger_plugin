@@ -2,6 +2,8 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 import java.util.Set;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedVariableHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
@@ -30,56 +32,63 @@ public final class SimpleDebuggerEventTypes {
 
     	//============= DEBUG EVENTS =============
         /** Event triggered when the debugger stops at a breakpoint */
-        STOPPED_AT_BREAKPOINT(DebugWindowDataDTO.class),
+        STOPPED_AT_BREAKPOINT(DebugWindowDataDTO.class, null),
         
         /** Event triggered to refresh the debugger console */
-        REFRESH_CONSOLE(String.class),
+        REFRESH_CONSOLE(String.class, null),
 
-        SET_RESUME_BUTTON_STATE(Boolean.class),
+        SET_RESUME_BUTTON_STATE(Boolean.class, null),
 
         /** Event triggered when a method is invoked in the target application */
-        METHOD_INVOKE(String.class),
+        METHOD_INVOKE(String.class, null),
         
-        DISPLAY_ADDITIONAL_INFO(UserInstanceInspectionDTO.class),
+        DISPLAY_ADDITIONAL_INFO(UserInstanceInspectionDTO.class, null),
 
-        DISPLAY_INSPECTION_WINDOW(Boolean.class),
+        DISPLAY_INSPECTION_WINDOW(Boolean.class, null),
         
       //============= USER INTERFACE DEBUG WINDOW EVENTS =============
         
-        USER_PRESSED_RESUME_BUTTON(Void.class),
+        USER_PRESSED_RESUME_BUTTON(Void.class, null),
         
-        USER_CHANGED_FIELD(UserChangedFieldEventDTO.class),
+        USER_CHANGED_FIELD(UserChangedFieldEventDTO.class,  null),
         
-        USER_CHANGED_VARIABLE(UserChangedVariableEventDTO.class),
+        USER_CHANGED_VARIABLE(UserChangedVariableEventDTO.class, new UserChangedVariableHandler()),
         
-        USER_CLOSED_DEBUG_WINDOW(Void.class),
+        USER_CLOSED_DEBUG_WINDOW(Void.class, null),
         
-        USER_INVOKED_METHOD(UserInvokedMethodEventDTO.class),
+        USER_INVOKED_METHOD(UserInvokedMethodEventDTO.class, null),
         
       //============= USER INTERFACE INSPECTION WINDOW EVENTS =============
         
-        SHOW_ANCHOR_ELEMENT(TopLevelElementRepresentationDTO.class),
+        SHOW_ANCHOR_ELEMENT(TopLevelElementRepresentationDTO.class, null),
         
-        USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT(InnerElementRepresentationDTO.class),
+        USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT(InnerElementRepresentationDTO.class, null),
         
-        USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class),
+        USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class, null),
         
-        USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementRepresentationDTO.class),
+        USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementRepresentationDTO.class, null),
         
-        USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class)
+        USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class, null)
         
         
         ;
 
         private final Class<?> payloadType;
+        private final UIEventHandler uiEventHandler;
 
-        SimpleDebuggerEventType(Class<?> payloadType) {
+        SimpleDebuggerEventType(Class<?> payloadType, UIEventHandler uiEventHandler) {
             this.payloadType = payloadType;
+            this.uiEventHandler = uiEventHandler;
         }
 
         public Class<?> getPayloadType() {
             return payloadType;
         }
+
+		public UIEventHandler getUiEventHandler() {
+			return uiEventHandler;
+		}
+        
     }
     
     // --- Groups of event types ---

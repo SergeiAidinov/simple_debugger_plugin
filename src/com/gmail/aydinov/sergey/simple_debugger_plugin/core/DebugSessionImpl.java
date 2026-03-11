@@ -178,8 +178,10 @@ public class DebugSessionImpl implements DebugSession {
 			if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_CHANGED_VARIABLE)) {
 				UIEvent<UserChangedVariableEventDTO> userChangedVariableEvent = (UIEvent<UserChangedVariableEventDTO>) abstractSimpleDebuggerUIEvent;
-				updateLocalVariable(userChangedVariableEvent.getPayload(), currentFrame);
-				shouldRefreshSnapsotAndUi = true;
+//				updateLocalVariable(userChangedVariableEvent.getPayload(), currentFrame);
+				System.out.println(SimpleDebuggerEventType.USER_CHANGED_VARIABLE);
+				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_CHANGED_VARIABLE.getUiEventHandler()
+						.handle(userChangedVariableEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_CHANGED_FIELD)) {
 				UIEvent<UserChangedFieldEventDTO> userChangedFieldEvent = (UIEvent<UserChangedFieldEventDTO>) abstractSimpleDebuggerUIEvent;
@@ -320,19 +322,19 @@ public class DebugSessionImpl implements DebugSession {
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 	}
 
-	private void updateLocalVariable(UserChangedVariableEventDTO userChangedVariableEventDTO, StackFrame currentFrame) {
-		try {
-			LocalVariable localVariable = currentFrame.visibleVariables().stream()
-					.filter(v -> v.name().equals(userChangedVariableEventDTO.getName())).findFirst().orElse(null);
-			if (Objects.isNull(localVariable))
-				return;
-			Value value = DebugUtils.createJdiValueFromString(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(),
-					localVariable, userChangedVariableEventDTO.getNewValue().toString());
-			currentFrame.setValue(localVariable, value);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+//	private void updateLocalVariable(UserChangedVariableEventDTO userChangedVariableEventDTO, StackFrame currentFrame) {
+//		try {
+//			LocalVariable localVariable = currentFrame.visibleVariables().stream()
+//					.filter(v -> v.name().equals(userChangedVariableEventDTO.getName())).findFirst().orElse(null);
+//			if (Objects.isNull(localVariable))
+//				return;
+//			Value value = DebugUtils.createJdiValueFromString(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(),
+//					localVariable, userChangedVariableEventDTO.getNewValue().toString());
+//			currentFrame.setValue(localVariable, value);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
 
 	private void updateField(UserChangedFieldEventDTO fieldEvent, StackFrame currentFrame) throws Exception {
 		ReferenceType referenceType = Objects.nonNull(currentFrame.thisObject())
