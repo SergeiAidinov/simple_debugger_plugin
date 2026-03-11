@@ -26,25 +26,37 @@ import com.sun.jdi.request.EventRequestManager;
  * • single collection • pending = BreakpointRequest == null • proper VM cleanup
  * • ClassPrepareEvent support
  * <p>
- * Author: Sergei Aidinov
- * <br>
+ * Author: Sergei Aidinov <br>
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
 public class TargetApplicationBreakpointRepresentation implements BreakpointSubscriber {
 
+	private static TargetApplicationBreakpointRepresentation INSTANCE;
+
 	private final IBreakpointManager breakpointManager;
-//	private final VirtualMachine virtualMachine;
-//	private final EventRequestManager eventRequestManager;
-
-
-	/** All breakpoints (active + pending) */
 	private final Set<BreakpointWrapper> breakpoints = ConcurrentHashMap.newKeySet();
 
-	public TargetApplicationBreakpointRepresentation(IBreakpointManager breakpointManager) {
-		this.breakpointManager = breakpointManager;
-//		this.virtualMachine = virtualMachine;
-//		this.eventRequestManager = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager();
+	private TargetApplicationBreakpointRepresentation(IBreakpointManager breakpointManager) {
+		this.breakpointManager = Objects.requireNonNull(breakpointManager, "IBreakpointManager не может быть null");
+	}
+
+	/** Создаём синглтон с IBreakpointManager */
+	public static synchronized TargetApplicationBreakpointRepresentation getInstanceFor(
+			IBreakpointManager breakpointManager) {
+		if (INSTANCE != null) {
+			throw new IllegalStateException("TargetApplicationBreakpointRepresentation уже создан");
+		}
+		INSTANCE = new TargetApplicationBreakpointRepresentation(breakpointManager);
+		return INSTANCE;
+	}
+
+	/** Получаем уже созданный синглтон */
+	public static TargetApplicationBreakpointRepresentation getInstance() {
+		if (INSTANCE == null) {
+			throw new IllegalStateException("TargetApplicationBreakpointRepresentation ещё не создан");
+		}
+		return INSTANCE;
 	}
 
 	// ======================================================================
@@ -53,18 +65,16 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 
 	@Override
 	public synchronized void addBreakepoint(IBreakpoint iBreakpoint) {
-		if (Objects.isNull(iBreakpoint)) {
+		if (Objects.isNull(iBreakpoint))
 			return;
-		}
-
-		if (breakpoints.stream().anyMatch(b -> b.getBreakpoint().equals(iBreakpoint))) {
+		if (breakpoints.stream().anyMatch(b -> b.getBreakpoint().equals(iBreakpoint)))
 			return;
-		}
 
 		Optional<Location> locationOptional = findLocation(iBreakpoint);
 
 		if (locationOptional.isPresent()) {
-			BreakpointRequest breakpointRequest = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().createBreakpointRequest(locationOptional.get());
+			BreakpointRequest breakpointRequest = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine()
+					.eventRequestManager().createBreakpointRequest(locationOptional.get());
 			breakpointRequest.enable();
 			breakpoints.add(new BreakpointWrapper(iBreakpoint, breakpointRequest));
 		} else {
@@ -75,11 +85,11 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 
 	@Override
 	public synchronized void deleteBreakepoint(IBreakpoint iBreakpoint) {
-		BreakpointWrapper breakpointWrapperToBeDeleted = null;
+		BreakpointWrapper toDelete = null;
 
-		for (BreakpointWrapper breakpointWrapper : breakpoints) {
-			if (breakpointWrapper.getBreakpoint().equals(iBreakpoint)) {
-				breakpointWrapperToBeDeleted = breakpointWrapper;
+		for (BreakpointWrapper wrapper : breakpoints) {
+			if (wrapper.getBreakpoint().equals(iBreakpoint)) {
+				toDelete = wrapper;
 
 				try {
 					iBreakpoint.setEnabled(false);
@@ -87,17 +97,19 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 					e.printStackTrace();
 				}
 
-				for (BreakpointRequest breakpointRequest : TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().breakpointRequests()) {
-					if (breakpointRequest.equals(breakpointWrapper.getBreakpointRequest())) {
-						TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().deleteEventRequest(breakpointRequest);
+				EventRequestManager erm = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine()
+						.eventRequestManager();
+
+				for (BreakpointRequest br : erm.breakpointRequests()) {
+					if (br.equals(wrapper.getBreakpointRequest())) {
+						erm.deleteEventRequest(br);
 					}
 				}
 			}
 		}
 
-		if (Objects.nonNull(breakpointWrapperToBeDeleted)) {
-			breakpoints.remove(breakpointWrapperToBeDeleted);
-		}
+		if (toDelete != null)
+			breakpoints.remove(toDelete);
 	}
 
 	@Override
@@ -110,36 +122,30 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 	// Lifecycle
 	// ======================================================================
 
-	/** Called on ClassPrepareEvent */
 	public synchronized void onClassPrepared(ReferenceType referenceType) {
-		SimpleDebuggerLogger.info("Class prepared: " + referenceType.name());
-		for (BreakpointWrapper breakpointWrapper : breakpoints) {
-			if (Objects.nonNull(breakpointWrapper.getBreakpointRequest())) {
+		for (BreakpointWrapper wrapper : breakpoints) {
+			if (wrapper.getBreakpointRequest() != null)
 				continue;
-			}
 
-			IBreakpoint iBreakpoint = breakpointWrapper.getBreakpoint();
+			IBreakpoint iBreakpoint = wrapper.getBreakpoint();
 			String typeName = getTypeName(iBreakpoint);
-
-			if (Objects.isNull(typeName) || !typeName.equals(referenceType.name())) {
+			if (!Objects.equals(typeName, referenceType.name()))
 				continue;
-			}
 
 			Optional<Location> locationOptional = findLocation(iBreakpoint);
 			if (locationOptional.isEmpty())
 				continue;
 
-			BreakpointRequest breakpointRequest = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().createBreakpointRequest(locationOptional.get());
-			breakpointRequest.enable();
-			breakpointWrapper.setBreakpointRequest(breakpointRequest);
+			BreakpointRequest br = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine()
+					.eventRequestManager().createBreakpointRequest(locationOptional.get());
+			br.enable();
+			wrapper.setBreakpointRequest(br);
 		}
 	}
 
-	/** Full resynchronization with Eclipse */
 	public synchronized void refreshBreakpoints() {
-		// Remove all JDI breakpoints from VM
-		for (BreakpointWrapper breakpointWrapper : breakpoints) {
-			deleteJdiRequest(breakpointWrapper);
+		for (BreakpointWrapper wrapper : breakpoints) {
+			deleteJdiRequest(wrapper);
 		}
 		breakpoints.clear();
 
@@ -150,16 +156,16 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 	// Helpers
 	// ======================================================================
 
-	private void deleteJdiRequest(BreakpointWrapper breakpointWrapper) {
-		BreakpointRequest breakpointRequest = breakpointWrapper.getBreakpointRequest();
-
-		if (Objects.nonNull(breakpointRequest)) {
+	private void deleteJdiRequest(BreakpointWrapper wrapper) {
+		BreakpointRequest br = wrapper.getBreakpointRequest();
+		if (br != null) {
 			try {
-				breakpointRequest.disable();
-				TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().deleteEventRequest(breakpointRequest);
+				br.disable();
+				TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager()
+						.deleteEventRequest(br);
 			} catch (Exception ignored) {
 			}
-			breakpointWrapper.setBreakpointRequest(null);
+			wrapper.setBreakpointRequest(null);
 		}
 	}
 
@@ -167,16 +173,15 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 		String className = getTypeName(iBreakpoint);
 		int line = getLineNumber(iBreakpoint);
 
-		if (Objects.isNull(className) || line < 0) {
+		if (className == null || line < 0)
 			return Optional.empty();
-		}
 
-		List<ReferenceType> classes =  TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().classesByName(className);
+		List<ReferenceType> classes = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine()
+				.classesByName(className);
 		if (classes.isEmpty())
 			return Optional.empty();
 
 		ReferenceType referenceType = classes.get(0);
-
 		try {
 			return referenceType.locationsOfLine(line).stream().findFirst();
 		} catch (AbsentInformationException e) {
@@ -184,16 +189,12 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 		}
 	}
 
-	// ======================================================================
 	// Marker helpers
-	// ======================================================================
-
 	private String getTypeName(IBreakpoint iBreakpoint) {
 		try {
 			IMarker marker = iBreakpoint.getMarker();
-			if (Objects.nonNull(marker)) {
+			if (marker != null)
 				return marker.getAttribute("org.eclipse.jdt.debug.core.typeName", (String) null);
-			}
 		} catch (Exception ignored) {
 		}
 		return null;
@@ -202,11 +203,11 @@ public class TargetApplicationBreakpointRepresentation implements BreakpointSubs
 	private int getLineNumber(IBreakpoint iBreakpoint) {
 		try {
 			IMarker marker = iBreakpoint.getMarker();
-			if (Objects.nonNull(marker)) {
+			if (marker != null)
 				return marker.getAttribute(IMarker.LINE_NUMBER, -1);
-			}
 		} catch (Exception ignored) {
 		}
 		return -1;
 	}
+
 }

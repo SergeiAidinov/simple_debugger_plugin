@@ -13,6 +13,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationBreakpointRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
@@ -123,7 +124,7 @@ public class SimpleDebuggerWorkFlow {
 		while (DebuggerContext.context().isRunning()) {
 			targetApplicationRepresentation
 					.takeSnapshotOfTargetApplication(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), null);
-			targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakpoints();
+			TargetApplicationBreakpointRepresentation.getInstance().refreshBreakpoints();
 
 			EventSet eventSet = null;
 			try {
@@ -140,7 +141,7 @@ public class SimpleDebuggerWorkFlow {
 			for (Event event : eventSet) {
 				if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.DEBUGGER_STOPPED)) break;
 				if (event instanceof ClassPrepareEvent classPrepareEvent) {
-					targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation()
+					TargetApplicationBreakpointRepresentation.getInstance()
 							.onClassPrepared(classPrepareEvent.referenceType());
 				} else if (event instanceof BreakpointEvent) {
 					DebugSession debugSession = new DebugSessionImpl(TargetVirtualMachineRepresentation.getInstance(), targetApplicationRepresentation,
@@ -226,6 +227,7 @@ public class SimpleDebuggerWorkFlow {
 				VirtualMachine virtualMachine = launchVirtualMachine(debugConfiguration);
 
 				IBreakpointManager breakpointManager = waitForBreakpointManager();
+				TargetApplicationBreakpointRepresentation.getInstanceFor(breakpointManager);
 				BreakePointListener breakpointListener = new BreakePointListener();
 				breakpointManager.setEnabled(true);
 				breakpointManager.addBreakpointListener(breakpointListener);
