@@ -6,7 +6,7 @@ import com.sun.jdi.StackFrame;
 import com.sun.jdi.event.BreakpointEvent;
 
 @FunctionalInterface
-public interface UIEventHandler<T> {
+public interface UIEventHandler {
     /**
      * Обрабатывает событие UI.
      *
