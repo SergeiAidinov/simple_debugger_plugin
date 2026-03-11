@@ -69,23 +69,23 @@ import com.sun.jdi.request.EventRequestManager;
 public class TargetApplicationRepresentation {
 
 	private final Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> targetApplicationSnapshot = new ConcurrentHashMap<>();
-	private final TargetApplicationBreakpointRepresentation targetApplicationBreakepointRepresentation;
-	private final VirtualMachine virtualMachine;
+//	private final TargetApplicationBreakpointRepresentation targetApplicationBreakepointRepresentation;
+//	private final VirtualMachine virtualMachine;
 	private final DebugConfiguration debugConfiguration;
 
 	public TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
 			EventRequestManager eventRequestManager, VirtualMachine virtualMachine,
 			BreakpointSubscriberRegistrar breakpointSubscriberRegistrar, DebugConfiguration debugConfiguration) {
-		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakpointRepresentation(
-				iBreakpointManager);
-		breakpointSubscriberRegistrar.register(targetApplicationBreakepointRepresentation);
-		this.virtualMachine = virtualMachine;
+//		this.targetApplicationBreakepointRepresentation = new TargetApplicationBreakpointRepresentation(
+//				iBreakpointManager);
+		breakpointSubscriberRegistrar.register(TargetApplicationBreakpointRepresentation.getInstance());
+	//	this.virtualMachine = virtualMachine;
 		this.debugConfiguration = debugConfiguration;
 	}
 
-	public TargetApplicationBreakpointRepresentation getTargetApplicationBreakepointRepresentation() {
-		return targetApplicationBreakepointRepresentation;
-	}
+//	public TargetApplicationBreakpointRepresentation getTargetApplicationBreakepointRepresentation() {
+//		return targetApplicationBreakepointRepresentation;
+//	}
 
 	public Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> getTargetApplicationSnapshot() {
 		return targetApplicationSnapshot;
@@ -554,13 +554,13 @@ public class TargetApplicationRepresentation {
 	}
 
 	public void detachDebugger() {
-		if (Objects.isNull(virtualMachine)) {
+		if (Objects.isNull(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine())) {
 			return;
 		}
 		try {
-			virtualMachine.eventRequestManager().deleteAllBreakpoints();
+			TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().deleteAllBreakpoints();
 
-			virtualMachine.allThreads().forEach(threadReference -> {
+			TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().allThreads().forEach(threadReference -> {
 				try {
 					if (threadReference.suspendCount() > 0) {
 						threadReference.resume();
@@ -568,7 +568,7 @@ public class TargetApplicationRepresentation {
 				} catch (Exception ignored) {
 				}
 			});
-			virtualMachine.dispose();
+			TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().dispose();
 
 		} catch (VMDisconnectedException ignored) {
 		} catch (Exception exception) {
@@ -597,7 +597,7 @@ public class TargetApplicationRepresentation {
 			if (Objects.isNull(constructor)) {
 				throw new RuntimeException("No default constructor for " + classType.name());
 			}
-			return classType.newInstance(virtualMachine.allThreads().get(0), constructor, List.of(),
+			return classType.newInstance(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().allThreads().get(0), constructor, List.of(),
 					ClassType.INVOKE_SINGLE_THREADED);
 		} catch (Exception exception) {
 			throw new RuntimeException("Cannot create instance of " + classType.name(), exception);

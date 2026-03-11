@@ -28,6 +28,7 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationBreakpointRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
@@ -123,7 +124,7 @@ public class DebugSessionImpl implements DebugSession {
 
 	/** Processes all events in the EventSet */
 	private void processEvents() {
-		targetApplicationRepresentation.getTargetApplicationBreakepointRepresentation().refreshBreakpoints();
+		TargetApplicationBreakpointRepresentation.getInstance().refreshBreakpoints();
 		for (Event event : eventSet) {
 			if (!DebuggerContext.context().isRunning())
 				return;
