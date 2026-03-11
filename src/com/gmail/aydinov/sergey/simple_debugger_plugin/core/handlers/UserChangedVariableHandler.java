@@ -13,7 +13,7 @@ import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
-public class UserChangedVariableHandler implements UIEventHandler<UserChangedVariableEventDTO>{
+public class UserChangedVariableHandler implements UIEventHandler{
 
 	@Override
 	@SuppressWarnings("unchecked")
