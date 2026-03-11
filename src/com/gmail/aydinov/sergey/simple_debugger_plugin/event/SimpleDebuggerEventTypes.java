@@ -2,7 +2,12 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 import java.util.Set;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedFieldHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedVariableHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserClosedDebugWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvokedMethodHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressedResumeButton;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
@@ -48,21 +53,21 @@ public final class SimpleDebuggerEventTypes {
         
       //============= USER INTERFACE DEBUG WINDOW EVENTS =============
         
-        USER_PRESSED_RESUME_BUTTON(Void.class, null),
+        USER_PRESSED_RESUME_BUTTON(Void.class, new UserPressedResumeButton()),
         
-        USER_CHANGED_FIELD(UserChangedFieldEventDTO.class,  null),
+        USER_CHANGED_FIELD(UserChangedFieldEventDTO.class,  new UserChangedFieldHandler()),
         
         USER_CHANGED_VARIABLE(UserChangedVariableEventDTO.class, new UserChangedVariableHandler()),
         
-        USER_CLOSED_DEBUG_WINDOW(Void.class, null),
+        USER_CLOSED_DEBUG_WINDOW(Void.class, new UserClosedDebugWindow()),
         
-        USER_INVOKED_METHOD(UserInvokedMethodEventDTO.class, null),
+        USER_INVOKED_METHOD(UserInvokedMethodEventDTO.class, new UserInvokedMethodHandler()),
         
       //============= USER INTERFACE INSPECTION WINDOW EVENTS =============
         
         SHOW_ANCHOR_ELEMENT(TopLevelElementRepresentationDTO.class, null),
         
-        USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT(InnerElementRepresentationDTO.class, null),
+        USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT(InnerElementRepresentationDTO.class, new UserRerquestedAdditionalInfoAboutObjectHandler()),
         
         USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class, null),
         
