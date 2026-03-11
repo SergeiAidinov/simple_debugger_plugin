@@ -122,8 +122,8 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private void doWorkAtBreakpoint(BreakpointEvent breakpointEvent) {
-		TargetApplicationRepresentation.getInstance()
-				.takeSnapshotOfTargetApplication(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), breakpointEvent);
+		TargetApplicationRepresentation.getInstance().takeSnapshotOfTargetApplication(
+				TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), breakpointEvent);
 		updateUI(breakpointEvent);
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
@@ -163,7 +163,7 @@ public class DebugSessionImpl implements DebugSession {
 						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_INVOKED_METHOD)) {
-				//  !!!!!!! UNDER CONSTRUCTION !!!!!!!
+				// !!!!!!! UNDER CONSTRUCTION !!!!!!!
 				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_INVOKED_METHOD.getUiEventHandler()
 						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
@@ -176,14 +176,12 @@ public class DebugSessionImpl implements DebugSession {
 						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT)) {
-				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT.getUiEventHandler()
-						.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
+				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT
+						.getUiEventHandler().handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else if (Objects.equals(abstractSimpleDebuggerUIEvent.getType(),
 					SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION)) {
-				UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
-				shouldRefreshSnapsotAndUi = false;
-				System.out.println(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION.name()
-						+ userRequestedAdditionalInfo.toString());
+				shouldRefreshSnapsotAndUi = SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION
+						.getUiEventHandler().handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			} else {
 				SimpleDebuggerLogger
 						.info("Unhandled UI event: " + abstractSimpleDebuggerUIEvent.getClass().getSimpleName());
@@ -193,77 +191,12 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-//	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
-//		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
-//		UniversalElementRepresentation topLevelElement = TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot()
-//				.get(anchorElement.getTag());
-//		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(topLevelElement);
-//		relevantElements.remove(topLevelElement);
-//		List<UniversalElementRepresentation> elements = new ArrayList<UniversalElementRepresentation>(relevantElements);
-//		Collections.sort(elements);
-//		Map<Integer, ArrayList<UserInstanceInnerElementInspectionDTO>> separatedIntoGroups = Map.of(1,
-//				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 2,
-//				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 3,
-//				new ArrayList<UserInstanceInnerElementInspectionDTO>());
-//		for (UniversalElementRepresentation element : elements) {
-//			UserInstanceInnerElementInspectionDTO userInstanceInnerElementInspectionDTO = new UserInstanceInnerElementInspectionDTO(
-//					element.getElementName(), element.gettypeOrReturnType(), element.getValue());
-//			if (element.getElementType().ordinal() < 5)
-//				separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
-//			else if (element.getElementType().ordinal() == 5)
-//				separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
-//			else if (element.getElementType().ordinal() > 5)
-//				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
-//		}
-//		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
-//				topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(), separatedIntoGroups);
-//		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<UserInstanceInspectionDTO>(
-//				SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, userInstanceInspectionDTO));
-//
-//	}
-
-//	private Set<UniversalElementRepresentation> compileAdditionalInfo(UniversalElementRepresentation topLevelElement) {
-//		Set<UniversalElementRepresentation> selectedElements = new HashSet<UniversalElementRepresentation>();
-//		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream().filter(e -> Objects.nonNull(e))
-//				.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
-//				.ifPresent(elementName -> {
-//					elementName.getTag().getUniqueId();
-//					TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
-//							.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
-//							.ifPresent(field -> {
-//								TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream().filter(
-//										e -> Objects.equals(e.getTag().getParentId(), field.getTag().getUniqueId()))
-//										.findAny().ifPresent(root -> {
-//											boolean found = true;
-//											Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
-//											iterationElements.add(root);
-//											while (found) {
-//												for (UniversalElementRepresentation iterationElement : iterationElements) {
-//													iterationElements.addAll(TargetApplicationRepresentation.getInstance()
-//															.getTargetApplicationSnapshot().values().stream()
-//															.filter(e -> Objects.equals(e.getObjectReference(),
-//																	iterationElement.getObjectReference()))
-//															.filter(e -> !Objects.equals(e.getAdditionalInfo(),
-//																	topLevelElement.gettypeOrReturnType()))
-//															.toList());
-//												}
-//												iterationElements.remove(root);
-//												if (iterationElements.isEmpty())
-//													found = false;
-//												selectedElements.addAll(iterationElements);
-//												iterationElements.clear();
-//											}
-//										});
-//							});
-//				});
-//		return selectedElements;
-//	}
-
 	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
 				|| DebuggerContext.context().isInspectionSeanceActive())
 			return;
-		Map<Tag, UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot();
+		Map<Tag, UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance()
+				.getTargetApplicationSnapshot();
 		System.out.println(qq);
 		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().keySet().stream()
 				.filter(v -> v.getUniqueId().equals(innerElementRepresentationDTO.getTag().getUniqueId())).findAny() // <-
@@ -330,8 +263,9 @@ public class DebugSessionImpl implements DebugSession {
 			return false;
 		UniversalElementRepresentation anchorElement = anchorInstanceOptional.get();
 		Set<UniversalElementRepresentation> relevantElements = selectFieldsAndMethods(anchorElement);
-		List<UniversalElementRepresentation> locals = TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot()
-				.values().stream().filter(e -> e.getElementType().equals(UniversalElementType.LOCAL_VARIABLE)).toList();
+		List<UniversalElementRepresentation> locals = TargetApplicationRepresentation.getInstance()
+				.getTargetApplicationSnapshot().values().stream()
+				.filter(e -> e.getElementType().equals(UniversalElementType.LOCAL_VARIABLE)).toList();
 		relevantElements.stream().forEach(e -> System.out.println("RL:" + e));
 		relevantElements.addAll(locals);
 		Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
@@ -364,11 +298,12 @@ public class DebugSessionImpl implements DebugSession {
 		while (found) {
 			for (UniversalElementRepresentation earlierFoundElement : foundElements) {
 				List<UniversalElementRepresentation> justFoundElements = new ArrayList<UniversalElementRepresentation>();
-				justFoundElements.addAll(TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values()
-						.stream().filter(e -> Objects.equals(e.getObjectReference(), initElement.getObjectReference()))
-						.filter(e -> Objects.equals(e.getTag().getParentId(),
-								earlierFoundElement.getTag().getUniqueId()))
-						.toList());
+				justFoundElements.addAll(
+						TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
+								.filter(e -> Objects.equals(e.getObjectReference(), initElement.getObjectReference()))
+								.filter(e -> Objects.equals(e.getTag().getParentId(),
+										earlierFoundElement.getTag().getUniqueId()))
+								.toList());
 				if (justFoundElements.isEmpty()) {
 					found = false;
 					break;

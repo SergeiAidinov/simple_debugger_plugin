@@ -7,6 +7,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChanged
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserClosedDebugWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvokedMethodHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressedResumeButton;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedAdditionalInfoAboutCollection;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
@@ -69,7 +70,7 @@ public final class SimpleDebuggerEventTypes {
         
         USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT(InnerElementRepresentationDTO.class, new UserRerquestedAdditionalInfoAboutObjectHandler()),
         
-        USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class, null),
+        USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class, new UserRequestedAdditionalInfoAboutCollection()),
         
         USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementRepresentationDTO.class, null),
         
