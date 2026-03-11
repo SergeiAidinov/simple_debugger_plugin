@@ -90,18 +90,18 @@ public class DebugSessionImpl implements DebugSession {
 	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	private final EventSet eventSet;
-	private final CurrentLineHighlighter currentLineHighlighter;
+	private final CurrentLineHighlighterImpl currentLineHighlighter;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventCollector.instance();
 	private boolean shouldRefreshSnapsotAndUi = true;
 
 	public DebugSessionImpl(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
-			TargetApplicationRepresentation targetApplicationRepresentation, EventSet eventSet,
-			CurrentLineHighlighter currentLineHighlighter) {
+			TargetApplicationRepresentation targetApplicationRepresentation, EventSet eventSet
+			) {
 		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
 		this.targetApplicationRepresentation = targetApplicationRepresentation;
 		this.eventSet = eventSet;
-		this.currentLineHighlighter = currentLineHighlighter;
+		this.currentLineHighlighter = new CurrentLineHighlighterImpl(targetApplicationRepresentation);
 	}
 
 	@Override
@@ -157,17 +157,6 @@ public class DebugSessionImpl implements DebugSession {
 		updateUI(breakpointEvent);
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
-			display.asyncExec(() -> {
-				try {
-					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-					if (Objects.nonNull(editor)) {
-						int lineNumber = breakpointEvent.location().lineNumber() - 1;
-						currentLineHighlighter.highlight(editor, lineNumber);
-					}
-				} catch (Throwable exception) {
-					logError("Cannot highlight breakpoint location", exception);
-				}
-			});
 			while (DebuggerContext.context().isDebugSessionActive()) {
 				AbstractUIEvent uiEvent = uiEventCollector.pollUiEvent();
 				if (Objects.isNull(uiEvent))
@@ -242,10 +231,6 @@ public class DebugSessionImpl implements DebugSession {
 			SimpleDebuggerLogger.error(exception.getMessage(), exception);
 		}
 	}
-
-	
-
-	
 
 	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
 		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
@@ -459,20 +444,7 @@ public class DebugSessionImpl implements DebugSession {
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
 		simpleDebugEventCollector
 				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-		Display display = Display.getDefault();
-		if (Objects.nonNull(display) && !display.isDisposed()) {
-			display.asyncExec(() -> {
-				try {
-					ITextEditor editor = openEditorForLocation(breakpointEvent.location());
-					if (Objects.nonNull(editor)) {
-						int lineNumber = breakpointEvent.location().lineNumber() - 1;
-						currentLineHighlighter.highlight(editor, lineNumber);
-					}
-				} catch (Throwable exception) {
-					logError("Cannot highlight breakpoint location", exception);
-				}
-			});
-		}
+		currentLineHighlighter.highlight(breakpointEvent.location());
 		System.out.println("relevantElements: " + relevantElements.size());
 		return true;
 	}
@@ -484,8 +456,6 @@ public class DebugSessionImpl implements DebugSession {
 		foundElements.add(initElement);
 		boolean found = true;
 		while (found) {
-			// Set<UniversalElementRepresentation> currentIterationFoundElements = new
-			// HashSet<>();
 			for (UniversalElementRepresentation earlierFoundElement : foundElements) {
 				List<UniversalElementRepresentation> justFoundElements = new ArrayList<UniversalElementRepresentation>();
 				justFoundElements.addAll(targetApplicationRepresentation.getTargetApplicationSnapshot().values()
@@ -504,25 +474,6 @@ public class DebugSessionImpl implements DebugSession {
 		}
 
 		return foundElements;
-	}
-
-	private ITextEditor openEditorForLocation(Location location) throws Exception {
-		if (Objects.isNull(location))
-			return null;
-		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		if (Objects.isNull(workbenchWindow))
-			return null;
-		IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
-		if (Objects.isNull(workbenchPage))
-			return null;
-		IFile file = targetApplicationRepresentation.findIFileForLocation(location);
-		if (Objects.isNull(file))
-			throw new IllegalStateException("Cannot map location to IFile: " + location);
-		IEditorPart editorPart = IDE.openEditor(workbenchPage, file, true);
-		if (editorPart instanceof ITextEditor textEditor) {
-			return textEditor;
-		}
-		throw new IllegalStateException("Opened editor is not a text editor");
 	}
 
 	private void logError(String message, Throwable exception) {

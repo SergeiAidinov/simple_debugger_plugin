@@ -87,8 +87,7 @@ public class SimpleDebuggerWorkFlow {
 	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	private final IBreakpointManager breakpointManager; // do NOT remove
 	private final BreakpointSubscriberRegistrar breakpointListener; // do NOT remove
-	private final CurrentLineHighlighter highlighter = new CurrentLineHighlighter();
-	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
+//	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 
 	public SimpleDebuggerWorkFlow(TargetVirtualMachineRepresentation targetVirtualMachineRepresentation,
 			IBreakpointManager breakpointManager, BreakpointSubscriberRegistrar breakpointListener,
@@ -145,7 +144,7 @@ public class SimpleDebuggerWorkFlow {
 							.onClassPrepared(classPrepareEvent.referenceType());
 				} else if (event instanceof BreakpointEvent) {
 					DebugSession debugSession = new DebugSessionImpl(targetVirtualMachineRepresentation, targetApplicationRepresentation,
-							eventSet, highlighter);
+							eventSet);
 					Thread sessionThread = new Thread(debugSession);
 					sessionThread.setDaemon(true);
 					sessionThread.start();
