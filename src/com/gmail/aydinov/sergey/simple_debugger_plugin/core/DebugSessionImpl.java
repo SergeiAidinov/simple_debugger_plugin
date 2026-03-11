@@ -88,18 +88,13 @@ import com.sun.jdi.event.VMDisconnectEvent;
 public class DebugSessionImpl implements DebugSession {
 
 	private static final AtomicReference<String> methodInvocationResult = new AtomicReference<>("");
-//	private final TargetVirtualMachineRepresentation targetVirtualMachineRepresentation;
-//	private final TargetApplicationRepresentation targetApplicationRepresentation;
 	private final EventSet eventSet;
 	private final CurrentLineHighlighterImpl currentLineHighlighter;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventCollector.instance();
 	private boolean shouldRefreshSnapsotAndUi = true;
 
-	public DebugSessionImpl(EventSet eventSet
-			) {
-//		this.targetVirtualMachineRepresentation = targetVirtualMachineRepresentation;
-//		this.targetApplicationRepresentation = targetApplicationRepresentation;
+	public DebugSessionImpl(EventSet eventSet) {
 		this.eventSet = eventSet;
 		this.currentLineHighlighter = new CurrentLineHighlighterImpl();
 	}
@@ -117,7 +112,6 @@ public class DebugSessionImpl implements DebugSession {
 		} finally {
 			SimpleDebuggerLogger.info("DEBUG SESSION FINISHED");
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_FINISHED);
-		//	 eventSet.resume();
 		}
 	}
 
@@ -152,8 +146,6 @@ public class DebugSessionImpl implements DebugSession {
 	private void doWorkAtBreakpoint(BreakpointEvent breakpointEvent) {
 		TargetApplicationRepresentation.getInstance()
 				.takeSnapshotOfTargetApplication(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), breakpointEvent);
-//		targetApplicationRepresentation.addLocalVariables(targetVirtualMachineRepresentation.getVirtualMachine(),
-//				breakpointEvent);
 		updateUI(breakpointEvent);
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
@@ -167,8 +159,6 @@ public class DebugSessionImpl implements DebugSession {
 					if (shouldRefreshSnapsotAndUi) {
 						TargetApplicationRepresentation.getInstance().takeSnapshotOfTargetApplication(
 								TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), breakpointEvent);
-//						targetApplicationRepresentation.addLocalVariables(
-//								targetVirtualMachineRepresentation.getVirtualMachine(), breakpointEvent);
 						updateUI(breakpointEvent);
 					}
 				} catch (Throwable exception) {
@@ -222,7 +212,6 @@ public class DebugSessionImpl implements DebugSession {
 				shouldRefreshSnapsotAndUi = false;
 				System.out.println(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION.name()
 						+ userRequestedAdditionalInfo.toString());
-			//	provideAdditionalInfoAboutCollection(userRequestedAdditionalInfo);
 			} else {
 				SimpleDebuggerLogger
 						.info("Unhandled UI event: " + abstractSimpleDebuggerUIEvent.getClass().getSimpleName());

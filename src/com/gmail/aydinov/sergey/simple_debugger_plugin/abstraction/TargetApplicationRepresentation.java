@@ -74,7 +74,6 @@ public class TargetApplicationRepresentation {
 
 	private TargetApplicationRepresentation(
             IBreakpointManager iBreakpointManager,
-          //  EventRequestManager eventRequestManager,
             BreakpointSubscriberRegistrar breakpointSubscriberRegistrar,
             DebugConfiguration debugConfiguration) {
 
@@ -86,7 +85,6 @@ public class TargetApplicationRepresentation {
     /** Создаём синглтон с параметрами */
     public static synchronized TargetApplicationRepresentation getInstanceFor(
             IBreakpointManager iBreakpointManager,
-           // EventRequestManager eventRequestManager,
             BreakpointSubscriberRegistrar breakpointSubscriberRegistrar,
             DebugConfiguration debugConfiguration) {
 
