@@ -199,6 +199,8 @@ public class TargetApplicationRepresentation {
 			if (Objects.isNull(objRef)) {
 				valueText = DebugUtils.getLocalVariableValueAsString(frame, local);
 			} else {
+//				TripletDTO<String, String, String> triplet = DebugUtils.determinCollectionTypeSafe(objRef, breakpointEvent);
+//				String description = DebugUtils.compileCollectionDescription(triplet);
 				int q = DebugUtils.getCollectionSize(objRef, breakpointEvent);
 				valueText = q == -1 ? DebugUtils.getLocalVariableValueAsString(frame, local)
 						: "size:" + q + "; ";
@@ -232,7 +234,7 @@ public class TargetApplicationRepresentation {
 		List<ObjectReference> instances = new ArrayList<>();
 		if (refType instanceof ClassType classType) {
 			try {
-				instances = classType.instances(10); // максимум 10 объектов, можно увеличить
+				instances = classType.instances(Integer.MAX_VALUE); 
 			} catch (Exception ignored) {
 			}
 		}
