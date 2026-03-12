@@ -176,7 +176,57 @@ public class TargetApplicationRepresentation {
 		        // Берём все интерфейсы, которые реализует этот класс (включая унаследованные)
 		        List<InterfaceType> interfaces = classType.allInterfaces();
 		        for (InterfaceType iface : interfaces) {
-		            System.out.println(iface.name());
+		           if (iface.name().equals("java.util.Map")) {
+		        	   Set<Value> args = Collections.emptySet();
+		        	   ThreadReference thread = breakpointEvent.thread();
+
+		        	   ClassType mapType = (ClassType) instance.referenceType();
+
+		        	   // entrySet()
+		        	   Method entrySetMethod = mapType.concreteMethodByName("entrySet", "()Ljava/util/Set;");
+		        	   ObjectReference entrySet;
+					try {
+						entrySet = (ObjectReference) instance.invokeMethod(
+						           breakpointEvent.thread(), entrySetMethod, Collections.emptyList(),
+						           ObjectReference.INVOKE_SINGLE_THREADED);
+						  ClassType setType = (ClassType) entrySet.referenceType();
+			        	   Method iteratorMethod = setType.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
+			        	   ObjectReference iterator = (ObjectReference) entrySet.invokeMethod(
+			        	           thread, iteratorMethod, Collections.emptyList(),
+			        	           ObjectReference.INVOKE_SINGLE_THREADED);
+
+			        	   // next()
+			        	   ClassType iteratorType = (ClassType) iterator.referenceType();
+			        	   Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+			        	   ObjectReference entry = (ObjectReference) iterator.invokeMethod(
+			        	           thread, nextMethod, Collections.emptyList(),
+			        	           ObjectReference.INVOKE_SINGLE_THREADED);
+
+			        	   // getKey / getValue
+			        	   ClassType entryType = (ClassType) entry.referenceType();
+
+			        	   Method getKeyMethod = entryType.concreteMethodByName("getKey", "()Ljava/lang/Object;");
+			        	   Method getValueMethod = entryType.concreteMethodByName("getValue", "()Ljava/lang/Object;");
+
+			        	   Value key = entry.invokeMethod(thread, getKeyMethod, Collections.emptyList(),
+			        	           ObjectReference.INVOKE_SINGLE_THREADED);
+
+			        	   Value value = entry.invokeMethod(thread, getValueMethod, Collections.emptyList(),
+			        	           ObjectReference.INVOKE_SINGLE_THREADED);
+
+			        	   System.out.println("key = " + key);
+			        	   System.out.println("value = " + value);
+						
+						
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} 
+		        	   
+		        	   
+		           } else if (iface.name().equals("java.lang.Iterable")) {
+		        	   
+		           }
 		        }
 		    }
 			
