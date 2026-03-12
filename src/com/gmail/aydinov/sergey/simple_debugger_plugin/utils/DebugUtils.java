@@ -851,6 +851,46 @@ public class DebugUtils {
 		return TripletDTO.empty();
 	}
 
+	// ---------------------- Вспомогательные методы ----------------------
+
+	private static ObjectReference getFirstElementFromIterator(ObjectReference collectionOrIterator, ThreadReference thread)
+	        throws Exception {
+	    ClassType iteratorType;
+	    ObjectReference iterator;
+
+	    if (collectionOrIterator.referenceType().name().equals("java.util.Iterator")) {
+	        iterator = collectionOrIterator;
+	        iteratorType = (ClassType) iterator.referenceType();
+	    } else {
+	        // Получаем iterator() для коллекции
+	        Method iteratorMethod = ((ClassType) collectionOrIterator.referenceType())
+	                .concreteMethodByName("iterator", "()Ljava/util/Iterator;");
+	        iterator = (ObjectReference) collectionOrIterator.invokeMethod(thread,
+	                iteratorMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+	        iteratorType = (ClassType) iterator.referenceType();
+	    }
+
+	    Method hasNext = iteratorType.concreteMethodByName("hasNext", "()Z");
+	    Value hasNextVal = iterator.invokeMethod(thread, hasNext, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+	    if (hasNextVal instanceof BooleanValue bool && bool.value()) {
+	        Method next = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+	        return (ObjectReference) iterator.invokeMethod(thread, next, Collections.emptyList(),
+	                ObjectReference.INVOKE_SINGLE_THREADED);
+	    }
+	    return null;
+	}
+
+	private static boolean isLocalVariable(ReferenceType refType) {
+	    // Если имя пакета начинается с "java." или "jdk." – скорее всего поле, иначе локальная переменная
+	    return !refType.name().startsWith("java.") && !refType.name().startsWith("jdk.");
+	}
+
+	private static Value invokeMethod(ObjectReference obj, String methodName, ThreadReference thread) throws Exception {
+	    ClassType type = (ClassType) obj.referenceType();
+	    Method method = type.concreteMethodByName(methodName, "()Ljava/lang/Object;");
+	    return obj.invokeMethod(thread, method, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+	}
+
 	public static void iterateThroughCollection(ObjectReference instance, BreakpointEvent breakpointEvent) {
 		if (Objects.isNull(instance) || Objects.isNull(breakpointEvent))
 			return;
