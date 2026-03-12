@@ -199,7 +199,7 @@ public class TargetApplicationRepresentation {
 			} else {
 				int q = DebugUtils.getCollectionSize(objRef, breakpointEvent);
 				valueText = q == -1 ? DebugUtils.getLocalVariableValueAsString(frame, local)
-						: "size:" + q + "; " + DebugUtils.getLocalVariableValueAsString(frame, local);
+						: "size:" + q + "; ";
 				System.out.println("INNER COLLECTIONS: " + q);
 			}
 
@@ -272,7 +272,7 @@ public class TargetApplicationRepresentation {
 						int q = DebugUtils.getCollectionSize(objRef, breakpointEvent);
 						// int q = -1;
 						if (q != -1)
-							valueText = field.name() + " Size: " + q;
+							valueText = "size: " + q + "; ";
 						System.out.println("SIZE_COLLECTION: " + field.name() + " " + q);
 					}
 
