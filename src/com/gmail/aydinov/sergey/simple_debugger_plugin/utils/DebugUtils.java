@@ -50,6 +50,7 @@ import com.sun.jdi.event.BreakpointEvent;
 public class DebugUtils {
 	
 	public static final String N_A = "[N/A]";
+	public static final int PAGE_SIZE = 20;
 
 	public static Value createJdiValueFromString(VirtualMachine virtualMachine, LocalVariable localVariable,
 			String sourceString) {
