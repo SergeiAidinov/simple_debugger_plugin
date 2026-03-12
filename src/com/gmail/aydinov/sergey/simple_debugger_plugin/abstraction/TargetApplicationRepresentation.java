@@ -235,12 +235,12 @@ public class TargetApplicationRepresentation {
 			return -1;
 
 		System.out.println(">>>>>>>>>>>>" + instance.referenceType().toString());
-		if(instance.referenceType().toString().contains("java.util.Map")) {
-		Map<Object, Object> map = (Map<Object, Object>) instance;
-			
+		if (instance.referenceType().toString().contains("java.util.Map")) {
+			Map<Object, Object> map = (Map<Object, Object>) instance;
+
 			System.out.println(" =========================== MAP: " + map.size());
 		}
-		
+
 		// ===== Если массив =====
 		if (instance instanceof ArrayReference arrayRef) {
 			return arrayRef.length();
@@ -290,11 +290,7 @@ public class TargetApplicationRepresentation {
 				}
 			}
 
-			
 		}
-		
-			
-		
 
 		// ===== Как крайняя мера: если это Map, и есть field "size" в HashMap /
 		// LinkedHashMap =====
@@ -353,7 +349,9 @@ public class TargetApplicationRepresentation {
 							|| category == UniversalElementRepresentation.ValueCategory.STRING) {
 						valueText = extractPrimitiveOrStringAsText(field, instance);
 					}
-					if (Objects.equals(category, UniversalElementRepresentation.ValueCategory.COLLECTION)) {
+					if (Objects.equals(category, UniversalElementRepresentation.ValueCategory.COLLECTION)
+							|| Objects.equals(category, UniversalElementRepresentation.ValueCategory.MAP)
+							|| Objects.equals(category, UniversalElementRepresentation.ValueCategory.ARRAY)) {
 						System.out.println("COLLECTION FOUND: " + field.name());
 						Value value;
 
@@ -378,12 +376,12 @@ public class TargetApplicationRepresentation {
 							.value(valueText).isStatic(isStatic).valueCategory(category)
 							.typeOrReturnType(field.typeName()).uniqueId(UUID.randomUUID())
 							.parentUniqueId(parentElement.getTag().getUniqueId()).build();
-if (fieldElement.getElementName().equals("fieldPersonsMap")) {
-	Value value = instance.getValue(field);
-	ObjectReference objRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
-	int q = getCollectionSize(objRef, breakpointEvent);
-	System.out.println(fieldElement);
-}
+					if (fieldElement.getElementName().equals("fieldPersonsMap")) {
+						Value value = instance.getValue(field);
+						ObjectReference objRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
+						int q = getCollectionSize(objRef, breakpointEvent);
+						System.out.println(fieldElement);
+					}
 					targetApplicationSnapshot.put(fieldElement.getTag(), fieldElement);
 
 					// ---------------- Рекурсивно собираем объекты ----------------
