@@ -166,6 +166,22 @@ public class TargetApplicationRepresentation {
 		SimpleDebuggerLogger.info("LOADED TOP-LEVEL ELEMENTS: " + targetApplicationSnapshot.size());
 	}
 
+	private void determinCollectionType(ObjectReference instance, BreakpointEvent breakpointEvent) {
+		if (Objects.isNull(instance) || Objects.isNull(breakpointEvent))
+			return;
+			System.out.println(">>>>>>>>> " + instance.type());
+			// Проверяем, что это класс (а не интерфейс)
+			ReferenceType refType = instance.referenceType();
+		    if (refType instanceof ClassType classType) {
+		        // Берём все интерфейсы, которые реализует этот класс (включая унаследованные)
+		        List<InterfaceType> interfaces = classType.allInterfaces();
+		        for (InterfaceType iface : interfaces) {
+		            System.out.println(iface.name());
+		        }
+		    }
+			
+	}
+
 	private boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
 		if (Objects.isNull(breakpointEvent))
 			return false;
@@ -328,15 +344,15 @@ public class TargetApplicationRepresentation {
 							|| Objects.equals(category, UniversalElementRepresentation.ValueCategory.MAP)
 							|| Objects.equals(category, UniversalElementRepresentation.ValueCategory.ARRAY)) {
 						System.out.println("COLLECTION FOUND: " + field.name());
-						Value value;
-
+						Value value = null;
 						if (field.isStatic()) {
 							value = field.declaringType().getValue(field);
 						} else {
 							value = instance.getValue(field);
 						}
-
+						
 						ObjectReference objRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
+						determinCollectionType(objRef, breakpointEvent);
 						int q = getCollectionSize(objRef, breakpointEvent);
 						// int q = -1;
 						if (q != -1)
