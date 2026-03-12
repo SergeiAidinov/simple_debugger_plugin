@@ -234,13 +234,6 @@ public class TargetApplicationRepresentation {
 		if (instance == null)
 			return -1;
 
-		System.out.println(">>>>>>>>>>>>" + instance.referenceType().toString());
-		if (instance.referenceType().toString().contains("java.util.Map")) {
-			Map<Object, Object> map = (Map<Object, Object>) instance;
-
-			System.out.println(" =========================== MAP: " + map.size());
-		}
-
 		// ===== Если массив =====
 		if (instance instanceof ArrayReference arrayRef) {
 			return arrayRef.length();
@@ -250,7 +243,8 @@ public class TargetApplicationRepresentation {
 		if (!(refType instanceof ClassType classType))
 			return -1;
 
-		// ===== Попытка через поле "size" =====
+		// ===== Попытка получить через поле "size" =====
+		// Для стандартных mutable коллекций
 		Field sizeField = refType.fieldByName("size");
 		if (sizeField != null) {
 			Value sizeValue = instance.getValue(sizeField);
@@ -260,20 +254,23 @@ public class TargetApplicationRepresentation {
 		}
 
 		// ===== Попытка через метод size() =====
-		try {
-			Method sizeMethod = classType.concreteMethodByName("size", "()I");
-			if (sizeMethod != null && breakpointEvent.thread() != null) {
+		Method sizeMethod = classType.concreteMethodByName("size", "()I");
+		if (sizeMethod != null && breakpointEvent.thread() != null) {
+			try {
+				// Оборачиваем вызов для защиты от ошибок JDI
 				Value result = instance.invokeMethod(breakpointEvent.thread(), sizeMethod, Collections.emptyList(),
 						ObjectReference.INVOKE_SINGLE_THREADED);
 				if (result instanceof IntegerValue intVal) {
 					return intVal.value();
 				}
+			} catch (Exception e) {
+
 			}
-		} catch (Exception ignored) {
 		}
 
-		// ===== Проверка известных immutable коллекций (Java 9+) =====
-		List<String> knownFields = Arrays.asList("a", "table", "elements");
+		// ===== Проверка известных immutable коллекций (Java 9+) через внутренние поля
+		// =====
+		List<String> knownFields = Arrays.asList("a", "table", "elements"); // возможные внутренние поля массивов
 		for (String fieldName : knownFields) {
 			Field field = refType.fieldByName(fieldName);
 			if (field != null) {
@@ -281,33 +278,11 @@ public class TargetApplicationRepresentation {
 				if (value instanceof ArrayReference innerArray) {
 					return innerArray.length();
 				}
-				// для Map, которые используют массив Entry[]
-				if (value instanceof ObjectReference innerObj) {
-					ReferenceType innerType = innerObj.referenceType();
-					if (innerType instanceof ArrayType arrType) {
-						return ((ArrayReference) innerObj).length();
-					}
-				}
-			}
-
-		}
-
-		// ===== Как крайняя мера: если это Map, и есть field "size" в HashMap /
-		// LinkedHashMap =====
-		if (instance instanceof ObjectReference objRef) {
-			try {
-				Method sizeMethodFallback = classType.concreteMethodByName("size", "()I");
-				if (sizeMethodFallback != null && breakpointEvent.thread() != null) {
-					Value result = objRef.invokeMethod(breakpointEvent.thread(), sizeMethodFallback,
-							Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-					if (result instanceof IntegerValue intVal)
-						return intVal.value();
-				}
-			} catch (Exception ignored) {
 			}
 		}
 
-		return -1; // не удалось определить размер
+		// Если не удалось определить размер
+		return -1;
 	}
 
 	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType,
