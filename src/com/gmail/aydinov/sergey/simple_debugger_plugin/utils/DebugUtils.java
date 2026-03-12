@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.IntegerValue;
 import com.sun.jdi.InterfaceType;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
@@ -33,6 +35,7 @@ import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
+import com.sun.jdi.event.BreakpointEvent;
 
 /**
  * Utility class for JDI (Java Debug Interface) operations
@@ -711,6 +714,62 @@ public class DebugUtils {
 
         return null;
 	}
+	
+	public static int getCollectionSize(ObjectReference instance, BreakpointEvent breakpointEvent) {
+		if (instance == null)
+			return -1;
+
+		// ===== Если массив =====
+		if (instance instanceof ArrayReference arrayRef) {
+			return arrayRef.length();
+		}
+
+		ReferenceType refType = instance.referenceType();
+		if (!(refType instanceof ClassType classType))
+			return -1;
+
+		// ===== Попытка получить через поле "size" =====
+		// Для стандартных mutable коллекций
+		Field sizeField = refType.fieldByName("size");
+		if (sizeField != null) {
+			Value sizeValue = instance.getValue(sizeField);
+			if (sizeValue instanceof IntegerValue intVal) {
+				return intVal.value();
+			}
+		}
+
+		// ===== Попытка через метод size() =====
+		Method sizeMethod = classType.concreteMethodByName("size", "()I");
+		if (sizeMethod != null && breakpointEvent.thread() != null) {
+			try {
+				// Оборачиваем вызов для защиты от ошибок JDI
+				Value result = instance.invokeMethod(breakpointEvent.thread(), sizeMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
+				if (result instanceof IntegerValue intVal) {
+					return intVal.value();
+				}
+			} catch (Exception e) {
+
+			}
+		}
+
+		// ===== Проверка известных immutable коллекций (Java 9+) через внутренние поля
+		// =====
+		List<String> knownFields = Arrays.asList("a", "table", "elements"); // возможные внутренние поля массивов
+		for (String fieldName : knownFields) {
+			Field field = refType.fieldByName(fieldName);
+			if (field != null) {
+				Value value = instance.getValue(field);
+				if (value instanceof ArrayReference innerArray) {
+					return innerArray.length();
+				}
+			}
+		}
+
+		// Если не удалось определить размер
+		return -1;
+	}
+
 	
 
 }
