@@ -243,7 +243,7 @@ public class TargetApplicationRepresentation {
 						    if (!bool.value())
 						        break;
 
-						    System.out.println("есть следующий элемент");
+						    System.out.print("есть следующий элемент: ");
 
 						    Value element = iterator.invokeMethod(
 						            breakpointEvent.thread(),
@@ -253,6 +253,10 @@ public class TargetApplicationRepresentation {
 						    );
 
 						    System.out.println(element);
+						    
+						    if (element instanceof ObjectReference obj) {
+						        System.out.println(obj.referenceType().name());
+						    }
 						}
 						
 					
