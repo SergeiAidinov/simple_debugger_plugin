@@ -1,7 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,29 +27,19 @@ import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
-import com.sun.jdi.ArrayReference;
-import com.sun.jdi.ArrayType;
-import com.sun.jdi.BooleanValue;
 import com.sun.jdi.ClassLoaderReference;
-import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
-import com.sun.jdi.IntegerValue;
 import com.sun.jdi.InterfaceType;
-import com.sun.jdi.InvalidTypeException;
-import com.sun.jdi.InvocationException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -60,13 +48,11 @@ import com.sun.jdi.PrimitiveValue;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.StringReference;
-import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.event.BreakpointEvent;
-import com.sun.jdi.request.EventRequestManager;
 
 public class TargetApplicationRepresentation {
 
@@ -384,31 +370,12 @@ public class TargetApplicationRepresentation {
 		// Собираем внутренние поля объекта
 		populateInnerElements(objElement, refType, breakpointEvent);
 
-		// Для коллекций и map добавляем элементы
-		UniversalElementRepresentation.ValueCategory category = determineValueCategory(refType.name());
-
 		List<ObjectReference> children = DebugUtils.getCollectionElements(objRef);
 		for (ObjectReference child : children) {
 			populateObjectReference(objElement, child, breakpointEvent);
 		}
 	}
 
-	/**
-	 * Ищет поле в классе и всех суперклассах
-	 */
-	private Field findFieldInHierarchy(ClassType classType, String fieldName) {
-		ClassType current = classType;
-		while (current != null) {
-			Field field = current.fieldByName(fieldName);
-			if (field != null)
-				return field;
-			ReferenceType superRef = current.superclass();
-			if (!(superRef instanceof ClassType))
-				break;
-			current = (ClassType) superRef;
-		}
-		return null;
-	}
 
 	private String extractPrimitiveOrStringAsText(Field field, ObjectReference instance) {
 		if (field == null)
@@ -440,30 +407,6 @@ public class TargetApplicationRepresentation {
 		if (typeName.startsWith("java.util.Map"))
 			return ValueCategory.MAP;
 		return ValueCategory.USER_OBJECT;
-	}
-
-	private boolean isObjectMethodUnoverridden(ReferenceType refType, Method method) {
-		try {
-			if ("java.lang.Object".equals(refType.name()))
-				return false;
-			List<ReferenceType> objectClasses = method.virtualMachine().classesByName("java.lang.Object");
-			if (objectClasses.isEmpty())
-				return false;
-			ReferenceType objectRef = objectClasses.get(0);
-			for (Method objMethod : objectRef.allMethods()) {
-				if (objMethod.name().equals(method.name()) && objMethod.signature().equals(method.signature())) {
-					for (Method classMethod : refType.allMethods()) {
-						if (classMethod.name().equals(method.name())
-								&& classMethod.signature().equals(method.signature())
-								&& classMethod.declaringType().equals(refType))
-							return false;
-					}
-					return true;
-				}
-			}
-		} catch (Exception ignored) {
-		}
-		return false;
 	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
