@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +40,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceIn
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.CollectionInspectorWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
@@ -347,27 +349,43 @@ public class ClassMembersAtBreakpoint {
 	}
 
 	private void setupColumnClickListeners() {
-		Table table = viewer.getTable();
-		table.addListener(SWT.MouseDown, event -> {
-			TableItem item = table.getItem(new Point(event.x, event.y));
-			if (item == null)
-				return;
-			int colIndex = getColumnIndexAtPoint(table, event.x);
-			// Наша третья колонка — индекс 2
-			if (colIndex != 2)
-				return;
-			Object data = item.getData();
-			if (!(data instanceof InnerElementRepresentationDTO dto))
-				return;
-			// Проверяем, что клик именно по inspectIcon (значение колонки совпадает с
-			// иконкой)
-			Image clickedImage = getIcon(dto);
-			if (clickedImage == null)
-				return; // нет inspectIcon — ничего не делаем
-			// Генерируем событие
-			uiEventCollector.collectUiEvent(
-					new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto));
-		});
+	    Table table = viewer.getTable();
+	    table.addListener(SWT.MouseDown, event -> {
+	        TableItem item = table.getItem(new Point(event.x, event.y));
+	        if (item == null)
+	            return;
+
+	        int colIndex = getColumnIndexAtPoint(table, event.x);
+	        // Наша третья колонка — индекс 2
+	        if (colIndex != 2)
+	            return;
+
+	        Object data = item.getData();
+	        if (!(data instanceof InnerElementRepresentationDTO dto))
+	            return;
+
+	        // Проверяем, по какой иконке кликнули
+	        Image clickedImage = getIcon(dto);
+	        if (clickedImage == null)
+	            return;
+
+	        if (clickedImage == DebugWindowsManager.instance().icons.get("lens").getFirst()) {
+	            // Клик по коллекции — создаем окно и генерируем событие
+	            Display display = table.getDisplay();
+	            display.asyncExec(() -> {
+	                new CollectionInspectorWindow(display, Collections.emptyList()).open();
+	            });
+
+	            uiEventCollector.collectUiEvent(
+	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
+	            );
+	        } else if (clickedImage == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+	            // Клик по обычной inspectIcon — старая логика
+	            uiEventCollector.collectUiEvent(
+	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto)
+	            );
+	        }
+	    });
 	}
 
 	private void setupHoverInspectionListener() {

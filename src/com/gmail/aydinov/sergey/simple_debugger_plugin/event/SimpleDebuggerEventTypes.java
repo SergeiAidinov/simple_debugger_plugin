@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 import java.util.Set;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IgnoreEverntHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedFieldHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedVariableHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserClosedDebugWindowHandler;
@@ -9,6 +10,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvoked
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressedResumeButtonHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedAdditionalInfoAboutCollectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserStartedInspectionSeanceForCollectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
@@ -43,7 +45,7 @@ public final class SimpleDebuggerEventTypes {
         /** Event triggered to refresh the debugger console */
         REFRESH_CONSOLE(String.class, null),
 
-        SET_RESUME_BUTTON_STATE(Boolean.class, null),
+        SET_RESUME_BUTTON_STATE(Boolean.class, new IgnoreEverntHandler()),
 
         /** Event triggered when a method is invoked in the target application */
         METHOD_INVOKE(String.class, null),
@@ -74,12 +76,16 @@ public final class SimpleDebuggerEventTypes {
         
         USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementRepresentationDTO.class, null),
         
-        USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class, null)
+        USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class, null), 
+        
+        USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION(InnerElementRepresentationDTO.class, new UserStartedInspectionSeanceForCollectionHandler()),
+        
+        SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, new IgnoreEverntHandler())
         
         
         ;
 
-        private final Class<?> payloadType;
+private final Class<?> payloadType;
         private final UIEventHandler uiEventHandler;
 
         SimpleDebuggerEventType(Class<?> payloadType, UIEventHandler uiEventHandler) {
