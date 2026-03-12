@@ -27,4 +27,8 @@ public class TripletDTO<A, B, C> {
     public static <A, B, C> TripletDTO<A, B, C> of(A first, B second, C third) {
         return new TripletDTO<>(first, second, third);
     }
+    
+    public static <A, B, C> TripletDTO<A, B, C> empty() {
+        return new TripletDTO<>(null, null, null);
+    }
 }
