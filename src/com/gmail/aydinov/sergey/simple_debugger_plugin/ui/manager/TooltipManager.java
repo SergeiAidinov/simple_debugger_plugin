@@ -189,4 +189,39 @@ public class TooltipManager {
 		}
 		stringBuilder.append(SEPARATOR + "\n");
 	}
+
+	public void showTooltipForCollection(Point location) {
+		System.out.println("Hello!");
+		Display display = root.getDisplay();
+		display.asyncExec(() -> {
+			if (root.isDisposed())
+				return;
+			closePopup();
+			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
+			popup.setLayout(new GridLayout(1, false));
+			StringBuilder info = new StringBuilder();
+			info.append("Collection: ").append("hello").append("\n");
+			
+			ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
+			scrolled.setLayoutData(new GridData(400, 300)); // размер окна
+			Composite content = new Composite(scrolled, SWT.NONE);
+			content.setLayout(new GridLayout(1, false));
+			Label label = new Label(content, SWT.WRAP);
+			label.setText(info.toString());
+			label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			scrolled.setContent(content);
+			scrolled.setExpandHorizontal(true);
+			scrolled.setExpandVertical(true);
+			scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+			popup.pack();
+			Point popupSize = popup.getSize();
+			Point adjustedLocation = adjustToScreen(location, popupSize);
+			popup.setLocation(adjustedLocation);
+			popup.open();
+			currentPopup = popup;
+			popup.addListener(SWT.Dispose, e -> currentPopup = null);
+			display.timerExec(150, this::checkPopupCursor);
+		});
+		
+	}
 }
