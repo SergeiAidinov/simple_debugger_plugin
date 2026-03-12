@@ -1,26 +1,32 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto;
 
 public class CollectionEntryDTO {
+	
+	private final String collectionName;
+	private final String signature;
+	private int size;
+	
+	public CollectionEntryDTO(String collectionName, String signature, int size) {
+		super();
+		this.collectionName = collectionName;
+		this.signature = signature;
+		this.size = size;
+	}
 
-    private final int index;
-    private final Object key;
-    private final Object value;
+	public int getSize() {
+		return size;
+	}
 
-    public CollectionEntryDTO(int index, Object key, Object value) {
-        this.index = index;
-        this.key = key;
-        this.value = value;
-    }
+	public void setSize(int size) {
+		this.size = size;
+	}
 
-    public int getIndex() {
-        return index;
-    }
+	public String getCollectionName() {
+		return collectionName;
+	}
 
-    public Object getKey() {
-        return key;
-    }
-
-    public Object getValue() {
-        return value;
-    }
+	public String getSignature() {
+		return signature;
+	}
+	
 }
