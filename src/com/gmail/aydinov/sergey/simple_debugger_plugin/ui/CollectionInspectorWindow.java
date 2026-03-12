@@ -30,6 +30,11 @@ public class CollectionInspectorWindow {
     private final Text pageText;
     private final Label totalPagesLabel;
 
+    // Лейблы для коллекции
+    private final Label fieldNameLabel;
+    private final Label collectionTypeLabel;
+    private final Label sizeLabel;
+
     private int currentPage = 1;
     private int totalPages = 1;
     private List<CollectionEntryDTO> allElements;
@@ -39,29 +44,33 @@ public class CollectionInspectorWindow {
 
         shell = new Shell(display, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
         shell.setText("Collection Inspector");
-        shell.setSize(600, 768);
+        shell.setSize(700, 768);
         shell.setImage(DebugWindowsManager.instance().icons.get("debugger").getFirst());
         shell.setLayout(new GridLayout(1, false));
 
-        // Верхняя панель навигации
-        Composite topPanel = new Composite(shell, SWT.NONE);
-        topPanel.setLayout(new GridLayout(4, false));
-        topPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        // ===================
+        // Навигация (верхний ряд)
+        Composite navPanel = new Composite(shell, SWT.NONE);
+        navPanel.setLayout(new GridLayout(4, false)); // Back, Forward, Page input, Total pages
+        navPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        backButton = new Button(topPanel, SWT.PUSH);
+        backButton = new Button(navPanel, SWT.PUSH);
         backButton.setText("◀ Back");
         backButton.setEnabled(false);
         backButton.addListener(SWT.Selection, e -> goBack());
 
-        pageText = new Text(topPanel, SWT.BORDER | SWT.CENTER);
-        pageText.setTextLimit(5); // ограничим длину ввода
+        forwardButton = new Button(navPanel, SWT.PUSH);
+        forwardButton.setText("Forward ▶");
+        forwardButton.setEnabled(false);
+        forwardButton.addListener(SWT.Selection, e -> goForward());
+
+        pageText = new Text(navPanel, SWT.BORDER | SWT.CENTER);
+        pageText.setTextLimit(5);
         pageText.setLayoutData(new GridData(50, SWT.DEFAULT));
         pageText.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (e.character == SWT.CR) { // Enter
-                    jumpToPageFromText();
-                }
+                if (e.character == SWT.CR) jumpToPageFromText();
             }
         });
         pageText.addFocusListener(new FocusAdapter() {
@@ -71,22 +80,36 @@ public class CollectionInspectorWindow {
             }
         });
 
-        totalPagesLabel = new Label(topPanel, SWT.NONE);
+        totalPagesLabel = new Label(navPanel, SWT.NONE);
         totalPagesLabel.setText("/ 1");
 
-        forwardButton = new Button(topPanel, SWT.PUSH);
-        forwardButton.setText("Forward ▶");
-        forwardButton.setEnabled(false);
-        forwardButton.addListener(SWT.Selection, e -> goForward());
+        // ===================
+        // Панель с информацией о коллекции (нижний ряд)
+        Composite infoPanel = new Composite(shell, SWT.NONE);
+        infoPanel.setLayout(new GridLayout(1, false)); // одна колонка — строки одна под другой
+        infoPanel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        // Вкладка с коллекцией
+        fieldNameLabel = new Label(infoPanel, SWT.NONE);
+        fieldNameLabel.setText("Field Name: -");
+        fieldNameLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        collectionTypeLabel = new Label(infoPanel, SWT.NONE);
+        collectionTypeLabel.setText("Collection Type: -");
+        collectionTypeLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        sizeLabel = new Label(infoPanel, SWT.NONE);
+        sizeLabel.setText("Size: 0");
+        sizeLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        // ===================
+        // Таблица коллекции
         inspectorTab = new CollectionInspectorTab(shell);
         inspectorTab.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        // Инициализация страницы
+        // Инициализация страниц
         totalPages = (int) Math.ceil((double) allElements.size() / DebugUtils.PAGE_SIZE);
         updatePage();
-        
+
         shell.open();
     }
 
@@ -119,7 +142,7 @@ public class CollectionInspectorWindow {
         }
     }
 
-    /** Обновление текущей страницы */
+    /** Обновление текущей страницы и информации */
     private void updatePage() {
         int start = (currentPage - 1) * DebugUtils.PAGE_SIZE;
         int end = Math.min(start + DebugUtils.PAGE_SIZE, allElements.size());
@@ -130,6 +153,18 @@ public class CollectionInspectorWindow {
         totalPagesLabel.setText("/ " + totalPages);
         backButton.setEnabled(currentPage > 1);
         forwardButton.setEnabled(currentPage < totalPages);
+
+        // Обновление лейблов с информацией о коллекции
+        if (!allElements.isEmpty()) {
+            CollectionEntryDTO first = pageElements.get(0); // берем первый элемент текущей страницы
+            fieldNameLabel.setText("Field Name: " + first.getCollectionName());
+            collectionTypeLabel.setText("Collection Type: " + first.getCollectionName());
+            sizeLabel.setText("Size: " + first.getSize());
+        } else {
+            fieldNameLabel.setText("Field Name: -");
+            collectionTypeLabel.setText("Collection Type: -");
+            sizeLabel.setText("Size: 0");
+        }
     }
 
     public void open() {

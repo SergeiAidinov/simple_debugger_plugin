@@ -64,13 +64,13 @@ public class CollectionInspectorTab {
 
     private void setupColumns() {
         createColumn(0, "Index", 80,
-                e -> String.valueOf(e.getIndex()),
+                e -> String.valueOf(e.getCollectionName()),
                 e -> null);
         createColumn(1, "Key", 250,
-                e -> e.getKey() == null ? "" : e.getKey().toString(),
+                e -> e.getSignature() == null ? "" : e.getSignature().toString(),
                 this::getIcon);
         createColumn(2, "Value", 350,
-                e -> e.getValue() == null ? "" : e.getValue().toString(),
+                e -> "default",
                 this::getIcon);
     }
 
@@ -111,7 +111,7 @@ public class CollectionInspectorTab {
     private Image getIcon(CollectionEntryDTO dto) {
         if (dto == null)
             return null;
-        Object value = dto.getValue();
+        Object value = dto.getCollectionName();
         if (value == null)
             return null;
         if (value instanceof java.util.Collection || value instanceof java.util.Map) {
