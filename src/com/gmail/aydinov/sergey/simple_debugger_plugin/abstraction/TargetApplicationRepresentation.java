@@ -32,6 +32,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
@@ -268,11 +270,12 @@ public class TargetApplicationRepresentation {
 						}
 
 						ObjectReference objRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
-					DebugUtils.determinCollectionType(objRef, breakpointEvent);
+					TripletDTO<String, String, String> triplet = DebugUtils.determinCollectionType(objRef, breakpointEvent);
+					String description = DebugUtils.compileCollectionDescription(triplet);
 						int q = DebugUtils.getCollectionSize(objRef, breakpointEvent);
 						// int q = -1;
 						if (q != -1)
-							valueText = "size: " + q + "; ";
+							valueText = "size: " + q + "; " + description;
 						System.out.println("SIZE_COLLECTION: " + field.name() + " " + q);
 					}
 
