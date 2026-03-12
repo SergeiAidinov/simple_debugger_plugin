@@ -399,12 +399,8 @@ public class ClassMembersAtBreakpoint {
 	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto)
 	                    );
 	                    Display display = root.getDisplay();
-	                    display.asyncExec(() -> {
-	            			if (root.isDisposed())
-	            				return;
-	            			Point location = display.getCursorLocation();
-	            			tooltipManager.showTooltipForCollection(location);
-	            		});
+	                    Point location = display.getCursorLocation();
+	                    tooltipManager.showTooltipForCollection(dto, location);
 	                }
 	            }
 	        }

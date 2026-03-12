@@ -152,39 +152,6 @@ public class DebugSessionImpl implements DebugSession {
 		}
 	}
 
-	private void initiateInspectionSeanceIfPossible(InnerElementRepresentationDTO innerElementRepresentationDTO) {
-		if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING)
-				|| DebuggerContext.context().isInspectionSeanceActive())
-			return;
-		Map<Tag, UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance()
-				.getTargetApplicationSnapshot();
-		System.out.println(qq);
-		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().keySet().stream()
-				.filter(v -> v.getUniqueId().equals(innerElementRepresentationDTO.getTag().getUniqueId())).findAny() // <-
-																														// получаем
-																														// Optional<UniversalElementRepresentation>
-				.ifPresent(topLevelElementId -> {
-					System.out.println("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
-					try {
-						UniversalElementRepresentation topLevelElement = TargetApplicationRepresentation.getInstance()
-								.getTargetApplicationSnapshot().get(topLevelElementId);
-						simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
-								SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-						simpleDebugEventCollector.collectDebugEvent(
-								new DebugEvent<Boolean>(SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW, true));
-
-						InspectionSeance inspectionSession = new InspectionSeanceImpl(topLevelElement,
-								TargetApplicationRepresentation.getInstance());
-						// ...
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				});
-		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(
-				SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-		DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-	}
-
 	private StackFrame getTopFrame(ThreadReference thread) {
 		try {
 			return thread.frame(0);
@@ -234,9 +201,9 @@ public class DebugSessionImpl implements DebugSession {
 					.fromUniversalElement(element);
 			innerElementDTOs.add(elementRepresentation);
 		}
-		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
-				.forEach(e -> System.out.println("MD:" + e));
-		System.out.println("INNER_ELS:" + innerElementDTOs);
+//		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
+//				.forEach(e -> System.out.println("MD:" + e));
+//		System.out.println("INNER_ELS:" + innerElementDTOs);
 		String methodName = location.declaringType().name() + "." + location.method().name() + "()";
 		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,
 				DebugUtils.compileStackInfo(thread), innerElementDTOs);
