@@ -41,6 +41,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ArrayReference;
+import com.sun.jdi.ArrayType;
 import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -72,36 +73,33 @@ public class TargetApplicationRepresentation {
 	private final DebugConfiguration debugConfiguration;
 	private static TargetApplicationRepresentation INSTANCE;
 
-	private TargetApplicationRepresentation(
-            IBreakpointManager iBreakpointManager,
-            BreakpointSubscriberRegistrar breakpointSubscriberRegistrar,
-            DebugConfiguration debugConfiguration) {
+	private TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
+			BreakpointSubscriberRegistrar breakpointSubscriberRegistrar, DebugConfiguration debugConfiguration) {
 
-        // Регистрируем синглтон брейкпоинтов
-        breakpointSubscriberRegistrar.register(TargetApplicationBreakpointRepresentation.getInstance());
-        this.debugConfiguration = debugConfiguration;
-    }
+		// Регистрируем синглтон брейкпоинтов
+		breakpointSubscriberRegistrar.register(TargetApplicationBreakpointRepresentation.getInstance());
+		this.debugConfiguration = debugConfiguration;
+	}
 
-    /** Создаём синглтон с параметрами */
-    public static synchronized TargetApplicationRepresentation getInstanceFor(
-            IBreakpointManager iBreakpointManager,
-            BreakpointSubscriberRegistrar breakpointSubscriberRegistrar,
-            DebugConfiguration debugConfiguration) {
+	/** Создаём синглтон с параметрами */
+	public static synchronized TargetApplicationRepresentation getInstanceFor(IBreakpointManager iBreakpointManager,
+			BreakpointSubscriberRegistrar breakpointSubscriberRegistrar, DebugConfiguration debugConfiguration) {
 
-        if (INSTANCE != null) {
-            throw new IllegalStateException("TargetApplicationRepresentation уже создан");
-        }
-        INSTANCE = new TargetApplicationRepresentation(iBreakpointManager, breakpointSubscriberRegistrar, debugConfiguration);
-        return INSTANCE;
-    }
+		if (INSTANCE != null) {
+			throw new IllegalStateException("TargetApplicationRepresentation уже создан");
+		}
+		INSTANCE = new TargetApplicationRepresentation(iBreakpointManager, breakpointSubscriberRegistrar,
+				debugConfiguration);
+		return INSTANCE;
+	}
 
-    /** Получаем уже созданный синглтон */
-    public static TargetApplicationRepresentation getInstance() {
-        if (INSTANCE == null) {
-            throw new IllegalStateException("TargetApplicationRepresentation ещё не создан");
-        }
-        return INSTANCE;
-    }
+	/** Получаем уже созданный синглтон */
+	public static TargetApplicationRepresentation getInstance() {
+		if (INSTANCE == null) {
+			throw new IllegalStateException("TargetApplicationRepresentation ещё не создан");
+		}
+		return INSTANCE;
+	}
 
 	public Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> getTargetApplicationSnapshot() {
 		return targetApplicationSnapshot;
@@ -169,7 +167,8 @@ public class TargetApplicationRepresentation {
 	}
 
 	private boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
-		if (Objects.isNull(breakpointEvent)) return false;
+		if (Objects.isNull(breakpointEvent))
+			return false;
 		StackFrame frame;
 		try {
 			frame = breakpointEvent.thread().frame(0);
@@ -209,20 +208,18 @@ public class TargetApplicationRepresentation {
 			valueText = "";
 			ObjectReference objRef = val instanceof ObjectReference ? (ObjectReference) val : null;
 			if (Objects.isNull(objRef)) {
-			valueText =	DebugUtils.getLocalVariableValueAsString(frame, local);
+				valueText = DebugUtils.getLocalVariableValueAsString(frame, local);
 			} else {
 				int q = getCollectionSize(objRef, breakpointEvent);
-				 valueText =  q == -1
-					? DebugUtils.getLocalVariableValueAsString(frame, local)
-					:"size:" + q + "; " + DebugUtils.getLocalVariableValueAsString(frame, local);
-				 System.out.println("INNER COLLECTIONS: " + q);
+				valueText = q == -1 ? DebugUtils.getLocalVariableValueAsString(frame, local)
+						: "size:" + q + "; " + DebugUtils.getLocalVariableValueAsString(frame, local);
+				System.out.println("INNER COLLECTIONS: " + q);
 			}
-			
+
 			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
-					.objectReference(objRef).elementName(local.name()).additionalInfo(local.typeName()) 
-					.elementType(UniversalElementType.LOCAL_VARIABLE).currentRole(CurrentRole.INNER)
-					.value(valueText).isStatic(false)
-					.valueCategory(DebugUtils.determineValueCategory(frame.getValue(local)))
+					.objectReference(objRef).elementName(local.name()).additionalInfo(local.typeName())
+					.elementType(UniversalElementType.LOCAL_VARIABLE).currentRole(CurrentRole.INNER).value(valueText)
+					.isStatic(false).valueCategory(DebugUtils.determineValueCategory(frame.getValue(local)))
 					.typeOrReturnType(local.typeName()).uniqueId(UUID.randomUUID())
 					.parentUniqueId(methodRepresentation.getTag().getUniqueId()).build();
 
@@ -237,6 +234,13 @@ public class TargetApplicationRepresentation {
 		if (instance == null)
 			return -1;
 
+		System.out.println(">>>>>>>>>>>>" + instance.referenceType().toString());
+		if(instance.referenceType().toString().contains("java.util.Map")) {
+		Map<Object, Object> map = (Map<Object, Object>) instance;
+			
+			System.out.println(" =========================== MAP: " + map.size());
+		}
+		
 		// ===== Если массив =====
 		if (instance instanceof ArrayReference arrayRef) {
 			return arrayRef.length();
@@ -246,8 +250,7 @@ public class TargetApplicationRepresentation {
 		if (!(refType instanceof ClassType classType))
 			return -1;
 
-		// ===== Попытка получить через поле "size" =====
-		// Для стандартных mutable коллекций
+		// ===== Попытка через поле "size" =====
 		Field sizeField = refType.fieldByName("size");
 		if (sizeField != null) {
 			Value sizeValue = instance.getValue(sizeField);
@@ -257,23 +260,20 @@ public class TargetApplicationRepresentation {
 		}
 
 		// ===== Попытка через метод size() =====
-		Method sizeMethod = classType.concreteMethodByName("size", "()I");
-		if (sizeMethod != null && breakpointEvent.thread() != null) {
-			try {
-				// Оборачиваем вызов для защиты от ошибок JDI
+		try {
+			Method sizeMethod = classType.concreteMethodByName("size", "()I");
+			if (sizeMethod != null && breakpointEvent.thread() != null) {
 				Value result = instance.invokeMethod(breakpointEvent.thread(), sizeMethod, Collections.emptyList(),
 						ObjectReference.INVOKE_SINGLE_THREADED);
 				if (result instanceof IntegerValue intVal) {
 					return intVal.value();
 				}
-			} catch (Exception e) {
-
 			}
+		} catch (Exception ignored) {
 		}
 
-		// ===== Проверка известных immutable коллекций (Java 9+) через внутренние поля
-		// =====
-		List<String> knownFields = Arrays.asList("a", "table", "elements"); // возможные внутренние поля массивов
+		// ===== Проверка известных immutable коллекций (Java 9+) =====
+		List<String> knownFields = Arrays.asList("a", "table", "elements");
 		for (String fieldName : knownFields) {
 			Field field = refType.fieldByName(fieldName);
 			if (field != null) {
@@ -281,11 +281,37 @@ public class TargetApplicationRepresentation {
 				if (value instanceof ArrayReference innerArray) {
 					return innerArray.length();
 				}
+				// для Map, которые используют массив Entry[]
+				if (value instanceof ObjectReference innerObj) {
+					ReferenceType innerType = innerObj.referenceType();
+					if (innerType instanceof ArrayType arrType) {
+						return ((ArrayReference) innerObj).length();
+					}
+				}
+			}
+
+			
+		}
+		
+			
+		
+
+		// ===== Как крайняя мера: если это Map, и есть field "size" в HashMap /
+		// LinkedHashMap =====
+		if (instance instanceof ObjectReference objRef) {
+			try {
+				Method sizeMethodFallback = classType.concreteMethodByName("size", "()I");
+				if (sizeMethodFallback != null && breakpointEvent.thread() != null) {
+					Value result = objRef.invokeMethod(breakpointEvent.thread(), sizeMethodFallback,
+							Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+					if (result instanceof IntegerValue intVal)
+						return intVal.value();
+				}
+			} catch (Exception ignored) {
 			}
 		}
 
-		// Если не удалось определить размер
-		return -1;
+		return -1; // не удалось определить размер
 	}
 
 	private void populateInnerElements(UniversalElementRepresentation parentElement, ReferenceType refType,
@@ -352,7 +378,12 @@ public class TargetApplicationRepresentation {
 							.value(valueText).isStatic(isStatic).valueCategory(category)
 							.typeOrReturnType(field.typeName()).uniqueId(UUID.randomUUID())
 							.parentUniqueId(parentElement.getTag().getUniqueId()).build();
-
+if (fieldElement.getElementName().equals("fieldPersonsMap")) {
+	Value value = instance.getValue(field);
+	ObjectReference objRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
+	int q = getCollectionSize(objRef, breakpointEvent);
+	System.out.println(fieldElement);
+}
 					targetApplicationSnapshot.put(fieldElement.getTag(), fieldElement);
 
 					// ---------------- Рекурсивно собираем объекты ----------------
@@ -574,16 +605,18 @@ public class TargetApplicationRepresentation {
 			return;
 		}
 		try {
-			TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager().deleteAllBreakpoints();
+			TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager()
+					.deleteAllBreakpoints();
 
-			TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().allThreads().forEach(threadReference -> {
-				try {
-					if (threadReference.suspendCount() > 0) {
-						threadReference.resume();
-					}
-				} catch (Exception ignored) {
-				}
-			});
+			TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().allThreads()
+					.forEach(threadReference -> {
+						try {
+							if (threadReference.suspendCount() > 0) {
+								threadReference.resume();
+							}
+						} catch (Exception ignored) {
+						}
+					});
 			TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().dispose();
 
 		} catch (VMDisconnectedException ignored) {
@@ -613,8 +646,9 @@ public class TargetApplicationRepresentation {
 			if (Objects.isNull(constructor)) {
 				throw new RuntimeException("No default constructor for " + classType.name());
 			}
-			return classType.newInstance(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().allThreads().get(0), constructor, List.of(),
-					ClassType.INVOKE_SINGLE_THREADED);
+			return classType.newInstance(
+					TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().allThreads().get(0),
+					constructor, List.of(), ClassType.INVOKE_SINGLE_THREADED);
 		} catch (Exception exception) {
 			throw new RuntimeException("Cannot create instance of " + classType.name(), exception);
 		}
