@@ -16,6 +16,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ArrayReference;
+import com.sun.jdi.BooleanValue;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
@@ -770,6 +771,108 @@ public class DebugUtils {
 		return -1;
 	}
 
-	
+	public static void determinCollectionType(ObjectReference instance, BreakpointEvent breakpointEvent) {
+		if (Objects.isNull(instance) || Objects.isNull(breakpointEvent))
+			return;
+		System.out.println(">>>>>>>>> " + instance.type());
+		// Проверяем, что это класс (а не интерфейс)
+		ReferenceType refType = instance.referenceType();
+		if (refType instanceof ClassType classType) {
+			// Берём все интерфейсы, которые реализует этот класс (включая унаследованные)
+			List<InterfaceType> interfaces = classType.allInterfaces();
+			for (InterfaceType iface : interfaces) {
+				if (iface.name().equals("java.util.Map")) {
+					ThreadReference thread = breakpointEvent.thread();
+					ClassType mapType = (ClassType) instance.referenceType();
+
+					// entrySet()
+					Method entrySetMethod = mapType.concreteMethodByName("entrySet", "()Ljava/util/Set;");
+					ObjectReference entrySet;
+					try {
+						entrySet = (ObjectReference) instance.invokeMethod(breakpointEvent.thread(), entrySetMethod,
+								Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+						ClassType setType = (ClassType) entrySet.referenceType();
+						Method iteratorMethod = setType.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
+						ObjectReference iterator = (ObjectReference) entrySet.invokeMethod(thread, iteratorMethod,
+								Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+
+						// next()
+						ClassType iteratorType = (ClassType) iterator.referenceType();
+						Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+						ObjectReference entry = (ObjectReference) iterator.invokeMethod(thread, nextMethod,
+								Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+
+						// getKey / getValue
+						ClassType entryType = (ClassType) entry.referenceType();
+
+						Method getKeyMethod = entryType.concreteMethodByName("getKey", "()Ljava/lang/Object;");
+						Method getValueMethod = entryType.concreteMethodByName("getValue", "()Ljava/lang/Object;");
+
+						Value key = entry.invokeMethod(thread, getKeyMethod, Collections.emptyList(),
+								ObjectReference.INVOKE_SINGLE_THREADED);
+
+						Value value = entry.invokeMethod(thread, getValueMethod, Collections.emptyList(),
+								ObjectReference.INVOKE_SINGLE_THREADED);
+
+						System.out.println("key = " + key);
+						System.out.println("value = " + value);
+
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+				} else if (iface.name().equals("java.lang.Iterable")) {
+					ThreadReference thread = breakpointEvent.thread();
+					ClassType mapType = (ClassType) instance.referenceType();
+					Method iteratorMethod = mapType.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
+					try {
+						ObjectReference iterator = (ObjectReference) instance.invokeMethod(breakpointEvent.thread(),
+								iteratorMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+						ClassType iteratorType = (ClassType) iterator.referenceType();
+						Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+						Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
+						while (true) {
+
+						    Value resultHasNext = iterator.invokeMethod(
+						            breakpointEvent.thread(),
+						            hasNextMethod,
+						            Collections.emptyList(),
+						            ObjectReference.INVOKE_SINGLE_THREADED
+						    );
+
+						    if (!(resultHasNext instanceof BooleanValue bool))
+						        break;
+
+						    if (!bool.value())
+						        break;
+
+						    System.out.print("есть следующий элемент: ");
+
+						    Value element = iterator.invokeMethod(
+						            breakpointEvent.thread(),
+						            nextMethod,
+						            Collections.emptyList(),
+						            ObjectReference.INVOKE_SINGLE_THREADED
+						    );
+
+						    System.out.println(element);
+						    
+						    if (element instanceof ObjectReference obj) {
+						        System.out.println(obj.referenceType().name());
+						    }
+						}
+						
+					
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+				}
+
+			}
+		}
+	}
 
 }
