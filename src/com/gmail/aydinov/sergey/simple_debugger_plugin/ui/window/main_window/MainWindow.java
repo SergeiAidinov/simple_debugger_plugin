@@ -252,4 +252,10 @@ public class MainWindow implements ManageableMainWindow {
 		});
 	}
 
+	@Override
+	public void close() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

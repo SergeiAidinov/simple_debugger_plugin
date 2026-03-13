@@ -29,10 +29,10 @@ public class DebuggerContext {
         DEBUG_SESSION_PREPARING,
         DEBUG_SESSION_PREPARED,
         DEBUG_SESSION_RUNNING,
-        INSPECTION_SEANCE_STARTING,
-        INSPECTION_SEANCE_RUNNING,
-        INSPECTION_SEANCE_CLOSING,
-        INSPECTION_SEANCE_STOPPED,
+        //COLLECTION_INSPECTION_SEANCE_STARTING,
+        COLLECTION_INSPECTION_SEANCE_RUNNING,
+       // INSPECTION_SEANCE_CLOSING,
+       // INSPECTION_SEANCE_STOPPED,
         DEBUG_SESSION_FINISHED,
         DEBUGGER_STOPPED
     }
@@ -43,10 +43,10 @@ public class DebuggerContext {
     private static final Set<SimpleDebuggerStatus> DEBUGGER_RUNNING_STATES = EnumSet.of(
     		SimpleDebuggerStatus.DEBUGGER_STARTED,
     		SimpleDebuggerStatus.DEBUG_SESSION_RUNNING,
-    		SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING,
-    		SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING,
-    		SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING,
-    		SimpleDebuggerStatus.INSPECTION_SEANCE_STOPPED,
+    		//SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_STARTING,
+    		SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_RUNNING,
+    		//SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING,
+    		//SimpleDebuggerStatus.INSPECTION_SEANCE_STOPPED,
     		SimpleDebuggerStatus.DEBUG_SESSION_FINISHED
     );
     private static final Set<SimpleDebuggerStatus> TERMINAL_STATES = EnumSet.of(
@@ -55,9 +55,9 @@ public class DebuggerContext {
     );
     
     private static final Set<SimpleDebuggerStatus> INSPECTION_SEANCE_RUNNING_STATES = EnumSet.of(
-    		SimpleDebuggerStatus.INSPECTION_SEANCE_STARTING,
-    		SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING,
-    		SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING
+    		//SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_STARTING,
+    		SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_RUNNING
+    		//SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING
     );
 
     private DebuggerContext() {

@@ -27,8 +27,8 @@ public class CollectionInspectorTab {
     private final Composite root;
     private final TableViewer viewer;
 
-    private final SimpleDebuggerEventCollector uiEventCollector =
-            SimpleDebuggerEventCollector.instance();
+//    private final SimpleDebuggerEventCollector uiEventCollector =
+//            SimpleDebuggerEventCollector.instance();
 
     private CollectionEntryDTO lastInspected;
 

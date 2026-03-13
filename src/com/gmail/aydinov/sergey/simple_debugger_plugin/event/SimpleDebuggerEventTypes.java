@@ -11,7 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvoked
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressedResumeButtonHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedAdditionalInfoAboutCollectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserStartedInspectionSeanceForCollectionHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.InspectionSeanceForCollectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
@@ -82,7 +82,9 @@ public final class SimpleDebuggerEventTypes {
 		USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class, null),
 
 		USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION(InnerElementRepresentationDTO.class,
-				new UserStartedInspectionSeanceForCollectionHandler()),
+				new InspectionSeanceForCollectionHandler()),
+		
+		USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION(Boolean.class, new IgnoreEverntHandler()),
 
 		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, new IgnoreEverntHandler())
 
@@ -110,7 +112,8 @@ public final class SimpleDebuggerEventTypes {
 
 	private static final EnumSet<SimpleDebuggerEventType> COLLECTION_INSPECTION_WINDOW_EVENTS = EnumSet.of(
 			SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE,
-			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION
+			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION,
+			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION
 
 	);
 
@@ -131,7 +134,7 @@ public final class SimpleDebuggerEventTypes {
 //		return !isInspectionWindowEvent(type) && !is;
 //	}
 
-	public static boolean isCollectionWindowEvent(SimpleDebuggerEventType type) {
+	public static boolean isCollectionInspectionWindowEvent(SimpleDebuggerEventType type) {
 		return COLLECTION_INSPECTION_WINDOW_EVENTS.contains(type);
 	}
 }

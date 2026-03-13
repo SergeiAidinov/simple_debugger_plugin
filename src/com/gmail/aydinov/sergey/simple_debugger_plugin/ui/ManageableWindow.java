@@ -9,5 +9,7 @@ public interface ManageableWindow {
 	void handleDebugEvent(AbstractDebugEvent event);
 
 	void open();
+	
+	void close();
 
 }
