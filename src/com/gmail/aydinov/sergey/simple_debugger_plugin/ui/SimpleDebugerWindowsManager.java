@@ -109,27 +109,19 @@ public class SimpleDebugerWindowsManager implements Runnable, MainWinodwManager 
 		while (!DebuggerContext.context().isInTerminalState()) {
 			try {
 				AbstractDebugEvent event = SimpleDebuggerEventCollector.instance().takeDebugEvent();
+				if (Objects.isNull(event)) continue;
 				SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
-
-				if (SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType()) && Objects.equals(event.getType(),
-						SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW)) {
-					getOrCreateInspectWindow();
-					continue;
-				}
-
-				if (Objects.nonNull(mainWindow) && mainWindow.isOpen()
-						&& SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType())
-						&& !Objects.equals(event.getType(),
-								SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW)) {
-					mainWindow.handleDebugEvent(event);
-					continue;
-				}
+				
+				if(SimpleDebuggerEventTypes.isCollectionWindowEvent(event.getType())) {
+					collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindow();
+					collectionInspectorWindow.handleDebugEvent(event);
+				} else mainWindow.handleDebugEvent(event);
 
 				// handling inspection windows events
-				if (SimpleDebuggerEventTypes.isInspectionWindowEvent(event.getType())
-						&& (Objects.nonNull(collectionInspectorWindow) && collectionInspectorWindow.isOpen())) {
-					collectionInspectorWindow.handleDebugEvent(event);
-				}
+//				if (SimpleDebuggerEventTypes.isInspectionWindowEvent(event.getType())
+//						&& (Objects.nonNull(collectionInspectorWindow) && collectionInspectorWindow.isOpen())) {
+//					collectionInspectorWindow.handleDebugEvent(event);
+//				}
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				break; // exit loop if interrupted

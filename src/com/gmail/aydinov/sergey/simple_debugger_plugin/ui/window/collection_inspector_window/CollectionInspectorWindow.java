@@ -43,7 +43,7 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 	private final Label sizeLabel;
 
 	private int currentPage = 1;
-	private int totalPages = 1;
+	private int totalPages = 1; 
 	private List<CollectionEntryDTO> allElements;
 
 	private CollectionInspectorWindow() {
@@ -115,13 +115,13 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 		inspectorTab.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		// Инициализация страниц
-		totalPages = (int) Math.ceil((double) allElements.size() / DebugUtils.PAGE_SIZE);
-		updatePage();
+	//	totalPages = (int) Math.ceil((double) allElements.size() / DebugUtils.PAGE_SIZE);
+		//updatePage();
 
 		shell.open();
 	}
 
-	protected static CollectionInspectorWindow getOrCreateInspectWindow() {
+	protected static CollectionInspectorWindow getOrCreateCollectionInspectWindow() {
 		Display.getDefault().syncExec(() -> {
 			if (Objects.isNull(INSTANCE))
 				INSTANCE = new CollectionInspectorWindow();
@@ -189,7 +189,9 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 
 	@Override
 	public void open() {
-		shell.open();
+		if (shell != null && !shell.isDisposed()) {
+		    shell.open();
+		}
 	}
 
 	public boolean isOpen() {
@@ -203,7 +205,7 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 
 	@Override
 	public void handleDebugEvent(AbstractDebugEvent event) {
-		// TODO Auto-generated method stub
+		getOrCreateCollectionInspectWindow();
 
 	}
 
