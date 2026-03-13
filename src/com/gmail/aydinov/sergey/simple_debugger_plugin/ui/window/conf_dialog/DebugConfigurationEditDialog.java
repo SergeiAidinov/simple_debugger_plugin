@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.conf_dialog;
 
 import java.nio.file.Path;
 import java.util.stream.Collectors;

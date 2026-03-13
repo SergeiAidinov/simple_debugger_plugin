@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.tab;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,10 +40,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceIn
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.CollectionInspectorWindow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.manager.TooltipManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.CollectionInspectorWindow;
 
 /**
  * Вкладка отображения полей, методов и переменных на breakpoint с поддержкой
@@ -175,7 +175,7 @@ public class ClassMembersAtBreakpoint {
 					}
 				} else if (index == 2 && img == getIcon(dto)) {
 					item.setData("tooltip_col_" + index,
-							DebugWindowsManager.instance().icons.get("inspectIcon").getSecond());
+							SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getSecond());
 				}
 				return img;
 			}
@@ -204,7 +204,7 @@ public class ClassMembersAtBreakpoint {
 		case LOCAL_VARIABLE -> "variableIcon";
 		default -> null;
 		};
-		return key != null ? DebugWindowsManager.instance().icons.get(key).getFirst() : null;
+		return key != null ? SimpleDebugerWindowsManager.instance().icons.get(key).getFirst() : null;
 	}
 
 	private PairDTO<Image, String> getTypeTooltip(InnerElementRepresentationDTO dto) {
@@ -216,7 +216,7 @@ public class ClassMembersAtBreakpoint {
 		case LOCAL_VARIABLE -> "variableIcon";
 		default -> null;
 		};
-		return key != null ? DebugWindowsManager.instance().icons.get(key) : null;
+		return key != null ? SimpleDebugerWindowsManager.instance().icons.get(key) : null;
 	}
 
 	// Пример исправления опечатки в getValueCategoty()
@@ -228,13 +228,13 @@ public class ClassMembersAtBreakpoint {
 			return null;
 		// коллекции и мапы
 		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
-			return DebugWindowsManager.instance().icons.get("lens").getFirst();
+			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
 		}
 		// Только поля пользовательского типа, которые реально инициализированы
 		if ((dto.getElementType() == UniversalElementType.NON_STATIC_FIELD
 				|| dto.getElementType() == UniversalElementType.STATIC_FIELD) && category == ValueCategory.USER_OBJECT
 				&& dto.getValue() != null && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
-			return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
+			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
 		}
 		return null;
 	}
@@ -369,17 +369,17 @@ public class ClassMembersAtBreakpoint {
 	        if (clickedImage == null)
 	            return;
 
-	        if (clickedImage == DebugWindowsManager.instance().icons.get("lens").getFirst()) {
+	        if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
 	            // Клик по коллекции — создаем окно и генерируем событие
 	            Display display = table.getDisplay();
 	            display.asyncExec(() -> {
-	                new CollectionInspectorWindow(display, Collections.emptyList()).open();
+	            //    new CollectionInspectorWindow().open();
 	            });
 
 	            uiEventCollector.collectUiEvent(
 	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
 	            );
-	        } else if (clickedImage == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+	        } else if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
 	            // Клик по обычной inspectIcon — старая логика
 	            uiEventCollector.collectUiEvent(
 	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto)
@@ -397,8 +397,8 @@ public class ClassMembersAtBreakpoint {
 	            int colIndex = getColumnIndexAtPoint(table, event.x);
 	            if (colIndex == 2) {
 	                Image icon = getIcon(dataDto);
-	                if (icon == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst() ||
-	                    icon == DebugWindowsManager.instance().icons.get("lens").getFirst()) {
+	                if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst() ||
+	                    icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
 	                    dto = dataDto;
 	                }
 	            }
@@ -408,11 +408,11 @@ public class ClassMembersAtBreakpoint {
 	            lastInspectedElement = dto;
 	            tooltipManager.closePopup();
 	            if (dto != null) {
-	                if (getIcon(dto) == DebugWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+	                if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
 	                    uiEventCollector.collectUiEvent(
 	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto)
 	                    );
-	                } else if (getIcon(dto) == DebugWindowsManager.instance().icons.get("lens").getFirst()) {
+	                } else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
 	                    uiEventCollector.collectUiEvent(
 	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto)
 	                    );

@@ -17,18 +17,22 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.CollectionInspectorWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.ManageableCollectionInspectorWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.MainWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.ManageableMainWindow;
 
-public class DebugWindowsManager implements Runnable {
+public class SimpleDebugerWindowsManager implements Runnable, MainWinodwManager {
 
-	private static DebugWindowsManager INSTANCE;
+	private static SimpleDebugerWindowsManager INSTANCE;
 
-	private DebugWindow debugWindow;
-	private InspectWindow inspectWindow;
+	private ManageableMainWindow mainWindow;
+	private ManageableCollectionInspectorWindow collectionInspectorWindow;
 
 	/** Минимальный ресурсный источник: карта с изображениями */
 	public final Map<String, PairDTO<Image, String>> icons;
 
-	private DebugWindowsManager() {
+	private SimpleDebugerWindowsManager() {
 		// Map<String, Image> iconsTemp = new HashMap<>();
 		Map<String, PairDTO<Image, String>> iconsTemp = new HashMap<>();
 		List<TripletDTO<String, String, String>> namesAndPaths = List.of(
@@ -46,9 +50,9 @@ public class DebugWindowsManager implements Runnable {
 		icons = Map.copyOf(iconsTemp);
 	}
 
-	public static synchronized DebugWindowsManager instance() {
+	public static synchronized SimpleDebugerWindowsManager instance() {
 		if (Objects.isNull(INSTANCE)) {
-			INSTANCE = new DebugWindowsManager();
+			INSTANCE = new SimpleDebugerWindowsManager();
 			Thread debugWindowsmanagerThread = new Thread(INSTANCE);
 			debugWindowsmanagerThread.setDaemon(true);
 			debugWindowsmanagerThread.start();
@@ -58,41 +62,28 @@ public class DebugWindowsManager implements Runnable {
 
 	@Override
 	public void run() {
-		windowsManaging();
+		dispatchEvent();
 	}
 
 	/**
 	 * Возвращает или создаёт главное окно
 	 */
-	public DebugWindow getOrCreateDebugWindow() {
+	@Override
+	public synchronized ManageableMainWindow getOrCreateMainWindow() {
 		if (DebuggerContext.context().isInTerminalState())
 			return null;
-
-		if (Objects.isNull(debugWindow) || !debugWindow.isOpen()) {
-			Display.getDefault().syncExec(() -> {
-				debugWindow = new DebugWindow(); // теперь создается в UI-потоке
-				debugWindow.open();
-			});
-		}
-		return debugWindow;
+		this.mainWindow = ManageableMainWindow.getOrCreateMainWindow();
+		return this.mainWindow;
 	}
 
 	/**
 	 * Открывает или обновляет InspectWindow
 	 */
-	private InspectWindow openNewInspectWindow() {
+	public synchronized ManageableCollectionInspectorWindow getOrCreateInspectWindow() {
 		if (!DebuggerContext.context().isRunning())
 			return null;
-		if (Objects.nonNull(inspectWindow) && inspectWindow.isOpen()) {
-			inspectWindow.close();
-		}
-		Display.getDefault().syncExec(() -> {
-			inspectWindow = new InspectWindow();
-			inspectWindow.open();
-			DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
-
-		});
-		return inspectWindow;
+		this.collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindow();
+		return this.collectionInspectorWindow;
 	}
 
 	/**
@@ -117,7 +108,7 @@ public class DebugWindowsManager implements Runnable {
 	 * blocks when no events are available and will only stop if the thread is
 	 * interrupted.
 	 */
-	private void windowsManaging() {
+	private void dispatchEvent() {
 		while (!DebuggerContext.context().isInTerminalState()) {
 			try {
 				AbstractDebugEvent event = SimpleDebuggerEventCollector.instance().takeDebugEvent();
@@ -125,22 +116,22 @@ public class DebugWindowsManager implements Runnable {
 
 				if (SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType()) && Objects.equals(event.getType(),
 						SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW)) {
-					openNewInspectWindow();
+					getOrCreateInspectWindow();
 					continue;
 				}
 
-				if (Objects.nonNull(debugWindow) && debugWindow.isOpen()
+				if (Objects.nonNull(mainWindow) && mainWindow.isOpen()
 						&& SimpleDebuggerEventTypes.isDebugWindowEvent(event.getType())
 						&& !Objects.equals(event.getType(),
 								SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_INSPECTION_WINDOW)) {
-					debugWindow.handleDebugEvent(event);
+					mainWindow.handleDebugEvent(event);
 					continue;
 				}
 
 				// handling inspection windows events
 				if (SimpleDebuggerEventTypes.isInspectionWindowEvent(event.getType())
-						&& (Objects.nonNull(inspectWindow) && inspectWindow.isOpen())) {
-					inspectWindow.handleDebugEvent(event);
+						&& (Objects.nonNull(collectionInspectorWindow) && collectionInspectorWindow.isOpen())) {
+					collectionInspectorWindow.handleDebugEvent(event);
 				}
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();

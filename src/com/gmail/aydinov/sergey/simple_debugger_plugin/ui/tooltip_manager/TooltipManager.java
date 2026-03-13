@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.manager;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager;
 
 import java.util.ArrayList;
 import java.util.Arrays;

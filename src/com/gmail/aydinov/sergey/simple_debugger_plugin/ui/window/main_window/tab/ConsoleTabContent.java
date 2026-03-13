@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.tab;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
