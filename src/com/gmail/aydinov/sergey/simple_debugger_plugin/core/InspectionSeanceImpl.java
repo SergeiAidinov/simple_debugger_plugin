@@ -56,7 +56,7 @@ public class InspectionSeanceImpl implements InspectionSeance {
 				e.printStackTrace();
 			}
 			if (Objects.isNull(abstractUIEvent)) continue;
-			if (SimpleDebuggerEventTypes.isDebugWindowEvent(abstractUIEvent.getType())) ignoreUiEvent(abstractUIEvent); 
+		//	if (SimpleDebuggerEventTypes.isMainWindowEvent(abstractUIEvent.getType())) ignoreUiEvent(abstractUIEvent); 
 			if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING)) break;
 			
 		}
