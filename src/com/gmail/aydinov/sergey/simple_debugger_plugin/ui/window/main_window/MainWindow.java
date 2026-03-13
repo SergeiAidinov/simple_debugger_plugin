@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window;
 
 import java.util.Objects;
 
@@ -15,7 +15,6 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceElementInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -24,9 +23,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventC
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleTabContent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ClassMembersAtBreakpoint;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.tab.ClassMembersAtBreakpoint;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.tab.ConsoleTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.tab.StackTabContent;
 
 /**
  * Main debugger window displaying combined Variables + Fields tab, stack trace,
@@ -36,7 +36,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
-public class DebugWindow {
+public class MainWindow implements ManageableMainWindow {
+
+	private static ManageableMainWindow INSTANCE = null;
 
 	private Shell shell;
 	private CTabFolder tabFolder;
@@ -55,7 +57,7 @@ public class DebugWindow {
 	/**
 	 * Constructs and initializes the debugger window.
 	 */
-	protected DebugWindow() {
+	private MainWindow() {
 		Display display = Display.getDefault();
 		shell = new Shell(display);
 		shell.setText("Simple Debugger");
@@ -118,6 +120,15 @@ public class DebugWindow {
 
 	}
 
+	protected static ManageableMainWindow getOrCreateMainWindow() {
+		Display.getDefault().syncExec(() -> {
+			if (Objects.isNull(INSTANCE))
+				INSTANCE = new MainWindow();
+			INSTANCE.open();
+		});
+		return INSTANCE;
+	}
+
 	// ----------------- Event hooks -----------------
 	private void hookCross() {
 		shell.addListener(SWT.Close, event -> {
@@ -140,7 +151,8 @@ public class DebugWindow {
 	}
 
 	private void hookResumeButton() {
-		resumeButton.addListener(SWT.Selection, e -> uiEventCollector.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_PRESSED_RESUME_BUTTON, null)));
+		resumeButton.addListener(SWT.Selection, e -> uiEventCollector
+				.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_PRESSED_RESUME_BUTTON, null)));
 	}
 
 	protected Shell getShell() {
@@ -150,32 +162,40 @@ public class DebugWindow {
 	/**
 	 * Opens the debugger window and sets the window icon.
 	 */
-	protected void open() {
-		shell.setImage(DebugWindowsManager.instance().icons.get("debugger").getFirst()); // Set icon for the window
+	@Override
+	public void open() {
+		shell.setImage(SimpleDebugerWindowsManager.instance().icons.get("debugger").getFirst()); // Set icon for the
 		shell.open();
 	}
 
-	protected boolean isOpen() {
+	@Override
+	public boolean isOpen() {
 		return Objects.nonNull(shell) && !shell.isDisposed();
 	}
 
 	// ----------------- Debug events -----------------
+	@Override
 	@SuppressWarnings("unchecked")
-	protected void handleDebugEvent(AbstractDebugEvent event) {
+	public void handleDebugEvent(AbstractDebugEvent event) {
 		Display.getDefault().asyncExec(() -> {
 			if (shell.isDisposed())
 				return;
-			if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT)) {
+			if (Objects.equals(event.getType(),
+					SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT)) {
 				DebugEvent<DebugWindowDataDTO> simpleDebugEvent = (DebugEvent<DebugWindowDataDTO>) event;
 				refreshDataAtBreakpoint(simpleDebugEvent.getPayload());
-			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.REFRESH_CONSOLE)) {
+			} else if (Objects.equals(event.getType(),
+					SimpleDebuggerEventTypes.SimpleDebuggerEventType.REFRESH_CONSOLE)) {
 				DebugEvent<String> simpleDebugEvent = (DebugEvent<String>) event;
 				consoleTabContent.appendLine(simpleDebugEvent.getPayload());
-			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.METHOD_INVOKE)) {
-			} else if (Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE)) {
+			} else if (Objects.equals(event.getType(),
+					SimpleDebuggerEventTypes.SimpleDebuggerEventType.METHOD_INVOKE)) {
+			} else if (Objects.equals(event.getType(),
+					SimpleDebuggerEventTypes.SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE)) {
 				DebugEvent<Boolean> simpleDebugEvent = (DebugEvent<Boolean>) event;
 				resumeButton.setEnabled(simpleDebugEvent.getPayload());
-			} else if(Objects.equals(event.getType(), SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO)) {
+			} else if (Objects.equals(event.getType(),
+					SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO)) {
 				DebugEvent<UserInstanceInspectionDTO> simpleDebugEvent = (DebugEvent<UserInstanceInspectionDTO>) event;
 				classMembersAtBreakpoint.showFieldInfoPopupFromBackend(simpleDebugEvent.getPayload());
 			}
@@ -202,9 +222,9 @@ public class DebugWindow {
 			return true;
 		if (Objects.isNull(object))
 			return false;
-		if (!(object instanceof DebugWindow))
+		if (!(object instanceof MainWindow))
 			return false;
-		DebugWindow other = (DebugWindow) object;
+		MainWindow other = (MainWindow) object;
 		return Objects.nonNull(shell) && shell.equals(other.shell);
 	}
 
@@ -219,6 +239,7 @@ public class DebugWindow {
 	 * @param title   dialog title
 	 * @param message error message
 	 */
+	@Override
 	public void showError(String title, String message) {
 		if (Objects.isNull(shell) || shell.isDisposed()) {
 			shell = new Shell(Display.getDefault());
@@ -230,4 +251,5 @@ public class DebugWindow {
 			dialog.open();
 		});
 	}
+
 }

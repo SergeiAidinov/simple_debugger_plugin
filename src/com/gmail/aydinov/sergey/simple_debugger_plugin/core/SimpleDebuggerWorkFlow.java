@@ -26,8 +26,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.MainWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.ManageableMainWindow;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.Location;
@@ -148,7 +149,7 @@ public class SimpleDebuggerWorkFlow {
 	private void prepareDebug(EventQueue queue, String mainClassName) {
 		SimpleDebuggerLogger.info("Debug preparation...");
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_PREPARING);
-		DebugWindowsManager.instance().getOrCreateDebugWindow();
+		SimpleDebugerWindowsManager.instance().getOrCreateMainWindow();
 		EventRequestManager eventRequestManager = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine()
 				.eventRequestManager();
 		ClassPrepareRequest classPrepareRequest = eventRequestManager.createClassPrepareRequest();
@@ -278,7 +279,7 @@ public class SimpleDebuggerWorkFlow {
 			} catch (Exception ex) {
 				SimpleDebuggerLogger.error("Cannot launch VM", ex);
 				Display.getDefault().asyncExec(() -> {
-					DebugWindow debugWindow = DebugWindowsManager.instance().getOrCreateDebugWindow();
+					ManageableMainWindow debugWindow = SimpleDebugerWindowsManager.instance().getOrCreateMainWindow();
 					debugWindow.showError("Cannot launch VM", ex.getMessage());
 				});
 

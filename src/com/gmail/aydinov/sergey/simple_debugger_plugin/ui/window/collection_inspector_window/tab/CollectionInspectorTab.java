@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.tab;
 
 import java.util.List;
 import java.util.Objects;
@@ -20,7 +20,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.CollectionEntr
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.DebugWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
 
 public class CollectionInspectorTab {
 
@@ -115,9 +115,9 @@ public class CollectionInspectorTab {
         if (value == null)
             return null;
         if (value instanceof java.util.Collection || value instanceof java.util.Map) {
-            return DebugWindowsManager.instance().icons.get("lens").getFirst();
+            return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
         }
-        return DebugWindowsManager.instance().icons.get("inspectIcon").getFirst();
+        return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
     }
 
     // =========================================================
