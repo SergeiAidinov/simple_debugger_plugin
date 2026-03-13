@@ -190,7 +190,6 @@ public class TooltipManager {
 	}
 
 	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
-		System.out.println("Hello!");
 		Display display = root.getDisplay();
 		display.asyncExec(() -> {
 			if (root.isDisposed())

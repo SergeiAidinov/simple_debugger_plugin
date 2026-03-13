@@ -76,12 +76,12 @@ public class SimpleDebugerWindowsManager implements Runnable, MainWinodwManager 
 	/**
 	 * Открывает или обновляет InspectWindow
 	 */
-	public synchronized ManageableCollectionInspectorWindow getOrCreateInspectWindow() {
-		if (!DebuggerContext.context().isRunning())
-			return null;
-		this.collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindow();
-		return this.collectionInspectorWindow;
-	}
+//	public synchronized ManageableCollectionInspectorWindow getOrCreateInspectWindow() {
+//		if (!DebuggerContext.context().isRunning())
+//			return null;
+//		this.collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindow();
+//		return this.collectionInspectorWindow;
+//	}
 
 	/**
 	 * Загружает изображение один раз и кладёт его в карту
@@ -112,7 +112,7 @@ public class SimpleDebugerWindowsManager implements Runnable, MainWinodwManager 
 				if (Objects.isNull(event)) continue;
 				SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
 				
-				if(SimpleDebuggerEventTypes.isCollectionWindowEvent(event.getType())) {
+				if(SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(event.getType())) {
 					collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindow();
 					collectionInspectorWindow.handleDebugEvent(event);
 				} else mainWindow.handleDebugEvent(event);

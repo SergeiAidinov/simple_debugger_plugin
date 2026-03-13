@@ -17,10 +17,13 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.CollectionEntryDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.tab.CollectionInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
@@ -31,6 +34,7 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 
 	private final Shell shell;
 	private final CollectionInspectorTab inspectorTab;
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
 	private final Button backButton;
 	private final Button forwardButton;
@@ -114,10 +118,10 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 		inspectorTab = new CollectionInspectorTab(shell);
 		inspectorTab.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-		// Инициализация страниц
-	//	totalPages = (int) Math.ceil((double) allElements.size() / DebugUtils.PAGE_SIZE);
-		//updatePage();
-
+		shell.addListener(SWT.Close, e -> {
+		    e.doit = false; // отменить стандартное закрытие
+		    close();        // вызвать свой метод
+		});
 		shell.open();
 	}
 
@@ -126,7 +130,6 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 			if (Objects.isNull(INSTANCE))
 				INSTANCE = new CollectionInspectorWindow();
 			INSTANCE.open();
-			DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
 		});
 		return INSTANCE;
 	}
@@ -164,6 +167,7 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 
 	/** Обновление текущей страницы и информации */
 	private void updatePage() {
+		if (allElements == null || allElements.isEmpty()) return;
 		int start = (currentPage - 1) * DebugUtils.PAGE_SIZE;
 		int end = Math.min(start + DebugUtils.PAGE_SIZE, allElements.size());
 		List<CollectionEntryDTO> pageElements = allElements.subList(start, end);
@@ -190,7 +194,9 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 	@Override
 	public void open() {
 		if (shell != null && !shell.isDisposed()) {
-		    shell.open();
+			Display.getDefault().asyncExec(() -> {
+				 shell.open();
+			});
 		}
 	}
 
@@ -198,15 +204,23 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 		return !shell.isDisposed();
 	}
 
+	@Override
 	public void close() {
 		if (!shell.isDisposed())
-			shell.close();
+			Display.getDefault().asyncExec(() -> {
+				shell.close();
+			});
+		uiEventCollector.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION, null));	
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void handleDebugEvent(AbstractDebugEvent event) {
-		getOrCreateCollectionInspectWindow();
-
+		if (event.getType().equals(SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE)) {
+			DebugEvent<Boolean> debDebugEvent = (DebugEvent<Boolean>) event;
+			if (debDebugEvent.getPayload()) open(); else close();
+			
+		}
 	}
 
 }
