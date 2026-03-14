@@ -119,7 +119,7 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 		inspectorTab.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		shell.addListener(SWT.Close, e -> {
-		    e.doit = false; // отменить стандартное закрытие
+		//    e.doit = false; // отменить стандартное закрытие
 		    close();        // вызвать свой метод
 		});
 		shell.open();
@@ -206,10 +206,11 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 
 	@Override
 	public void close() {
-		if (!shell.isDisposed())
-			Display.getDefault().asyncExec(() -> {
+		if (shell != null && !shell.isDisposed()) {
+		    Display.getDefault().asyncExec(() -> {
 				shell.close();
 			});
+		}
 		uiEventCollector.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION, null));	
 	}
 
