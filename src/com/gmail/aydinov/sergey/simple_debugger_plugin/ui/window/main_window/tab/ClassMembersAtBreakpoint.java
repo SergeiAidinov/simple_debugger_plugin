@@ -380,12 +380,12 @@ public class ClassMembersAtBreakpoint {
 	            uiEventCollector.collectUiEvent(
 	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
 	            );
-	            UniversalInspectorWindow.getInstance().open();
-	        } else if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-	            // Клик по обычной inspectIcon — старая логика
-	            uiEventCollector.collectUiEvent(
-	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto)
-	            );
+	          //  UniversalInspectorWindow.getInstance().open();
+//	        } else if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+//	            // Клик по обычной inspectIcon — старая логика
+//	            uiEventCollector.collectUiEvent(
+//	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto)
+//	            );
 	        }
 	    });
 	}
