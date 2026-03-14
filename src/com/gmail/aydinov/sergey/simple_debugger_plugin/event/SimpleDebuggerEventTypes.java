@@ -11,7 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvoked
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressedResumeButtonHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedAdditionalInfoAboutCollectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.InspectionSeanceForCollectionHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.InspectionSeanceHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
@@ -82,9 +82,9 @@ public final class SimpleDebuggerEventTypes {
 		USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class, null),
 
 		USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION(InnerElementRepresentationDTO.class,
-				new InspectionSeanceForCollectionHandler()),
+				new InspectionSeanceHandler()),
 		
-		USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION(null, null),
+		USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION(null, new IgnoreEverntHandler()),
 
 		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, null)
 
