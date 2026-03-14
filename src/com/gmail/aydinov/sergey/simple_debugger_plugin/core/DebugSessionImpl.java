@@ -123,6 +123,7 @@ public class DebugSessionImpl implements DebugSession {
 			while (DebuggerContext.context().isDebugSessionActive()) {
 				AbstractUIEvent uiEvent = null;;
 				try {
+					if (DebuggerContext.context().isDebugSessionActive())
 					uiEvent = uiEventCollector.takeUiEvent();
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -211,9 +212,9 @@ public class DebugSessionImpl implements DebugSession {
 					.fromUniversalElement(element);
 			innerElementDTOs.add(elementRepresentation);
 		}
-//		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
-//				.forEach(e -> System.out.println("MD:" + e));
-//		System.out.println("INNER_ELS:" + innerElementDTOs);
+		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
+				.forEach(e -> System.out.println("MD:" + e));
+		System.out.println("INNER_ELS:" + innerElementDTOs);
 		String methodName = location.declaringType().name() + "." + location.method().name() + "()";
 		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,
 				DebugUtils.compileStackInfo(thread), innerElementDTOs);
