@@ -84,7 +84,7 @@ public final class SimpleDebuggerEventTypes {
 		USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION(InnerElementRepresentationDTO.class,
 				new InspectionSeanceForCollectionHandler()),
 		
-		USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION(Boolean.class, new IgnoreEverntHandler()),
+		USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION(null, null),
 
 		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, null)
 

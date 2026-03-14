@@ -1,7 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,6 @@ public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 	public final Map<String, PairDTO<Image, String>> icons;
 
 	private SimpleDebugerWindowsManager() {
-		// Map<String, Image> iconsTemp = new HashMap<>();
 		Map<String, PairDTO<Image, String>> iconsTemp = new HashMap<>();
 		List<TripletDTO<String, String, String>> namesAndPaths = List.of(
 				TripletDTO.of("enum", "/icons/enum.png", "enum"),
@@ -65,16 +63,6 @@ public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 	}
 
 	/**
-	 * Открывает или обновляет InspectWindow
-	 */
-//	public synchronized ManageableCollectionInspectorWindow getOrCreateInspectWindow() {
-//		if (!DebuggerContext.context().isRunning())
-//			return null;
-//		this.collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindow();
-//		return this.collectionInspectorWindow;
-//	}
-
-	/**
 	 * Загружает изображение один раз и кладёт его в карту
 	 */
 	public Image loadIcon(String path) {
@@ -104,15 +92,10 @@ public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 				SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
 				
 				if(SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(event.getType())) {
-				//	collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindowFor(dto);
 					collectionInspectorWindow.handleDebugEvent(event);
-				} else mainWindow.handleDebugEvent(event);
-
-				// handling inspection windows events
-//				if (SimpleDebuggerEventTypes.isInspectionWindowEvent(event.getType())
-//						&& (Objects.nonNull(collectionInspectorWindow) && collectionInspectorWindow.isOpen())) {
-//					collectionInspectorWindow.handleDebugEvent(event);
-//				}
+				} else {
+					mainWindow.handleDebugEvent(event);
+				}
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				break; // exit loop if interrupted

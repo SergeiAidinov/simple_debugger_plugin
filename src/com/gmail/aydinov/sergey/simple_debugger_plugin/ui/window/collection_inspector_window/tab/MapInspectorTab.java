@@ -27,9 +27,6 @@ public class MapInspectorTab implements InspectorTab {
     private final Composite root;
     private final TableViewer viewer;
 
-//    private final SimpleDebuggerEventCollector uiEventCollector =
-//            SimpleDebuggerEventCollector.instance();
-
     private CollectionEntryDTO lastInspected;
 
     public MapInspectorTab(Composite parent) {
@@ -119,29 +116,4 @@ public class MapInspectorTab implements InspectorTab {
         }
         return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
     }
-
-    // =========================================================
-    // Click listeners
-    // =========================================================
-
-//    private void setupClickListeners() {
-//        Table table = viewer.getTable();
-//        table.addListener(SWT.MouseDown, event -> {
-//            TableItem item = table.getItem(new Point(event.x, event.y));
-//            if (item == null)
-//                return;
-//            Object data = item.getData();
-//            if (!(data instanceof CollectionEntryDTO dto))
-//                return;
-//            if (!Objects.equals(dto, lastInspected)) {
-//                lastInspected = dto;
-//                uiEventCollector.collectUiEvent(
-//                        new UIEvent<>(
-//                                SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION,
-//                                dto
-//                        )
-//                );
-//            }
-//        });
-//    }
 }
