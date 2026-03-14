@@ -11,6 +11,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
+
 public class UniversalInspectorWindow {
 
     private static UniversalInspectorWindow INSTANCE;
@@ -104,5 +106,10 @@ public class UniversalInspectorWindow {
         }
         INSTANCE = null;
     }
+
+	public void handleDebugEvent(AbstractDebugEvent event) {
+		// TODO Auto-generated method stub
+		
+	}
 
 }

@@ -45,7 +45,7 @@ public class InspectionSeanceForCollectionHandler implements UIEventHandler {
 					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 //			simpleDebugEventCollector.collectDebugEvent(
 //					new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE, false));
-			SimpleDebugerWindowsManager.instance().getManageableCollectionInspectorWindow().close();
+			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().close();
 			
 		}
 
