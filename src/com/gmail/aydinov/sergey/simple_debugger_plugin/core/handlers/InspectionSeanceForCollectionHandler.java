@@ -11,6 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.Abstrac
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.event.BreakpointEvent;
 
@@ -22,6 +23,8 @@ public class InspectionSeanceForCollectionHandler implements UIEventHandler {
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
 		System.out.println("COLLECT. INSP. STARTED");
+//		simpleDebugEventCollector.collectDebugEvent(
+//				new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE, true));
 		simpleDebugEventCollector
 				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_RUNNING);
@@ -37,8 +40,9 @@ public class InspectionSeanceForCollectionHandler implements UIEventHandler {
 		} finally {
 			simpleDebugEventCollector
 					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-			simpleDebugEventCollector.collectDebugEvent(
-					new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE, false));
+//			simpleDebugEventCollector.collectDebugEvent(
+//					new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE, false));
+			SimpleDebugerWindowsManager.instance().getManageableCollectionInspectorWindow().close();
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 		}
 
@@ -52,8 +56,7 @@ public class InspectionSeanceForCollectionHandler implements UIEventHandler {
 
 		private void collectionInspection() {
 
-			simpleDebugEventCollector.collectDebugEvent(
-					new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE, true));
+			
 			while (true) {
 				AbstractDebugEvent debugEvent = null;
 				try {
@@ -61,7 +64,10 @@ public class InspectionSeanceForCollectionHandler implements UIEventHandler {
 				} catch (InterruptedException e) {}
 				if (!SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(debugEvent.getType()))
 					ignoreEvent(debugEvent);
-				if (debugEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION)) break;
+				if (debugEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION)) {
+					break;
+				}
+					
 				
 
 			}

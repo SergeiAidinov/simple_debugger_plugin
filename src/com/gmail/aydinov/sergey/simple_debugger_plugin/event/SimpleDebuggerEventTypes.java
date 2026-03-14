@@ -86,7 +86,7 @@ public final class SimpleDebuggerEventTypes {
 		
 		USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION(Boolean.class, new IgnoreEverntHandler()),
 
-		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, new IgnoreEverntHandler())
+		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, null)
 
 		;
 

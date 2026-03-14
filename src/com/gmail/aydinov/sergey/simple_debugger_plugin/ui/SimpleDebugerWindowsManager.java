@@ -19,7 +19,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLog
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.ManageableCollectionInspectorWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.ManageableMainWindow;
 
-public class SimpleDebugerWindowsManager implements Runnable, MainWinodwManager {
+public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 
 	private static SimpleDebugerWindowsManager INSTANCE;
 
@@ -60,17 +60,6 @@ public class SimpleDebugerWindowsManager implements Runnable, MainWinodwManager 
 	@Override
 	public void run() {
 		dispatchEvent();
-	}
-
-	/**
-	 * Возвращает или создаёт главное окно
-	 */
-	@Override
-	public synchronized ManageableMainWindow getOrCreateMainWindow() {
-		if (DebuggerContext.context().isInTerminalState())
-			return null;
-		this.mainWindow = ManageableMainWindow.getOrCreateMainWindow();
-		return this.mainWindow;
 	}
 
 	/**
@@ -127,5 +116,24 @@ public class SimpleDebugerWindowsManager implements Runnable, MainWinodwManager 
 				break; // exit loop if interrupted
 			}
 		}
+	}
+	
+	/**
+	 * Возвращает или создаёт главное окно
+	 */
+	@Override
+	public synchronized ManageableMainWindow getOrCreateMainWindow() {
+		if (DebuggerContext.context().isInTerminalState())
+			return null;
+		this.mainWindow = ManageableMainWindow.getOrCreateMainWindow();
+		return this.mainWindow;
+	}
+
+	@Override
+	public ManageableCollectionInspectorWindow getManageableCollectionInspectorWindow() {
+		if (DebuggerContext.context().isInTerminalState())
+			return null;
+		this.collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindow();
+		return this.collectionInspectorWindow;
 	}
 }
