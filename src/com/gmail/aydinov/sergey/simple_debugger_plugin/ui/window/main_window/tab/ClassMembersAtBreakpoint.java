@@ -380,7 +380,7 @@ public class ClassMembersAtBreakpoint {
 //	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
 //	            );
 	            
-	            SimpleDebugerWindowsManager.instance().getManageableCollectionInspectorWindow();
+	            SimpleDebugerWindowsManager.instance().getManageableCollectionInspectorWindowFor(dto);
 	        } else if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
 	            // Клик по обычной inspectIcon — старая логика
 	            uiEventCollector.collectUiEvent(

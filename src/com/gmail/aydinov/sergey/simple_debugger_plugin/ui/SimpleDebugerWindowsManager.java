@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
 
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import org.eclipse.swt.widgets.Display;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
@@ -102,7 +104,7 @@ public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 				SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
 				
 				if(SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(event.getType())) {
-					collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindow();
+				//	collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindowFor(dto);
 					collectionInspectorWindow.handleDebugEvent(event);
 				} else mainWindow.handleDebugEvent(event);
 
@@ -130,10 +132,20 @@ public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 	}
 
 	@Override
-	public ManageableCollectionInspectorWindow getManageableCollectionInspectorWindow() {
+	public ManageableCollectionInspectorWindow getManageableCollectionInspectorWindowFor(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		if (DebuggerContext.context().isInTerminalState())
 			return null;
-		this.collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindow();
+		this.collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindowFor(innerElementRepresentationDTO);
 		return this.collectionInspectorWindow;
+	}
+
+	@Override
+	public ManageableCollectionInspectorWindow getManageableCollectionInspectorWindow() {
+		return collectionInspectorWindow;
+	}
+
+	public void setManageableCollectionInspectorWindow(ManageableCollectionInspectorWindow manageableCollectionInspectorWindow) {
+		collectionInspectorWindow = manageableCollectionInspectorWindow;
+		
 	}
 }
