@@ -292,7 +292,8 @@ public class TargetApplicationRepresentation {
 
 					// ---------------- Рекурсивно собираем объекты ----------------
 					if (instance != null && !isStatic
-							&& category == UniversalElementRepresentation.ValueCategory.USER_OBJECT) {
+						//	&& category == UniversalElementRepresentation.ValueCategory.USER_OBJECT
+							) {
 						Value fieldValue = instance.getValue(field);
 						if (fieldValue instanceof ObjectReference childRef) {
 							populateObjectReference(fieldElement, childRef, breakpointEvent);
@@ -344,8 +345,8 @@ public class TargetApplicationRepresentation {
 			return;
 
 		ReferenceType refType = objRef.referenceType();
-		if (refType.name().startsWith("java.") || refType.name().startsWith("javax."))
-			return;
+//		if (refType.name().startsWith("java.") || refType.name().startsWith("javax."))
+//			return;
 
 		boolean isIterable = false;
 		boolean isMap = false;

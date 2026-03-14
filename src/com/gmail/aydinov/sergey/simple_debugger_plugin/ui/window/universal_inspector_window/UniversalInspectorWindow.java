@@ -113,7 +113,7 @@ public class UniversalInspectorWindow {
 
             // Преобразуем данные для вкладки
             java.util.List<CollectionEntryDTO> entries = anchorWithSibordinants.getSecond().stream()
-                    .map(inner -> new CollectionEntryDTO(inner.getElementName(), "default", 0))
+                    .map(inner -> new CollectionEntryDTO(inner.getElementName(), inner.getValue(), 1))
                     .toList();
 
             // Обновляем содержимое существующей вкладки

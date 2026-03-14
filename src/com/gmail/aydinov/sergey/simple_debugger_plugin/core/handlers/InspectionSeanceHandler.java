@@ -1,8 +1,11 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
@@ -70,6 +73,7 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		public CollectionInspectionSeance(InnerElementRepresentationDTO anchorElement) {
 			this.anchorElement = anchorElement;
 		}
+		List<InnerElementRepresentationDTO> immediateElements = new ArrayList<InnerElementRepresentationDTO>();
 
 		@Override
 		public void run() {
@@ -77,7 +81,12 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		}
 
 		private void collectionInspection() {
-			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().showInspectableElement(PairDTO.of(anchorElement, List.of(anchorElement, anchorElement)));
+		 List<InnerElementRepresentationDTO> qq = TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values()
+			.stream().filter(e -> Objects.equals( e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
+			.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(e))
+			.toList();
+		immediateElements.addAll(qq);
+			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().showInspectableElement(PairDTO.of(anchorElement, immediateElements));
 			
 			while (true) {
 				AbstractUIEvent uiEvent = null;
