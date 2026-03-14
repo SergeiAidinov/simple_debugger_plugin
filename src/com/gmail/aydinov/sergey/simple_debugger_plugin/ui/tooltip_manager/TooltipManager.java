@@ -18,10 +18,13 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.Listener;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.universal_inspector_window.UniversalInspectorWindow;
 
 public class TooltipManager {
 
@@ -190,41 +193,80 @@ public class TooltipManager {
 	}
 
 	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
-		Display display = root.getDisplay();
-		display.asyncExec(() -> {
-			if (root.isDisposed())
-				return;
-			closePopup();
-			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
-			popup.setLayout(new GridLayout(1, false));
-			StringBuilder info = new StringBuilder();
-		//	String size = (dto.getValue().substring(dto.getValue().lastIndexOf(":") + 1, dto.getValue().length())).
-					
-			info.append("Inspect element: ").append("\n").append(GAP).append("type: ").append(dto.getTypeOrReturnType())
-					.append("\n").append(GAP).append("name: ").append(dto.getElementName()).append("\n").append(GAP)
-					.append("size: ")
-					.append(dto.getValue().substring(dto.getValue().lastIndexOf(":") + 1, dto.getValue().length()))
-					.append("\n");
-			ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
-			scrolled.setLayoutData(new GridData(400, 80)); // размер окна
-			Composite content = new Composite(scrolled, SWT.NONE);
-			content.setLayout(new GridLayout(1, false));
-			Label label = new Label(content, SWT.WRAP);
-			label.setText(info.toString());
-			label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-			scrolled.setContent(content);
-			scrolled.setExpandHorizontal(true);
-			scrolled.setExpandVertical(true);
-			scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-			popup.pack();
-			Point popupSize = popup.getSize();
-			Point adjustedLocation = adjustToScreen(location, popupSize);
-			popup.setLocation(adjustedLocation);
-			popup.open();
-			currentPopup = popup;
-			popup.addListener(SWT.Dispose, e -> currentPopup = null);
-			display.timerExec(150, this::checkPopupCursor);
-		});
+	    Display display = root.getDisplay();
 
+	    display.asyncExec(() -> {
+	        if (root.isDisposed() || dto == null)
+	            return;
+
+	        closePopup();
+
+	        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
+	        popup.setLayout(new GridLayout(1, false));
+
+	        // сохраняем DTO внутри popup
+	        popup.setData("dto", dto);
+
+	        popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
+
+	        StringBuilder info = new StringBuilder();
+
+	        info.append("Inspect element: ").append("\n")
+	            .append(GAP).append("type: ").append(dto.getTypeOrReturnType()).append("\n")
+	            .append(GAP).append("name: ").append(dto.getElementName()).append("\n")
+	            .append(GAP).append("size: ")
+	            .append(dto.getValue().substring(dto.getValue().lastIndexOf(":") + 1))
+	            .append("\n");
+
+	        ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
+	        scrolled.setLayoutData(new GridData(400, 80));
+
+	        Composite content = new Composite(scrolled, SWT.NONE);
+	        content.setLayout(new GridLayout(1, false));
+
+	        Label label = new Label(content, SWT.WRAP);
+	        label.setText(info.toString());
+	        label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+	        label.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
+	        label.setData("dto", dto);
+
+	        scrolled.setContent(content);
+	        scrolled.setExpandHorizontal(true);
+	        scrolled.setExpandVertical(true);
+	        scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+
+	        // обработчик клика
+	        Listener clickHandler = e -> {
+	            Object data = popup.getData("dto");
+
+	            if (data instanceof InnerElementRepresentationDTO clickedDto) {
+
+	                SimpleDebugerWindowsManager.instance()
+	                        .getUniversalInspectorWindowFor(clickedDto);
+
+	                UniversalInspectorWindow.getInstance().open();
+
+	                closePopup();
+	            }
+	        };
+
+	        popup.addListener(SWT.MouseDown, clickHandler);
+	        label.addListener(SWT.MouseDown, clickHandler);
+	        content.addListener(SWT.MouseDown, clickHandler);
+
+	        popup.pack();
+
+	        Point popupSize = popup.getSize();
+	        Point adjustedLocation = adjustToScreen(location, popupSize);
+
+	        popup.setLocation(adjustedLocation);
+	        popup.open();
+
+	        currentPopup = popup;
+
+	        popup.addListener(SWT.Dispose, e -> currentPopup = null);
+
+	        display.timerExec(150, this::checkPopupCursor);
+	    });
 	}
 }
