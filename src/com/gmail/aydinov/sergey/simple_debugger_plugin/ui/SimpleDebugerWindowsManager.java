@@ -19,13 +19,14 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.Abstrac
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.ManageableCollectionInspectorWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.ManageableMainWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.universal_inspector_window.UniversalInspectorWindow;
 
 public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 
 	private static SimpleDebugerWindowsManager INSTANCE;
 
 	private ManageableMainWindow mainWindow;
-	private ManageableCollectionInspectorWindow collectionInspectorWindow;
+	private UniversalInspectorWindow universalInspectorWindow;
 
 	/** Минимальный ресурсный источник: карта с изображениями */
 	public final Map<String, PairDTO<Image, String>> icons;
@@ -92,7 +93,7 @@ public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 				SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
 				
 				if(SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(event.getType())) {
-					collectionInspectorWindow.handleDebugEvent(event);
+					universalInspectorWindow.handleDebugEvent(event);
 				} else {
 					mainWindow.handleDebugEvent(event);
 				}
@@ -115,20 +116,21 @@ public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 	}
 
 	@Override
-	public ManageableCollectionInspectorWindow getManageableCollectionInspectorWindowFor(InnerElementRepresentationDTO innerElementRepresentationDTO) {
+	public UniversalInspectorWindow getUniversalInspectorWindowFor(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		if (DebuggerContext.context().isInTerminalState())
 			return null;
-		this.collectionInspectorWindow = ManageableCollectionInspectorWindow.getOrCreateCollectionInspectWindowFor(innerElementRepresentationDTO);
-		return this.collectionInspectorWindow;
+		this.universalInspectorWindow = UniversalInspectorWindow.getInstance();
+		return this.universalInspectorWindow;
 	}
 
 	@Override
-	public ManageableCollectionInspectorWindow getManageableCollectionInspectorWindow() {
-		return collectionInspectorWindow;
+	public UniversalInspectorWindow getUniversalInspectorWindow() {
+		return universalInspectorWindow;
 	}
 
-	public void setManageableCollectionInspectorWindow(ManageableCollectionInspectorWindow manageableCollectionInspectorWindow) {
-		collectionInspectorWindow = manageableCollectionInspectorWindow;
+	
+	public void setManageableCollectionInspectorWindow(UniversalInspectorWindow universalInspectorWindow) {
+		this.universalInspectorWindow = universalInspectorWindow;
 		
 	}
 }

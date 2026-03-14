@@ -376,7 +376,7 @@ public class ClassMembersAtBreakpoint {
 	            display.asyncExec(() -> {
 	            //    new CollectionInspectorWindow().open();
 	            });
-				SimpleDebugerWindowsManager.instance().getManageableCollectionInspectorWindowFor(dto);
+				SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
 	            uiEventCollector.collectUiEvent(
 	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
 	            );
