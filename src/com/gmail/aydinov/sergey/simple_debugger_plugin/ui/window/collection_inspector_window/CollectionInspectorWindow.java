@@ -17,6 +17,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.CollectionEntryDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -26,6 +28,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.Abstrac
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.tab.ArrayInspectorTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.tab.InspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.tab.MapInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 
@@ -34,7 +38,7 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 	private static CollectionInspectorWindow INSTANCE = null;
 	
 	private final Shell shell;
-	private final MapInspectorTab inspectorTab;
+	private final InspectorTab inspectorTab;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
 	private final Button backButton;
@@ -51,7 +55,7 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 	private int totalPages = 1; 
 	private List<CollectionEntryDTO> allElements;
 
-	private CollectionInspectorWindow() {
+	private CollectionInspectorWindow(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 
 		Display display = Display.getDefault();
 		shell = new Shell(display, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
@@ -116,15 +120,23 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 
 		// ===================
 		// Таблица коллекции
+		if(innerElementRepresentationDTO.getValueCategory().equals(ValueCategory.MAP)) {
 		inspectorTab = new MapInspectorTab(shell);
 		inspectorTab.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
+		} else if (innerElementRepresentationDTO.getValueCategory().equals(ValueCategory.ARRAY) ||
+				innerElementRepresentationDTO.getValueCategory().equals(ValueCategory.COLLECTION)) {
+			inspectorTab = new ArrayInspectorTab(shell);
+			inspectorTab.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		} else {
+			throw new IllegalStateException();
+		}
 		shell.addListener(SWT.Close, e -> {
 		//    e.doit = false; // отменить стандартное закрытие
 		    close();        // вызвать свой метод
 		});
 		shell.open();
 	}
+
 
 //	protected static CollectionInspectorWindow getOrCreateCollectionInspectWindow() {
 //		Display.getDefault().syncExec(() -> {
@@ -207,13 +219,22 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 
 	@Override
 	public void close() {
-		if (shell != null && !shell.isDisposed()) {
-		    Display.getDefault().asyncExec(() -> {
-				shell.close();
-			});
-		}
-		SimpleDebugerWindowsManager.instance().setManageableCollectionInspectorWindow(null);
-		uiEventCollector.collectUiEvent(new UIEvent<Void>(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION, null));	
+	    if (shell != null && !shell.isDisposed()) {
+	        Display.getDefault().asyncExec(() -> {
+	            if (!shell.isDisposed()) {
+	                shell.close();
+	            }
+	            INSTANCE = null;
+	            SimpleDebugerWindowsManager.instance()
+	                .setManageableCollectionInspectorWindow(null);
+	            uiEventCollector.collectUiEvent(
+	                new UIEvent<>(
+	                    SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION,
+	                    null
+	                )
+	            );
+	        });
+	    }
 	}
 
 	@Override
@@ -230,7 +251,7 @@ public class CollectionInspectorWindow implements ManageableCollectionInspectorW
 			InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		Display.getDefault().syncExec(() -> {
 			if (Objects.isNull(INSTANCE)) {
-				INSTANCE = new CollectionInspectorWindow();
+				INSTANCE = new CollectionInspectorWindow(innerElementRepresentationDTO);
 			INSTANCE.open();
 			}
 		});

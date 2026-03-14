@@ -22,7 +22,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
 
-public class MapInspectorTab {
+public class MapInspectorTab implements InspectorTab {
 
     private final Composite root;
     private final TableViewer viewer;

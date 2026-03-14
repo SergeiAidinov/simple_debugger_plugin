@@ -16,7 +16,7 @@ import org.eclipse.swt.widgets.Table;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.CollectionEntryDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
 
-public class ArrayInspectorTab {
+public class ArrayInspectorTab implements InspectorTab{
 
     private final Composite root;
     private final TableViewer viewer;
@@ -126,4 +126,10 @@ public class ArrayInspectorTab {
         return SimpleDebugerWindowsManager.instance()
                 .icons.get("inspectIcon").getFirst();
     }
+
+	@Override
+	public void showCollection(List<CollectionEntryDTO> elements) {
+		// TODO Auto-generated method stub
+		
+	}
 }
