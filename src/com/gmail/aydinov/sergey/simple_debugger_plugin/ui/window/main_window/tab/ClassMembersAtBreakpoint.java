@@ -44,6 +44,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsMa
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.CollectionInspectorWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.universal_inspector_window.UniversalInspectorWindow;
 
 /**
  * Вкладка отображения полей, методов и переменных на breakpoint с поддержкой
@@ -379,6 +380,7 @@ public class ClassMembersAtBreakpoint {
 	            uiEventCollector.collectUiEvent(
 	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
 	            );
+	            UniversalInspectorWindow.getInstance().open();
 	        } else if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
 	            // Клик по обычной inspectIcon — старая логика
 	            uiEventCollector.collectUiEvent(
