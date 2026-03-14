@@ -23,6 +23,9 @@ import org.eclipse.swt.widgets.Listener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.universal_inspector_window.UniversalInspectorWindow;
 
@@ -37,6 +40,7 @@ public class TooltipManager {
 	private final Composite root;
 	private Function<TableItem, String> tooltipProvider;
 	private Shell currentPopup;
+	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
 	public TooltipManager(Table table, Composite root) {
 		this.table = table;
@@ -194,42 +198,31 @@ public class TooltipManager {
 
 	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
 	    Display display = root.getDisplay();
-
 	    display.asyncExec(() -> {
 	        if (root.isDisposed() || dto == null)
 	            return;
-
 	        closePopup();
-
 	        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
 	        popup.setLayout(new GridLayout(1, false));
-
 	        // сохраняем DTO внутри popup
 	        popup.setData("dto", dto);
-
 	        popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
-
 	        StringBuilder info = new StringBuilder();
-
 	        info.append("Inspect element: ").append("\n")
 	            .append(GAP).append("type: ").append(dto.getTypeOrReturnType()).append("\n")
 	            .append(GAP).append("name: ").append(dto.getElementName()).append("\n")
 	            .append(GAP).append("size: ")
 	            .append(dto.getValue().substring(dto.getValue().lastIndexOf(":") + 1))
 	            .append("\n");
-
 	        ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
 	        scrolled.setLayoutData(new GridData(400, 80));
-
 	        Composite content = new Composite(scrolled, SWT.NONE);
 	        content.setLayout(new GridLayout(1, false));
-
 	        Label label = new Label(content, SWT.WRAP);
 	        label.setText(info.toString());
 	        label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 	        label.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
 	        label.setData("dto", dto);
-
 	        scrolled.setContent(content);
 	        scrolled.setExpandHorizontal(true);
 	        scrolled.setExpandVertical(true);
@@ -245,27 +238,22 @@ public class TooltipManager {
 	                        .getUniversalInspectorWindowFor(clickedDto);
 
 	                UniversalInspectorWindow.getInstance().open();
-
+	                uiEventCollector.collectUiEvent(
+	    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto)
+	    	            );
 	                closePopup();
 	            }
 	        };
-
 	        popup.addListener(SWT.MouseDown, clickHandler);
 	        label.addListener(SWT.MouseDown, clickHandler);
 	        content.addListener(SWT.MouseDown, clickHandler);
-
 	        popup.pack();
-
 	        Point popupSize = popup.getSize();
 	        Point adjustedLocation = adjustToScreen(location, popupSize);
-
 	        popup.setLocation(adjustedLocation);
 	        popup.open();
-
 	        currentPopup = popup;
-
 	        popup.addListener(SWT.Dispose, e -> currentPopup = null);
-
 	        display.timerExec(150, this::checkPopupCursor);
 	    });
 	}
