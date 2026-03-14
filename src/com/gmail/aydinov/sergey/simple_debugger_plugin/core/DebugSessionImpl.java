@@ -24,6 +24,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeance;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
@@ -120,7 +121,14 @@ public class DebugSessionImpl implements DebugSession {
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
 			while (DebuggerContext.context().isDebugSessionActive()) {
-				AbstractUIEvent uiEvent = uiEventCollector.pollUiEvent();
+				AbstractUIEvent uiEvent = null;;
+				try {
+					uiEvent = uiEventCollector.takeUiEvent();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				System.out.println("EVENT IN DEGUG SESSION: " + uiEvent);
 				if (Objects.isNull(uiEvent))
 					continue;
 				try {
@@ -144,6 +152,8 @@ public class DebugSessionImpl implements DebugSession {
 		if (currentFrame == null)
 			return;
 		try {
+		UIEventHandler qq = abstractSimpleDebuggerUIEvent.getType().getUiEventHandler();
+		System.out.println(qq);
 			shouldRefreshSnapsotAndUi = abstractSimpleDebuggerUIEvent.getType().getUiEventHandler()
 					.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 

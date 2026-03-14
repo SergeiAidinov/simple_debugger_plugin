@@ -375,12 +375,10 @@ public class ClassMembersAtBreakpoint {
 	            display.asyncExec(() -> {
 	            //    new CollectionInspectorWindow().open();
 	            });
-
-//	            uiEventCollector.collectUiEvent(
-//	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
-//	            );
-	            
-	            SimpleDebugerWindowsManager.instance().getManageableCollectionInspectorWindowFor(dto);
+				SimpleDebugerWindowsManager.instance().getManageableCollectionInspectorWindowFor(dto);
+	            uiEventCollector.collectUiEvent(
+	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
+	            );
 	        } else if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
 	            // Клик по обычной inspectIcon — старая логика
 	            uiEventCollector.collectUiEvent(
