@@ -1,10 +1,12 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -91,51 +93,54 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		}
 
 		private void collectionInspection() {
+			// 1. Берем внутренние элементы коллекции
 			List<UniversalElementRepresentation> instances = TargetApplicationRepresentation.getInstance()
-			        .getTargetApplicationSnapshot()
-			        .values()
-			        .stream()
+			        .getTargetApplicationSnapshot().values().stream()
 			        .filter(e -> Objects.equals(e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
 			        .toList();
 
-			List<ObjectReference> collectionElementRefsInOrder = instances.stream()
+			// 2. Получаем ObjectReference для всех элементов коллекции
+			Set<ObjectReference> collectionElementRefs = instances.stream()
 			        .map(UniversalElementRepresentation::getObjectReference)
 			        .filter(Objects::nonNull)
 			        .flatMap(obj -> DebugUtils.iterateThroughCollection(obj, breakpointEvent).stream())
 			        .filter(ObjectReference.class::isInstance)
 			        .map(ObjectReference.class::cast)
+			        .collect(Collectors.toSet());
+
+			// 3. Связываем ObjectReference с реальным Comparable значением
+			List<PairDTO<ObjectReference, Comparable<Object>>> sortedPairs = collectionElementRefs.stream()
+				    .map(ref -> {
+				        Object value = DebugUtils.getComparableValue(ref);
+				        return PairDTO.<ObjectReference, Comparable<Object>>of(ref, value instanceof Comparable ? (Comparable<Object>) value : null);
+				    })
+				    .filter(p -> p.getSecond() != null)
+				    .sorted((p1, p2) -> p1.getSecond().compareTo(p2.getSecond()))
+				    .toList();
+
+			// 4. Берем отсортированные ObjectReference
+			List<ObjectReference> sortedRefs = sortedPairs.stream()
+			        .map(PairDTO::getFirst)
 			        .toList();
 
-			Map<ObjectReference, String> stringValues = new HashMap<>();
-			for (ObjectReference reference : collectionElementRefsInOrder) {
-			    stringValues.put(reference, DebugUtils.getObjectReferenceValueAsString(reference));
-			}
-
-			Map<ObjectReference, UniversalElementRepresentation> snapshotByReference = TargetApplicationRepresentation
-			        .getInstance()
-			        .getTargetApplicationSnapshot()
-			        .values()
-			        .stream()
-			        .filter(e -> e.getObjectReference() != null)
-			        .collect(Collectors.toMap(
-			                UniversalElementRepresentation::getObjectReference,
-			                Function.identity(),
-			                (left, right) -> left));
-
-			List<InnerElementRepresentationDTO> readyRepresentationDTOs = collectionElementRefsInOrder.stream()
-			        .map(snapshotByReference::get)
-			        .filter(Objects::nonNull)
-			        .map(e -> {
+			// 5. Создаем DTO с уже установленным value
+			List<InnerElementRepresentationDTO> readyRepresentationDTOs = sortedRefs.stream()
+			        .map(ref -> {
+			            UniversalElementRepresentation uer = TargetApplicationRepresentation.getInstance()
+			                    .getTargetApplicationSnapshot().values().stream()
+			                    .filter(e -> ref.equals(e.getObjectReference()))
+			                    .findFirst()
+			                    .orElseThrow();
 			            InnerElementRepresentationDTO dto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-			                    .fromUniversalElement(e);
-			            dto.setValue(stringValues.get(e.getObjectReference()));
+			                    .fromUniversalElement(uer);
+			            dto.setValue(DebugUtils.getObjectReferenceValueAsString(ref));
 			            return dto;
 			        })
 			        .toList();
 
+			// 6. Отображаем элементы в окне
 			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow()
 			        .showInspectableElement(PairDTO.of(anchorElement, readyRepresentationDTOs));
-
 			while (true) {
 				AbstractUIEvent uiEvent = null;
 				try {
