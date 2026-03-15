@@ -239,7 +239,7 @@ public class TooltipManager {
 
 	                UniversalInspectorWindow.getInstance().open();
 	                uiEventCollector.collectUiEvent(
-	    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto)
+	    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
 	    	            );
 	                closePopup();
 	            }
