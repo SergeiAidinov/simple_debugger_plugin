@@ -22,7 +22,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.StackFrame;
+import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
 public class InspectionSeanceHandler implements UIEventHandler {
@@ -45,7 +47,7 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			
 		}
 		if (Objects.nonNull(uiEvent)) {
-			Thread collectionInspectionThread = new Thread(new CollectionInspectionSeance(uiEvent.getPayload()));
+			Thread collectionInspectionThread = new Thread(new CollectionInspectionSeance(uiEvent.getPayload(), breakpointEvent));
 			collectionInspectionThread.setDaemon(false);
 			try {
 				collectionInspectionThread.start();
@@ -69,9 +71,11 @@ public class InspectionSeanceHandler implements UIEventHandler {
 	private class CollectionInspectionSeance implements Runnable {
 		
 		private final InnerElementRepresentationDTO anchorElement;
+		private final BreakpointEvent breakpointEvent;
 		
-		public CollectionInspectionSeance(InnerElementRepresentationDTO anchorElement) {
+		public CollectionInspectionSeance(InnerElementRepresentationDTO anchorElement, BreakpointEvent breakpointEvent) {
 			this.anchorElement = anchorElement;
+			this.breakpointEvent = breakpointEvent;
 		}
 		List<InnerElementRepresentationDTO> immediateElements = new ArrayList<InnerElementRepresentationDTO>();
 
@@ -81,11 +85,14 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		}
 
 		private void collectionInspection() {
-		 List<InnerElementRepresentationDTO> qq = TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values()
+		 List<UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values()
 			.stream().filter(e -> Objects.equals( e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
-			.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(e))
+			//.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(e))
 			.toList();
-		immediateElements.addAll(qq);
+		 
+		 List<Value> ww = DebugUtils.iterateThroughCollection(qq.get(0).getObjectReference(), breakpointEvent); 
+		 System.out.println(ww);
+		//immediateElements.addAll(qq);
 			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().showInspectableElement(PairDTO.of(anchorElement, immediateElements));
 			
 			while (true) {
