@@ -376,7 +376,7 @@ public class TargetApplicationRepresentation {
 		// Собираем внутренние поля объекта
 		populateInnerElements(objElement, refType, breakpointEvent);
 
-		List<ObjectReference> children = DebugUtils.getCollectionElements(objRef);
+		List<ObjectReference> children = DebugUtils.getCollectionElements(objRef, breakpointEvent);
 		for (ObjectReference child : children) {
 			populateObjectReference(objElement, child, breakpointEvent);
 		}

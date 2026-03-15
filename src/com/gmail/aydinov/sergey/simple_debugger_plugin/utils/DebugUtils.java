@@ -14,6 +14,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMeth
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.sun.jdi.AbsentInformationException;
@@ -565,73 +566,87 @@ public class DebugUtils {
 		}
 	}
 
-	public static List<ObjectReference> getCollectionElements(ObjectReference objRef) {
-		List<ObjectReference> result = new ArrayList<>();
-		if (objRef == null)
-			return result;
+	public static List<ObjectReference> getCollectionElements(ObjectReference objRef, BreakpointEvent breakpointEvent) {
+	    List<ObjectReference> result = new ArrayList<>();
 
-		ReferenceType refType = objRef.referenceType();
+	    if (objRef == null || breakpointEvent == null) {
+	        return result;
+	    }
 
-		try {
-			// Проверяем, является ли объект Collection
-			if (implementsInterface(refType, "java.util.Collection")) {
-				// Collection.toArray() вызываем через invokeMethod
-				Method toArray = findMethod(refType, "toArray", "()[Ljava/lang/Object;");
-				if (toArray != null) {
-					Value arrayValue = objRef.invokeMethod(objRef.virtualMachine().allThreads().get(0), // текущий поток
-																										// (в твоем
-																										// случае можно
-																										// адаптировать)
-							toArray, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-					if (arrayValue instanceof ArrayReference arrayRef) {
-						for (Value val : arrayRef.getValues()) {
-							if (val instanceof ObjectReference childObj) {
-								result.add(childObj);
-							}
-						}
-					}
-				}
-			}
-			// Проверяем, является ли объект Map
-			else if (implementsInterface(refType, "java.util.Map")) {
-				Method entrySetMethod = findMethod(refType, "entrySet", "()Ljava/util/Set;");
-				if (entrySetMethod != null) {
-					Value entrySetValue = objRef.invokeMethod(objRef.virtualMachine().allThreads().get(0),
-							entrySetMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-					if (entrySetValue instanceof ObjectReference entrySetRef) {
-						// Получаем все Map.Entry через toArray()
-						Method toArray = findMethod(entrySetRef.referenceType(), "toArray", "()[Ljava/lang/Object;");
-						if (toArray != null) {
-							Value arrayValue = entrySetRef.invokeMethod(objRef.virtualMachine().allThreads().get(0),
-									toArray, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-							if (arrayValue instanceof ArrayReference arrayRef) {
-								for (Value val : arrayRef.getValues()) {
-									if (val instanceof ObjectReference entryObj) {
-										// Берем ключ и значение
-										Field keyField = entryObj.referenceType().fieldByName("key");
-										Field valueField = entryObj.referenceType().fieldByName("value");
-										if (keyField != null) {
-											Value keyVal = entryObj.getValue(keyField);
-											if (keyVal instanceof ObjectReference keyObj)
-												result.add(keyObj);
-										}
-										if (valueField != null) {
-											Value valueVal = entryObj.getValue(valueField);
-											if (valueVal instanceof ObjectReference valueObj)
-												result.add(valueObj);
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		} catch (Exception ignored) {
-			// Безопасно игнорируем любые ошибки, чтобы не ломать debugger
-		}
+	    ReferenceType refType = objRef.referenceType();
+	    if (!(refType instanceof ClassType classType)) {
+	        return result;
+	    }
 
-		return result;
+	    boolean isIterable = classType.allInterfaces().stream()
+	            .anyMatch(iface -> "java.lang.Iterable".equals(iface.name()));
+
+	    if (!isIterable) {
+	        return result;
+	    }
+
+	    ThreadReference thread = breakpointEvent.thread();
+
+	    try {
+	        Method iteratorMethod = classType.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
+	        if (iteratorMethod == null) {
+	            return result;
+	        }
+
+	        Value iteratorValue = objRef.invokeMethod(
+	                thread,
+	                iteratorMethod,
+	                Collections.emptyList(),
+	                ObjectReference.INVOKE_SINGLE_THREADED
+	        );
+
+	        if (!(iteratorValue instanceof ObjectReference iterator)) {
+	            return result;
+	        }
+
+	        if (!(iterator.referenceType() instanceof ClassType iteratorType)) {
+	            return result;
+	        }
+
+	        Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
+	        Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+
+	        if (hasNextMethod == null || nextMethod == null) {
+	            return result;
+	        }
+
+	        while (true) {
+	            Value hasNextValue = iterator.invokeMethod(
+	                    thread,
+	                    hasNextMethod,
+	                    Collections.emptyList(),
+	                    ObjectReference.INVOKE_SINGLE_THREADED
+	            );
+
+	            if (!(hasNextValue instanceof BooleanValue booleanValue)) {
+	                break;
+	            }
+
+	            if (!booleanValue.value()) {
+	                break;
+	            }
+
+	            Value elementValue = iterator.invokeMethod(
+	                    thread,
+	                    nextMethod,
+	                    Collections.emptyList(),
+	                    ObjectReference.INVOKE_SINGLE_THREADED
+	            );
+
+	            if (elementValue instanceof ObjectReference elementObject) {
+	                result.add(elementObject);
+	            }
+	        }
+
+	    } catch (Exception ignored) {
+	    }
+
+	    return result;
 	}
 
 	/**
@@ -965,5 +980,78 @@ public class DebugUtils {
 			return tripletDTO.getFirst() + "<" + tripletDTO.getSecond() + ", " + tripletDTO.getThird() + ">";
 		}
 	}
+	
+    /**
+     * Преобразует ObjectReference в читаемое строковое значение.
+     * Для примитивов, обёрток и String возвращает значение.
+     * Для коллекций и массивов возвращает краткое описание.
+     */
+    public static String getObjectReferenceValueAsString(ObjectReference objRef) {
+        if (objRef == null) return "null";
 
+        try {
+            ReferenceType refType = objRef.referenceType();
+            String typeName = refType.name();
+
+            // String
+            if ("java.lang.String".equals(typeName) && objRef instanceof StringReference sRef) {
+                return sRef.value();
+            }
+
+            // Обёртки примитивов
+            if (typeName.startsWith("java.lang.") &&
+                List.of("Integer","Long","Short","Byte","Double","Float","Boolean","Character").contains(typeName.substring(10))) {
+                Field valueField = refType.fieldByName("value");
+                if (valueField != null) {
+                    Value val = objRef.getValue(valueField);
+                    return val != null ? val.toString() : "null";
+                }
+            }
+
+            // Массивы
+            if (objRef instanceof ArrayReference arrayRef) {
+                return "Array[" + arrayRef.length() + "]";
+            }
+
+            // Коллекции
+            if (implementsInterface(refType, "java.util.Collection")) {
+                return "Collection[size=" + getCollectionSize(objRef) + "]";
+            }
+
+            // Map
+            if (implementsInterface(refType, "java.util.Map")) {
+                return "Map[size=" + getCollectionSize(objRef) + "]";
+            }
+
+            // Любой другой объект
+            return typeName;
+
+        } catch (Exception e) {
+            return "<error>";
+        }
+    }
+
+    
+
+    /**
+     * Получает размер коллекции или карты через invokeMethod.
+     */
+    private static int getCollectionSize(ObjectReference objRef) {
+        try {
+            Method sizeMethod = objRef.referenceType().methodsByName("size").stream().findFirst().orElse(null);
+            if (sizeMethod != null) {
+                Value sizeValue = objRef.invokeMethod(
+                        objRef.virtualMachine().allThreads().get(0),
+                        sizeMethod,
+                        List.of(),
+                        ObjectReference.INVOKE_SINGLE_THREADED
+                );
+                if (sizeValue instanceof PrimitiveValue pVal) {
+                    return Integer.parseInt(pVal.toString());
+                }
+            }
+        } catch (Exception ignored) { }
+        return -1;
+    }
+	
 }
