@@ -345,6 +345,7 @@ public class TargetApplicationRepresentation {
 			return;
 
 		ReferenceType refType = objRef.referenceType();
+		ValueCategory valueCategory = DebugUtils.determineValueCategory(objRef);
 //		if (refType.name().startsWith("java.") || refType.name().startsWith("javax."))
 //			return;
 
@@ -367,7 +368,7 @@ public class TargetApplicationRepresentation {
 				.objectReference(objRef).elementName(refType.name()) // имя класса как elementName
 				.additionalInfo(refType.name()).elementType(UniversalElementRepresentation.UniversalElementType.CLASS)
 				.currentRole(UniversalElementRepresentation.CurrentRole.INNER).value(refType.name()).isStatic(false)
-				.valueCategory(UniversalElementRepresentation.ValueCategory.USER_OBJECT)
+				.valueCategory(valueCategory)
 				.typeOrReturnType(refType.name()).uniqueId(UUID.randomUUID())
 				.parentUniqueId(parentFieldElement.getTag().getUniqueId()).build();
 
