@@ -3,6 +3,9 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
@@ -23,6 +26,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
+import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
@@ -89,11 +93,38 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			.stream().filter(e -> Objects.equals( e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
 			//.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(e))
 			.toList();
+		List<ObjectReference> yy = qq.stream().map(e -> DebugUtils.getCollectionElements(e.getObjectReference()))
+				 .flatMap(List::stream)
+				.toList();
+		Set<ObjectReference> collectionElementRefs = qq.stream()
+		        .map(UniversalElementRepresentation::getObjectReference)
+		        .filter(Objects::nonNull)
+		        .flatMap(obj -> DebugUtils.iterateThroughCollection(obj, breakpointEvent).stream())
+		        .filter(ObjectReference.class::isInstance)
+		        .map(ObjectReference.class::cast)
+		        .collect(Collectors.toSet());
+
+		List<UniversalElementRepresentation> matched = TargetApplicationRepresentation.getInstance()
+		        .getTargetApplicationSnapshot()
+		        .values()
+		        .stream()
+		        .filter(e -> collectionElementRefs.contains(e.getObjectReference()))
+		        .toList();
+	List<InnerElementRepresentationDTO> selected = matched.stream().map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(e)).toList();
+		
+		
+		List<InnerElementRepresentationDTO> tt = qq.stream().map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(e)).toList();
 		 
-		 List<Value> ww = DebugUtils.iterateThroughCollection(qq.get(0).getObjectReference(), breakpointEvent); 
+		  List<InnerElementRepresentationDTO> ww = qq.stream()
+			       // .map(e -> DebugUtils.iterateThroughCollection(e.getObjectReference(), breakpointEvent))
+				  .map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(e))
+			       // .flatMap(List::stream)
+			        .toList();
 		 System.out.println(ww);
-		//immediateElements.addAll(qq);
-			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().showInspectableElement(PairDTO.of(anchorElement, immediateElements));
+		 
+		// List<String> rr = ww.stream().map(e -> DebugUtils.valueToString(e)).toList();
+		
+			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().showInspectableElement(PairDTO.of(anchorElement, selected));
 			
 			while (true) {
 				AbstractUIEvent uiEvent = null;
