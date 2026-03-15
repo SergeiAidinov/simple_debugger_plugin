@@ -17,7 +17,7 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
     private final String elementName;
     private final String additionalInfo;
     private final UniversalElementType elementType;
-    private final String value;
+    private String value;
     private final boolean isStatic;
     private final ValueCategory valueCategory;
     private final String typeOrReturnType;
@@ -52,8 +52,9 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
     public String getTypeOrReturnType() { return typeOrReturnType; }
     public int getLevel() { return level; }
     public void setLevel(int level) { this.level = level; }
+    public void setValue(String value) { this.value = value; }
 
-    @Override
+	@Override
     public String toString() {
         return "InnerElementRepresentationDTO [tag=" + tag + ", elementName=" + elementName
                 + ", additionalInfo=" + additionalInfo + ", elementType=" + elementType

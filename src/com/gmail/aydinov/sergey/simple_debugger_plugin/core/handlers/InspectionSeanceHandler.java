@@ -89,13 +89,18 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		}
 
 		private void collectionInspection() {
+			
+			
+			
 		 List<UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values()
 			.stream().filter(e -> Objects.equals( e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
 			//.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(e))
 			.toList();
-		List<ObjectReference> yy = qq.stream().map(e -> DebugUtils.getCollectionElements(e.getObjectReference()))
-				 .flatMap(List::stream)
-				.toList();
+		
+		 
+//		List<ObjectReference> yy = qq.stream().map(e -> DebugUtils.getCollectionElements(e.getObjectReference()))
+//				 .flatMap(List::stream)
+//				.toList();
 		Set<ObjectReference> collectionElementRefs = qq.stream()
 		        .map(UniversalElementRepresentation::getObjectReference)
 		        .filter(Objects::nonNull)
@@ -103,6 +108,8 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		        .filter(ObjectReference.class::isInstance)
 		        .map(ObjectReference.class::cast)
 		        .collect(Collectors.toSet());
+		
+		 List<String> v = collectionElementRefs.stream().map(e -> DebugUtils.getObjectReferenceValueAsString(e)).toList();
 
 		List<UniversalElementRepresentation> matched = TargetApplicationRepresentation.getInstance()
 		        .getTargetApplicationSnapshot()
@@ -110,9 +117,10 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		        .stream()
 		        .filter(e -> collectionElementRefs.contains(e.getObjectReference()))
 		        .toList();
+		
 	List<InnerElementRepresentationDTO> selected = matched.stream().map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(e)).toList();
-		
-		
+	
+	
 		List<InnerElementRepresentationDTO> tt = qq.stream().map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(e)).toList();
 		 
 		  List<InnerElementRepresentationDTO> ww = qq.stream()
