@@ -86,8 +86,12 @@ public final class SimpleDebuggerEventTypes {
 		
 		USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION(null, new IgnoreEverntHandler()),
 
-		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, null)
+		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, null), 
+		
+		USER_REQUESTED_COLLECTION_PREVIOUS_PAGE(null, null), 
+		USER_REQUESTED_COLLECTION_NEXT_PAGE(null, null), USER_REQUESTED_COLLECTION_PAGE(null, null)
 
+		
 		;
 
 		private final Class<?> payloadType;
