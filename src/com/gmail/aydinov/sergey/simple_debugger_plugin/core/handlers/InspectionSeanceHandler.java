@@ -1,13 +1,10 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
@@ -85,7 +82,7 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			this.breakpointEvent = breakpointEvent;
 		}
 
-		List<InnerElementRepresentationDTO> immediateElements = new ArrayList<InnerElementRepresentationDTO>();
+		TreeMap<Integer, InnerElementRepresentationDTO> colectionElements = new TreeMap<>();
 
 		@Override
 		public void run() {
@@ -95,52 +92,45 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		private void collectionInspection() {
 			// 1. Берем внутренние элементы коллекции
 			List<UniversalElementRepresentation> instances = TargetApplicationRepresentation.getInstance()
-			        .getTargetApplicationSnapshot().values().stream()
-			        .filter(e -> Objects.equals(e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
-			        .toList();
+					.getTargetApplicationSnapshot().values().stream()
+					.filter(e -> Objects.equals(e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
+					.toList();
 
 			// 2. Получаем ObjectReference для всех элементов коллекции
 			Set<ObjectReference> collectionElementRefs = instances.stream()
-			        .map(UniversalElementRepresentation::getObjectReference)
-			        .filter(Objects::nonNull)
-			        .flatMap(obj -> DebugUtils.iterateThroughCollection(obj, breakpointEvent).stream())
-			        .filter(ObjectReference.class::isInstance)
-			        .map(ObjectReference.class::cast)
-			        .collect(Collectors.toSet());
+					.map(UniversalElementRepresentation::getObjectReference).filter(Objects::nonNull)
+					.flatMap(obj -> DebugUtils.iterateThroughCollection(obj, breakpointEvent).stream())
+					.filter(ObjectReference.class::isInstance).map(ObjectReference.class::cast)
+					.collect(Collectors.toSet());
 
 			// 3. Связываем ObjectReference с реальным Comparable значением
-			List<PairDTO<ObjectReference, Comparable<Object>>> sortedPairs = collectionElementRefs.stream()
-				    .map(ref -> {
-				        Object value = DebugUtils.getComparableValue(ref);
-				        return PairDTO.<ObjectReference, Comparable<Object>>of(ref, value instanceof Comparable ? (Comparable<Object>) value : null);
-				    })
-				    .filter(p -> p.getSecond() != null)
-				    .sorted((p1, p2) -> p1.getSecond().compareTo(p2.getSecond()))
-				    .toList();
+			List<PairDTO<ObjectReference, Comparable<Object>>> sortedPairs = collectionElementRefs.stream().map(ref -> {
+				Object value = DebugUtils.getComparableValue(ref);
+				return PairDTO.<ObjectReference, Comparable<Object>>of(ref,
+						value instanceof Comparable ? (Comparable<Object>) value : null);
+			}).filter(p -> p.getSecond() != null).sorted((p1, p2) -> p1.getSecond().compareTo(p2.getSecond())).toList();
 
 			// 4. Берем отсортированные ObjectReference
-			List<ObjectReference> sortedRefs = sortedPairs.stream()
-			        .map(PairDTO::getFirst)
-			        .toList();
+			List<ObjectReference> sortedRefs = sortedPairs.stream().map(PairDTO::getFirst).toList();
 
 			// 5. Создаем DTO с уже установленным value
-			List<InnerElementRepresentationDTO> readyRepresentationDTOs = sortedRefs.stream()
-			        .map(ref -> {
-			            UniversalElementRepresentation uer = TargetApplicationRepresentation.getInstance()
-			                    .getTargetApplicationSnapshot().values().stream()
-			                    .filter(e -> ref.equals(e.getObjectReference()))
-			                    .findFirst()
-			                    .orElseThrow();
-			            InnerElementRepresentationDTO dto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-			                    .fromUniversalElement(uer);
-			            dto.setValue(DebugUtils.getObjectReferenceValueAsString(ref));
-			            return dto;
-			        })
-			        .toList();
+			List<InnerElementRepresentationDTO> readyRepresentationDTOs = sortedRefs.stream().map(ref -> {
+				UniversalElementRepresentation uer = TargetApplicationRepresentation.getInstance()
+						.getTargetApplicationSnapshot().values().stream()
+						.filter(e -> ref.equals(e.getObjectReference())).findFirst().orElseThrow();
+				InnerElementRepresentationDTO dto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+						.fromUniversalElement(uer);
+				dto.setValue(DebugUtils.getObjectReferenceValueAsString(ref));
+				return dto;
+			}).toList();
+
+			for (int i = 0; i < readyRepresentationDTOs.size(); i++) {
+				colectionElements.put(i, readyRepresentationDTOs.get(i));
+			}
 
 			// 6. Отображаем элементы в окне
 			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow()
-			        .showInspectableElement(PairDTO.of(anchorElement, readyRepresentationDTOs));
+					.showInspectableElement(PairDTO.of(anchorElement, getPage(0)));
 			while (true) {
 				AbstractUIEvent uiEvent = null;
 				try {
@@ -156,6 +146,11 @@ public class InspectionSeanceHandler implements UIEventHandler {
 
 			}
 
+		}
+
+		private List<InnerElementRepresentationDTO> getPage(int pageNumber) {
+			return colectionElements.subMap((DebugUtils.PAGE_SIZE * pageNumber), true,
+					(DebugUtils.PAGE_SIZE * pageNumber + DebugUtils.PAGE_SIZE), false).values().stream().toList();
 		}
 
 		private void ignoreEvent(AbstractUIEvent debugEvent) {
