@@ -20,19 +20,25 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.BooleanValue;
+import com.sun.jdi.ByteValue;
+import com.sun.jdi.CharValue;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
+import com.sun.jdi.DoubleValue;
 import com.sun.jdi.Field;
+import com.sun.jdi.FloatValue;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.IntegerValue;
 import com.sun.jdi.InterfaceType;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
+import com.sun.jdi.LongValue;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.PrimitiveType;
 import com.sun.jdi.PrimitiveValue;
 import com.sun.jdi.ReferenceType;
+import com.sun.jdi.ShortValue;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.StringReference;
 import com.sun.jdi.ThreadReference;
@@ -1052,6 +1058,51 @@ public class DebugUtils {
             }
         } catch (Exception ignored) { }
         return -1;
+    }
+
+    public static Comparable<?> getComparableValue(ObjectReference ref) {
+        if (ref == null) return null;
+
+        ReferenceType refType = ref.referenceType();
+        String typeName = refType.name();
+
+        // ---------- String ----------
+        if ("java.lang.String".equals(typeName)) {
+            StringReference sRef = (StringReference) ref;
+            return sRef.value();
+        }
+
+        // ---------- Wrapper ----------
+        if (typeName.equals("java.lang.Integer")) {
+            return ((IntegerValue) ref.getValue(refType.fieldByName("value"))).value();
+        }
+        if (typeName.equals("java.lang.Long")) {
+            return ((LongValue) ref.getValue(refType.fieldByName("value"))).value();
+        }
+        if (typeName.equals("java.lang.Double")) {
+            return ((DoubleValue) ref.getValue(refType.fieldByName("value"))).value();
+        }
+        if (typeName.equals("java.lang.Float")) {
+            return ((FloatValue) ref.getValue(refType.fieldByName("value"))).value();
+        }
+        if (typeName.equals("java.lang.Boolean")) {
+            return ((BooleanValue) ref.getValue(refType.fieldByName("value"))).value();
+        }
+        if (typeName.equals("java.lang.Character")) {
+            return (char) ((CharValue) ref.getValue(refType.fieldByName("value"))).value();
+        }
+        if (typeName.equals("java.lang.Byte")) {
+            return ((ByteValue) ref.getValue(refType.fieldByName("value"))).value();
+        }
+        if (typeName.equals("java.lang.Short")) {
+            return ((ShortValue) ref.getValue(refType.fieldByName("value"))).value();
+        }
+
+        // ---------- Примитивные поля (если ObjectReference ссылается на объект с одним полем value) ----------
+        // можно расширить при необходимости
+
+        // ---------- Неизвестный объект ----------
+        return null;
     }
 	
 }
