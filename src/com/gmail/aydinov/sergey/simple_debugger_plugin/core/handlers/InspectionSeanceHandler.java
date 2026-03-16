@@ -12,6 +12,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
@@ -129,8 +130,15 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			}
 
 			// 6. Отображаем элементы в окне
+			
+			CollectionPageDTO initPage = CollectionPageDTO.builder()
+					.collectionName(anchorElement.getElementName())
+					.entries(getPage(0))
+					.build();
+			
 			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow()
-					.showInspectableElement(PairDTO.of(anchorElement, getPage(0)));
+					.showInspectableElement(initPage);
+			
 			while (true) {
 				AbstractUIEvent uiEvent = null;
 				try {

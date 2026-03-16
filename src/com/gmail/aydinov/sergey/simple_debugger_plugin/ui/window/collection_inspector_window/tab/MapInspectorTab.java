@@ -17,6 +17,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.CollectionEntryDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
@@ -46,7 +47,7 @@ public class MapInspectorTab implements InspectorTab {
         return root;
     }
 
-    public void showCollection(List<CollectionEntryDTO> elements) {
+    public void showCollection(List<InnerElementRepresentationDTO> elements) {
         root.getDisplay().asyncExec(() -> {
             if (!viewer.getTable().isDisposed()) {
                 viewer.setInput(elements);
