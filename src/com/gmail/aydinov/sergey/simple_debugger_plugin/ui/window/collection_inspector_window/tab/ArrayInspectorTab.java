@@ -11,12 +11,16 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
+
+import java.util.List;
+import java.util.function.Function;
 
 public class ArrayInspectorTab implements InspectorTab {
 
@@ -77,14 +81,11 @@ public class ArrayInspectorTab implements InspectorTab {
         );
 
         pageText = new Text(paginationComposite, SWT.BORDER);
-        GridData pageTextGridData = new GridData();
-        pageTextGridData.widthHint = 70;
-        pageText.setLayoutData(pageTextGridData);
+        pageText.setLayoutData(new GridData(70, SWT.DEFAULT));
 
         goButton = new Button(paginationComposite, SWT.PUSH);
         goButton.setText("Go");
         goButton.addListener(SWT.Selection, e -> requestPage());
-
         pageText.addListener(SWT.DefaultSelection, e -> requestPage());
 
         nextButton = new Button(paginationComposite, SWT.PUSH);
@@ -103,7 +104,9 @@ public class ArrayInspectorTab implements InspectorTab {
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
 
-        setupColumns();
+        // Колонки: Index и Value
+        createColumn("Index", 80,  pair -> pair.getFirst().toString(), pair -> null);
+        createColumn("Value", 570, pair -> pair.getSecond().getValue(), this::getIcon);
     }
 
     public Composite getControl() {
@@ -115,19 +118,13 @@ public class ArrayInspectorTab implements InspectorTab {
     // =========================================================
 
     public void showPage(CollectionPageDTO page) {
-
         root.getDisplay().asyncExec(() -> {
-
-            if (root.isDisposed() || viewer.getTable().isDisposed()) {
-                return;
-            }
+            if (root.isDisposed() || viewer.getTable().isDisposed()) return;
 
             collectionNameLabel.setText("Collection: " + safe(page.getCollectionName()));
             collectionTypeLabel.setText("Collection type: " + safe(page.getCollectionType()));
             elementTypeLabel.setText("Element type: " + safe(page.getElementType()));
-
             sizeLabel.setText("Size: " + page.getTotalElements());
-
             pageInfoLabel.setText(
                     "Page: " + page.getCurrentPage() +
                             " of " + page.getTotalPages() +
@@ -140,7 +137,8 @@ public class ArrayInspectorTab implements InspectorTab {
             prevButton.setEnabled(page.hasPreviousPage());
             nextButton.setEnabled(page.hasNextPage());
 
-            viewer.setInput(page.getEntries());
+            List<PairDTO<Integer, InnerElementRepresentationDTO>> entries = page.getEntries();
+            viewer.setInput(entries);
 
             root.layout(true, true);
         });
@@ -151,18 +149,13 @@ public class ArrayInspectorTab implements InspectorTab {
     // =========================================================
 
     private void requestPage() {
-
         int page;
-
         try {
             page = Integer.parseInt(pageText.getText().trim());
         } catch (Exception e) {
             page = 1;
         }
-
-        if (page < 1) {
-            page = 1;
-        }
+        if (page < 1) page = 1;
 
         uiEventCollector.collectUiEvent(
                 new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, page)
@@ -177,82 +170,43 @@ public class ArrayInspectorTab implements InspectorTab {
     // Таблица
     // =========================================================
 
-    private void setupColumns() {
-
-        createColumn(
-                "Name",
-                220,
-                InnerElementRepresentationDTO::getElementName,
-                this::getIcon
-        );
-
-        createColumn(
-                "Value",
-                400,
-                InnerElementRepresentationDTO::getValue,
-                e -> null
-        );
-
-        createColumn(
-                "Type",
-                180,
-                InnerElementRepresentationDTO::getTypeOrReturnType,
-                e -> null
-        );
-    }
-
-    private TableViewerColumn createColumn(
+    private <K,V> TableViewerColumn createColumn(
             String title,
             int width,
-            java.util.function.Function<InnerElementRepresentationDTO, String> textExtractor,
-            java.util.function.Function<InnerElementRepresentationDTO, Image> imageExtractor) {
+            Function<PairDTO<K,V>, String> textExtractor,
+            Function<PairDTO<K,V>, Image> imageExtractor) {
 
         TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
-
         column.getColumn().setText(title);
         column.getColumn().setWidth(width);
 
         column.setLabelProvider(new ColumnLabelProvider() {
-
             @Override
             public String getText(Object element) {
-
-                if (element instanceof InnerElementRepresentationDTO dto) {
-
-                    String text = textExtractor.apply(dto);
-                    return text == null ? "" : text;
+                if (element instanceof PairDTO<?,?> pair) {
+                    String text = textExtractor.apply((PairDTO<K,V>) pair);
+                    return text != null ? text : "";
                 }
-
                 return "";
             }
 
             @Override
             public Image getImage(Object element) {
-
-                if (!(element instanceof InnerElementRepresentationDTO dto)) {
-                    return null;
-                }
-
-                return imageExtractor.apply(dto);
+                if (!(element instanceof PairDTO<?,?> pair)) return null;
+                return imageExtractor.apply((PairDTO<K,V>) pair);
             }
         });
 
         return column;
     }
 
-    // =========================================================
-    // Иконки
-    // =========================================================
+    private Image getIcon(PairDTO<Integer, InnerElementRepresentationDTO> pair) {
+        if (pair == null || pair.getSecond() == null) return null;
 
-    private Image getIcon(InnerElementRepresentationDTO dto) {
-
-        if (dto == null) {
-            return null;
-        }
+        InnerElementRepresentationDTO dto = pair.getSecond();
 
         if (dto.getValueCategory() ==
                 com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory.COLLECTION) {
-
             return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
         }
 
@@ -260,7 +214,7 @@ public class ArrayInspectorTab implements InspectorTab {
     }
 
     @Override
-    public void showCollection(java.util.List<InnerElementRepresentationDTO> elements) {
-        viewer.setInput(elements);
+    public void showCollection(List<InnerElementRepresentationDTO> elements) {
+        // При использовании нового DTO этот метод можно временно не использовать
     }
 }

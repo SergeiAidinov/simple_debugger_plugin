@@ -130,15 +130,12 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			}
 
 			// 6. Отображаем элементы в окне
-			
-			CollectionPageDTO initPage = CollectionPageDTO.builder()
-					.collectionName(anchorElement.getElementName())
-					.entries(getPage(0))
-					.build();
-			
-			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow()
-					.showInspectableElement(initPage);
-			
+
+			CollectionPageDTO initPage = CollectionPageDTO.builder().collectionName(anchorElement.getElementName())
+					.entries(getPage(0)).build();
+
+			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().showInspectableElement(initPage);
+
 			while (true) {
 				AbstractUIEvent uiEvent = null;
 				try {
@@ -156,9 +153,16 @@ public class InspectionSeanceHandler implements UIEventHandler {
 
 		}
 
-		private List<InnerElementRepresentationDTO> getPage(int pageNumber) {
-			return colectionElements.subMap((DebugUtils.PAGE_SIZE * pageNumber), true,
-					(DebugUtils.PAGE_SIZE * pageNumber + DebugUtils.PAGE_SIZE), false).values().stream().toList();
+		private List<PairDTO<Integer, InnerElementRepresentationDTO>> getPage(int pageNumber) {
+			List<PairDTO<Integer, InnerElementRepresentationDTO>> result = new ArrayList<PairDTO<Integer, InnerElementRepresentationDTO>>();
+			List<InnerElementRepresentationDTO> entries = List.copyOf(colectionElements
+					.subMap((DebugUtils.PAGE_SIZE * pageNumber), true,
+							(DebugUtils.PAGE_SIZE * pageNumber + DebugUtils.PAGE_SIZE), false)
+					.values().stream().toList());
+			for (int i = 0; i < entries.size(); i++) {
+				result.add(PairDTO.of((i + DebugUtils.PAGE_SIZE * pageNumber), entries.get(i)));
+			}
+			return result;
 		}
 
 		private void ignoreEvent(AbstractUIEvent debugEvent) {
