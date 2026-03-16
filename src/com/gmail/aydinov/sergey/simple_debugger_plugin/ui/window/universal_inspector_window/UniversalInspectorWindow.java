@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.universal_inspector_window;
 
+import java.util.Objects;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
@@ -13,9 +15,13 @@ import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.tab.ArrayInspectorTab;
@@ -40,7 +46,7 @@ public class UniversalInspectorWindow {
 
         shell = new Shell(display);
         shell.setText("Universal Object Inspector");
-        shell.setSize(900, 600);
+        shell.setSize(900, 700);
         shell.setLayout(new FillLayout());
         shell.setImage(SimpleDebugerWindowsManager.instance().icons.get("debugger").getFirst());
 
@@ -167,4 +173,14 @@ public class UniversalInspectorWindow {
 
         return item;
     }
+
+	@SuppressWarnings("unchecked")
+	public void handleDebugEvent(AbstractDebugEvent event) {
+		Display.getDefault().asyncExec(() -> {
+		if (Objects.equals(event.getType(), SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION)) {
+			DebugEvent<CollectionPageDTO> simpleDebugEvent = (DebugEvent<CollectionPageDTO>) event;
+			showInspectableElement(simpleDebugEvent.getPayload());
+		}
+	});
+}
 }

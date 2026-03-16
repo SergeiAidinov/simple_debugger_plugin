@@ -155,9 +155,9 @@ public class ArrayInspectorTab implements InspectorTab {
         try {
             page = Integer.parseInt(pageText.getText().trim());
         } catch (Exception e) {
-            page = 1;
+            page = 0;
         }
-        if (page < 1) page = 1;
+        if (page < 0) page = 0;
 
         uiEventCollector.collectUiEvent(
                 new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, page)

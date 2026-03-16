@@ -77,7 +77,6 @@ public class InspectionSeanceHandler implements UIEventHandler {
 
 		private final InnerElementRepresentationDTO anchorElement;
 		private final BreakpointEvent breakpointEvent;
-		// private int currentPage;
 		private final TreeMap<Integer, InnerElementRepresentationDTO> colectionElements = new TreeMap<>();
 
 		public CollectionInspectionSeance(InnerElementRepresentationDTO anchorElement,
@@ -91,12 +90,12 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			collectionInspection();
 		}
 
+		@SuppressWarnings("unchecked")
 		private void collectionInspection() {
 			compileCollectionElements();
-			// Display first page
 			CollectionPageDTO initPage = createPage(0);
-
-			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().showInspectableElement(initPage);
+			debugEventCollector.collectDebugEvent(
+					new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION, initPage));
 
 			while (true) {
 				AbstractUIEvent uiEvent = null;
@@ -113,8 +112,8 @@ public class InspectionSeanceHandler implements UIEventHandler {
 					UIEvent<Integer> userRequestetPage = (UIEvent<Integer>) uiEvent;
 					Integer pageNumber = userRequestetPage.getPayload();
 					CollectionPageDTO page = createPage(pageNumber);
-					SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow()
-							.showInspectableElement(page);
+					debugEventCollector.collectDebugEvent(
+							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION, page));
 				}
 			}
 		}

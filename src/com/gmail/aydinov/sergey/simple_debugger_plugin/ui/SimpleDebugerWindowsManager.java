@@ -93,7 +93,7 @@ public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 				SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
 				
 				if(SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(event.getType())) {
-				//	universalInspectorWindow.showInspectableElement(event);
+					universalInspectorWindow.handleDebugEvent(event);
 				} else {
 					mainWindow.handleDebugEvent(event);
 				}

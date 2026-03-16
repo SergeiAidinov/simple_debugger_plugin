@@ -71,7 +71,7 @@ public class CollectionPageDTO {
     }
 
     public boolean hasPreviousPage() {
-        return currentPage > 1;
+        return currentPage > 0;
     }
     
     public static Builder builder() {
