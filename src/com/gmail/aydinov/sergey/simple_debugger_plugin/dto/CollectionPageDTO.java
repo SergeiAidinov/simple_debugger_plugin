@@ -18,7 +18,7 @@ public class CollectionPageDTO {
     private final int fromIndex;
     private final int toIndex;
 
-    private final List<InnerElementRepresentationDTO> entries;
+    private final List<PairDTO<Integer, InnerElementRepresentationDTO>> entries;
 
     private CollectionPageDTO(Builder builder) {
         this.collectionName = builder.collectionName;
@@ -64,9 +64,10 @@ public class CollectionPageDTO {
         return toIndex;
     }
 
-    public List<InnerElementRepresentationDTO> getEntries() {
+    public List<PairDTO<Integer, InnerElementRepresentationDTO>> getEntries() {
         return entries;
     }
+
 
     public boolean hasNextPage() {
         return currentPage < totalPages;
@@ -98,7 +99,7 @@ public class CollectionPageDTO {
         private int fromIndex;
         private int toIndex;
 
-        private List<InnerElementRepresentationDTO> entries;
+        private List<PairDTO<Integer, InnerElementRepresentationDTO>> entries;
 
         public Builder collectionName(String value) {
             this.collectionName = value;
@@ -140,7 +141,7 @@ public class CollectionPageDTO {
             return this;
         }
 
-        public Builder entries(List<InnerElementRepresentationDTO> list) {
+        public Builder entries(List<PairDTO<Integer, InnerElementRepresentationDTO>> list) {
             this.entries = list;
             return this;
         }
