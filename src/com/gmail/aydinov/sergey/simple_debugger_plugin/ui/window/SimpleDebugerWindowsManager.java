@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -17,15 +17,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.ManageableCollectionInspectorWindow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.ManageableMainWindow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.universal_inspector_window.UniversalInspectorWindow;
 
-public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
+public class SimpleDebugerWindowsManager implements Runnable {
 
 	private static SimpleDebugerWindowsManager INSTANCE;
 
-	private ManageableMainWindow mainWindow;
+	private MainWindow mainWindow;
 	private UniversalInspectorWindow universalInspectorWindow;
 
 	/** Минимальный ресурсный источник: карта с изображениями */
@@ -107,15 +104,13 @@ public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 	/**
 	 * Возвращает или создаёт главное окно
 	 */
-	@Override
-	public synchronized ManageableMainWindow getOrCreateMainWindow() {
+	public synchronized MainWindow getOrCreateMainWindow() {
 		if (DebuggerContext.context().isInTerminalState())
 			return null;
-		this.mainWindow = ManageableMainWindow.getOrCreateMainWindow();
+		this.mainWindow = MainWindow.getOrCreateMainWindow();
 		return this.mainWindow;
 	}
 
-	@Override
 	public UniversalInspectorWindow getUniversalInspectorWindowFor(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		if (DebuggerContext.context().isInTerminalState())
 			return null;
@@ -123,7 +118,6 @@ public class SimpleDebugerWindowsManager implements Runnable, WinodwsManager {
 		return this.universalInspectorWindow;
 	}
 
-	@Override
 	public UniversalInspectorWindow getUniversalInspectorWindow() {
 		return universalInspectorWindow;
 	}

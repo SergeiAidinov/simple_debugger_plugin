@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window;
 
 import java.util.List;
 import java.util.Objects;
@@ -27,10 +27,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventC
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.tab.ArrayInspectorTab;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.tab.InspectorTab;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.tab.MapInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 
 public class CollectionInspectorWindow /*implements ManageableCollectionInspectorWindow */{

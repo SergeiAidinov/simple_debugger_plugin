@@ -28,7 +28,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.SimpleDebuggerWorkFlow.SimpleDebuggerWorkFlowFactory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.conf_dialog.DebugConfigurationEditDialog;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.dialogs.DebugConfigurationEditDialog;
 
 /**
  * Handler for starting the Simple Debugger plugin from Eclipse UI. Launches the

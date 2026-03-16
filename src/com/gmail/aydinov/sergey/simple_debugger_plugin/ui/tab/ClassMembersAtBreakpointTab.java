@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.tab;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,17 +40,15 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceIn
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.CollectionInspectorWindow;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.universal_inspector_window.UniversalInspectorWindow;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
 /**
  * Вкладка отображения полей, методов и переменных на breakpoint с поддержкой
  * редактирования примитивов и генерацией UI-событий.
  */
-public class ClassMembersAtBreakpoint {
+public class ClassMembersAtBreakpointTab {
 
 	private final Composite root;
 	private final TableViewer viewer;
@@ -61,7 +59,7 @@ public class ClassMembersAtBreakpoint {
 	private TooltipManager tooltipManager;
 //	private InstanceInspectionPopupManager popupManager;
 
-	public ClassMembersAtBreakpoint(Composite parent) {
+	public ClassMembersAtBreakpointTab(Composite parent) {
 		root = new Composite(parent, SWT.NONE);
 		root.setLayout(new GridLayout(1, false));
 		Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION);
