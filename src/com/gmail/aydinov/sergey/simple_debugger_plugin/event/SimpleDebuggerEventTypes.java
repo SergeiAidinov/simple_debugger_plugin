@@ -13,6 +13,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequest
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.InspectionSeanceHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
@@ -88,7 +89,9 @@ public final class SimpleDebuggerEventTypes {
 
 		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, null), 
 		
-		USER_REQUESTED_COLLECTION_PAGE(Integer.class, null)
+		USER_REQUESTED_COLLECTION_PAGE(Integer.class, null),
+		
+		DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION(CollectionPageDTO.class, null)
 
 		
 		;
@@ -117,7 +120,8 @@ public final class SimpleDebuggerEventTypes {
 			SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE,
 			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION,
 			SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
-			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION
+			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION,
+			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION
 
 	);
 
