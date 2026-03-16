@@ -88,8 +88,7 @@ public final class SimpleDebuggerEventTypes {
 
 		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, null), 
 		
-		USER_REQUESTED_COLLECTION_PREVIOUS_PAGE(null, null), 
-		USER_REQUESTED_COLLECTION_NEXT_PAGE(null, null), USER_REQUESTED_COLLECTION_PAGE(null, null)
+		USER_REQUESTED_COLLECTION_PAGE(Integer.class, null)
 
 		
 		;
@@ -117,6 +116,7 @@ public final class SimpleDebuggerEventTypes {
 	private static final EnumSet<SimpleDebuggerEventType> COLLECTION_INSPECTION_WINDOW_EVENTS = EnumSet.of(
 			SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE,
 			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION,
+			SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
 			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION
 
 	);

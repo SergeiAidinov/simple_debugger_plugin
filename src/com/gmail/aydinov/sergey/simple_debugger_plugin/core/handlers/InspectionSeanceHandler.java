@@ -14,6 +14,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.Simp
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -76,6 +77,8 @@ public class InspectionSeanceHandler implements UIEventHandler {
 
 		private final InnerElementRepresentationDTO anchorElement;
 		private final BreakpointEvent breakpointEvent;
+		// private int currentPage;
+		private final TreeMap<Integer, InnerElementRepresentationDTO> colectionElements = new TreeMap<>();
 
 		public CollectionInspectionSeance(InnerElementRepresentationDTO anchorElement,
 				BreakpointEvent breakpointEvent) {
@@ -83,14 +86,53 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			this.breakpointEvent = breakpointEvent;
 		}
 
-		TreeMap<Integer, InnerElementRepresentationDTO> colectionElements = new TreeMap<>();
-
 		@Override
 		public void run() {
 			collectionInspection();
 		}
 
 		private void collectionInspection() {
+			compileCollectionElements();
+			// Display first page
+			CollectionPageDTO initPage = createPage(0);
+
+			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().showInspectableElement(initPage);
+
+			while (true) {
+				AbstractUIEvent uiEvent = null;
+				try {
+					uiEvent = uiEventCollector.takeUiEvent();
+					System.out.println("EVENT IN SEANCE: " + uiEvent);
+				} catch (InterruptedException e) {
+				}
+				if (!SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(uiEvent.getType()))
+					ignoreEvent(uiEvent);
+				else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION))
+					break;
+				else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE)) {
+					UIEvent<Integer> userRequestetPage = (UIEvent<Integer>) uiEvent;
+					Integer pageNumber = userRequestetPage.getPayload();
+					CollectionPageDTO page = createPage(pageNumber);
+					SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow()
+							.showInspectableElement(page);
+				}
+			}
+		}
+
+		private CollectionPageDTO createPage(int pageNumber) {
+			String elementType = (Objects.nonNull(colectionElements.get(0))
+					&& Objects.nonNull(colectionElements.get(0).getTypeOrReturnType()))
+							? colectionElements.get(0).getTypeOrReturnType()
+							: DebugUtils.N_A;
+			return CollectionPageDTO.builder().collectionName(anchorElement.getElementName())
+					.collectionType(anchorElement.getTypeOrReturnType()).elementType(elementType)
+					.totalElements(colectionElements.size()).currentPage(pageNumber)
+					.totalPages(colectionElements.size() / DebugUtils.PAGE_SIZE).currentPage(pageNumber)
+					.fromIndex(pageNumber).toIndex(pageNumber + DebugUtils.PAGE_SIZE - 1).entries(getPage(pageNumber))
+					.build();
+		}
+
+		private void compileCollectionElements() {
 			// 1. Берем внутренние элементы коллекции
 			List<UniversalElementRepresentation> instances = TargetApplicationRepresentation.getInstance()
 					.getTargetApplicationSnapshot().values().stream()
@@ -127,40 +169,6 @@ public class InspectionSeanceHandler implements UIEventHandler {
 
 			for (int i = 0; i < readyRepresentationDTOs.size(); i++) {
 				colectionElements.put(i, readyRepresentationDTOs.get(i));
-			}
-
-			// 6. Отображаем элементы в окне
-			int pageNumber = 0;
-
-			String elementType = (Objects.nonNull(colectionElements.get(0)) && Objects.nonNull(colectionElements.get(0).getTypeOrReturnType())) ? colectionElements.get(0).getTypeOrReturnType() : DebugUtils.N_A;
-			CollectionPageDTO initPage = CollectionPageDTO.builder()
-					.collectionName(anchorElement.getElementName())
-					.collectionType(anchorElement.getTypeOrReturnType())
-					.elementType(elementType)
-					.totalElements(colectionElements.size())
-					.currentPage(pageNumber)
-					.totalPages(colectionElements.size() / DebugUtils.PAGE_SIZE )
-					.currentPage(pageNumber)
-					.fromIndex(pageNumber)
-					.toIndex(pageNumber + DebugUtils.PAGE_SIZE - 1)
-					.entries(getPage(pageNumber))
-					.build();
-
-			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().showInspectableElement(initPage);
-
-			while (true) {
-				AbstractUIEvent uiEvent = null;
-				try {
-					uiEvent = uiEventCollector.takeUiEvent();
-					System.out.println("EVENT IN SEANCE: " + uiEvent);
-				} catch (InterruptedException e) {
-				}
-				if (!SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(uiEvent.getType()))
-					ignoreEvent(uiEvent);
-				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION)) {
-					break;
-				}
-
 			}
 
 		}

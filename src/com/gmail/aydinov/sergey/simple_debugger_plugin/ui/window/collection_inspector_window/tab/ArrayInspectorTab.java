@@ -39,6 +39,8 @@ public class ArrayInspectorTab implements InspectorTab {
     private final Text pageText;
     private final Button goButton;
     private final Button nextButton;
+    
+    private int currentPage = 0;
 
     public ArrayInspectorTab(Composite parent) {
 
@@ -76,7 +78,7 @@ public class ArrayInspectorTab implements InspectorTab {
         prevButton.setText("Prev");
         prevButton.addListener(SWT.Selection, e ->
                 uiEventCollector.collectUiEvent(
-                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PREVIOUS_PAGE, null)
+                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, currentPage - 1)
                 )
         );
 
@@ -92,7 +94,7 @@ public class ArrayInspectorTab implements InspectorTab {
         nextButton.setText("Next");
         nextButton.addListener(SWT.Selection, e ->
                 uiEventCollector.collectUiEvent(
-                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_NEXT_PAGE, null)
+                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, currentPage + 1)
                 )
         );
 
@@ -133,7 +135,7 @@ public class ArrayInspectorTab implements InspectorTab {
             );
 
             pageText.setText(String.valueOf(page.getCurrentPage()));
-
+            currentPage = page.getCurrentPage();
             prevButton.setEnabled(page.hasPreviousPage());
             nextButton.setEnabled(page.hasNextPage());
 
