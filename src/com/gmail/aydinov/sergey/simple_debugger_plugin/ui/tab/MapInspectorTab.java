@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.tab;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.List;
 import java.util.Objects;
@@ -21,7 +21,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
 public class MapInspectorTab implements InspectorTab {
 

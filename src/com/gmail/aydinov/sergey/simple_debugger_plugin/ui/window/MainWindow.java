@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window;
 
 import java.util.Objects;
 
@@ -23,10 +23,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventC
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.tab.ClassMembersAtBreakpoint;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.tab.ConsoleTabContent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.tab.StackTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ClassMembersAtBreakpointTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleContentTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
 
 /**
  * Main debugger window displaying combined Variables + Fields tab, stack trace,
@@ -36,17 +35,17 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.tab
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
-public class MainWindow implements ManageableMainWindow {
+public class MainWindow {
 
-	private static ManageableMainWindow INSTANCE = null;
+	private static MainWindow INSTANCE = null;
 
 	private Shell shell;
 	private CTabFolder tabFolder;
 
 	// Combined Variables + Fields tab
-	private ClassMembersAtBreakpoint classMembersAtBreakpoint;
+	private ClassMembersAtBreakpointTab classMembersAtBreakpoint;
 	private StackTabContent stackTabContent;
-	private ConsoleTabContent consoleTabContent;
+	private ConsoleContentTab consoleTabContent;
 
 	private Button resumeButton;
 	private Label locationLabel;
@@ -95,7 +94,7 @@ public class MainWindow implements ManageableMainWindow {
 		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		// Combined Variables + Fields tab
-		classMembersAtBreakpoint = new ClassMembersAtBreakpoint(tabFolder);
+		classMembersAtBreakpoint = new ClassMembersAtBreakpointTab(tabFolder);
 		CTabItem varsFieldsTabItem = new CTabItem(tabFolder, SWT.NONE);
 		varsFieldsTabItem.setText("Class Members at Breakpoint");
 		varsFieldsTabItem.setControl(classMembersAtBreakpoint.getControl());
@@ -107,7 +106,7 @@ public class MainWindow implements ManageableMainWindow {
 		stackTabItem.setControl(stackTabContent.getControl());
 
 		// Console tab
-		consoleTabContent = new ConsoleTabContent(tabFolder);
+		consoleTabContent = new ConsoleContentTab(tabFolder);
 		CTabItem consoleTabItem = new CTabItem(tabFolder, SWT.NONE);
 		consoleTabItem.setText("Console");
 		consoleTabItem.setControl(consoleTabContent.getControl());
@@ -120,7 +119,7 @@ public class MainWindow implements ManageableMainWindow {
 
 	}
 
-	protected static ManageableMainWindow getOrCreateMainWindow() {
+	protected static MainWindow getOrCreateMainWindow() {
 		Display.getDefault().syncExec(() -> {
 			if (Objects.isNull(INSTANCE))
 				INSTANCE = new MainWindow();
@@ -162,19 +161,16 @@ public class MainWindow implements ManageableMainWindow {
 	/**
 	 * Opens the debugger window and sets the window icon.
 	 */
-	@Override
 	public void open() {
 		shell.setImage(SimpleDebugerWindowsManager.instance().icons.get("debugger").getFirst()); // Set icon for the
 		shell.open();
 	}
 
-	@Override
 	public boolean isOpen() {
 		return Objects.nonNull(shell) && !shell.isDisposed();
 	}
 
 	// ----------------- Debug events -----------------
-	@Override
 	@SuppressWarnings("unchecked")
 	public void handleDebugEvent(AbstractDebugEvent event) {
 		Display.getDefault().asyncExec(() -> {
@@ -239,7 +235,6 @@ public class MainWindow implements ManageableMainWindow {
 	 * @param title   dialog title
 	 * @param message error message
 	 */
-	@Override
 	public void showError(String title, String message) {
 		if (Objects.isNull(shell) || shell.isDisposed()) {
 			shell = new Shell(Display.getDefault());
@@ -252,7 +247,6 @@ public class MainWindow implements ManageableMainWindow {
 		});
 	}
 
-	@Override
 	public void close() {
 		// TODO Auto-generated method stub
 		

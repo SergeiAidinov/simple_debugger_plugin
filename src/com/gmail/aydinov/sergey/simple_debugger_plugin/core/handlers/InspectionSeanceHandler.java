@@ -25,7 +25,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.SimpleDebugerWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StackFrame;

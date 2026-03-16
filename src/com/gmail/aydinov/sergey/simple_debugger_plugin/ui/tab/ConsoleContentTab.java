@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.main_window.tab;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -14,7 +14,7 @@ import org.eclipse.swt.widgets.Text;
  * Email: <a href="mailto:sergey.aydinov@gmail.com">sergey.aydinov@gmail.com</a>
  * </p>
  */
-public class ConsoleTabContent {
+public class ConsoleContentTab {
 
     private final Text consoleText;
 
@@ -22,7 +22,7 @@ public class ConsoleTabContent {
      * Constructs the console tab content.
      * @param parent the parent composite in which the console text will be created
      */
-    public ConsoleTabContent(Composite parent) {
+    public ConsoleContentTab(Composite parent) {
         consoleText = new Text(parent, SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL | SWT.READ_ONLY);
         consoleText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
     }
