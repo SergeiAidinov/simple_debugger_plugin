@@ -1,7 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.collection_inspector_window.tab;
 
-import java.util.List;
-
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
@@ -10,13 +8,10 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Table;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.CollectionEntryDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
@@ -42,6 +37,7 @@ public class ArrayInspectorTab implements InspectorTab {
     private final Button nextButton;
 
     public ArrayInspectorTab(Composite parent) {
+
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(1, false));
 
@@ -54,23 +50,18 @@ public class ArrayInspectorTab implements InspectorTab {
         infoComposite.setLayout(new GridLayout(1, false));
 
         collectionNameLabel = new Label(infoComposite, SWT.NONE);
-        collectionNameLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         collectionNameLabel.setText("Collection: ");
 
         collectionTypeLabel = new Label(infoComposite, SWT.NONE);
-        collectionTypeLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         collectionTypeLabel.setText("Collection type: ");
 
         elementTypeLabel = new Label(infoComposite, SWT.NONE);
-        elementTypeLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         elementTypeLabel.setText("Element type: ");
 
         sizeLabel = new Label(infoComposite, SWT.NONE);
-        sizeLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         sizeLabel.setText("Size: ");
 
         pageInfoLabel = new Label(infoComposite, SWT.NONE);
-        pageInfoLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         pageInfoLabel.setText("Page: ");
 
         Composite paginationComposite = new Composite(headerComposite, SWT.NONE);
@@ -86,7 +77,7 @@ public class ArrayInspectorTab implements InspectorTab {
         );
 
         pageText = new Text(paginationComposite, SWT.BORDER);
-        GridData pageTextGridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+        GridData pageTextGridData = new GridData();
         pageTextGridData.widthHint = 70;
         pageText.setLayoutData(pageTextGridData);
 
@@ -119,58 +110,53 @@ public class ArrayInspectorTab implements InspectorTab {
         return root;
     }
 
-    public void showArray(List<CollectionEntryDTO> elements) {
-        root.getDisplay().asyncExec(() -> {
-            if (!viewer.getTable().isDisposed()) {
-                viewer.setInput(elements);
-                viewer.refresh();
-            }
-        });
-    }
+    // =========================================================
+    // Показ страницы
+    // =========================================================
 
-    public void showPage(
-            String collectionName,
-            String collectionType,
-            String elementType,
-            int totalElements,
-            int currentPage,
-            int totalPages,
-            int fromIndex,
-            int toIndex,
-            List<CollectionEntryDTO> elements) {
+    public void showPage(CollectionPageDTO page) {
 
         root.getDisplay().asyncExec(() -> {
+
             if (root.isDisposed() || viewer.getTable().isDisposed()) {
                 return;
             }
 
-            collectionNameLabel.setText("Collection: " + safe(collectionName));
-            collectionTypeLabel.setText("Collection type: " + safe(collectionType));
-            elementTypeLabel.setText("Element type: " + safe(elementType));
-            sizeLabel.setText("Size: " + totalElements);
+            collectionNameLabel.setText("Collection: " + safe(page.getCollectionName()));
+            collectionTypeLabel.setText("Collection type: " + safe(page.getCollectionType()));
+            elementTypeLabel.setText("Element type: " + safe(page.getElementType()));
+
+            sizeLabel.setText("Size: " + page.getTotalElements());
+
             pageInfoLabel.setText(
-                    "Page: " + currentPage + " of " + totalPages + "    Showing: " + fromIndex + "–" + toIndex
+                    "Page: " + page.getCurrentPage() +
+                            " of " + page.getTotalPages() +
+                            "   Showing: " + page.getFromIndex() +
+                            "–" + page.getToIndex()
             );
 
-            pageText.setText(String.valueOf(currentPage));
+            pageText.setText(String.valueOf(page.getCurrentPage()));
 
-            prevButton.setEnabled(currentPage > 1);
-            nextButton.setEnabled(currentPage < totalPages);
+            prevButton.setEnabled(page.hasPreviousPage());
+            nextButton.setEnabled(page.hasNextPage());
 
-            viewer.setInput(elements);
-            viewer.refresh();
+            viewer.setInput(page.getEntries());
 
             root.layout(true, true);
         });
     }
 
+    // =========================================================
+    // Пагинация
+    // =========================================================
+
     private void requestPage() {
-        String rawText = pageText.getText();
-        int page = 1;
+
+        int page;
 
         try {
-            page = Integer.parseInt(rawText.trim());
-        } catch (NumberFormatException e) {
+            page = Integer.parseInt(pageText.getText().trim());
+        } catch (Exception e) {
             page = 1;
         }
 
@@ -187,27 +173,39 @@ public class ArrayInspectorTab implements InspectorTab {
         return value == null ? "" : value;
     }
 
+    // =========================================================
+    // Таблица
+    // =========================================================
+
     private void setupColumns() {
+
         createColumn(
-                "Index",
-                80,
-                e -> String.valueOf(e.getSize()),
-                e -> null
+                "Name",
+                220,
+                InnerElementRepresentationDTO::getElementName,
+                this::getIcon
         );
 
         createColumn(
                 "Value",
-                450,
-                e -> e.getSignature() == null ? "" : e.getSignature(),
-                this::getIcon
+                400,
+                InnerElementRepresentationDTO::getValue,
+                e -> null
+        );
+
+        createColumn(
+                "Type",
+                180,
+                InnerElementRepresentationDTO::getTypeOrReturnType,
+                e -> null
         );
     }
 
     private TableViewerColumn createColumn(
             String title,
             int width,
-            java.util.function.Function<CollectionEntryDTO, String> textExtractor,
-            java.util.function.Function<CollectionEntryDTO, Image> imageExtractor) {
+            java.util.function.Function<InnerElementRepresentationDTO, String> textExtractor,
+            java.util.function.Function<InnerElementRepresentationDTO, Image> imageExtractor) {
 
         TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
 
@@ -215,20 +213,26 @@ public class ArrayInspectorTab implements InspectorTab {
         column.getColumn().setWidth(width);
 
         column.setLabelProvider(new ColumnLabelProvider() {
+
             @Override
             public String getText(Object element) {
-                if (element instanceof CollectionEntryDTO dto) {
+
+                if (element instanceof InnerElementRepresentationDTO dto) {
+
                     String text = textExtractor.apply(dto);
-                    return text != null ? text : "";
+                    return text == null ? "" : text;
                 }
+
                 return "";
             }
 
             @Override
             public Image getImage(Object element) {
-                if (!(element instanceof CollectionEntryDTO dto)) {
+
+                if (!(element instanceof InnerElementRepresentationDTO dto)) {
                     return null;
                 }
+
                 return imageExtractor.apply(dto);
             }
         });
@@ -236,18 +240,19 @@ public class ArrayInspectorTab implements InspectorTab {
         return column;
     }
 
-    private Image getIcon(CollectionEntryDTO dto) {
+    // =========================================================
+    // Иконки
+    // =========================================================
+
+    private Image getIcon(InnerElementRepresentationDTO dto) {
+
         if (dto == null) {
             return null;
         }
 
-        Object value = dto.getCollectionName();
+        if (dto.getValueCategory() ==
+                com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory.COLLECTION) {
 
-        if (value == null) {
-            return null;
-        }
-
-        if (value instanceof java.util.Collection || value instanceof java.util.Map) {
             return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
         }
 
@@ -255,7 +260,7 @@ public class ArrayInspectorTab implements InspectorTab {
     }
 
     @Override
-    public void showCollection(List<CollectionEntryDTO> elements) {
-        showArray(elements);
+    public void showCollection(java.util.List<InnerElementRepresentationDTO> elements) {
+        viewer.setInput(elements);
     }
 }
