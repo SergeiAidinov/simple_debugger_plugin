@@ -130,9 +130,21 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			}
 
 			// 6. Отображаем элементы в окне
+			int pageNumber = 0;
 
-			CollectionPageDTO initPage = CollectionPageDTO.builder().collectionName(anchorElement.getElementName())
-					.entries(getPage(0)).build();
+			String elementType = (Objects.nonNull(colectionElements.get(0)) && Objects.nonNull(colectionElements.get(0).getTypeOrReturnType())) ? colectionElements.get(0).getTypeOrReturnType() : DebugUtils.N_A;
+			CollectionPageDTO initPage = CollectionPageDTO.builder()
+					.collectionName(anchorElement.getElementName())
+					.collectionType(anchorElement.getTypeOrReturnType())
+					.elementType(elementType)
+					.totalElements(colectionElements.size())
+					.currentPage(pageNumber)
+					.totalPages(colectionElements.size() / DebugUtils.PAGE_SIZE )
+					.currentPage(pageNumber)
+					.fromIndex(pageNumber)
+					.toIndex(pageNumber + DebugUtils.PAGE_SIZE - 1)
+					.entries(getPage(pageNumber))
+					.build();
 
 			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().showInspectableElement(initPage);
 

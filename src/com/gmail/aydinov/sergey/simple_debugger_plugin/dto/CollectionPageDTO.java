@@ -9,12 +9,9 @@ public class CollectionPageDTO {
     private final String collectionName;
     private final String collectionType;
     private final String elementType;
-
     private final int totalElements;
-
     private final int currentPage;
     private final int totalPages;
-
     private final int fromIndex;
     private final int toIndex;
 
