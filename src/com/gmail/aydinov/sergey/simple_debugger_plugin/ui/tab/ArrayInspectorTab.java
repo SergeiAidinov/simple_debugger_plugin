@@ -10,6 +10,9 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -17,12 +20,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
 import java.util.List;
 import java.util.function.Function;
 
-public class ArrayInspectorTab implements InspectorTab {
+public class ArrayInspectorTab {
 
     private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
@@ -108,7 +112,12 @@ public class ArrayInspectorTab implements InspectorTab {
 
         // Колонки: Index и Value
         createColumn("Index", 80,  pair -> pair.getFirst().toString(), pair -> null);
-        createColumn("Value", 570, pair -> pair.getSecond().getValue(), this::getIcon);
+        createColumn(
+        	    "Value",
+        	    570,
+        	    pair -> ((InnerElementRepresentationDTO) pair.getSecond()).getValue(),
+        	    pair -> UiUtils.getIcon((InnerElementRepresentationDTO) pair.getSecond())
+        	);
     }
 
     public Composite getControl() {
@@ -202,21 +211,22 @@ public class ArrayInspectorTab implements InspectorTab {
         return column;
     }
 
-    private Image getIcon(PairDTO<Integer, InnerElementRepresentationDTO> pair) {
-        if (pair == null || pair.getSecond() == null) return null;
-
-        InnerElementRepresentationDTO dto = pair.getSecond();
-
-        if (dto.getValueCategory() ==
-                com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory.COLLECTION) {
-            return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
-        }
-
-        return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
-    }
-
-    @Override
-    public void showCollection(List<InnerElementRepresentationDTO> elements) {
-        // При использовании нового DTO этот метод можно временно не использовать
-    }
+    private Image getIcon(InnerElementRepresentationDTO dto) {
+		if (dto == null)
+			return null;
+		ValueCategory category = dto.getValueCategory();
+		if (category == null)
+			return null;
+		// коллекции и мапы
+		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
+			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
+		}
+		// Только поля пользовательского типа, которые реально инициализированы
+		if ((dto.getElementType() == UniversalElementType.NON_STATIC_FIELD
+				|| dto.getElementType() == UniversalElementType.STATIC_FIELD) && category == ValueCategory.USER_OBJECT
+				&& dto.getValue() != null && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
+			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
+		}
+		return null;
+	}
 }

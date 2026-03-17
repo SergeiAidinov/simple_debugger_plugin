@@ -115,9 +115,11 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private void doWorkAtBreakpoint(BreakpointEvent breakpointEvent) {
+		if (breakpointEvent.thread().isSuspended()) {
 		TargetApplicationRepresentation.getInstance().takeSnapshotOfTargetApplication(
 				TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), breakpointEvent);
 		updateUI(breakpointEvent);
+		}
 		Display display = Display.getDefault();
 		if (Objects.nonNull(display) && !display.isDisposed()) {
 			while (DebuggerContext.context().isDebugSessionActive()) {
@@ -204,7 +206,7 @@ public class DebugSessionImpl implements DebugSession {
 		List<UniversalElementRepresentation> locals = TargetApplicationRepresentation.getInstance()
 				.getTargetApplicationSnapshot().values().stream()
 				.filter(e -> e.getElementType().equals(UniversalElementType.LOCAL_VARIABLE)).toList();
-		relevantElements.stream().forEach(e -> System.out.println("RL:" + e));
+	//	relevantElements.stream().forEach(e -> System.out.println("RL:" + e));
 		relevantElements.addAll(locals);
 		Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
 		for (UniversalElementRepresentation element : relevantElements) {
@@ -212,9 +214,10 @@ public class DebugSessionImpl implements DebugSession {
 					.fromUniversalElement(element);
 			innerElementDTOs.add(elementRepresentation);
 		}
+		System.out.println("MODEL SIZE: " + TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().size());
 		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
 				.forEach(e -> System.out.println("MD:" + e));
-		System.out.println("INNER_ELS:" + innerElementDTOs);
+//		System.out.println("INNER_ELS:" + innerElementDTOs);
 		String methodName = location.declaringType().name() + "." + location.method().name() + "()";
 		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,
 				DebugUtils.compileStackInfo(thread), innerElementDTOs);

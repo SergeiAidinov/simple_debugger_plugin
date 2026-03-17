@@ -193,29 +193,53 @@ public class TargetApplicationRepresentation {
 		String valueText = null;
 		List<UniversalElementRepresentation> localVariables = new ArrayList<>();
 		for (LocalVariable local : locals) {
-			Value val = frame.getValue(local);
-			valueText = "";
-			ObjectReference objRef = val instanceof ObjectReference ? (ObjectReference) val : null;
-			if (Objects.isNull(objRef)) {
-				valueText = DebugUtils.getLocalVariableValueAsString(frame, local);
-			} else {
-//				TripletDTO<String, String, String> triplet = DebugUtils.determinCollectionTypeSafe(objRef, breakpointEvent);
-//				String description = DebugUtils.compileCollectionDescription(triplet);
-				int q = DebugUtils.getCollectionSize(objRef, breakpointEvent);
-				valueText = q == -1 ? DebugUtils.getLocalVariableValueAsString(frame, local)
-						: "size:" + q + "; ";
-				System.out.println("INNER COLLECTIONS: " + q);
-			}
 
-			UniversalElementRepresentation variable = UniversalElementRepresentation.builder().referenceType(null)
-					.objectReference(objRef).elementName(local.name()).additionalInfo(local.typeName())
-					.elementType(UniversalElementType.LOCAL_VARIABLE).currentRole(CurrentRole.INNER).value(valueText)
-					.isStatic(false).valueCategory(DebugUtils.determineValueCategory(frame.getValue(local)))
-					.typeOrReturnType(local.typeName()).uniqueId(UUID.randomUUID())
-					.parentUniqueId(methodRepresentation.getTag().getUniqueId()).build();
+		    Value val;
 
-			targetApplicationSnapshot.put(variable.getTag(), variable);
-			localVariables.add(variable);
+		    try {
+		        val = frame.getValue(local);
+		    } catch (Exception e) {
+		        // StackFrame мог устареть
+		        SimpleDebuggerLogger.warn("Failed to read local variable: " + local.name());
+		        continue;
+		    }
+
+		    valueText = "";
+		    ObjectReference objRef = val instanceof ObjectReference ? (ObjectReference) val : null;
+
+		    if (Objects.isNull(objRef)) {
+
+		        valueText = DebugUtils.getLocalVariableValueAsString(val);
+
+		    } else {
+
+		        int q = DebugUtils.getCollectionSize(objRef, breakpointEvent);
+
+		        valueText = q == -1
+		                ? DebugUtils.getLocalVariableValueAsString(val)
+		                : "size:" + q + "; ";
+
+		        System.out.println("INNER COLLECTIONS: " + q);
+		    }
+
+		    UniversalElementRepresentation variable =
+		            UniversalElementRepresentation.builder()
+		                    .referenceType(null)
+		                    .objectReference(objRef)
+		                    .elementName(local.name())
+		                    .additionalInfo(local.typeName())
+		                    .elementType(UniversalElementType.LOCAL_VARIABLE)
+		                    .currentRole(CurrentRole.INNER)
+		                    .value(valueText)
+		                    .isStatic(false)
+		                    .valueCategory(DebugUtils.determineValueCategory(val))
+		                    .typeOrReturnType(local.typeName())
+		                    .uniqueId(UUID.randomUUID())
+		                    .parentUniqueId(methodRepresentation.getTag().getUniqueId())
+		                    .build();
+
+		    targetApplicationSnapshot.put(variable.getTag(), variable);
+		    localVariables.add(variable);
 		}
 
 		return true;

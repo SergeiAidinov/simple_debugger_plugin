@@ -378,12 +378,6 @@ public class ClassMembersAtBreakpointTab {
 	            uiEventCollector.collectUiEvent(
 	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
 	            );
-	          //  UniversalInspectorWindow.getInstance().open();
-//	        } else if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-//	            // Клик по обычной inspectIcon — старая логика
-//	            uiEventCollector.collectUiEvent(
-//	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto)
-//	            );
 	        }
 	    });
 	}
@@ -409,13 +403,13 @@ public class ClassMembersAtBreakpointTab {
 	            tooltipManager.closePopup();
 	            if (dto != null) {
 	                if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-	                    uiEventCollector.collectUiEvent(
-	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto)
-	                    );
+//	                    uiEventCollector.collectUiEvent(
+//	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto)
+//	                    );
 	                } else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-	                    uiEventCollector.collectUiEvent(
-	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto)
-	                    );
+//	                    uiEventCollector.collectUiEvent(
+//	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto)
+//	                    );
 	                    Display display = root.getDisplay();
 	                    Point location = display.getCursorLocation();
 	                    tooltipManager.showTooltipForCollection(dto, location);

@@ -544,9 +544,9 @@ public class DebugUtils {
 //	            .anyMatch(i -> i.name().equals(interfaceName));
 //	}
 
-	public static String getLocalVariableValueAsString(StackFrame frame, LocalVariable variable) {
+	public static String getLocalVariableValueAsString(Value value) {
 		try {
-			Value value = frame.getValue(variable); // получаем Value из фрейма
+			//Value value = frame.getValue(variable); // получаем Value из фрейма
 			if (value == null)
 				return "null";
 

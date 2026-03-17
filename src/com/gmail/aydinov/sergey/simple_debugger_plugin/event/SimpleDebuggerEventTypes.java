@@ -72,11 +72,11 @@ public final class SimpleDebuggerEventTypes {
 
 		SHOW_ANCHOR_ELEMENT(TopLevelElementRepresentationDTO.class, null),
 
-		USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT(InnerElementRepresentationDTO.class,
-				new UserRerquestedAdditionalInfoAboutObjectHandler()),
-
-		USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class,
-				new UserRequestedAdditionalInfoAboutCollectionHandler()),
+//		USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT(InnerElementRepresentationDTO.class,
+//				new UserRerquestedAdditionalInfoAboutObjectHandler()),
+//
+//		USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class,
+//				new UserRequestedAdditionalInfoAboutCollectionHandler()),
 
 		//USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementRepresentationDTO.class, null),
 
