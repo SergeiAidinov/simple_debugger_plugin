@@ -107,7 +107,7 @@ public class TargetApplicationRepresentation {
 		// System.out.println(targetApplicationSnapshot);
 		targetApplicationSnapshot.putAll(topLevelElements);
 		// addLocalVariables(virtualMachine, breakpointEvent);
-	//	targetApplicationSnapshot.values().stream().forEach(e -> System.out.println("MODEL: " + e));
+		targetApplicationSnapshot.values().stream().forEach(e -> System.out.println("MODEL: " + e));
 	//	System.out.println(targetApplicationSnapshot);
 	}
 

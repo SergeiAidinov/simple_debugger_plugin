@@ -160,7 +160,7 @@ public class DebugSessionImpl implements DebugSession {
 		System.out.println(abstractSimpleDebuggerUIEvent.getType() + " handler: " +qq);
 			shouldRefreshSnapsotAndUi = abstractSimpleDebuggerUIEvent.getType().getUiEventHandler()
 					.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-
+			System.out.println(shouldRefreshSnapsotAndUi);
 		} catch (Exception exception) {
 			SimpleDebuggerLogger.error(exception.getMessage(), exception);
 		}
@@ -245,37 +245,35 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private Set<UniversalElementRepresentation> selectFieldsAndMethods(UniversalElementRepresentation initElement) {
-		if (Objects.isNull(initElement))
-			return Collections.emptySet();
-		Set<UniversalElementRepresentation> foundElements = new HashSet<>();
-		foundElements.add(initElement);
-		boolean found = true;
-		while (found) {
-			for (UniversalElementRepresentation earlierFoundElement : foundElements) {
-				List<UniversalElementRepresentation> justFoundElements = new ArrayList<UniversalElementRepresentation>();
-				justFoundElements.addAll(
-						TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
-							//	.filter(e -> Objects.equals(e.getObjectReference(), initElement.getObjectReference()))
-								.filter(e -> Objects.equals(e.getTag().getParentId(),
-										earlierFoundElement.getTag().getUniqueId()))
-								.map(e -> {
-									if (e instanceof UniversalElementRepresentation) {
-										 return (UniversalElementRepresentation) e;
-									}
-									return  (UniversalElementRepresentation) TargetApplicationRepresentation
-											.getInstance().getTargetApplicationSnapshot().get(e.getTag());
-								})
-								.toList());
-				if (justFoundElements.isEmpty()) {
-					found = false;
-					break;
-				} else {
-					foundElements.addAll(justFoundElements);
-					justFoundElements.clear();
-				}
-			}
-		}
-		return foundElements;
+	    if (initElement == null) {
+	        return Collections.emptySet();
+	    }
+	    Set<UniversalElementRepresentation> foundElements = new HashSet<>();
+	    foundElements.add(initElement);
+	    // Элементы текущего уровня обхода
+	    Set<UniversalElementRepresentation> currentLevel = new HashSet<>();
+	    currentLevel.add(initElement);
+	    while (!currentLevel.isEmpty()) {
+	        Set<UniversalElementRepresentation> nextLevel = new HashSet<>();
+	        for (UniversalElementRepresentation parentElement : currentLevel) {
+	            // Ищем всех детей текущего элемента
+	            List<UniversalElementRepresentation> children = TargetApplicationRepresentation
+	                    .getInstance()
+	                    .getTargetApplicationSnapshot()
+	                    .values()
+	                    .stream()
+	                    .filter(e -> Objects.equals(e.getTag().getParentId(), parentElement.getTag().getUniqueId()))
+	                    .map(e -> (UniversalElementRepresentation) e)
+	                    .toList();
+
+	            nextLevel.addAll(children);
+	        }
+	        // Добавляем найденных детей в общий Set
+	        foundElements.addAll(nextLevel);
+	        // Переходим на следующий уровень
+	        currentLevel = nextLevel;
+	    }
+	    return foundElements;
 	}
 
 	private void logError(String message, Throwable exception) {

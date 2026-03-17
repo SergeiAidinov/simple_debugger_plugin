@@ -15,7 +15,7 @@ public class UserPressedResumeButtonHandler implements UIEventHandler{
 			BreakpointEvent breakpointEvent) {
 		SimpleDebuggerLogger.info("User pressed RESUME");
 		DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_FINISHED);
-		return false;
+		return true;
 	}
 
 }
