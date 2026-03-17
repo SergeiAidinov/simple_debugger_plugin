@@ -54,7 +54,7 @@ public class ClassMembersAtBreakpointTab {
 	private final TableViewer viewer;
 	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private InnerElementRepresentationDTO lastInspectedElement;
-	
+
 	private UUID currentElementId;
 	private TooltipManager tooltipManager;
 //	private InstanceInspectionPopupManager popupManager;
@@ -74,7 +74,7 @@ public class ClassMembersAtBreakpointTab {
 		setupHoverInspectionListener();
 		// popupManager = new InstanceInspectionPopupManager(root);
 	}
-	
+
 	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
 		if (dto == null || dto.getInnerElements().isEmpty())
 			return;
@@ -88,7 +88,7 @@ public class ClassMembersAtBreakpointTab {
 			}
 		});
 	}
-	
+
 	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO userInstanceInspectionDTO) {
 		Display display = root.getDisplay();
 		display.asyncExec(() -> {
@@ -98,7 +98,7 @@ public class ClassMembersAtBreakpointTab {
 			tooltipManager.showFieldInfoPopup(userInstanceInspectionDTO, location);
 		});
 	}
-	
+
 	public Composite getControl() {
 		return root;
 	}
@@ -126,8 +126,7 @@ public class ClassMembersAtBreakpointTab {
 			if (v != null)
 				return v;
 			// Если поле или статическое поле, показываем тип
-			if (dto.getElementType() == UniversalElementType.STATIC_FIELD
-					|| dto.getElementType() == UniversalElementType.NON_STATIC_FIELD) {
+			if (dto.getElementType() == UniversalElementType.FIELD) {
 				return dto.getAdditionalInfo();
 			}
 			return ""; // иначе пусто
@@ -198,8 +197,7 @@ public class ClassMembersAtBreakpointTab {
 		String key = switch (dto.getElementType()) {
 		case INTERFACE -> "interface";
 		case METHOD -> dto.isStatic() ? "static_method" : "method";
-		case STATIC_FIELD -> "static_field";
-		case NON_STATIC_FIELD -> "fieldIcon";
+		case FIELD -> dto.isStatic() ? "static_field" : "field";
 		case LOCAL_VARIABLE -> "variableIcon";
 		default -> null;
 		};
@@ -210,8 +208,7 @@ public class ClassMembersAtBreakpointTab {
 		String key = switch (dto.getElementType()) {
 		case INTERFACE -> "interface";
 		case METHOD -> dto.isStatic() ? "static_method" : "method";
-		case STATIC_FIELD -> "static_field";
-		case NON_STATIC_FIELD -> "fieldIcon";
+		case FIELD -> dto.isStatic() ? "static_field" : "fieldIcon";
 		case LOCAL_VARIABLE -> "variableIcon";
 		default -> null;
 		};
@@ -230,8 +227,7 @@ public class ClassMembersAtBreakpointTab {
 			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
 		}
 		// Только поля пользовательского типа, которые реально инициализированы
-		if ((dto.getElementType() == UniversalElementType.NON_STATIC_FIELD
-				|| dto.getElementType() == UniversalElementType.STATIC_FIELD) && category == ValueCategory.USER_OBJECT
+		if ((dto.getElementType() == UniversalElementType.FIELD) && category == ValueCategory.USER_OBJECT
 				&& dto.getValue() != null && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
 			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
 		}
@@ -259,14 +255,14 @@ public class ClassMembersAtBreakpointTab {
 	// =========================================================
 
 	private void setupTooltips(Table table) {
-	    TooltipManager tooltipManager = new TooltipManager(table, root);
-	    tooltipManager.setTooltipProvider(item -> {
-	        int col = TooltipManager.getColumnIndexAtPoint(table, table.getDisplay().getCursorLocation().x
-	                - table.toDisplay(0, 0).x);
-	        Object tip = item.getData("tooltip_col_" + col);
-	        return tip instanceof String ? (String) tip : null;
-	    });
-	    this.tooltipManager = tooltipManager;
+		TooltipManager tooltipManager = new TooltipManager(table, root);
+		tooltipManager.setTooltipProvider(item -> {
+			int col = TooltipManager.getColumnIndexAtPoint(table,
+					table.getDisplay().getCursorLocation().x - table.toDisplay(0, 0).x);
+			Object tip = item.getData("tooltip_col_" + col);
+			return tip instanceof String ? (String) tip : null;
+		});
+		this.tooltipManager = tooltipManager;
 	}
 
 	private int getColumnIndexAtPoint(Table table, int x) {
@@ -284,7 +280,7 @@ public class ClassMembersAtBreakpointTab {
 	// =========================================================
 
 	private List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
-	//	allElements.stream().forEach(e -> System.out.println(e));
+		// allElements.stream().forEach(e -> System.out.println(e));
 		Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<>();
 		Set<InnerElementRepresentationDTO> elementsToDelete = new HashSet<>();
 		// 1️⃣ root элементы
@@ -348,77 +344,76 @@ public class ClassMembersAtBreakpointTab {
 	}
 
 	private void setupColumnClickListeners() {
-	    Table table = viewer.getTable();
-	    table.addListener(SWT.MouseDown, event -> {
-	        TableItem item = table.getItem(new Point(event.x, event.y));
-	        if (item == null)
-	            return;
+		Table table = viewer.getTable();
+		table.addListener(SWT.MouseDown, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			if (item == null)
+				return;
 
-	        int colIndex = getColumnIndexAtPoint(table, event.x);
-	        // Наша третья колонка — индекс 2
-	        if (colIndex != 2)
-	            return;
+			int colIndex = getColumnIndexAtPoint(table, event.x);
+			// Наша третья колонка — индекс 2
+			if (colIndex != 2)
+				return;
 
-	        Object data = item.getData();
-	        if (!(data instanceof InnerElementRepresentationDTO dto))
-	            return;
+			Object data = item.getData();
+			if (!(data instanceof InnerElementRepresentationDTO dto))
+				return;
 
-	        // Проверяем, по какой иконке кликнули
-	        Image clickedImage = getIcon(dto);
-	        if (clickedImage == null)
-	            return;
+			// Проверяем, по какой иконке кликнули
+			Image clickedImage = getIcon(dto);
+			if (clickedImage == null)
+				return;
 
-	        if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-	            // Клик по коллекции — создаем окно и генерируем событие
-	            Display display = table.getDisplay();
-	            display.asyncExec(() -> {
-	            //    new CollectionInspectorWindow().open();
-	            });
+			if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+				// Клик по коллекции — создаем окно и генерируем событие
+				Display display = table.getDisplay();
+				display.asyncExec(() -> {
+					// new CollectionInspectorWindow().open();
+				});
 				SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
-	            uiEventCollector.collectUiEvent(
-	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
-	            );
-	        }
-	    });
+				uiEventCollector.collectUiEvent(
+						new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto));
+			}
+		});
 	}
 
 	private void setupHoverInspectionListener() {
 		Table table = viewer.getTable();
-	    table.addListener(SWT.MouseMove, event -> {
-	        TableItem item = table.getItem(new Point(event.x, event.y));
-	        InnerElementRepresentationDTO dto = null;
-	        if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
-	            int colIndex = getColumnIndexAtPoint(table, event.x);
-	            if (colIndex == 2) {
-	                Image icon = getIcon(dataDto);
-	                if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst() ||
-	                    icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-	                    dto = dataDto;
-	                }
-	            }
-	        }
+		table.addListener(SWT.MouseMove, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			InnerElementRepresentationDTO dto = null;
+			if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
+				int colIndex = getColumnIndexAtPoint(table, event.x);
+				if (colIndex == 2) {
+					Image icon = getIcon(dataDto);
+					if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
+							|| icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+						dto = dataDto;
+					}
+				}
+			}
 
-	        if (!Objects.equals(dto, lastInspectedElement)) {
-	            lastInspectedElement = dto;
-	            tooltipManager.closePopup();
-	            if (dto != null) {
-	                if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+			if (!Objects.equals(dto, lastInspectedElement)) {
+				lastInspectedElement = dto;
+				tooltipManager.closePopup();
+				if (dto != null) {
+					if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
 //	                    uiEventCollector.collectUiEvent(
 //	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto)
 //	                    );
-	                } else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+					} else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
 //	                    uiEventCollector.collectUiEvent(
 //	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto)
 //	                    );
-	                    Display display = root.getDisplay();
-	                    Point location = display.getCursorLocation();
-	                    tooltipManager.showTooltipForCollection(dto, location);
-	                }
-	            }
-	        }
-	    });
+						Display display = root.getDisplay();
+						Point location = display.getCursorLocation();
+						tooltipManager.showTooltipForCollection(dto, location);
+					}
+				}
+			}
+		});
 	}
-	
+
 	private class ValueEditingSupport extends EditingSupport {
 		private final TextCellEditor editor;
 
@@ -453,7 +448,7 @@ public class ClassMembersAtBreakpointTab {
 			String type = dto.getAdditionalInfo();
 			Object convertedValue = UiUtils.convertToType(newValue, type);
 			switch (dto.getElementType()) {
-			case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, convertedValue.toString());
+			case FIELD -> updateFieldValue(dto, convertedValue.toString());
 			case LOCAL_VARIABLE -> updateVariableValue(dto, convertedValue.toString());
 			default -> {
 			}

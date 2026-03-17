@@ -66,8 +66,7 @@ public class UiUtils {
 
 	    // 3. Только поля (не локальные переменные, не методы)
 	    UniversalElementType type = dto.getElementType();
-	    if (type != UniversalElementType.NON_STATIC_FIELD &&
-	        type != UniversalElementType.STATIC_FIELD) {
+	    if (type != UniversalElementType.FIELD) {
 	        return null;
 	    }
 

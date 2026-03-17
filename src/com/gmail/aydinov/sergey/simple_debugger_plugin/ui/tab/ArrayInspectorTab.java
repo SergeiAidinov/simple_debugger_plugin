@@ -28,190 +28,174 @@ import java.util.function.Function;
 
 public class ArrayInspectorTab {
 
-    private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
-    private final Composite root;
-    private final TableViewer viewer;
+	private final Composite root;
+	private final TableViewer viewer;
 
-    private final Label collectionNameLabel;
-    private final Label collectionTypeLabel;
-    private final Label elementTypeLabel;
-    private final Label sizeLabel;
-    private final Label pageInfoLabel;
+	private final Label collectionNameLabel;
+	private final Label collectionTypeLabel;
+	private final Label elementTypeLabel;
+	private final Label sizeLabel;
+	private final Label pageInfoLabel;
 
-    private final Button prevButton;
-    private final Text pageText;
-    private final Button goButton;
-    private final Button nextButton;
-    
-    private int currentPage = 0;
+	private final Button prevButton;
+	private final Text pageText;
+	private final Button goButton;
+	private final Button nextButton;
 
-    public ArrayInspectorTab(Composite parent) {
+	private int currentPage = 0;
 
-        root = new Composite(parent, SWT.NONE);
-        root.setLayout(new GridLayout(1, false));
+	public ArrayInspectorTab(Composite parent) {
 
-        Composite headerComposite = new Composite(root, SWT.NONE);
-        headerComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-        headerComposite.setLayout(new GridLayout(2, false));
+		root = new Composite(parent, SWT.NONE);
+		root.setLayout(new GridLayout(1, false));
 
-        Composite infoComposite = new Composite(headerComposite, SWT.NONE);
-        infoComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        infoComposite.setLayout(new GridLayout(1, false));
+		Composite headerComposite = new Composite(root, SWT.NONE);
+		headerComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+		headerComposite.setLayout(new GridLayout(2, false));
 
-        collectionNameLabel = new Label(infoComposite, SWT.NONE);
-        collectionNameLabel.setText("Collection: ");
+		Composite infoComposite = new Composite(headerComposite, SWT.NONE);
+		infoComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		infoComposite.setLayout(new GridLayout(1, false));
 
-        collectionTypeLabel = new Label(infoComposite, SWT.NONE);
-        collectionTypeLabel.setText("Collection type: ");
+		collectionNameLabel = new Label(infoComposite, SWT.NONE);
+		collectionNameLabel.setText("Collection: ");
 
-        elementTypeLabel = new Label(infoComposite, SWT.NONE);
-        elementTypeLabel.setText("Element type: ");
+		collectionTypeLabel = new Label(infoComposite, SWT.NONE);
+		collectionTypeLabel.setText("Collection type: ");
 
-        sizeLabel = new Label(infoComposite, SWT.NONE);
-        sizeLabel.setText("Size: ");
+		elementTypeLabel = new Label(infoComposite, SWT.NONE);
+		elementTypeLabel.setText("Element type: ");
 
-        pageInfoLabel = new Label(infoComposite, SWT.NONE);
-        pageInfoLabel.setText("Page: ");
+		sizeLabel = new Label(infoComposite, SWT.NONE);
+		sizeLabel.setText("Size: ");
 
-        Composite paginationComposite = new Composite(headerComposite, SWT.NONE);
-        paginationComposite.setLayoutData(new GridData(SWT.END, SWT.BEGINNING, false, false));
-        paginationComposite.setLayout(new GridLayout(4, false));
+		pageInfoLabel = new Label(infoComposite, SWT.NONE);
+		pageInfoLabel.setText("Page: ");
 
-        prevButton = new Button(paginationComposite, SWT.PUSH);
-        prevButton.setText("Prev");
-        prevButton.addListener(SWT.Selection, e ->
-                uiEventCollector.collectUiEvent(
-                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, currentPage - 1)
-                )
-        );
+		Composite paginationComposite = new Composite(headerComposite, SWT.NONE);
+		paginationComposite.setLayoutData(new GridData(SWT.END, SWT.BEGINNING, false, false));
+		paginationComposite.setLayout(new GridLayout(4, false));
 
-        pageText = new Text(paginationComposite, SWT.BORDER);
-        pageText.setLayoutData(new GridData(70, SWT.DEFAULT));
+		prevButton = new Button(paginationComposite, SWT.PUSH);
+		prevButton.setText("Prev");
+		prevButton.addListener(SWT.Selection, e -> uiEventCollector.collectUiEvent(
+				new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, currentPage - 1)));
 
-        goButton = new Button(paginationComposite, SWT.PUSH);
-        goButton.setText("Go");
-        goButton.addListener(SWT.Selection, e -> requestPage());
-        pageText.addListener(SWT.DefaultSelection, e -> requestPage());
+		pageText = new Text(paginationComposite, SWT.BORDER);
+		pageText.setLayoutData(new GridData(70, SWT.DEFAULT));
 
-        nextButton = new Button(paginationComposite, SWT.PUSH);
-        nextButton.setText("Next");
-        nextButton.addListener(SWT.Selection, e ->
-                uiEventCollector.collectUiEvent(
-                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, currentPage + 1)
-                )
-        );
+		goButton = new Button(paginationComposite, SWT.PUSH);
+		goButton.setText("Go");
+		goButton.addListener(SWT.Selection, e -> requestPage());
+		pageText.addListener(SWT.DefaultSelection, e -> requestPage());
 
-        Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
-        table.setHeaderVisible(true);
-        table.setLinesVisible(true);
-        table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		nextButton = new Button(paginationComposite, SWT.PUSH);
+		nextButton.setText("Next");
+		nextButton.addListener(SWT.Selection, e -> uiEventCollector.collectUiEvent(
+				new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, currentPage + 1)));
 
-        viewer = new TableViewer(table);
-        viewer.setContentProvider(ArrayContentProvider.getInstance());
+		Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+		table.setHeaderVisible(true);
+		table.setLinesVisible(true);
+		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        // Колонки: Index и Value
-        createColumn("Index", 80,  pair -> pair.getFirst().toString(), pair -> null);
-        createColumn(
-        	    "Value",
-        	    570,
-        	    pair -> ((InnerElementRepresentationDTO) pair.getSecond()).getValue(),
-        	    pair -> UiUtils.getIcon((InnerElementRepresentationDTO) pair.getSecond())
-        	);
-    }
+		viewer = new TableViewer(table);
+		viewer.setContentProvider(ArrayContentProvider.getInstance());
 
-    public Composite getControl() {
-        return root;
-    }
+		// Колонки: Index и Value
+		createColumn("Index", 80, pair -> pair.getFirst().toString(), pair -> null);
+		createColumn("Value", 570, pair -> ((InnerElementRepresentationDTO) pair.getSecond()).getValue(),
+				pair -> UiUtils.getIcon((InnerElementRepresentationDTO) pair.getSecond()));
+	}
 
-    // =========================================================
-    // Показ страницы
-    // =========================================================
+	public Composite getControl() {
+		return root;
+	}
 
-    public void showPage(CollectionPageDTO page) {
-        root.getDisplay().asyncExec(() -> {
-            if (root.isDisposed() || viewer.getTable().isDisposed()) return;
+	// =========================================================
+	// Показ страницы
+	// =========================================================
 
-            collectionNameLabel.setText("Collection: " + safe(page.getCollectionName()));
-            collectionTypeLabel.setText("Collection type: " + safe(page.getCollectionType()));
-            elementTypeLabel.setText("Element type: " + safe(page.getElementType()));
-            sizeLabel.setText("Size: " + page.getTotalElements());
-            pageInfoLabel.setText(
-                    "Page: " + page.getCurrentPage() +
-                            " of " + page.getTotalPages() +
-                            "   Showing: " + page.getFromIndex() +
-                            "–" + page.getToIndex()
-            );
+	public void showPage(CollectionPageDTO page) {
+		root.getDisplay().asyncExec(() -> {
+			if (root.isDisposed() || viewer.getTable().isDisposed())
+				return;
 
-            pageText.setText(String.valueOf(page.getCurrentPage()));
-            currentPage = page.getCurrentPage();
-            prevButton.setEnabled(page.hasPreviousPage());
-            nextButton.setEnabled(page.hasNextPage());
+			collectionNameLabel.setText("Collection: " + safe(page.getCollectionName()));
+			collectionTypeLabel.setText("Collection type: " + safe(page.getCollectionType()));
+			elementTypeLabel.setText("Element type: " + safe(page.getElementType()));
+			sizeLabel.setText("Size: " + page.getTotalElements());
+			pageInfoLabel.setText("Page: " + page.getCurrentPage() + " of " + page.getTotalPages() + "   Showing: "
+					+ page.getFromIndex() + "–" + page.getToIndex());
 
-            List<PairDTO<Integer, InnerElementRepresentationDTO>> entries = page.getEntries();
-            viewer.setInput(entries);
+			pageText.setText(String.valueOf(page.getCurrentPage()));
+			currentPage = page.getCurrentPage();
+			prevButton.setEnabled(page.hasPreviousPage());
+			nextButton.setEnabled(page.hasNextPage());
 
-            root.layout(true, true);
-        });
-    }
+			List<PairDTO<Integer, InnerElementRepresentationDTO>> entries = page.getEntries();
+			viewer.setInput(entries);
 
-    // =========================================================
-    // Пагинация
-    // =========================================================
+			root.layout(true, true);
+		});
+	}
 
-    private void requestPage() {
-        int page;
-        try {
-            page = Integer.parseInt(pageText.getText().trim());
-        } catch (Exception e) {
-            page = 0;
-        }
-        if (page < 0) page = 0;
+	// =========================================================
+	// Пагинация
+	// =========================================================
 
-        uiEventCollector.collectUiEvent(
-                new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, page)
-        );
-    }
+	private void requestPage() {
+		int page;
+		try {
+			page = Integer.parseInt(pageText.getText().trim());
+		} catch (Exception e) {
+			page = 0;
+		}
+		if (page < 0)
+			page = 0;
 
-    private String safe(String value) {
-        return value == null ? "" : value;
-    }
+		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, page));
+	}
 
-    // =========================================================
-    // Таблица
-    // =========================================================
+	private String safe(String value) {
+		return value == null ? "" : value;
+	}
 
-    private <K,V> TableViewerColumn createColumn(
-            String title,
-            int width,
-            Function<PairDTO<K,V>, String> textExtractor,
-            Function<PairDTO<K,V>, Image> imageExtractor) {
+	// =========================================================
+	// Таблица
+	// =========================================================
 
-        TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
-        column.getColumn().setText(title);
-        column.getColumn().setWidth(width);
+	private <K, V> TableViewerColumn createColumn(String title, int width,
+			Function<PairDTO<K, V>, String> textExtractor, Function<PairDTO<K, V>, Image> imageExtractor) {
 
-        column.setLabelProvider(new ColumnLabelProvider() {
-            @Override
-            public String getText(Object element) {
-                if (element instanceof PairDTO<?,?> pair) {
-                    String text = textExtractor.apply((PairDTO<K,V>) pair);
-                    return text != null ? text : "";
-                }
-                return "";
-            }
+		TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
+		column.getColumn().setText(title);
+		column.getColumn().setWidth(width);
 
-            @Override
-            public Image getImage(Object element) {
-                if (!(element instanceof PairDTO<?,?> pair)) return null;
-                return imageExtractor.apply((PairDTO<K,V>) pair);
-            }
-        });
+		column.setLabelProvider(new ColumnLabelProvider() {
+			@Override
+			public String getText(Object element) {
+				if (element instanceof PairDTO<?, ?> pair) {
+					String text = textExtractor.apply((PairDTO<K, V>) pair);
+					return text != null ? text : "";
+				}
+				return "";
+			}
 
-        return column;
-    }
+			@Override
+			public Image getImage(Object element) {
+				if (!(element instanceof PairDTO<?, ?> pair))
+					return null;
+				return imageExtractor.apply((PairDTO<K, V>) pair);
+			}
+		});
 
-    private Image getIcon(InnerElementRepresentationDTO dto) {
+		return column;
+	}
+
+	private Image getIcon(InnerElementRepresentationDTO dto) {
 		if (dto == null)
 			return null;
 		ValueCategory category = dto.getValueCategory();
@@ -222,8 +206,7 @@ public class ArrayInspectorTab {
 			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
 		}
 		// Только поля пользовательского типа, которые реально инициализированы
-		if ((dto.getElementType() == UniversalElementType.NON_STATIC_FIELD
-				|| dto.getElementType() == UniversalElementType.STATIC_FIELD) && category == ValueCategory.USER_OBJECT
+		if ((dto.getElementType() == UniversalElementType.FIELD) && category == ValueCategory.USER_OBJECT
 				&& dto.getValue() != null && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
 			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
 		}
