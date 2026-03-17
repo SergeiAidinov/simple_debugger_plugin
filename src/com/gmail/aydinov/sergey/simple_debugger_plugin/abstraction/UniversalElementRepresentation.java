@@ -126,9 +126,10 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
 
     public static Builder builder() { return new Builder(); }
     
-    public static UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId) {
+    public static UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId, ObjectReference objectReference) {
 	    return UniversalElementRepresentation.builder()
-	    	.referenceType(field.declaringType())	
+	    	.referenceType(field.declaringType())
+	    	.objectReference(objectReference)
 	        .elementName(field.name())
 	        .additionalInfo(field.typeName())
 	        .elementType(UniversalElementType.FIELD)
@@ -136,22 +137,24 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
 	        .value(value != null ? value.toString() : "null")
 	        .isStatic(field.isStatic())
 	        .valueCategory(DebugUtils.determineValueCategory(value))
+	        .typeOrReturnType(DebugUtils.valueToString(value))
 	        .uniqueId(UUID.randomUUID())
 	        .parentUniqueId(parentId)
 	        .build();
 	}
     
-    
-    public static UniversalElementRepresentation buildElementForMethod(Method method, UUID parentId) {
+    public static UniversalElementRepresentation buildElementForMethod(Method method, UUID parentId, ObjectReference objectReference) {
         return UniversalElementRepresentation.builder()
-            .referenceType(method.declaringType()) // 🔥 ВАЖНО
+            .referenceType(method.declaringType())
+            .objectReference(objectReference)
             .elementName(method.name() + "()")
-            .additionalInfo(method.signature())   // сигнатура уже есть — отлично
+            .additionalInfo(String.join(",", method.argumentTypeNames()))
             .elementType(UniversalElementType.METHOD)
             .currentRole(CurrentRole.INNER)
-            .value(method.signature())
+            .value(method.name() + "(" + String.join(",", method.argumentTypeNames() + ")"))
             .isStatic(method.isStatic())
             .valueCategory(ValueCategory.NOT_SPECIFIED)
+            .typeOrReturnType(method.returnTypeName())
             .uniqueId(UUID.randomUUID())
             .parentUniqueId(parentId)
             .build();
