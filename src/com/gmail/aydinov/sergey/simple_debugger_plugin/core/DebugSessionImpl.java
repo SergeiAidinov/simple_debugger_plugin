@@ -108,11 +108,11 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private void handleVmDisconnected() {
-		try {
-			TargetApplicationRepresentation.getInstance().detachDebugger();
-			eventSet.resume();
-		} catch (Exception ignored) {
-		}
+//		try {
+//			TargetApplicationRepresentation.getInstance().detachDebugger();
+//			eventSet.resume();
+//		} catch (Exception ignored) {
+//		}
 	}
 
 	private void doWorkAtBreakpoint(BreakpointEvent breakpointEvent) {
