@@ -455,8 +455,7 @@ public class DebugUtils {
 
 		// ---------- Fields ----------
 		if (jdiElement instanceof com.sun.jdi.Field field) {
-			return field.isStatic() ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
-					: UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
+			return UniversalElementRepresentation.UniversalElementType.FIELD;
 		}
 
 		// ---------- Methods ----------

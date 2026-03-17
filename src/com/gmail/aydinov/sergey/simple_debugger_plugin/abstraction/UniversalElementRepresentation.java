@@ -1,14 +1,18 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
+import java.util.UUID;
+
+import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
+import com.sun.jdi.Field;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
-import java.util.UUID;
+import com.sun.jdi.Value;
 
 public class UniversalElementRepresentation extends AbstractElementRepresentation
         implements Comparable<UniversalElementRepresentation> {
 
-    public enum UniversalElementType { INTERFACE, CLASS, ENUM, STATIC_FIELD, NON_STATIC_FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, OBJECT_INSTANCE, UNKNOWN }
+    public enum UniversalElementType { INTERFACE, CLASS, ENUM, /*STATIC_FIELD, NON_STATIC_FIELD,*/ FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, OBJECT_INSTANCE, UNKNOWN }
     public enum CurrentRole { OUTER, INNER, LOCAL }
     public enum ValueCategory { PRIMITIVE, WRAPPER, STRING, COLLECTION, ARRAY, MAP, USER_OBJECT, NULL, NOT_SPECIFIED }
 
@@ -122,13 +126,31 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
 
     public static Builder builder() { return new Builder(); }
     
+    public static UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId) {
+	    return UniversalElementRepresentation.builder()
+	    	.referenceType(field.declaringType())	
+	        .elementName(field.name())
+	        .additionalInfo(field.typeName())
+	        .elementType(UniversalElementType.FIELD)
+	        .currentRole(CurrentRole.INNER)
+	        .value(value != null ? value.toString() : "null")
+	        .isStatic(field.isStatic())
+	        .valueCategory(DebugUtils.determineValueCategory(value))
+	        .uniqueId(UUID.randomUUID())
+	        .parentUniqueId(parentId)
+	        .build();
+	}
+    
+    
     public static UniversalElementRepresentation buildElementForMethod(Method method, UUID parentId) {
         return UniversalElementRepresentation.builder()
             .referenceType(method.declaringType()) // 🔥 ВАЖНО
-            .elementName(method.name())
+            .elementName(method.name() + "()")
             .additionalInfo(method.signature())   // сигнатура уже есть — отлично
             .elementType(UniversalElementType.METHOD)
             .currentRole(CurrentRole.INNER)
+            .value(method.signature())
+            .isStatic(method.isStatic())
             .valueCategory(ValueCategory.NOT_SPECIFIED)
             .uniqueId(UUID.randomUUID())
             .parentUniqueId(parentId)

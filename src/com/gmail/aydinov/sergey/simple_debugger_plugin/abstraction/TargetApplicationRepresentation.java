@@ -216,7 +216,7 @@ public class TargetApplicationRepresentation {
 	            Value value = objectRef.getValue(field);
 
 	            UniversalElementRepresentation member =
-	                    buildElementForField(field, value, parentId);
+	            		 UniversalElementRepresentation.buildElementForField(field, value, parentId);
 
 	            targetApplicationSnapshot.put(member.getTag(), member);
 
@@ -233,7 +233,7 @@ public class TargetApplicationRepresentation {
 
 	            Value value = classType.getValue(field);
 	            UniversalElementRepresentation member =
-	                    buildElementForField(field, value, parentId);
+	            		 UniversalElementRepresentation.buildElementForField(field, value, parentId);
 
 	            targetApplicationSnapshot.put(member.getTag(), member);
 
@@ -406,18 +406,18 @@ public class TargetApplicationRepresentation {
 	}
 
 	// Создание элемента для поля
-	private UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId) {
-	    return UniversalElementRepresentation.builder()
-	        .elementName(field.name())
-	        .additionalInfo(field.typeName())
-	        .elementType(UniversalElementType.NON_STATIC_FIELD)
-	        .currentRole(CurrentRole.INNER)
-	        .value(value != null ? value.toString() : "null")
-	        .valueCategory(ValueCategory.NOT_SPECIFIED)
-	        .uniqueId(UUID.randomUUID())
-	        .parentUniqueId(parentId)
-	        .build();
-	}
+//	private UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId) {
+//	    return UniversalElementRepresentation.builder()
+//	        .elementName(field.name())
+//	        .additionalInfo(field.typeName())
+//	        .elementType(UniversalElementType.NON_STATIC_FIELD)
+//	        .currentRole(CurrentRole.INNER)
+//	        .value(value != null ? value.toString() : "null")
+//	        .valueCategory(ValueCategory.NOT_SPECIFIED)
+//	        .uniqueId(UUID.randomUUID())
+//	        .parentUniqueId(parentId)
+//	        .build();
+//	}
 
 	// Создание элемента для метода
 //	private UniversalElementRepresentation buildElementForMethod(Method method, UUID parentId) {
