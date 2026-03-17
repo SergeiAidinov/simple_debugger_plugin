@@ -24,8 +24,13 @@ public class ElementReference extends AbstractElementRepresentation {
         return "<reference to " + referenceTag.getUniqueId() + ">";
     }
 
-    @Override
-    public String toString() {
-        return "ElementReference [ownTag=" + tag + ", referenceTag=" + referenceTag + "]";
-    }
+	@Override
+	public String toString() {
+		return "ElementReference [referenceTag=" + referenceTag + ", tag=" + tag + ", getReferenceTag()="
+				+ getReferenceTag() + ", getElementName()=" + getElementName() + ", getTag()=" + getTag()
+				+ ", getObjectReference()=" + getObjectReference() + ", getClass()=" + getClass() + ", hashCode()="
+				+ hashCode() + ", toString()=" + super.toString() + "]";
+	}
+
+    
 }

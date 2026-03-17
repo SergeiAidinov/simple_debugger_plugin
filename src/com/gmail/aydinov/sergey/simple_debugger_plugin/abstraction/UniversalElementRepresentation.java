@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
+import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import java.util.UUID;
@@ -120,9 +121,33 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
     }
 
     public static Builder builder() { return new Builder(); }
-
-    @Override
-    public String toString() {
-        return "UniversalElementRepresentation [tag=" + tag + ", elementName=" + elementName + ", elementType=" + elementType + "]";
+    
+    public static UniversalElementRepresentation buildElementForMethod(Method method, UUID parentId) {
+        return UniversalElementRepresentation.builder()
+            .referenceType(method.declaringType()) // 🔥 ВАЖНО
+            .elementName(method.name())
+            .additionalInfo(method.signature())   // сигнатура уже есть — отлично
+            .elementType(UniversalElementType.METHOD)
+            .currentRole(CurrentRole.INNER)
+            .valueCategory(ValueCategory.NOT_SPECIFIED)
+            .uniqueId(UUID.randomUUID())
+            .parentUniqueId(parentId)
+            .build();
     }
+
+	@Override
+	public String toString() {
+		return "UniversalElementRepresentation [referenceType=" + referenceType + ", elementName=" + elementName
+				+ ", additionalInfo=" + additionalInfo + ", elementType=" + elementType + ", currentRole=" + currentRole
+				+ ", value=" + value + ", isStatic=" + isStatic + ", valueCategory=" + valueCategory
+				+ ", typeOrReturnType=" + typeOrReturnType + ", tag=" + tag + ", getElementName()=" + getElementName()
+				+ ", getElementType()=" + getElementType() + ", getReferenceType()=" + getReferenceType()
+				+ ", getCurrentRole()=" + getCurrentRole() + ", getAdditionalInfo()=" + getAdditionalInfo()
+				+ ", getValue()=" + getValue() + ", isStatic()=" + isStatic() + ", getValueCategory()="
+				+ getValueCategory() + ", getTypeOrReturnType()=" + getTypeOrReturnType() + ", getTag()=" + getTag()
+				+ ", getObjectReference()=" + getObjectReference() + ", getClass()=" + getClass() + ", hashCode()="
+				+ hashCode() + ", toString()=" + super.toString() + "]";
+	}
+
+    
 }
