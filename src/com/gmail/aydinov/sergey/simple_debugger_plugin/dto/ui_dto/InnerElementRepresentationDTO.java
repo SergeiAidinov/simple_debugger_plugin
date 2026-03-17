@@ -3,7 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto;
 import java.util.Objects;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 
@@ -141,7 +141,7 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
             String value = element.getValue();
             boolean isStatic = element.isStatic();
             UniversalElementRepresentation.ValueCategory valueCategory = element.getValueCategory();
-            String typeOrReturnType = element.gettypeOrReturnType();
+            String typeOrReturnType = element.getTypeOrReturnType();
 
             return new InnerElementRepresentationDTO(
                     tag,

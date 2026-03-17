@@ -58,7 +58,7 @@ import com.sun.jdi.event.BreakpointEvent;
 
 public class TargetApplicationRepresentation {
 
-	private final Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> targetApplicationSnapshot = new ConcurrentHashMap<>();
+	private final Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> targetApplicationSnapshot = new ConcurrentHashMap<>();
 	private final DebugConfiguration debugConfiguration;
 	private static TargetApplicationRepresentation INSTANCE;
 
@@ -90,7 +90,7 @@ public class TargetApplicationRepresentation {
 		return INSTANCE;
 	}
 
-	public Map<UniversalElementRepresentation.Tag, UniversalElementRepresentation> getTargetApplicationSnapshot() {
+	public Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> getTargetApplicationSnapshot() {
 		return targetApplicationSnapshot;
 	}
 
@@ -175,10 +175,23 @@ public class TargetApplicationRepresentation {
 		ReferenceType type = method.declaringType();
 
 		UniversalElementRepresentation methodRepresentation = targetApplicationSnapshot.values().stream()
-				.filter(e -> e.getReferenceType() != null && e.getReferenceType().equals(type)
-						&& e.getElementType() == UniversalElementType.METHOD
-						&& e.getElementName().startsWith(method.name()))
-				.findFirst().orElse(null);
+			    .map(e -> {
+			        if (e instanceof ElementReference ref) {
+			            // достаём реальный элемент из snapshot по referenceTag
+			            AbstractElementRepresentation real = targetApplicationSnapshot.get(ref.getReferenceTag());
+			            if (real instanceof UniversalElementRepresentation ue) return ue;
+			            return null; // если не UE — игнорируем
+			        }
+			        if (e instanceof UniversalElementRepresentation ue) return ue; // уже реальный объект
+			        return null; // остальные типы игнорируем
+			    })
+			    .filter(Objects::nonNull) // убираем null
+			    .filter(e -> e.getReferenceType() != null
+			                 && e.getReferenceType().equals(type)
+			                 && e.getElementType() == UniversalElementRepresentation.UniversalElementType.METHOD
+			                 && e.getElementName().startsWith(method.name()))
+			    .findFirst()
+			    .orElse(null);
 		if (methodRepresentation == null)
 			return false;
 		List<LocalVariable> locals = Collections.emptyList();
@@ -517,12 +530,25 @@ public class TargetApplicationRepresentation {
 			return null;
 		}
 		String className = universalElementRepresentation.getElementName();
-		for (Entry<UniversalElementRepresentation.Tag, UniversalElementRepresentation> entry : targetApplicationSnapshot
-				.entrySet()) {
-			ReferenceType referenceType = entry.getValue().getReferenceType();
-			if (Objects.nonNull(referenceType) && className.equals(referenceType.name())) {
-				return referenceType;
-			}
+		for (Map.Entry<AbstractElementRepresentation.Tag, AbstractElementRepresentation> entry : targetApplicationSnapshot.entrySet()) {
+		    AbstractElementRepresentation element = entry.getValue();
+
+		    if (element instanceof ElementReference ref) {
+		        AbstractElementRepresentation real = targetApplicationSnapshot.get(ref.getReferenceTag());
+		        if (real != null) {
+		            element = real; // теперь element — реальный объект
+		        } else {
+		            continue; // если в snapshot нет объекта, пропускаем
+		        }
+		    }
+
+		    // проверяем, что это именно UniversalElementRepresentation
+		    if (element instanceof UniversalElementRepresentation ue) {
+		        ReferenceType referenceType = ue.getReferenceType();
+		        if (referenceType != null && className.equals(referenceType.name())) {
+		            return referenceType;
+		        }
+		    }
 		}
 		return null;
 	}

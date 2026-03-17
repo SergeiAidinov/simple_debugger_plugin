@@ -7,6 +7,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.ElementReference;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
@@ -134,9 +136,22 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		private void compileCollectionElements() {
 			// 1. Берем внутренние элементы коллекции
 			List<UniversalElementRepresentation> instances = TargetApplicationRepresentation.getInstance()
-					.getTargetApplicationSnapshot().values().stream()
-					.filter(e -> Objects.equals(e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
-					.toList();
+				    .getTargetApplicationSnapshot().values().stream()
+				    .map(e -> {
+				        if (e instanceof ElementReference ref) {
+				            // достаём реальный элемент из snapshot по referenceTag
+				            AbstractElementRepresentation real = TargetApplicationRepresentation.getInstance()
+				                    .getTargetApplicationSnapshot()
+				                    .get(ref.getReferenceTag());
+				            if (real instanceof UniversalElementRepresentation ue) return ue;
+				            return null;
+				        }
+				        if (e instanceof UniversalElementRepresentation ue) return ue;
+				        return null;
+				    })
+				    .filter(Objects::nonNull)
+				    .filter(e -> Objects.equals(e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
+				    .toList();
 
 			// 2. Получаем ObjectReference для всех элементов коллекции
 			Set<ObjectReference> collectionElementRefs = instances.stream()
@@ -156,15 +171,31 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			List<ObjectReference> sortedRefs = sortedPairs.stream().map(PairDTO::getFirst).toList();
 
 			// 5. Создаем DTO с уже установленным value
-			List<InnerElementRepresentationDTO> readyRepresentationDTOs = sortedRefs.stream().map(ref -> {
-				UniversalElementRepresentation uer = TargetApplicationRepresentation.getInstance()
-						.getTargetApplicationSnapshot().values().stream()
-						.filter(e -> ref.equals(e.getObjectReference())).findFirst().orElseThrow();
-				InnerElementRepresentationDTO dto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-						.fromUniversalElement(uer);
-				dto.setValue(DebugUtils.getObjectReferenceValueAsString(ref));
-				return dto;
-			}).toList();
+			List<InnerElementRepresentationDTO> readyRepresentationDTOs = sortedRefs.stream()
+				    .map(ref -> {
+				        // достаём реальный UniversalElementRepresentation из snapshot
+				        UniversalElementRepresentation uer = TargetApplicationRepresentation.getInstance()
+				            .getTargetApplicationSnapshot().values().stream()
+				            .map(e -> {
+				                if (e instanceof ElementReference er) {
+				                    // достаем реальный объект по referenceTag
+				                    AbstractElementRepresentation real = TargetApplicationRepresentation.getInstance()
+				                            .getTargetApplicationSnapshot().get(er.getReferenceTag());
+				                    if (real instanceof UniversalElementRepresentation ue) return ue;
+				                    return null;
+				                }
+				                if (e instanceof UniversalElementRepresentation ue) return ue;
+				                return null;
+				            })
+				            .filter(Objects::nonNull)
+				            .filter(e -> ref.equals(e.getObjectReference()))
+				            .findFirst()
+				            .orElseThrow(); // бросаем, если не найдено
+
+				        // создаём DTO
+				        return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(uer);
+				    })
+				    .toList();
 
 			for (int i = 0; i < readyRepresentationDTOs.size(); i++) {
 				colectionElements.put(i, readyRepresentationDTOs.get(i));
