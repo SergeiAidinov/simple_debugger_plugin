@@ -131,7 +131,7 @@ public class UniversalInspectorWindow {
     // отображение коллекции
     // =========================================================
 
-    public void showInspectableElement(CollectionPageDTO pageDTO) {
+    private void showInspectableElement(CollectionPageDTO pageDTO) {
 
         Display.getDefault().asyncExec(() -> {
 
@@ -140,7 +140,7 @@ public class UniversalInspectorWindow {
             }
 
             // Добавляем в навигацию только первый показ коллекции
-            if (pageDTO.getCurrentPage() == 1) {
+            if (pageDTO.getCurrentPage() == 0) {
 
                 String displayText = pageDTO.getCollectionName();
 
@@ -160,7 +160,7 @@ public class UniversalInspectorWindow {
     // добавление новых вкладок
     // =========================================================
 
-    public CTabItem addNewTab(String title, Composite content) {
+    private CTabItem addNewTab(String title, Composite content) {
 
         CTabItem item = new CTabItem(tabFolder, SWT.NONE);
 
