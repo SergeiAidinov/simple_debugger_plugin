@@ -15,11 +15,12 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.statushandlers.StatusManager;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.ElementReference;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationBreakpointRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
@@ -195,17 +196,30 @@ public class DebugSessionImpl implements DebugSession {
 		if (Objects.isNull(frame))
 			return false;
 		ObjectReference inctance = frame.thisObject();
-		Optional<UniversalElementRepresentation> anchorInstanceOptional = TargetApplicationRepresentation.getInstance()
+		Optional<AbstractElementRepresentation> anchorInstanceOptional = TargetApplicationRepresentation.getInstance()
 				.getTargetApplicationSnapshot().values().stream()
 				.filter(e -> Objects.equals(e.getObjectReference(), inctance))
 				.filter(e -> Objects.isNull(e.getTag().getParentId())).findAny();
+		
 		if (anchorInstanceOptional.isEmpty())
 			return false;
-		UniversalElementRepresentation anchorElement = anchorInstanceOptional.get();
+		UniversalElementRepresentation anchorElement;
+		if (anchorInstanceOptional.get() instanceof UniversalElementRepresentation) {
+			anchorElement = (UniversalElementRepresentation) anchorInstanceOptional.get();
+		} else {
+			ElementReference elementReference = (ElementReference) anchorInstanceOptional.get();
+			anchorElement = (UniversalElementRepresentation) TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().get(elementReference.getReferenceTag());
+		}
+		 
 		Set<UniversalElementRepresentation> relevantElements = selectFieldsAndMethods(anchorElement);
 		List<UniversalElementRepresentation> locals = TargetApplicationRepresentation.getInstance()
-				.getTargetApplicationSnapshot().values().stream()
-				.filter(e -> e.getElementType().equals(UniversalElementType.LOCAL_VARIABLE)).toList();
+			    .getTargetApplicationSnapshot().values().stream()
+			    // берём только реальные UniversalElementRepresentation
+			    .filter(e -> e instanceof UniversalElementRepresentation)
+			    .map(e -> (UniversalElementRepresentation) e) // безопасное приведение
+			    // фильтруем только локальные переменные
+			    .filter(w -> w.getElementType() == UniversalElementRepresentation.UniversalElementType.LOCAL_VARIABLE)
+			    .toList();
 	//	relevantElements.stream().forEach(e -> System.out.println("RL:" + e));
 		relevantElements.addAll(locals);
 		Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
@@ -244,6 +258,7 @@ public class DebugSessionImpl implements DebugSession {
 								.filter(e -> Objects.equals(e.getObjectReference(), initElement.getObjectReference()))
 								.filter(e -> Objects.equals(e.getTag().getParentId(),
 										earlierFoundElement.getTag().getUniqueId()))
+								.map(e -> (UniversalElementRepresentation)e)
 								.toList());
 				if (justFoundElements.isEmpty()) {
 					found = false;
