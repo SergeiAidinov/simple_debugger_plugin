@@ -108,11 +108,11 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private void handleVmDisconnected() {
-//		try {
-//			TargetApplicationRepresentation.getInstance().detachDebugger();
-//			eventSet.resume();
-//		} catch (Exception ignored) {
-//		}
+		try {
+			TargetApplicationRepresentation.getInstance().detachDebugger();
+			eventSet.resume();
+		} catch (Exception ignored) {
+		}
 	}
 
 	private void doWorkAtBreakpoint(BreakpointEvent breakpointEvent) {
@@ -220,7 +220,7 @@ public class DebugSessionImpl implements DebugSession {
 			    // фильтруем только локальные переменные
 			    .filter(w -> w.getElementType() == UniversalElementRepresentation.UniversalElementType.LOCAL_VARIABLE)
 			    .toList();
-	//	relevantElements.stream().forEach(e -> System.out.println("RL:" + e));
+		relevantElements.stream().forEach(e -> System.out.println("RL:" + e));
 		relevantElements.addAll(locals);
 		Set<InnerElementRepresentationDTO> innerElementDTOs = new HashSet();
 		for (UniversalElementRepresentation element : relevantElements) {

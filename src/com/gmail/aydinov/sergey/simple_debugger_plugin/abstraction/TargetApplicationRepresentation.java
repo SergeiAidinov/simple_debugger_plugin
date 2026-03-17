@@ -44,6 +44,7 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.Type;
+import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.event.BreakpointEvent;
@@ -106,8 +107,8 @@ public class TargetApplicationRepresentation {
 		// System.out.println(targetApplicationSnapshot);
 		targetApplicationSnapshot.putAll(topLevelElements);
 		// addLocalVariables(virtualMachine, breakpointEvent);
-		targetApplicationSnapshot.values().stream().forEach(e -> System.out.println("MODEL: " + e));
-		System.out.println(targetApplicationSnapshot);
+	//	targetApplicationSnapshot.values().stream().forEach(e -> System.out.println("MODEL: " + e));
+	//	System.out.println(targetApplicationSnapshot);
 	}
 
 	private void recursievlyPopulateElements(PairDTO<Tag, UniversalElementRepresentation> pairDTO) {
@@ -638,6 +639,31 @@ public class TargetApplicationRepresentation {
 			}
 		}
 		return null;
+	}
+
+	public void detachDebugger() {
+		if (Objects.isNull(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine())) {
+			return;
+		}
+		try {
+			TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().eventRequestManager()
+					.deleteAllBreakpoints();
+
+			TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().allThreads()
+					.forEach(threadReference -> {
+						try {
+							if (threadReference.suspendCount() > 0) {
+								threadReference.resume();
+							}
+						} catch (Exception ignored) {
+						}
+					});
+			TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().dispose();
+
+		} catch (VMDisconnectedException ignored) {
+		} catch (Exception exception) {
+			exception.printStackTrace();
+		}
 	}
 
 }
