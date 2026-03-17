@@ -210,7 +210,7 @@ public class DebugSessionImpl implements DebugSession {
 			ElementReference elementReference = (ElementReference) anchorInstanceOptional.get();
 			anchorElement = (UniversalElementRepresentation) TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().get(elementReference.getReferenceTag());
 		}
-		 
+		System.out.println(anchorElement);
 		Set<UniversalElementRepresentation> relevantElements = selectFieldsAndMethods(anchorElement);
 		List<UniversalElementRepresentation> locals = TargetApplicationRepresentation.getInstance()
 			    .getTargetApplicationSnapshot().values().stream()
@@ -255,10 +255,16 @@ public class DebugSessionImpl implements DebugSession {
 				List<UniversalElementRepresentation> justFoundElements = new ArrayList<UniversalElementRepresentation>();
 				justFoundElements.addAll(
 						TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
-								.filter(e -> Objects.equals(e.getObjectReference(), initElement.getObjectReference()))
+							//	.filter(e -> Objects.equals(e.getObjectReference(), initElement.getObjectReference()))
 								.filter(e -> Objects.equals(e.getTag().getParentId(),
 										earlierFoundElement.getTag().getUniqueId()))
-								.map(e -> (UniversalElementRepresentation)e)
+								.map(e -> {
+									if (e instanceof UniversalElementRepresentation) {
+										 return (UniversalElementRepresentation) e;
+									}
+									return  (UniversalElementRepresentation) TargetApplicationRepresentation
+											.getInstance().getTargetApplicationSnapshot().get(e.getTag());
+								})
 								.toList());
 				if (justFoundElements.isEmpty()) {
 					found = false;
