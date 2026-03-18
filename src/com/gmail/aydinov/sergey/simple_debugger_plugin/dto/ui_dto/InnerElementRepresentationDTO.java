@@ -26,7 +26,7 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
     private final boolean isStatic;
     private final ValueCategory valueCategory;
     private final String typeOrReturnType;
-    private int level = 0;
+    private final int level;
 
     protected InnerElementRepresentationDTO(Tag tag,
                                             String elementName,
@@ -35,7 +35,8 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
                                             String value,
                                             boolean isStatic,
                                             ValueCategory valueCategory,
-                                            String typeOrReturnType) {
+                                            String typeOrReturnType,
+                                            int level) {
         this.tag = tag;
         this.elementName = elementName;
         this.additionalInfo = additionalInfo;
@@ -44,6 +45,7 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
         this.isStatic = isStatic;
         this.valueCategory = valueCategory;
         this.typeOrReturnType = typeOrReturnType;
+        this.level = level;
     }
 
     // =================== Геттеры ===================
@@ -56,7 +58,6 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
     public boolean isStatic() { return isStatic; }
     public String getTypeOrReturnType() { return typeOrReturnType; }
     public int getLevel() { return level; }
-    public void setLevel(int level) { this.level = level; }
     public void setValue(String value) { this.value = value; }
 
    
@@ -143,7 +144,7 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
                     "",
                     false,
                     ValueCategory.UNKNOWN,
-                    ""
+                    "", 0
             );
         }
 
@@ -156,7 +157,8 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
                     element.getValue(),
                     element.isStatic(),
                     element.getValueCategory(),
-                    element.getTypeOrReturnType()
+                    element.getTypeOrReturnType(),
+                    element.getLevel()
             );
         }
 
@@ -169,7 +171,8 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
                     "",
                     false,
                     ValueCategory.AUXILIARY,
-                    ""
+                    "", ref.getLevel()
+                    
             );
         }
     }

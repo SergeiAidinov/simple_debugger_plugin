@@ -7,10 +7,12 @@ import com.sun.jdi.ObjectReference;
 public abstract class AbstractElementRepresentation {
     protected final Tag tag;
     private final ObjectReference objectReference;
+    private final int level;
 
-    protected AbstractElementRepresentation(Tag tag, ObjectReference objectReference) {
+    protected AbstractElementRepresentation(Tag tag, ObjectReference objectReference, int level) {
         this.tag = tag;
         this.objectReference = objectReference;
+        this.level = level;
     }
 
     public Tag getTag() {
@@ -21,9 +23,12 @@ public abstract class AbstractElementRepresentation {
         return objectReference;
     }
     
-    
 
-    @Override
+    public int getLevel() {
+		return level;
+	}
+
+	@Override
 	public String toString() {
 		return "AbstractElementRepresentation [tag=" + tag + ", objectReference=" + objectReference + "]";
 	}

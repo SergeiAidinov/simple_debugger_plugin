@@ -195,6 +195,8 @@ public class DebugSessionImpl implements DebugSession {
 		Set<InnerElementRepresentationDTO> innerElementDTOs = topLevelElements.values().stream()
 				.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e))
 				.collect(Collectors.toSet());
+		
+		
 		subordinates.values().stream().filter(e -> e instanceof UniversalElementRepresentation)
 				.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
 						.fromElement((UniversalElementRepresentation) e))

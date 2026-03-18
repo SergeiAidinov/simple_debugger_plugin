@@ -9,10 +9,9 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.Value;
 
-public class UniversalElementRepresentation extends AbstractElementRepresentation
-        implements Comparable<UniversalElementRepresentation> {
+public class UniversalElementRepresentation extends AbstractElementRepresentation implements Comparable<UniversalElementRepresentation> {
 
-    public enum UniversalElementType { INTERFACE, CLASS, ENUM, /*STATIC_FIELD, NON_STATIC_FIELD,*/ FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, OBJECT_INSTANCE, UNKNOWN, REFERENCE }
+    public enum UniversalElementType { INTERFACE, CLASS, ENUM, FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, OBJECT_INSTANCE, UNKNOWN, REFERENCE }
     public enum CurrentRole { OUTER, INNER, LOCAL }
     public enum ValueCategory { PRIMITIVE, WRAPPER, STRING, COLLECTION, ARRAY, MAP, USER_OBJECT, NULL, NOT_SPECIFIED, AUXILIARY, UNKNOWN }
 
@@ -25,6 +24,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
     private final boolean isStatic;
     private final ValueCategory valueCategory;
     private final String typeOrReturnType;
+   // private final int level; // уровень вложенности
 
     private UniversalElementRepresentation(Tag tag,
                                            ReferenceType referenceType,
@@ -36,8 +36,9 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
                                            String value,
                                            boolean isStatic,
                                            ValueCategory valueCategory,
-                                           String typeOrReturnType) {
-        super(tag, objectReference);
+                                           String typeOrReturnType,
+                                           int level) {
+        super(tag, objectReference, level);
         this.referenceType = referenceType;
         this.elementName = elementName;
         this.additionalInfo = additionalInfo;
@@ -47,21 +48,13 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
         this.isStatic = isStatic;
         this.valueCategory = valueCategory;
         this.typeOrReturnType = typeOrReturnType;
+       // this.level = level;
     }
 
-    @Override
-    public String getElementName() {
-        return elementName;
-    }
-
-    public UniversalElementType getElementType() {
-        return elementType;
-    }
-
-    public ReferenceType getReferenceType() {
-        return referenceType;
-    }
-
+    // ===================== Геттеры =====================
+    public ReferenceType getReferenceType() { return referenceType; }
+    public String getElementName() { return elementName; }
+    public UniversalElementType getElementType() { return elementType; }
     public CurrentRole getCurrentRole() { return currentRole; }
     public void setCurrentRole(CurrentRole currentRole) { this.currentRole = currentRole; }
     public String getAdditionalInfo() { return additionalInfo; }
@@ -69,7 +62,9 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
     public boolean isStatic() { return isStatic; }
     public ValueCategory getValueCategory() { return valueCategory; }
     public String getTypeOrReturnType() { return typeOrReturnType; }
+    public int getLevel() { return super.getLevel(); }
 
+    // ===================== compareTo =====================
     @Override
     public int compareTo(UniversalElementRepresentation other) {
         if (other == null) return 1;
@@ -78,7 +73,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
         return this.elementName.compareToIgnoreCase(other.elementName);
     }
 
-    // =================== Builder ===================
+    // ===================== Builder =====================
     public static class Builder {
         private ReferenceType referenceType = null;
         private ObjectReference objectReference = null;
@@ -92,6 +87,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
         private String typeOrReturnType = "";
         private UUID uniqueId = UUID.randomUUID();
         private UUID parentUniqueId = null;
+        private int level = 0;
 
         public Builder referenceType(ReferenceType referenceType) { this.referenceType = referenceType; return this; }
         public Builder objectReference(ObjectReference objectReference) { this.objectReference = objectReference; return this; }
@@ -105,6 +101,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
         public Builder typeOrReturnType(String typeOrReturnType) { this.typeOrReturnType = typeOrReturnType; return this; }
         public Builder uniqueId(UUID uniqueId) { this.uniqueId = uniqueId; return this; }
         public Builder parentUniqueId(UUID parentUniqueId) { this.parentUniqueId = parentUniqueId; return this; }
+        public Builder level(int level) { this.level = level; return this; }
 
         public UniversalElementRepresentation build() {
             Tag tag = new Tag(uniqueId, parentUniqueId);
@@ -119,57 +116,60 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
                     value,
                     isStatic,
                     valueCategory,
-                    typeOrReturnType
+                    typeOrReturnType,
+                    level
             );
         }
     }
 
     public static Builder builder() { return new Builder(); }
-    
-    public static UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId, ObjectReference objectReference) {
-	    return UniversalElementRepresentation.builder()
-	    	.referenceType(field.declaringType())
-	    	.objectReference(objectReference)
-	        .elementName(field.name())
-	        .additionalInfo(field.typeName())
-	        .elementType(UniversalElementType.FIELD)
-	        .currentRole(CurrentRole.INNER)
-	        .value(value != null ? value.toString() : "null")
-	        .isStatic(field.isStatic())
-	        .valueCategory(DebugUtils.determineValueCategory(value))
-	        .typeOrReturnType(DebugUtils.valueToString(value))
-	        .uniqueId(UUID.randomUUID())
-	        .parentUniqueId(parentId)
-	        .build();
-	}
-    
-    public static UniversalElementRepresentation buildElementForMethod(Method method, UUID parentId, ObjectReference objectReference) {
+
+    // ===================== Utility Builders =====================
+    public static UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId, ObjectReference objectReference, int level) {
         return UniversalElementRepresentation.builder()
-            .referenceType(method.declaringType())
-            .objectReference(objectReference)
-            .elementName(method.name() + "()")
-            .additionalInfo(String.join(",", method.argumentTypeNames()))
-            .elementType(UniversalElementType.METHOD)
-            .currentRole(CurrentRole.INNER)
-            .value(method.name() + "(" + String.join(",", method.argumentTypeNames() + ")"))
-            .isStatic(method.isStatic())
-            .valueCategory(ValueCategory.NOT_SPECIFIED)
-            .typeOrReturnType(method.returnTypeName())
-            .uniqueId(UUID.randomUUID())
-            .parentUniqueId(parentId)
-            .build();
+                .referenceType(field.declaringType())
+                .objectReference(objectReference)
+                .elementName(field.name())
+                .additionalInfo(field.typeName())
+                .elementType(UniversalElementType.FIELD)
+                .currentRole(CurrentRole.INNER)
+                .value(value != null ? value.toString() : "null")
+                .isStatic(field.isStatic())
+                .valueCategory(DebugUtils.determineValueCategory(value))
+                .typeOrReturnType(DebugUtils.valueToString(value))
+                .uniqueId(UUID.randomUUID())
+                .parentUniqueId(parentId)
+                .level(level) // по умолчанию 0, потом можно увеличивать рекурсивно
+                .build();
     }
 
-	@Override
-	public String toString() {
-		return "UniversalElementRepresentation [objectReference=" + super.getObjectReference() + "referenceType=" + referenceType + ", elementName=" + elementName
-				+ ", additionalInfo=" + additionalInfo + ", elementType=" + elementType + ", currentRole=" + currentRole
-				+ ", value=" + value + ", isStatic=" + isStatic + ", valueCategory=" + valueCategory
-				+ ", typeOrReturnType=" + typeOrReturnType + ", tag=" + tag + "]";
-	}
+    public static UniversalElementRepresentation buildElementForMethod(Method method, UUID parentId, ObjectReference objectReference, int level) {
+        return UniversalElementRepresentation.builder()
+                .referenceType(method.declaringType())
+                .objectReference(objectReference)
+                .elementName(method.name() + "()")
+                .additionalInfo(String.join(",", method.argumentTypeNames()))
+                .elementType(UniversalElementType.METHOD)
+                .currentRole(CurrentRole.INNER)
+                .value(method.name() + "(" + String.join(",", method.argumentTypeNames()) + ")")
+                .isStatic(method.isStatic())
+                .valueCategory(ValueCategory.NOT_SPECIFIED)
+                .typeOrReturnType(method.returnTypeName())
+                .uniqueId(UUID.randomUUID())
+                .parentUniqueId(parentId)
+                .level(level + 1)
+                .build();
+    }
 
-	
-
-	
-    
+    // ===================== toString =====================
+    @Override
+    public String toString() {
+        String indent = "  ".repeat(super.getLevel());
+        return indent + "↳ " + elementName
+                + " [" + elementType + "]"
+                + ", value=" + value
+                + ", type=" + typeOrReturnType
+                + ", isStatic=" + isStatic
+                + ", valueCategory=" + valueCategory;
+    }
 }
