@@ -76,19 +76,53 @@ public class ClassMembersAtBreakpointTab {
 	}
 
 	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
-		if (dto == null || dto.getInnerElements().isEmpty())
-			return;
-		// Копируем и сортируем элементы
-		List<InnerElementRepresentationDTO> sorted = buildOrderedList(dto.getInnerElements());
-		// Обновляем TableViewer в UI-потоке
-		root.getDisplay().asyncExec(() -> {
-			if (!viewer.getTable().isDisposed()) {
-				viewer.setInput(sorted);
-				viewer.refresh(); // обязательно обновляем таблицу
-			}
-		});
+	    if (dto == null || dto.getTopElementsWithSubordinates().isEmpty())
+	        return;
+
+	    // 1️⃣ Собираем элементы в упорядоченный список
+	    List<InnerElementRepresentationDTO> orderedElements = buildOrderedList(dto.getTopElementsWithSubordinates());
+
+	    // 2️⃣ Обновляем TableViewer в UI-потоке
+	    root.getDisplay().asyncExec(() -> {
+	        if (!viewer.getTable().isDisposed()) {
+	            viewer.setInput(orderedElements);
+	            viewer.refresh();
+	        }
+	    });
 	}
 
+	/**
+	 * Построение списка элементов для TableViewer:
+	 * - top-level элементы и их подчинённые
+	 * - фильтруем REFERENCE
+	 * - используем уровень level, уже выставленный на бэке
+	 */
+	private List<InnerElementRepresentationDTO> buildOrderedList(
+	        Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> topWithSubs) {
+
+	    List<InnerElementRepresentationDTO> result = new ArrayList<>();
+
+	    // Сортировка top-level элементов
+	    List<InnerElementRepresentationDTO> topElements = topWithSubs.keySet().stream()
+	            .filter(e -> e.getElementType() != UniversalElementType.REFERENCE)
+	            .sorted()
+	            .toList();
+
+	    for (InnerElementRepresentationDTO top : topElements) {
+	        result.add(top);
+
+	        Set<InnerElementRepresentationDTO> subs = topWithSubs.getOrDefault(top, Set.of());
+	        List<InnerElementRepresentationDTO> filteredSubs = subs.stream()
+	                .filter(e -> e.getElementType() != UniversalElementType.REFERENCE)
+	                .sorted()
+	                .toList();
+
+	        result.addAll(filteredSubs);
+	    }
+
+	    return result;
+	}
+	    
 	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO userInstanceInspectionDTO) {
 		Display display = root.getDisplay();
 		display.asyncExec(() -> {
@@ -194,25 +228,38 @@ public class ClassMembersAtBreakpointTab {
 	// Icons & tooltips
 	// =========================================================
 	private Image getTypeIcon(InnerElementRepresentationDTO dto) {
-		String key = switch (dto.getElementType()) {
-		case INTERFACE -> "interface";
-		case METHOD -> dto.isStatic() ? "static_method" : "method";
-		case FIELD -> dto.isStatic() ? "static_field" : "field";
-		case LOCAL_VARIABLE -> "variableIcon";
-		default -> null;
-		};
-		return key != null ? SimpleDebugerWindowsManager.instance().icons.get(key).getFirst() : null;
+	    if (dto == null || dto.getElementType() == UniversalElementType.REFERENCE)
+	        return null; // REFERENCE не отображаем
+
+	    String key = switch (dto.getElementType()) {
+	        case INTERFACE -> "interface";
+	        case METHOD -> dto.isStatic() ? "static_method" : "method";
+	        case FIELD -> dto.isStatic() ? "static_field" : "fieldIcon";
+	        case LOCAL_VARIABLE -> "variableIcon";
+	        case ENUM -> "enum";
+	        default -> "unknown";
+	    };
+
+	    PairDTO<Image, String> pair = SimpleDebugerWindowsManager.instance().icons.get(key);
+	    return pair != null ? pair.getFirst() : null;
 	}
 
+
 	private PairDTO<Image, String> getTypeTooltip(InnerElementRepresentationDTO dto) {
-		String key = switch (dto.getElementType()) {
-		case INTERFACE -> "interface";
-		case METHOD -> dto.isStatic() ? "static_method" : "method";
-		case FIELD -> dto.isStatic() ? "static_field" : "fieldIcon";
-		case LOCAL_VARIABLE -> "variableIcon";
-		default -> null;
-		};
-		return key != null ? SimpleDebugerWindowsManager.instance().icons.get(key) : null;
+	    if (dto == null || dto.getElementType() == UniversalElementType.REFERENCE)
+	        return null; // REFERENCE не отображаем
+
+	    String key = switch (dto.getElementType()) {
+	        case INTERFACE -> "interface";
+	        case METHOD -> dto.isStatic() ? "static_method" : "method";
+	        case FIELD -> dto.isStatic() ? "static_field" : "fieldIcon";
+	        case LOCAL_VARIABLE -> "variableIcon";
+	        case ENUM -> "enum";
+	        default -> "unknown";
+	    };
+
+	    return SimpleDebugerWindowsManager.instance().icons.getOrDefault(key,
+	            SimpleDebugerWindowsManager.instance().icons.get("unknown"));
 	}
 
 	// Пример исправления опечатки в getValueCategoty()

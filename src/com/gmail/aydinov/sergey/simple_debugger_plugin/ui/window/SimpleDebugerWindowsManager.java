@@ -40,6 +40,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 				TripletDTO.of("static_field", "/icons/static_field.png", "static field"),
 				TripletDTO.of("static_method", "/icons/static_method.png", "static method"),
 				TripletDTO.of("lens", "/icons/lens.png", "inspect collection"),
+				TripletDTO.of("unknown", "/icons/unknown.png", "unknown element"),
 				TripletDTO.of("variableIcon", "/icons/variable.png", "local variable"));
 		namesAndPaths.forEach(p -> iconsTemp.put(p.getFirst(), PairDTO.of(loadIcon(p.getSecond()), p.getThird())));
 		icons = Map.copyOf(iconsTemp);

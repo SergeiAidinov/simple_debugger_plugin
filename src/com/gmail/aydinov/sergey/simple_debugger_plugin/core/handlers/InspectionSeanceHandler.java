@@ -136,13 +136,13 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		private void compileCollectionElements() {
 			// 1. Берем внутренние элементы коллекции
 			List<UniversalElementRepresentation> instances = TargetApplicationRepresentation.getInstance()
-				    .getTargetApplicationSnapshot().values().stream()
+				    .getTargetApplicationSnapshot().getSecond().values().stream()
 				    .map(e -> {
 				        if (e instanceof ElementReference ref) {
 				            // достаём реальный элемент из snapshot по referenceTag
 				            AbstractElementRepresentation real = TargetApplicationRepresentation.getInstance()
 				                    .getTargetApplicationSnapshot()
-				                    .get(ref.getReferenceTag());
+				                    .getSecond().get(ref.getReferenceTag());
 				            if (real instanceof UniversalElementRepresentation ue) return ue;
 				            return null;
 				        }
@@ -173,27 +173,11 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			// 5. Создаем DTO с уже установленным value
 			List<InnerElementRepresentationDTO> readyRepresentationDTOs = sortedRefs.stream()
 				    .map(ref -> {
-				        // достаём реальный UniversalElementRepresentation из snapshot
-				        UniversalElementRepresentation uer = TargetApplicationRepresentation.getInstance()
-				            .getTargetApplicationSnapshot().values().stream()
-				            .map(e -> {
-				                if (e instanceof ElementReference er) {
-				                    // достаем реальный объект по referenceTag
-				                    AbstractElementRepresentation real = TargetApplicationRepresentation.getInstance()
-				                            .getTargetApplicationSnapshot().get(er.getReferenceTag());
-				                    if (real instanceof UniversalElementRepresentation ue) return ue;
-				                    return null;
-				                }
-				                if (e instanceof UniversalElementRepresentation ue) return ue;
-				                return null;
-				            })
-				            .filter(Objects::nonNull)
-				            .filter(e -> ref.equals(e.getObjectReference()))
-				            .findFirst()
-				            .orElseThrow(); // бросаем, если не найдено
+				        // достаем реальный элемент по objectReference
+				        UniversalElementRepresentation uer = findUniversalElementByObjectReference(ref);
 
-				        // создаём DTO
-				        return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromUniversalElement(uer);
+				        // создаем DTO через универсальную фабрику
+				        return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(uer);
 				    })
 				    .toList();
 
@@ -217,6 +201,29 @@ public class InspectionSeanceHandler implements UIEventHandler {
 
 		private void ignoreEvent(AbstractUIEvent debugEvent) {
 			SimpleDebuggerLogger.info("Intentionally ignored: " + debugEvent);
+		}
+		
+		private UniversalElementRepresentation findUniversalElementByObjectReference(ObjectReference ref) {
+		    return TargetApplicationRepresentation.getInstance()
+		        .getTargetApplicationSnapshot()
+		        .getSecond() // Map<Tag, AbstractElementRepresentation>
+		        .values().stream()
+		        .map(e -> {
+		            if (e instanceof ElementReference er) {
+		                AbstractElementRepresentation real = TargetApplicationRepresentation.getInstance()
+		                        .getTargetApplicationSnapshot()
+		                        .getSecond()
+		                        .get(er.getReferenceTag());
+		                if (real instanceof UniversalElementRepresentation ue) return ue;
+		            } else if (e instanceof UniversalElementRepresentation ue) {
+		                return ue;
+		            }
+		            return null;
+		        })
+		        .filter(Objects::nonNull)
+		        .filter(e -> e.getObjectReference().equals(ref))
+		        .findFirst()
+		        .orElseThrow(() -> new RuntimeException("UniversalElementRepresentation not found for ref: " + ref));
 		}
 
 	}

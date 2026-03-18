@@ -20,8 +20,15 @@ public abstract class AbstractElementRepresentation {
     public ObjectReference getObjectReference() {
         return objectReference;
     }
+    
+    
 
-    public abstract String getElementName();
+    @Override
+	public String toString() {
+		return "AbstractElementRepresentation [tag=" + tag + ", objectReference=" + objectReference + "]";
+	}
+
+	public abstract String getElementName();
 
     // =================== Вложенный статический класс Tag ===================
     public static final class Tag {
