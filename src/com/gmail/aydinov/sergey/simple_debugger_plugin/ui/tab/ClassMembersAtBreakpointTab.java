@@ -80,10 +80,10 @@ public class ClassMembersAtBreakpointTab {
 	    System.out.println(dto);
 	    List<InnerElementRepresentationDTO> ordered = new ArrayList<>();
 	    for (InnerElementRepresentationDTO topLevelDto : dto.getTopElementsWithSubordinates().keySet()) {
-	    	 topLevelDto.setLevel(0);
+	    	// topLevelDto.setLevel(0);
 		        ordered.add(topLevelDto);
 		        for (InnerElementRepresentationDTO subordinate : dto.getTopElementsWithSubordinates().get(topLevelDto)) {
-		        	subordinate.setLevel(1);
+		        	//subordinate.setLevel(1);
 		        	ordered.add(subordinate);
 		        }
 	    }
@@ -372,13 +372,13 @@ public class ClassMembersAtBreakpointTab {
 		List<InnerElementRepresentationDTO> thirdLevelElements = new ArrayList<>();
 		for (Entry<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> triplet : tree
 				.entrySet()) {
-			triplet.getKey().setLevel(0);
+			//triplet.getKey().setLevel(0);
 			result.add(triplet.getKey());
-			secondLevelElements
-					.addAll(triplet.getValue().getFirst().stream().sorted().peek(e -> e.setLevel(1)).toList());
-			thirdLevelElements
-					.addAll(triplet.getValue().getSecond().stream().sorted().peek(e -> e.setLevel(2)).toList());
-		}
+//			secondLevelElements
+//					.addAll(triplet.getValue().getFirst().stream().sorted().peek(e -> e.setLevel(1)).toList());
+//			thirdLevelElements
+//					.addAll(triplet.getValue().getSecond().stream().sorted().peek(e -> e.setLevel(2)).toList());
+//		}
 
 		for (InnerElementRepresentationDTO secondLevelElement : secondLevelElements) {
 			result.add(secondLevelElement);
@@ -390,8 +390,10 @@ public class ClassMembersAtBreakpointTab {
 		}
 
 		// 5️⃣ оставшиеся элементы, если есть
-		if (!allElements.isEmpty()) {
-			result.addAll(allElements.stream().sorted().peek(e -> e.setLevel(0)).toList());
+//		if (!allElements.isEmpty()) {
+//			result.addAll(allElements.stream().sorted()
+//				//	.peek(e -> e.setLevel(0))
+//					.toList());
 		}
 		return result;
 	}

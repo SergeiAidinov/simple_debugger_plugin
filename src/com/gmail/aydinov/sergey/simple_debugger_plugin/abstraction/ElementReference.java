@@ -10,8 +10,8 @@ public class ElementReference extends AbstractElementRepresentation {
 
     public ElementReference(AbstractElementRepresentation.Tag ownTag,
                             AbstractElementRepresentation.Tag referenceTag,
-                            ObjectReference objectReference) {
-        super(ownTag, objectReference);
+                            ObjectReference objectReference, int level) {
+        super(ownTag, objectReference, level);
         this.referenceTag = referenceTag;
     }
 
