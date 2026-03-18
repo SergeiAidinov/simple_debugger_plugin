@@ -11,7 +11,7 @@ import com.sun.jdi.Value;
 
 public class UniversalElementRepresentation extends AbstractElementRepresentation implements Comparable<UniversalElementRepresentation> {
 
-    public enum UniversalElementType { INTERFACE, CLASS, ENUM, FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, OBJECT_INSTANCE, UNKNOWN, REFERENCE }
+    public enum UniversalElementType { INTERFACE, CLASS, ENUM, FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, OBJECT_INSTANCE, UNKNOWN, REFERENCE, COLLECTION, MAP }
     public enum CurrentRole { OUTER, INNER, LOCAL }
     public enum ValueCategory { PRIMITIVE, WRAPPER, STRING, COLLECTION, ARRAY, MAP, USER_OBJECT, NULL, NOT_SPECIFIED, AUXILIARY, UNKNOWN }
 
@@ -87,7 +87,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
         private String typeOrReturnType = "";
         private UUID uniqueId = UUID.randomUUID();
         private UUID parentUniqueId = null;
-        private int level = 0;
+        private int level;
 
         public Builder referenceType(ReferenceType referenceType) { this.referenceType = referenceType; return this; }
         public Builder objectReference(ObjectReference objectReference) { this.objectReference = objectReference; return this; }
@@ -157,7 +157,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
                 .typeOrReturnType(method.returnTypeName())
                 .uniqueId(UUID.randomUUID())
                 .parentUniqueId(parentId)
-                .level(level + 1)
+                .level(level)
                 .build();
     }
 

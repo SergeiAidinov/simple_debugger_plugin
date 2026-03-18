@@ -43,7 +43,7 @@ public class DebugWindowDataDTO {
 	    sb.append("DebugWindowDataDTO {\n");
 	    sb.append("  lineNumber: ").append(lineNumber).append(",\n");
 	    sb.append("  methodName: ").append(methodName).append(",\n");
-	    
+
 	    sb.append("  compileStackInfo:\n");
 	    if (compileStackInfo != null && !compileStackInfo.isEmpty()) {
 	        for (MethodCallInStackDTO call : compileStackInfo) {
@@ -59,21 +59,11 @@ public class DebugWindowDataDTO {
 	            InnerElementRepresentationDTO top = entry.getKey();
 	            Set<InnerElementRepresentationDTO> subs = entry.getValue();
 
-	            // Топ-уровень
-	            sb.append("    ↳ ").append(top.getElementName())
-	              .append(" [").append(top.getTypeOrReturnType()).append("]")
-	              .append(", value=").append(top.getValue())
-	              .append("\n");
+	            sb.append(formatElement(top));
 
-	            // Подчинённые элементы
 	            if (subs != null && !subs.isEmpty()) {
 	                for (InnerElementRepresentationDTO sub : subs) {
-	                    String indent = "      ".repeat(Math.max(1, sub.getLevel()));
-	                    sb.append(indent).append("→ ")
-	                      .append(sub.getElementName())
-	                      .append(" [").append(sub.getTypeOrReturnType()).append("]")
-	                      .append(", value=").append(sub.getValue())
-	                      .append("\n");
+	                    sb.append(formatElement(sub));
 	                }
 	            }
 	        }
@@ -83,6 +73,20 @@ public class DebugWindowDataDTO {
 
 	    sb.append("}");
 	    return sb.toString();
+	}
+
+	// Форматирование одного элемента с отступом по level
+	private String formatElement(InnerElementRepresentationDTO elem) {
+	    String indent = "    ".repeat(Math.max(1, elem.getLevel()));
+	    return String.format("%s→ %s [type=%s, valueCategory=%s, typeOrReturnType=%s, isStatic=%b, level=%d, value=%s]\n",
+	            indent,
+	            elem.getElementName(),
+	            elem.getElementType(),
+	            elem.getValueCategory(),
+	            elem.getTypeOrReturnType(),
+	            elem.isStatic(),
+	            elem.getLevel(),
+	            elem.getValue());
 	}
 	
 }

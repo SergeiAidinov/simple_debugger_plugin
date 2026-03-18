@@ -63,12 +63,19 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
    
 
     @Override
-   	public String toString() {
-   		return "InnerElementRepresentationDTO [tag=" + tag + ", elementName=" + elementName + ", additionalInfo="
-   				+ additionalInfo + ", elementType=" + elementType + ", value=" + value + ", isStatic=" + isStatic
-   				+ ", valueCategory=" + valueCategory + ", typeOrReturnType=" + typeOrReturnType + ", level=" + level
-   				+ "]";
-   	}
+    public String toString() {
+        return "InnerElementRepresentationDTO {" +
+                "tag=" + tag +
+                ", elementName='" + elementName + '\'' +
+                ", additionalInfo='" + additionalInfo + '\'' +
+                ", elementType=" + elementType +
+                ", value='" + value + '\'' +
+                ", isStatic=" + isStatic +
+                ", valueCategory=" + valueCategory +
+                ", typeOrReturnType='" + typeOrReturnType + '\'' +
+                ", level=" + level +
+                '}';
+    }
 
 	@Override
     public int hashCode() {
