@@ -204,8 +204,16 @@ public class DebugSessionImpl implements DebugSession {
 		for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
 		    InnerElementRepresentationDTO topDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
 		            .fromElement(topLevelElement);
+		    Set<InnerElementRepresentationDTO> subordinatesSet = new HashSet<InnerElementRepresentationDTO>();
+		    for (AbstractElementRepresentation subordinate : subordinates.values()) {
+		    	if (subordinate.getTag().getParentId().equals(topLevelElement.getTag().getUniqueId())) {
+		    		subordinatesSet.add(InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+				            .fromElement(subordinate));
+		    	}
+		    	topElementsWithSubordinates.put(topDTO, subordinatesSet);
+		    }
 
-		    buildSubTreeMap(topDTO, subordinates.values(), topElementsWithSubordinates);
+		    
 		}
 
 		System.out.println(topElementsWithSubordinates);
