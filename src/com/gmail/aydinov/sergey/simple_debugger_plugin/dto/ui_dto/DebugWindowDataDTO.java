@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
@@ -14,14 +15,14 @@ public class DebugWindowDataDTO {
 	private final int lineNumber;
 	private final String methodName;
 	private final List<MethodCallInStackDTO> compileStackInfo;
-	private final Set<InnerElementRepresentationDTO> innerElements;
+	private final Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> topElementsWithSubordinates;
 	public DebugWindowDataDTO(int lineNumber, String methodName, List<MethodCallInStackDTO> compileStackInfo,
-			Set<InnerElementRepresentationDTO> innerElements) {
+			Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> innerElementDTOs) {
 		super();
 		this.lineNumber = lineNumber;
 		this.methodName = methodName;
 		this.compileStackInfo = compileStackInfo;
-		this.innerElements = innerElements;
+		this.topElementsWithSubordinates = innerElementDTOs;
 	}
 	public int getLineNumber() {
 		return lineNumber;
@@ -32,9 +33,13 @@ public class DebugWindowDataDTO {
 	public List<MethodCallInStackDTO> getCompileStackInfo() {
 		return compileStackInfo;
 	}
-	public Set<InnerElementRepresentationDTO> getInnerElements() {
-		return innerElements;
+	public Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> getTopElementsWithSubordinates() {
+		return topElementsWithSubordinates;
 	}
-
+	@Override
+	public String toString() {
+		return "DebugWindowDataDTO [lineNumber=" + lineNumber + ", methodName=" + methodName + ", compileStackInfo="
+				+ compileStackInfo + ", topElementsWithSubordinates=" + topElementsWithSubordinates + "]";
+	}
 	
 }

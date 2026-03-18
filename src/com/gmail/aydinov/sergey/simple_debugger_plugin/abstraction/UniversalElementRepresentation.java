@@ -12,9 +12,9 @@ import com.sun.jdi.Value;
 public class UniversalElementRepresentation extends AbstractElementRepresentation
         implements Comparable<UniversalElementRepresentation> {
 
-    public enum UniversalElementType { INTERFACE, CLASS, ENUM, /*STATIC_FIELD, NON_STATIC_FIELD,*/ FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, OBJECT_INSTANCE, UNKNOWN }
+    public enum UniversalElementType { INTERFACE, CLASS, ENUM, /*STATIC_FIELD, NON_STATIC_FIELD,*/ FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, OBJECT_INSTANCE, UNKNOWN, REFERENCE }
     public enum CurrentRole { OUTER, INNER, LOCAL }
-    public enum ValueCategory { PRIMITIVE, WRAPPER, STRING, COLLECTION, ARRAY, MAP, USER_OBJECT, NULL, NOT_SPECIFIED }
+    public enum ValueCategory { PRIMITIVE, WRAPPER, STRING, COLLECTION, ARRAY, MAP, USER_OBJECT, NULL, NOT_SPECIFIED, AUXILIARY, UNKNOWN }
 
     private final ReferenceType referenceType;
     private final String elementName;
@@ -162,17 +162,14 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
 
 	@Override
 	public String toString() {
-		return "UniversalElementRepresentation [referenceType=" + referenceType + ", elementName=" + elementName
+		return "UniversalElementRepresentation [objectReference=" + super.getObjectReference() + "referenceType=" + referenceType + ", elementName=" + elementName
 				+ ", additionalInfo=" + additionalInfo + ", elementType=" + elementType + ", currentRole=" + currentRole
 				+ ", value=" + value + ", isStatic=" + isStatic + ", valueCategory=" + valueCategory
-				+ ", typeOrReturnType=" + typeOrReturnType + ", tag=" + tag + ", getElementName()=" + getElementName()
-				+ ", getElementType()=" + getElementType() + ", getReferenceType()=" + getReferenceType()
-				+ ", getCurrentRole()=" + getCurrentRole() + ", getAdditionalInfo()=" + getAdditionalInfo()
-				+ ", getValue()=" + getValue() + ", isStatic()=" + isStatic() + ", getValueCategory()="
-				+ getValueCategory() + ", getTypeOrReturnType()=" + getTypeOrReturnType() + ", getTag()=" + getTag()
-				+ ", getObjectReference()=" + getObjectReference() + ", getClass()=" + getClass() + ", hashCode()="
-				+ hashCode() + ", toString()=" + super.toString() + "]";
+				+ ", typeOrReturnType=" + typeOrReturnType + ", tag=" + tag + "]";
 	}
 
+	
+
+	
     
 }
