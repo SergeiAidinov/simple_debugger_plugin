@@ -76,16 +76,22 @@ public class ClassMembersAtBreakpointTab {
 	}
 
 	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
-	    if (dto == null || dto.getTopElementsWithSubordinates().isEmpty())
-	        return;
+	    if (dto == null || dto.getTopElementsWithSubordinates().isEmpty()) return;
+	    System.out.println(dto);
+	    List<InnerElementRepresentationDTO> ordered = new ArrayList<>();
+	    for (InnerElementRepresentationDTO topLevelDto : dto.getTopElementsWithSubordinates().keySet()) {
+	    	 topLevelDto.setLevel(0);
+		        ordered.add(topLevelDto);
+		        for (InnerElementRepresentationDTO subordinate : dto.getTopElementsWithSubordinates().get(topLevelDto)) {
+		        	subordinate.setLevel(1);
+		        	ordered.add(subordinate);
+		        }
+	    }
 
-	    // 1️⃣ Собираем элементы в упорядоченный список
-	    List<InnerElementRepresentationDTO> orderedElements = buildOrderedList(dto.getTopElementsWithSubordinates());
-
-	    // 2️⃣ Обновляем TableViewer в UI-потоке
+	    // Обновляем TableViewer в UI-потоке
 	    root.getDisplay().asyncExec(() -> {
 	        if (!viewer.getTable().isDisposed()) {
-	            viewer.setInput(orderedElements);
+	            viewer.setInput(ordered);
 	            viewer.refresh();
 	        }
 	    });

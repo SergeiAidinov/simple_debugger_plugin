@@ -36,10 +36,53 @@ public class DebugWindowDataDTO {
 	public Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> getTopElementsWithSubordinates() {
 		return topElementsWithSubordinates;
 	}
+	
 	@Override
 	public String toString() {
-		return "DebugWindowDataDTO [lineNumber=" + lineNumber + ", methodName=" + methodName + ", compileStackInfo="
-				+ compileStackInfo + ", topElementsWithSubordinates=" + topElementsWithSubordinates + "]";
+	    StringBuilder sb = new StringBuilder();
+	    sb.append("DebugWindowDataDTO {\n");
+	    sb.append("  lineNumber: ").append(lineNumber).append(",\n");
+	    sb.append("  methodName: ").append(methodName).append(",\n");
+	    
+	    sb.append("  compileStackInfo:\n");
+	    if (compileStackInfo != null && !compileStackInfo.isEmpty()) {
+	        for (MethodCallInStackDTO call : compileStackInfo) {
+	            sb.append("    - ").append(call).append("\n");
+	        }
+	    } else {
+	        sb.append("    (empty)\n");
+	    }
+
+	    sb.append("  topElementsWithSubordinates:\n");
+	    if (topElementsWithSubordinates != null && !topElementsWithSubordinates.isEmpty()) {
+	        for (Map.Entry<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> entry : topElementsWithSubordinates.entrySet()) {
+	            InnerElementRepresentationDTO top = entry.getKey();
+	            Set<InnerElementRepresentationDTO> subs = entry.getValue();
+
+	            // Топ-уровень
+	            sb.append("    ↳ ").append(top.getElementName())
+	              .append(" [").append(top.getTypeOrReturnType()).append("]")
+	              .append(", value=").append(top.getValue())
+	              .append("\n");
+
+	            // Подчинённые элементы
+	            if (subs != null && !subs.isEmpty()) {
+	                for (InnerElementRepresentationDTO sub : subs) {
+	                    String indent = "      ".repeat(Math.max(1, sub.getLevel()));
+	                    sb.append(indent).append("→ ")
+	                      .append(sub.getElementName())
+	                      .append(" [").append(sub.getTypeOrReturnType()).append("]")
+	                      .append(", value=").append(sub.getValue())
+	                      .append("\n");
+	                }
+	            }
+	        }
+	    } else {
+	        sb.append("    (empty)\n");
+	    }
+
+	    sb.append("}");
+	    return sb.toString();
 	}
 	
 }
