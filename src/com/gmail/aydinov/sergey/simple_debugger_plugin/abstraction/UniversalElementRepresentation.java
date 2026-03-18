@@ -164,12 +164,19 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
     // ===================== toString =====================
     @Override
     public String toString() {
-        String indent = "  ".repeat(super.getLevel());
-        return indent + "↳ " + elementName
-                + " [" + elementType + "]"
-                + ", value=" + value
-                + ", type=" + typeOrReturnType
-                + ", isStatic=" + isStatic
-                + ", valueCategory=" + valueCategory;
+        String indent = "  ".repeat(Math.max(0, getLevel()));
+
+        return new StringBuilder()
+                .append(indent)
+                .append("↳ ").append(elementName)
+                .append(" [tag=").append(getTag())          // <-- добавляем tag
+                .append(", type=").append(elementType)
+                .append(", valueCategory=").append(valueCategory)
+                .append(", typeOrReturnType=").append(typeOrReturnType)
+                .append(", isStatic=").append(isStatic)
+                .append(", level=").append(getLevel())
+                .append(", value=").append(value)
+                .append("]")
+                .toString();
     }
 }
