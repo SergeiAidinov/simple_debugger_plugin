@@ -100,7 +100,7 @@ public class TargetApplicationRepresentation {
 		// 1. Ждем загрузки всех классов
 		List<ReferenceType> loadedReferenceTypes = filterTargetClasses(waitUntilClassesAreLoaded(virtualMachine));
 		System.out.println(loadedReferenceTypes);
-		loadTopLevelElements(loadedReferenceTypes);
+		loadTopLevelElements(loadedReferenceTypes, breakpointEvent);
 		for (Entry<Tag, UniversalElementRepresentation> entry : topLevelElements.entrySet()) {
 			recursievlyPopulateElements(PairDTO.of(entry.getKey(), entry.getValue()), breakpointEvent, 1);
 		}
@@ -112,27 +112,24 @@ public class TargetApplicationRepresentation {
 			BreakpointEvent breakpointEvent, int level) {
 		UniversalElementRepresentation parentElement = pairDTO.getSecond();
 		Tag parentTag = parentElement.getTag();
-		
+
 		for (Method method : parentElement.getReferenceType().allMethods()) {
-			
-			 if (shouldSkipMethod(method)) continue;
-		List<String> args = method.argumentTypeNames();
-		 String methodArgs = String.join(", ", args);
-			
+
+			if (shouldSkipMethod(method))
+				continue;
+			List<String> args = method.argumentTypeNames();
+			String methodArgs = String.join(", ", args);
+
 			UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
-					.referenceType(parentElement.getReferenceType())
-					.objectReference(parentElement.getObjectReference())
+					.referenceType(parentElement.getReferenceType()).objectReference(parentElement.getObjectReference())
 					.elementName(method.name() + "()").additionalInfo(method.returnTypeName())
 					.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
 					.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-					.value(parentElement.getAdditionalInfo() + "." + method.name() + "("
-							+ methodArgs + ")")
+					.value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
 					.isStatic(method.isStatic())
 					.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
 					.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID())
-					.parentUniqueId(parentElement.getTag().getUniqueId())
-					.level(parentElement.getLevel() + 1)
-					.build();
+					.parentUniqueId(parentElement.getTag().getUniqueId()).level(parentElement.getLevel() + 1).build();
 			System.out.println("METhOD FOUND: " + methodElement.toString());
 			subordinates.put(methodElement.getTag(), methodElement);
 		}
@@ -142,14 +139,16 @@ public class TargetApplicationRepresentation {
 		}
 	}
 
-	private void addField(UniversalElementRepresentation parentElement, Field field, BreakpointEvent breakpointEvent, int level) {
-		
+	private void addField(UniversalElementRepresentation parentElement, Field field, BreakpointEvent breakpointEvent,
+			int level) {
+
 		Value value = null;
+		ObjectReference objectRef = null;
 		try {
 			if (field.isStatic()) {
 				value = field.declaringType().getValue(field);
 			} else {
-				ObjectReference objectRef = parentElement.getObjectReference();
+				objectRef = parentElement.getObjectReference();
 				if (objectRef != null) {
 					value = objectRef.getValue(field);
 				}
@@ -158,20 +157,24 @@ public class TargetApplicationRepresentation {
 			SimpleDebuggerLogger.warn("Failed to get value for field: " + field.name());
 		}
 
-		if (value == null) {
+		// if (value == null) {
+		String valueText = Objects.isNull(value) ? "<null>" : value.toString();
+		UniversalElementRepresentation fieldMember = UniversalElementRepresentation.builder()
+				.referenceType(parentElement.getReferenceType()).objectReference(parentElement.getObjectReference())
+				.elementName(field.name()).additionalInfo(field.typeName()).elementType(UniversalElementType.FIELD)
+				.currentRole(CurrentRole.INNER).value(valueText).isStatic(field.isStatic())
+				.valueCategory(DebugUtils.determineValueCategory(value)).typeOrReturnType(field.typeName())
+				.uniqueId(UUID.randomUUID()).parentUniqueId(parentElement.getTag().getUniqueId()).level(level).build();
 
-			UniversalElementRepresentation fieldMember = UniversalElementRepresentation.builder()
-					.referenceType(parentElement.getReferenceType()).objectReference(parentElement.getObjectReference()).elementName(field.name())
-					.additionalInfo(field.typeName()).elementType(UniversalElementType.FIELD)
-					.currentRole(CurrentRole.INNER).value("null").isStatic(field.isStatic())
-					.valueCategory(DebugUtils.determineValueCategory(value)).typeOrReturnType(field.typeName())
-					.uniqueId(UUID.randomUUID()).parentUniqueId(parentElement.getTag().getUniqueId()).level(level).build();
-			
-			System.out.println("FOUND FIELD: " + fieldMember.toString());
-			subordinates.put(fieldMember.getTag(), fieldMember);
-			
-		}
-		
+		System.out.println("FOUND FIELD: " + fieldMember.toString());
+		subordinates.put(fieldMember.getTag(), fieldMember);
+		//System.out.println("shouldExpand: " + shouldExpand(objectRef));
+		if ()
+
+		// }
+
+		shouldExpand(objectRef);
+
 	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
@@ -249,7 +252,7 @@ public class TargetApplicationRepresentation {
 				.filter(rt -> rt.name().startsWith(finalTargetPackage + ".")).toList();
 	}
 
-	private void loadTopLevelElements(List<ReferenceType> loadedReferenceTypes) {
+	private void loadTopLevelElements(List<ReferenceType> loadedReferenceTypes, BreakpointEvent breakpointEvent) {
 		for (ReferenceType refType : loadedReferenceTypes) {
 
 			UniversalElementType elementType = DebugUtils.determineUniversalElementType(refType);
@@ -257,8 +260,20 @@ public class TargetApplicationRepresentation {
 				continue;
 
 			// ✅ всегда создаём класс
+			ObjectReference thisObject = null;
+			if (Objects.nonNull(breakpointEvent)) {
+				StackFrame frame = null;
+				try {
+					frame = breakpointEvent.thread().frame(0);
+				} catch (IncompatibleThreadStateException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				thisObject = frame.thisObject();
+			}
+
 			UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
-					.referenceType(refType).objectReference(null)
+					.referenceType(refType).objectReference(thisObject)
 					.elementName(DebugUtils.extractSimpleName(refType.name())).additionalInfo(refType.name())
 					.elementType(elementType).currentRole(CurrentRole.OUTER).value(refType.name())
 					.isStatic(refType.isStatic()).valueCategory(ValueCategory.USER_OBJECT)
@@ -293,61 +308,56 @@ public class TargetApplicationRepresentation {
 
 			long objId = getObjectUniqueId(universalElementRepresentation.getObjectReference());
 			for (Method method : universalElementRepresentation.getReferenceType().allMethods()) {
-					try {
-						if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
-							continue;
-						if (method.declaringType().name().equals("java.lang.Object"))
-							continue;
-						if (method.declaringType().name().startsWith("java."))
-							continue;
+				try {
+					if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
+						continue;
+					if (method.declaringType().name().equals("java.lang.Object"))
+						continue;
+					if (method.declaringType().name().startsWith("java."))
+						continue;
 
-						String methodArgs = method.argumentTypes().stream().map(Type::name)
-								.collect(Collectors.joining(","));
+					String methodArgs = method.argumentTypes().stream().map(Type::name)
+							.collect(Collectors.joining(","));
 
-						UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
-								.referenceType(universalElementRepresentation.getReferenceType())
-								.objectReference(universalElementRepresentation.getObjectReference())
-								.elementName(universalElementRepresentation.getElementName() + "." + method.name()).additionalInfo(method.returnTypeName())
-								.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
-								.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-								.value(universalElementRepresentation.getAdditionalInfo() + "." + method.name() + "("
-										+ methodArgs + ")")
-								.isStatic(method.isStatic())
-								.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-								.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID())
-								.parentUniqueId(universalElementRepresentation.getTag().getUniqueId()).build();
+					UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
+							.referenceType(universalElementRepresentation.getReferenceType())
+							.objectReference(universalElementRepresentation.getObjectReference())
+							.elementName(universalElementRepresentation.getElementName() + "." + method.name())
+							.additionalInfo(method.returnTypeName())
+							.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
+							.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+							.value(universalElementRepresentation.getAdditionalInfo() + "." + method.name() + "("
+									+ methodArgs + ")")
+							.isStatic(method.isStatic())
+							.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
+							.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID())
+							.parentUniqueId(universalElementRepresentation.getTag().getUniqueId()).build();
 
-						subordinates.put(methodElement.getTag(), methodElement);
+					subordinates.put(methodElement.getTag(), methodElement);
 
-					} catch (Exception ignored) {
-					}
-					// targetApplicationSnapshot.put(reference.getTag(), reference);
+				} catch (Exception ignored) {
 				}
+				// targetApplicationSnapshot.put(reference.getTag(), reference);
 			}
-		
+		}
 
 		return;
 	}
 
-
 	private boolean shouldSkipMethod(Method method) {
 		String name = method.name();
-
 		// конструкторы и статика
 		if ("<init>".equals(name) || "<clinit>".equals(name)) {
 			return true;
 		}
-
 		// lambda методы
 		if (name.startsWith("lambda$")) {
 			return true;
 		}
-
 		// synthetic / bridge
 		if (method.isSynthetic() || method.isBridge()) {
 			return true;
 		}
-
 		if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
 			return true;
 		if (method.declaringType().name().equals("java.lang.Object"))
@@ -377,13 +387,12 @@ public class TargetApplicationRepresentation {
 		// Method method = frame.location().method();
 		ReferenceType type = method.declaringType();
 
-				subordinates.values().stream()
-				.filter(e -> e instanceof UniversalElementRepresentation)
+		subordinates.values().stream().filter(e -> e instanceof UniversalElementRepresentation)
 				.map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> e.getElementType().equals(UniversalElementType.METHOD))
-				.forEach(e -> System.out.println("METHOD: " +  e.getValue()));
-				//.filter(e -> Objects.equals(e.getElementName(), type.name())).findAny();
-		
+				.forEach(e -> System.out.println("METHOD: " + e.getValue()));
+		// .filter(e -> Objects.equals(e.getElementName(), type.name())).findAny();
+
 		List<LocalVariable> locals = Collections.emptyList();
 		try {
 			// arguments = method.arguments();
@@ -396,9 +405,7 @@ public class TargetApplicationRepresentation {
 		String valueText = null;
 		List<UniversalElementRepresentation> localVariables = new ArrayList<>();
 		for (LocalVariable local : locals) {
-
 			Value val;
-
 			try {
 				val = frame.getValue(local);
 			} catch (Exception e) {
@@ -406,24 +413,16 @@ public class TargetApplicationRepresentation {
 				SimpleDebuggerLogger.warn("Failed to read local variable: " + local.name());
 				continue;
 			}
-
 			valueText = "";
 			ObjectReference objRef = val instanceof ObjectReference ? (ObjectReference) val : null;
-
 			if (Objects.isNull(objRef)) {
-
 				valueText = DebugUtils.getLocalVariableValueAsString(val);
-
 			} else {
-
 				int q = DebugUtils.getCollectionSize(objRef, breakpointEvent);
-
 				valueText = q == -1 ? DebugUtils.getLocalVariableValueAsString(val) : "size:" + q + "; ";
-
 				System.out.println("INNER COLLECTIONS: " + q);
 			}
 		}
-
 		return true;
 	}
 
