@@ -90,6 +90,10 @@ public class TargetApplicationRepresentation {
 	}
 
 	public PairDTO<Map<Tag, UniversalElementRepresentation>, Map<Tag, AbstractElementRepresentation>> getTargetApplicationSnapshot() {
+		System.out.println("SNAPSOT BEGINNING: ");
+		topLevelElements.values().stream().forEach(System.out::println);
+		subordinates.values().stream().forEach(System.out::println);
+		System.out.println("END OF SNAPSOT");
 		return PairDTO.of(topLevelElements, subordinates);
 	}
 
@@ -101,7 +105,7 @@ public class TargetApplicationRepresentation {
 
 		// 1. Ждем загрузки всех классов
 		List<ReferenceType> loadedReferenceTypes = filterTargetClasses(waitUntilClassesAreLoaded(virtualMachine));
-		System.out.println(loadedReferenceTypes);
+		// System.out.println(loadedReferenceTypes);
 		loadTopLevelElements(loadedReferenceTypes, breakpointEvent);
 		for (Entry<Tag, UniversalElementRepresentation> entry : topLevelElements.entrySet()) {
 			recursievlyPopulateElements(PairDTO.of(entry.getKey(), entry.getValue()), breakpointEvent, 1);
@@ -113,7 +117,15 @@ public class TargetApplicationRepresentation {
 	private void recursievlyPopulateElements(PairDTO<Tag, UniversalElementRepresentation> pairDTO,
 			BreakpointEvent breakpointEvent, int level) {
 		UniversalElementRepresentation parentElement = pairDTO.getSecond();
-		Tag parentTag = parentElement.getTag();
+		ObjectReference objRef = parentElement.getObjectReference();
+
+		if (objRef != null) {
+			long uniqueId = objRef.uniqueID();
+			if (visitedElements.containsKey(uniqueId)) {
+				return; // этот объект уже обработан
+			}
+			visitedElements.put(uniqueId, parentElement.getTag());
+		}
 
 		for (Method method : parentElement.getReferenceType().allMethods()) {
 
@@ -132,7 +144,7 @@ public class TargetApplicationRepresentation {
 					.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
 					.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID())
 					.parentUniqueId(parentElement.getTag().getUniqueId()).level(parentElement.getLevel() + 1).build();
-			System.out.println("METhOD FOUND: " + methodElement.toString());
+			// System.out.println("METhOD FOUND: " + methodElement.toString());
 			subordinates.put(methodElement.getTag(), methodElement);
 		}
 
@@ -142,72 +154,88 @@ public class TargetApplicationRepresentation {
 	}
 
 	private void addField(UniversalElementRepresentation parentElement, Field field, BreakpointEvent breakpointEvent,
-			int level) {
+	        int level) {
 
-		Value value = null;
-		ObjectReference instance = null;
-		try {
-			if (field.isStatic()) {
-				value = field.declaringType().getValue(field);
-			} else {
-				instance = parentElement.getObjectReference();
-				if (instance != null) {
-					value = instance.getValue(field);
-				}
-			}
-		} catch (Exception e) {
-			SimpleDebuggerLogger.warn("Failed to get value for field: " + field.name());
-		}
+	    Value value = null;
+	    ObjectReference instance = null;
+	    try {
+	        if (field.isStatic()) {
+	            value = field.declaringType().getValue(field);
+	        } else {
+	            instance = parentElement.getObjectReference();
+	            if (instance != null) {
+	                value = instance.getValue(field);
+	            }
+	        }
+	    } catch (Exception e) {
+	        SimpleDebuggerLogger.warn("Failed to get value for field: " + field.name());
+	    }
 
-		// if (value == null) {
-		ObjectReference valueObjectRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
-		ReferenceType referenceType = valueObjectRef != null ? valueObjectRef.referenceType()
-				: parentElement.getReferenceType();
-		String valueText = Objects.isNull(value) ? "<null>" : value.toString();
-		UniversalElementRepresentation fieldMember = UniversalElementRepresentation.builder()
-				.referenceType(referenceType).objectReference(valueObjectRef).elementName(field.name())
-				.additionalInfo(field.typeName()).elementType(UniversalElementType.FIELD).currentRole(CurrentRole.INNER)
-				.value(valueText).isStatic(field.isStatic()).valueCategory(DebugUtils.determineValueCategory(value))
-				.typeOrReturnType(field.typeName()).uniqueId(UUID.randomUUID())
-				.parentUniqueId(parentElement.getTag().getUniqueId()).level(level).build();
+	    ObjectReference valueObjectRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
+	    ReferenceType referenceType = valueObjectRef != null ? valueObjectRef.referenceType()
+	            : parentElement.getReferenceType();
+	    String valueText = Objects.isNull(value) ? "<null>" : value.toString();
 
-		System.out.println("FOUND FIELD: " + fieldMember.toString());
-		subordinates.put(fieldMember.getTag(), fieldMember);
+	    UniversalElementRepresentation fieldMember = UniversalElementRepresentation.builder()
+	            .referenceType(referenceType)
+	            .objectReference(valueObjectRef)
+	            .elementName(field.name())
+	            .additionalInfo(field.typeName())
+	            .elementType(UniversalElementType.FIELD)
+	            .currentRole(CurrentRole.INNER)
+	            .value(valueText)
+	            .isStatic(field.isStatic())
+	            .valueCategory(DebugUtils.determineValueCategory(value))
+	            .typeOrReturnType(field.typeName())
+	            .uniqueId(UUID.randomUUID())
+	            .parentUniqueId(parentElement.getTag().getUniqueId())
+	            .level(level)
+	            .build();
 
-		if (fieldMember.getValueCategory().equals(ValueCategory.USER_OBJECT) && level < 5) {
-			for (Field nextField : fieldMember.getReferenceType().allFields()) {
-				List<UniversalElementRepresentation> qq = subordinates.values().stream()
-						.filter(e -> e instanceof UniversalElementRepresentation)
-						.map(e -> (UniversalElementRepresentation) e)
-						.filter(e -> Objects.equals(e.getObjectReference(), valueObjectRef)).toList();
-				for (UniversalElementRepresentation nextRepresentation : qq) {
-					Value nextValue = nextRepresentation.getObjectReference().getValue(nextField);
-					System.out.println("NEXT FIELD: " + nextField.name() + " value: " + nextValue.toString());
-					UniversalElementRepresentation next = UniversalElementRepresentation.builder()
-							.referenceType(nextField.declaringType())
-							.objectReference( nextRepresentation.getObjectReference())
-							.elementName(nextField.name())
-							.additionalInfo("deafault")
-							.elementType(DebugUtils.determineUniversalElementType(nextField))
-							.currentRole(CurrentRole.INNER)
-							.value(nextValue.toString())
-							.isStatic(nextField.isStatic())
-							.valueCategory(DebugUtils.determineValueCategory(nextValue))
-							.typeOrReturnType(nextValue.type().name())
-							.uniqueId(UUID.randomUUID())
-							.parentUniqueId(fieldMember.getTag().getUniqueId())
-							.level(1+ level)
-							.build();
-					subordinates.put(next.getTag(), next);
-				//	addField(next, nextField, breakpointEvent, level + 1);
+	    subordinates.put(fieldMember.getTag(), fieldMember);
 
-				}
+	    // Если поле — объект пользователя, рекурсивно раскрываем его поля
+	    if (fieldMember.getValueCategory().equals(ValueCategory.USER_OBJECT) && level < 5 && valueObjectRef != null) {
 
-			}
-		}
-		System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++");
-		subordinates.values().forEach(System.out::println);
-		System.out.println("---------------------------------------------------");
+	        long objId = valueObjectRef.uniqueID();
+	        if (visitedElements.containsKey(objId)) {
+	            return; // объект уже обработан, выходим
+	        }
+	        visitedElements.put(objId, fieldMember.getTag());
+
+	        for (Field nextField : valueObjectRef.referenceType().allFields()) {
+	            Value nextValue = null;
+	            try {
+	                nextValue = valueObjectRef.getValue(nextField);
+	            } catch (Exception e) {
+	                SimpleDebuggerLogger.warn("Failed to get value for field: " + nextField.name());
+	                continue;
+	            }
+
+	            ObjectReference nextObjRef = (nextValue instanceof ObjectReference) ? (ObjectReference) nextValue : null;
+
+	            UniversalElementRepresentation next = UniversalElementRepresentation.builder()
+	                    .referenceType(nextField.declaringType())
+	                    .objectReference(nextObjRef)
+	                    .elementName(nextField.name())
+	                    .additionalInfo(nextField.typeName())
+	                    .elementType(DebugUtils.determineUniversalElementType(nextField))
+	                    .currentRole(CurrentRole.INNER)
+	                    .value(nextValue == null ? "<null>" : nextValue.toString())
+	                    .isStatic(nextField.isStatic())
+	                    .valueCategory(DebugUtils.determineValueCategory(nextValue))
+	                    .typeOrReturnType(nextValue != null ? nextValue.type().name() : nextField.typeName())
+	                    .uniqueId(UUID.randomUUID())
+	                    .parentUniqueId(fieldMember.getTag().getUniqueId())
+	                    .level(level + 1)
+	                    .build();
+
+	            subordinates.put(next.getTag(), next);
+
+	            // рекурсивно вызываем для следующего поля
+	            addField(next, nextField, breakpointEvent, level + 1);
+	        }
+	    }
 	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
@@ -335,8 +363,8 @@ public class TargetApplicationRepresentation {
 			for (Field field : objectReferenceField.referenceType().fields()) {
 				Value value = objectReferenceField.getValue(field);
 
-				System.out.println(field.name() + " = " + value);
-				System.out.println();
+				// System.out.println(field.name() + " = " + value);
+				// System.out.println();
 			}
 
 			long objId = getObjectUniqueId(universalElementRepresentation.getObjectReference());
@@ -420,10 +448,10 @@ public class TargetApplicationRepresentation {
 		// Method method = frame.location().method();
 		ReferenceType type = method.declaringType();
 
-		subordinates.values().stream().filter(e -> e instanceof UniversalElementRepresentation)
-				.map(e -> (UniversalElementRepresentation) e)
-				.filter(e -> e.getElementType().equals(UniversalElementType.METHOD))
-				.forEach(e -> System.out.println("METHOD: " + e.getValue()));
+//		subordinates.values().stream().filter(e -> e instanceof UniversalElementRepresentation)
+//				.map(e -> (UniversalElementRepresentation) e)
+//				.filter(e -> e.getElementType().equals(UniversalElementType.METHOD))
+//				.forEach(e -> System.out.println("METHOD: " + e.getValue()));
 		// .filter(e -> Objects.equals(e.getElementName(), type.name())).findAny();
 
 		List<LocalVariable> locals = Collections.emptyList();
@@ -453,7 +481,7 @@ public class TargetApplicationRepresentation {
 			} else {
 				int q = DebugUtils.getCollectionSize(objRef, breakpointEvent);
 				valueText = q == -1 ? DebugUtils.getLocalVariableValueAsString(val) : "size:" + q + "; ";
-				System.out.println("INNER COLLECTIONS: " + q);
+				// System.out.println("INNER COLLECTIONS: " + q);
 			}
 		}
 		return true;
