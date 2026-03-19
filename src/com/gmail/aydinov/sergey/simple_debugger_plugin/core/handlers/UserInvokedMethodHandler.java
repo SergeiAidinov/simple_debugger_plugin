@@ -32,27 +32,25 @@ public class UserInvokedMethodHandler implements UIEventHandler {
 	
 	private void invokeMethod(UserInvokedMethodEventDTO invokeEvent, BreakpointEvent breakpointEvent,
 			StackFrame currentFrame) {
-		try {
-			List<Value> methodArguments = DebugUtils
-					.parseArguments(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), invokeEvent);
-			ReferenceType referenceType = TargetApplicationRepresentation.getInstance()
-					.findReferenceTypeForClass(invokeEvent.getTargetClass());
-			Method method = referenceType.methodsByName(invokeEvent.getMethod().getMethodName()).get(0);
-			ObjectReference instance = !method.isStatic()
-					? TargetApplicationRepresentation.getInstance().createObjectInstance((ClassType) referenceType)
-					: null;
-			Value result = Objects.nonNull(instance)
-					? instance.invokeMethod(breakpointEvent.thread(),
-							method, methodArguments, ObjectReference.INVOKE_SINGLE_THREADED)
-					: ((ClassType) referenceType).invokeMethod(
-							TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().allThreads().get(0), method,
-							methodArguments, ClassType.INVOKE_SINGLE_THREADED);
-			DebugSessionImpl.methodInvocationResult.set(String.valueOf(result));
-//			simpleDebugEventCollector.collectDebugEvent(new DebugEvent<String>(
-//					SimpleDebuggerEventTypes.SimpleDebuggerEventType.METHOD_INVOKE, methodInvocationResult.get()));
-		} catch (Exception exception) {
-			exception.printStackTrace();
-		}
+//		try {
+//			List<Value> methodArguments = DebugUtils
+//					.parseArguments(TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), invokeEvent);
+//			ReferenceType referenceType = TargetApplicationRepresentation.getInstance()
+//					.findReferenceTypeForClass(invokeEvent.getTargetClass());
+//			Method method = referenceType.methodsByName(invokeEvent.getMethod().getMethodName()).get(0);
+//			ObjectReference instance = !method.isStatic()
+//					? TargetApplicationRepresentation.getInstance().createObjectInstance((ClassType) referenceType)
+//					: null;
+//			Value result = Objects.nonNull(instance)
+//					? instance.invokeMethod(breakpointEvent.thread(),
+//							method, methodArguments, ObjectReference.INVOKE_SINGLE_THREADED)
+//					: ((ClassType) referenceType).invokeMethod(
+//							TargetVirtualMachineRepresentation.getInstance().getVirtualMachine().allThreads().get(0), method,
+//							methodArguments, ClassType.INVOKE_SINGLE_THREADED);
+//			DebugSessionImpl.methodInvocationResult.set(String.valueOf(result));
+//		} catch (Exception exception) {
+//			exception.printStackTrace();
+//		}
 	}
 
 }
