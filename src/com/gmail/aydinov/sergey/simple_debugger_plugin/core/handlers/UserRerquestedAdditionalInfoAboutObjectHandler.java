@@ -31,74 +31,75 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 	@Override
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
-		UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
-		provideAdditionalInfoAboutObject(userRequestedAdditionalInfo);
+//		UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
+//		provideAdditionalInfoAboutObject(userRequestedAdditionalInfo);
 		return false;
 	}
 	
-	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
-		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
-		UniversalElementRepresentation topLevelElement = TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot()
-				.get(anchorElement.getTag());
-		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(topLevelElement);
-		relevantElements.remove(topLevelElement);
-		List<UniversalElementRepresentation> elements = new ArrayList<UniversalElementRepresentation>(relevantElements);
-		Collections.sort(elements);
-		Map<Integer, ArrayList<UserInstanceInnerElementInspectionDTO>> separatedIntoGroups = Map.of(1,
-				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 2,
-				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 3,
-				new ArrayList<UserInstanceInnerElementInspectionDTO>());
-		for (UniversalElementRepresentation element : elements) {
-			UserInstanceInnerElementInspectionDTO userInstanceInnerElementInspectionDTO = new UserInstanceInnerElementInspectionDTO(
-					element.getElementName(), element.gettypeOrReturnType(), element.getValue());
-			if (element.getElementType().ordinal() < 5)
-				separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
-			else if (element.getElementType().ordinal() == 5)
-				separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
-			else if (element.getElementType().ordinal() > 5)
-				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
-		}
-		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
-				topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(), separatedIntoGroups);
-		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<UserInstanceInspectionDTO>(
-				SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, userInstanceInspectionDTO));
-
-	}
-	
-	private Set<UniversalElementRepresentation> compileAdditionalInfo(UniversalElementRepresentation topLevelElement) {
-		Set<UniversalElementRepresentation> selectedElements = new HashSet<UniversalElementRepresentation>();
-		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream().filter(e -> Objects.nonNull(e))
-				.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
-				.ifPresent(elementName -> {
-					elementName.getTag().getUniqueId();
-					TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
-							.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
-							.ifPresent(field -> {
-								TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream().filter(
-										e -> Objects.equals(e.getTag().getParentId(), field.getTag().getUniqueId()))
-										.findAny().ifPresent(root -> {
-											boolean found = true;
-											Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
-											iterationElements.add(root);
-											while (found) {
-												for (UniversalElementRepresentation iterationElement : iterationElements) {
-													iterationElements.addAll(TargetApplicationRepresentation.getInstance()
-															.getTargetApplicationSnapshot().values().stream()
-															.filter(e -> Objects.equals(e.getObjectReference(),
-																	iterationElement.getObjectReference()))
-															.filter(e -> !Objects.equals(e.getAdditionalInfo(),
-																	topLevelElement.gettypeOrReturnType()))
-															.toList());
-												}
-												iterationElements.remove(root);
-												if (iterationElements.isEmpty())
-													found = false;
-												selectedElements.addAll(iterationElements);
-												iterationElements.clear();
-											}
-										});
-							});
-				});
-		return selectedElements;
-	}
+//	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
+//		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
+//		UniversalElementRepresentation topLevelElement = (UniversalElementRepresentation) TargetApplicationRepresentation.getInstance()
+//		        .getTargetApplicationSnapshot()
+//		        .get(anchorElement.getTag());
+//		Set<UniversalElementRepresentation> relevantElements = compileAdditionalInfo(topLevelElement);
+//		relevantElements.remove(topLevelElement);
+//		List<UniversalElementRepresentation> elements = new ArrayList<UniversalElementRepresentation>(relevantElements);
+//		Collections.sort(elements);
+//		Map<Integer, ArrayList<UserInstanceInnerElementInspectionDTO>> separatedIntoGroups = Map.of(1,
+//				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 2,
+//				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 3,
+//				new ArrayList<UserInstanceInnerElementInspectionDTO>());
+//		for (UniversalElementRepresentation element : elements) {
+//			UserInstanceInnerElementInspectionDTO userInstanceInnerElementInspectionDTO = new UserInstanceInnerElementInspectionDTO(
+//					element.getElementName(), element.getTypeOrReturnType(), element.getValue());
+//			if (element.getElementType().ordinal() < 5)
+//				separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
+//			else if (element.getElementType().ordinal() == 5)
+//				separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
+//			else if (element.getElementType().ordinal() > 5)
+//				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
+//		}
+//		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
+//				topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(), separatedIntoGroups);
+//		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<UserInstanceInspectionDTO>(
+//				SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, userInstanceInspectionDTO));
+//
+//	}
+//	
+//	private Set<UniversalElementRepresentation> compileAdditionalInfo(UniversalElementRepresentation topLevelElement) {
+//		Set<UniversalElementRepresentation> selectedElements = new HashSet<UniversalElementRepresentation>();
+//		TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream().filter(e -> Objects.nonNull(e))
+//				.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
+//				.ifPresent(elementName -> {
+//					elementName.getTag().getUniqueId();
+//					TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream()
+//							.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
+//							.ifPresent(field -> {
+//								TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().values().stream().filter(
+//										e -> Objects.equals(e.getTag().getParentId(), field.getTag().getUniqueId()))
+//										.findAny().ifPresent(root -> {
+//											boolean found = true;
+//											Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
+//											iterationElements.add(root);
+//											while (found) {
+//												for (UniversalElementRepresentation iterationElement : iterationElements) {
+//													iterationElements.addAll(TargetApplicationRepresentation.getInstance()
+//															.getTargetApplicationSnapshot().values().stream()
+//															.filter(e -> Objects.equals(e.getObjectReference(),
+//																	iterationElement.getObjectReference()))
+//															.filter(e -> !Objects.equals(e.getAdditionalInfo(),
+//																	topLevelElement.getTypeOrReturnType()))
+//															.toList());
+//												}
+//												iterationElements.remove(root);
+//												if (iterationElements.isEmpty())
+//													found = false;
+//												selectedElements.addAll(iterationElements);
+//												iterationElements.clear();
+//											}
+//										});
+//							});
+//				});
+//		return selectedElements;
+//	}
 }

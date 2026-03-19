@@ -455,8 +455,7 @@ public class DebugUtils {
 
 		// ---------- Fields ----------
 		if (jdiElement instanceof com.sun.jdi.Field field) {
-			return field.isStatic() ? UniversalElementRepresentation.UniversalElementType.STATIC_FIELD
-					: UniversalElementRepresentation.UniversalElementType.NON_STATIC_FIELD;
+			return UniversalElementRepresentation.UniversalElementType.FIELD;
 		}
 
 		// ---------- Methods ----------
@@ -491,51 +490,57 @@ public class DebugUtils {
 
 	public static ValueCategory determineValueCategory(Value value) {
 
-		if (value == null) {
-			return ValueCategory.NULL;
-		}
+	    if (value == null) {
+	        return ValueCategory.NULL;
+	    }
 
-		// ---------- Primitive ----------
-		if (value instanceof com.sun.jdi.PrimitiveValue) {
-			return ValueCategory.PRIMITIVE;
-		}
+	    // ---------- Primitive ----------
+	    if (value instanceof com.sun.jdi.PrimitiveValue) {
+	        return ValueCategory.PRIMITIVE;
+	    }
 
-		if (!(value instanceof com.sun.jdi.ObjectReference objectReference)) {
-			return ValueCategory.NOT_SPECIFIED;
-		}
+	    // ---------- Array ----------
+	    if (value instanceof com.sun.jdi.ArrayReference) {
+	        return ValueCategory.ARRAY;
+	    }
 
-		ReferenceType referenceType = objectReference.referenceType();
-		String typeName = referenceType.name();
+	    if (!(value instanceof com.sun.jdi.ObjectReference objectReference)) {
+	        return ValueCategory.NOT_SPECIFIED;
+	    }
 
-		// ---------- String ----------
-		if ("java.lang.String".equals(typeName)) {
-			return ValueCategory.STRING;
-		}
+	    ReferenceType referenceType = objectReference.referenceType();
+	    String typeName = referenceType.name();
 
-		// ---------- Wrapper ----------
-		if (typeName.startsWith("java.lang.") && (typeName.endsWith("Integer") || typeName.endsWith("Long")
-				|| typeName.endsWith("Double") || typeName.endsWith("Float") || typeName.endsWith("Boolean")
-				|| typeName.endsWith("Character") || typeName.endsWith("Byte") || typeName.endsWith("Short"))) {
-			return ValueCategory.WRAPPER;
-		}
+	    // ---------- String ----------
+	    if ("java.lang.String".equals(typeName)) {
+	        return ValueCategory.STRING;
+	    }
 
-		// ---------- Array ----------
-		if (referenceType instanceof com.sun.jdi.ArrayType) {
-			return ValueCategory.ARRAY;
-		}
+	    // ---------- Wrapper (строго) ----------
+	    switch (typeName) {
+	        case "java.lang.Integer":
+	        case "java.lang.Long":
+	        case "java.lang.Double":
+	        case "java.lang.Float":
+	        case "java.lang.Boolean":
+	        case "java.lang.Character":
+	        case "java.lang.Byte":
+	        case "java.lang.Short":
+	            return ValueCategory.WRAPPER;
+	    }
 
-		// ---------- Collection ----------
-		if (implementsInterface(referenceType, "java.util.Collection")) {
-			return ValueCategory.COLLECTION;
-		}
+	    // ---------- Map ----------
+	    if (implementsInterface(referenceType, "java.util.Map")) {
+	        return ValueCategory.MAP;
+	    }
 
-		// ---------- Map ----------
-		if (implementsInterface(referenceType, "java.util.Map")) {
-			return ValueCategory.MAP;
-		}
+	    // ---------- Collection ----------
+	    if (implementsInterface(referenceType, "java.util.Collection")) {
+	        return ValueCategory.COLLECTION;
+	    }
 
-		// ---------- User object ----------
-		return ValueCategory.USER_OBJECT;
+	    // ---------- User object ----------
+	    return ValueCategory.USER_OBJECT;
 	}
 
 //	private static boolean implementsInterface(ReferenceType referenceType, String interfaceName) {
@@ -544,9 +549,9 @@ public class DebugUtils {
 //	            .anyMatch(i -> i.name().equals(interfaceName));
 //	}
 
-	public static String getLocalVariableValueAsString(StackFrame frame, LocalVariable variable) {
+	public static String getLocalVariableValueAsString(Value value) {
 		try {
-			Value value = frame.getValue(variable); // получаем Value из фрейма
+			//Value value = frame.getValue(variable); // получаем Value из фрейма
 			if (value == null)
 				return "null";
 

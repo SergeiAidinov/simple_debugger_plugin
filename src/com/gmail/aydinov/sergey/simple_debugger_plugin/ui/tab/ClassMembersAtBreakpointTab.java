@@ -54,7 +54,7 @@ public class ClassMembersAtBreakpointTab {
 	private final TableViewer viewer;
 	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private InnerElementRepresentationDTO lastInspectedElement;
-	
+
 	private UUID currentElementId;
 	private TooltipManager tooltipManager;
 //	private InstanceInspectionPopupManager popupManager;
@@ -74,21 +74,61 @@ public class ClassMembersAtBreakpointTab {
 		setupHoverInspectionListener();
 		// popupManager = new InstanceInspectionPopupManager(root);
 	}
-	
+
 	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
-		if (dto == null || dto.getInnerElements().isEmpty())
-			return;
-		// Копируем и сортируем элементы
-		List<InnerElementRepresentationDTO> sorted = buildOrderedList(dto.getInnerElements());
-		// Обновляем TableViewer в UI-потоке
-		root.getDisplay().asyncExec(() -> {
-			if (!viewer.getTable().isDisposed()) {
-				viewer.setInput(sorted);
-				viewer.refresh(); // обязательно обновляем таблицу
-			}
-		});
+	    if (dto == null || dto.getTopElementsWithSubordinates().isEmpty()) return;
+	    System.out.println(dto);
+	    List<InnerElementRepresentationDTO> ordered = new ArrayList<>();
+	    for (InnerElementRepresentationDTO topLevelDto : dto.getTopElementsWithSubordinates().keySet()) {
+	    	// topLevelDto.setLevel(0);
+		        ordered.add(topLevelDto);
+		        for (InnerElementRepresentationDTO subordinate : dto.getTopElementsWithSubordinates().get(topLevelDto)) {
+		        	//subordinate.setLevel(1);
+		        	ordered.add(subordinate);
+		        }
+	    }
+
+	    // Обновляем TableViewer в UI-потоке
+	    root.getDisplay().asyncExec(() -> {
+	        if (!viewer.getTable().isDisposed()) {
+	            viewer.setInput(ordered);
+	            viewer.refresh();
+	        }
+	    });
 	}
-	
+
+	/**
+	 * Построение списка элементов для TableViewer:
+	 * - top-level элементы и их подчинённые
+	 * - фильтруем REFERENCE
+	 * - используем уровень level, уже выставленный на бэке
+	 */
+	private List<InnerElementRepresentationDTO> buildOrderedList(
+	        Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> topWithSubs) {
+
+	    List<InnerElementRepresentationDTO> result = new ArrayList<>();
+
+	    // Сортировка top-level элементов
+	    List<InnerElementRepresentationDTO> topElements = topWithSubs.keySet().stream()
+	            .filter(e -> e.getElementType() != UniversalElementType.REFERENCE)
+	            .sorted()
+	            .toList();
+
+	    for (InnerElementRepresentationDTO top : topElements) {
+	        result.add(top);
+
+	        Set<InnerElementRepresentationDTO> subs = topWithSubs.getOrDefault(top, Set.of());
+	        List<InnerElementRepresentationDTO> filteredSubs = subs.stream()
+	                .filter(e -> e.getElementType() != UniversalElementType.REFERENCE)
+	                .sorted()
+	                .toList();
+
+	        result.addAll(filteredSubs);
+	    }
+
+	    return result;
+	}
+	    
 	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO userInstanceInspectionDTO) {
 		Display display = root.getDisplay();
 		display.asyncExec(() -> {
@@ -98,7 +138,7 @@ public class ClassMembersAtBreakpointTab {
 			tooltipManager.showFieldInfoPopup(userInstanceInspectionDTO, location);
 		});
 	}
-	
+
 	public Composite getControl() {
 		return root;
 	}
@@ -126,8 +166,7 @@ public class ClassMembersAtBreakpointTab {
 			if (v != null)
 				return v;
 			// Если поле или статическое поле, показываем тип
-			if (dto.getElementType() == UniversalElementType.STATIC_FIELD
-					|| dto.getElementType() == UniversalElementType.NON_STATIC_FIELD) {
+			if (dto.getElementType() == UniversalElementType.FIELD) {
 				return dto.getAdditionalInfo();
 			}
 			return ""; // иначе пусто
@@ -195,27 +234,38 @@ public class ClassMembersAtBreakpointTab {
 	// Icons & tooltips
 	// =========================================================
 	private Image getTypeIcon(InnerElementRepresentationDTO dto) {
-		String key = switch (dto.getElementType()) {
-		case INTERFACE -> "interface";
-		case METHOD -> dto.isStatic() ? "static_method" : "method";
-		case STATIC_FIELD -> "static_field";
-		case NON_STATIC_FIELD -> "fieldIcon";
-		case LOCAL_VARIABLE -> "variableIcon";
-		default -> null;
-		};
-		return key != null ? SimpleDebugerWindowsManager.instance().icons.get(key).getFirst() : null;
+	    if (dto == null || dto.getElementType() == UniversalElementType.REFERENCE)
+	        return null; // REFERENCE не отображаем
+
+	    String key = switch (dto.getElementType()) {
+	        case INTERFACE -> "interface";
+	        case METHOD -> dto.isStatic() ? "static_method" : "method";
+	        case FIELD -> dto.isStatic() ? "static_field" : "fieldIcon";
+	        case LOCAL_VARIABLE -> "variableIcon";
+	        case ENUM -> "enum";
+	        default -> "unknown";
+	    };
+
+	    PairDTO<Image, String> pair = SimpleDebugerWindowsManager.instance().icons.get(key);
+	    return pair != null ? pair.getFirst() : null;
 	}
 
+
 	private PairDTO<Image, String> getTypeTooltip(InnerElementRepresentationDTO dto) {
-		String key = switch (dto.getElementType()) {
-		case INTERFACE -> "interface";
-		case METHOD -> dto.isStatic() ? "static_method" : "method";
-		case STATIC_FIELD -> "static_field";
-		case NON_STATIC_FIELD -> "fieldIcon";
-		case LOCAL_VARIABLE -> "variableIcon";
-		default -> null;
-		};
-		return key != null ? SimpleDebugerWindowsManager.instance().icons.get(key) : null;
+	    if (dto == null || dto.getElementType() == UniversalElementType.REFERENCE)
+	        return null; // REFERENCE не отображаем
+
+	    String key = switch (dto.getElementType()) {
+	        case INTERFACE -> "interface";
+	        case METHOD -> dto.isStatic() ? "static_method" : "method";
+	        case FIELD -> dto.isStatic() ? "static_field" : "fieldIcon";
+	        case LOCAL_VARIABLE -> "variableIcon";
+	        case ENUM -> "enum";
+	        default -> "unknown";
+	    };
+
+	    return SimpleDebugerWindowsManager.instance().icons.getOrDefault(key,
+	            SimpleDebugerWindowsManager.instance().icons.get("unknown"));
 	}
 
 	// Пример исправления опечатки в getValueCategoty()
@@ -230,8 +280,7 @@ public class ClassMembersAtBreakpointTab {
 			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
 		}
 		// Только поля пользовательского типа, которые реально инициализированы
-		if ((dto.getElementType() == UniversalElementType.NON_STATIC_FIELD
-				|| dto.getElementType() == UniversalElementType.STATIC_FIELD) && category == ValueCategory.USER_OBJECT
+		if ((dto.getElementType() == UniversalElementType.FIELD) && category == ValueCategory.USER_OBJECT
 				&& dto.getValue() != null && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
 			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
 		}
@@ -259,14 +308,14 @@ public class ClassMembersAtBreakpointTab {
 	// =========================================================
 
 	private void setupTooltips(Table table) {
-	    TooltipManager tooltipManager = new TooltipManager(table, root);
-	    tooltipManager.setTooltipProvider(item -> {
-	        int col = TooltipManager.getColumnIndexAtPoint(table, table.getDisplay().getCursorLocation().x
-	                - table.toDisplay(0, 0).x);
-	        Object tip = item.getData("tooltip_col_" + col);
-	        return tip instanceof String ? (String) tip : null;
-	    });
-	    this.tooltipManager = tooltipManager;
+		TooltipManager tooltipManager = new TooltipManager(table, root);
+		tooltipManager.setTooltipProvider(item -> {
+			int col = TooltipManager.getColumnIndexAtPoint(table,
+					table.getDisplay().getCursorLocation().x - table.toDisplay(0, 0).x);
+			Object tip = item.getData("tooltip_col_" + col);
+			return tip instanceof String ? (String) tip : null;
+		});
+		this.tooltipManager = tooltipManager;
 	}
 
 	private int getColumnIndexAtPoint(Table table, int x) {
@@ -284,7 +333,7 @@ public class ClassMembersAtBreakpointTab {
 	// =========================================================
 
 	private List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
-	//	allElements.stream().forEach(e -> System.out.println(e));
+		// allElements.stream().forEach(e -> System.out.println(e));
 		Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<>();
 		Set<InnerElementRepresentationDTO> elementsToDelete = new HashSet<>();
 		// 1️⃣ root элементы
@@ -323,13 +372,13 @@ public class ClassMembersAtBreakpointTab {
 		List<InnerElementRepresentationDTO> thirdLevelElements = new ArrayList<>();
 		for (Entry<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> triplet : tree
 				.entrySet()) {
-			triplet.getKey().setLevel(0);
+			//triplet.getKey().setLevel(0);
 			result.add(triplet.getKey());
-			secondLevelElements
-					.addAll(triplet.getValue().getFirst().stream().sorted().peek(e -> e.setLevel(1)).toList());
-			thirdLevelElements
-					.addAll(triplet.getValue().getSecond().stream().sorted().peek(e -> e.setLevel(2)).toList());
-		}
+//			secondLevelElements
+//					.addAll(triplet.getValue().getFirst().stream().sorted().peek(e -> e.setLevel(1)).toList());
+//			thirdLevelElements
+//					.addAll(triplet.getValue().getSecond().stream().sorted().peek(e -> e.setLevel(2)).toList());
+//		}
 
 		for (InnerElementRepresentationDTO secondLevelElement : secondLevelElements) {
 			result.add(secondLevelElement);
@@ -341,90 +390,85 @@ public class ClassMembersAtBreakpointTab {
 		}
 
 		// 5️⃣ оставшиеся элементы, если есть
-		if (!allElements.isEmpty()) {
-			result.addAll(allElements.stream().sorted().peek(e -> e.setLevel(0)).toList());
+//		if (!allElements.isEmpty()) {
+//			result.addAll(allElements.stream().sorted()
+//				//	.peek(e -> e.setLevel(0))
+//					.toList());
 		}
 		return result;
 	}
 
 	private void setupColumnClickListeners() {
-	    Table table = viewer.getTable();
-	    table.addListener(SWT.MouseDown, event -> {
-	        TableItem item = table.getItem(new Point(event.x, event.y));
-	        if (item == null)
-	            return;
+		Table table = viewer.getTable();
+		table.addListener(SWT.MouseDown, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			if (item == null)
+				return;
 
-	        int colIndex = getColumnIndexAtPoint(table, event.x);
-	        // Наша третья колонка — индекс 2
-	        if (colIndex != 2)
-	            return;
+			int colIndex = getColumnIndexAtPoint(table, event.x);
+			// Наша третья колонка — индекс 2
+			if (colIndex != 2)
+				return;
 
-	        Object data = item.getData();
-	        if (!(data instanceof InnerElementRepresentationDTO dto))
-	            return;
+			Object data = item.getData();
+			if (!(data instanceof InnerElementRepresentationDTO dto))
+				return;
 
-	        // Проверяем, по какой иконке кликнули
-	        Image clickedImage = getIcon(dto);
-	        if (clickedImage == null)
-	            return;
+			// Проверяем, по какой иконке кликнули
+			Image clickedImage = getIcon(dto);
+			if (clickedImage == null)
+				return;
 
-	        if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-	            // Клик по коллекции — создаем окно и генерируем событие
-	            Display display = table.getDisplay();
-	            display.asyncExec(() -> {
-	            //    new CollectionInspectorWindow().open();
-	            });
+			if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+				// Клик по коллекции — создаем окно и генерируем событие
+				Display display = table.getDisplay();
+				display.asyncExec(() -> {
+					// new CollectionInspectorWindow().open();
+				});
 				SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
-	            uiEventCollector.collectUiEvent(
-	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto)
-	            );
-	          //  UniversalInspectorWindow.getInstance().open();
-//	        } else if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-//	            // Клик по обычной inspectIcon — старая логика
-//	            uiEventCollector.collectUiEvent(
-//	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT, dto)
-//	            );
-	        }
-	    });
+				uiEventCollector.collectUiEvent(
+						new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto));
+			}
+		});
 	}
 
 	private void setupHoverInspectionListener() {
 		Table table = viewer.getTable();
-	    table.addListener(SWT.MouseMove, event -> {
-	        TableItem item = table.getItem(new Point(event.x, event.y));
-	        InnerElementRepresentationDTO dto = null;
-	        if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
-	            int colIndex = getColumnIndexAtPoint(table, event.x);
-	            if (colIndex == 2) {
-	                Image icon = getIcon(dataDto);
-	                if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst() ||
-	                    icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-	                    dto = dataDto;
-	                }
-	            }
-	        }
+		table.addListener(SWT.MouseMove, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			InnerElementRepresentationDTO dto = null;
+			if (item != null && item.getData() instanceof InnerElementRepresentationDTO dataDto) {
+				int colIndex = getColumnIndexAtPoint(table, event.x);
+				if (colIndex == 2) {
+					Image icon = getIcon(dataDto);
+					if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
+							|| icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+						dto = dataDto;
+					}
+				}
+			}
 
-	        if (!Objects.equals(dto, lastInspectedElement)) {
-	            lastInspectedElement = dto;
-	            tooltipManager.closePopup();
-	            if (dto != null) {
-	                if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+			if (!Objects.equals(dto, lastInspectedElement)) {
+				lastInspectedElement = dto;
+				tooltipManager.closePopup();
+				if (dto != null) {
+					if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
 	                    uiEventCollector.collectUiEvent(
 	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto)
 	                    );
-	                } else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-	                    uiEventCollector.collectUiEvent(
-	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto)
-	                    );
-	                    Display display = root.getDisplay();
-	                    Point location = display.getCursorLocation();
-	                    tooltipManager.showTooltipForCollection(dto, location);
-	                }
-	            }
-	        }
-	    });
+					} else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+//	                    uiEventCollector.collectUiEvent(
+//	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto)
+//	                    );
+						Display display = root.getDisplay();
+						Point location = display.getCursorLocation();
+						tooltipManager.showTooltipForCollection(dto, location);
+					}
+				}
+			}
+		});
 	}
-	
+
 	private class ValueEditingSupport extends EditingSupport {
 		private final TextCellEditor editor;
 
@@ -459,7 +503,7 @@ public class ClassMembersAtBreakpointTab {
 			String type = dto.getAdditionalInfo();
 			Object convertedValue = UiUtils.convertToType(newValue, type);
 			switch (dto.getElementType()) {
-			case STATIC_FIELD, NON_STATIC_FIELD -> updateFieldValue(dto, convertedValue.toString());
+			case FIELD -> updateFieldValue(dto, convertedValue.toString());
 			case LOCAL_VARIABLE -> updateVariableValue(dto, convertedValue.toString());
 			default -> {
 			}
