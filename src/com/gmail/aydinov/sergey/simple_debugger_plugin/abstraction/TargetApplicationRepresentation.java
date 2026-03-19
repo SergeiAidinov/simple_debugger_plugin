@@ -176,20 +176,16 @@ public class TargetApplicationRepresentation {
 
 		if (fieldMember.getValueCategory().equals(ValueCategory.USER_OBJECT) && level < 5) {
 			for (Field nextField : fieldMember.getReferenceType().allFields()) {
-			List<UniversalElementRepresentation> qq = subordinates.values().stream().filter(e -> e instanceof UniversalElementRepresentation)
-				.map(e -> (UniversalElementRepresentation) e)
-				.filter(e -> e.getObjectReference().equals(valueObjectRef)).toList();
-			for (UniversalElementRepresentation nextRepresentation : qq) {
-				Value nextValue = nextRepresentation.getObjectReference().getValue(nextField);
-				 System.out.println("NEXT FIELD: " + nextField.name() + " value: " + nextValue.toString());
-				
-			}
-			
-			
-				
-			   
+				List<UniversalElementRepresentation> qq = subordinates.values().stream()
+						.filter(e -> e instanceof UniversalElementRepresentation)
+						.map(e -> (UniversalElementRepresentation) e)
+						.filter(e -> e.getObjectReference().equals(valueObjectRef)).toList();
+				for (UniversalElementRepresentation nextRepresentation : qq) {
+					Value nextValue = nextRepresentation.getObjectReference().getValue(nextField);
+					System.out.println("NEXT FIELD: " + nextField.name() + " value: " + nextValue.toString());
 
-			
+				}
+
 			}
 		}
 
