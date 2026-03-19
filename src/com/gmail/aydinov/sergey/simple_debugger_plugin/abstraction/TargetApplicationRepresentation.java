@@ -179,16 +179,35 @@ public class TargetApplicationRepresentation {
 				List<UniversalElementRepresentation> qq = subordinates.values().stream()
 						.filter(e -> e instanceof UniversalElementRepresentation)
 						.map(e -> (UniversalElementRepresentation) e)
-						.filter(e -> e.getObjectReference().equals(valueObjectRef)).toList();
+						.filter(e -> Objects.equals(e.getObjectReference(), valueObjectRef)).toList();
 				for (UniversalElementRepresentation nextRepresentation : qq) {
 					Value nextValue = nextRepresentation.getObjectReference().getValue(nextField);
 					System.out.println("NEXT FIELD: " + nextField.name() + " value: " + nextValue.toString());
+					UniversalElementRepresentation next = UniversalElementRepresentation.builder()
+							.referenceType(nextField.declaringType())
+							.objectReference( nextRepresentation.getObjectReference())
+							.elementName(nextField.name())
+							.additionalInfo("deafault")
+							.elementType(DebugUtils.determineUniversalElementType(nextField))
+							.currentRole(CurrentRole.INNER)
+							.value(nextValue.toString())
+							.isStatic(nextField.isStatic())
+							.valueCategory(DebugUtils.determineValueCategory(nextValue))
+							.typeOrReturnType(nextValue.type().name())
+							.uniqueId(UUID.randomUUID())
+							.parentUniqueId(fieldMember.getTag().getUniqueId())
+							.level(1+ level)
+							.build();
+					subordinates.put(next.getTag(), next);
+				//	addField(next, nextField, breakpointEvent, level + 1);
 
 				}
 
 			}
 		}
-
+		System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++");
+		subordinates.values().forEach(System.out::println);
+		System.out.println("---------------------------------------------------");
 	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
