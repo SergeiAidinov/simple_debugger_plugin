@@ -179,10 +179,15 @@ public class TargetApplicationRepresentation {
 			List<UniversalElementRepresentation> qq = subordinates.values().stream().filter(e -> e instanceof UniversalElementRepresentation)
 				.map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> e.getObjectReference().equals(valueObjectRef)).toList();
-			UniversalElementRepresentation ww = qq.get(0);
-			 Value ee = ww.getObjectReference().getValue(nextField);
+			for (UniversalElementRepresentation nextRepresentation : qq) {
+				Value nextValue = nextRepresentation.getObjectReference().getValue(nextField);
+				 System.out.println("NEXT FIELD: " + nextField.name() + " value: " + nextValue.toString());
 				
-			    System.out.println("NEXT FIELD: " + nextField.name() + " value: " + ee.toString());
+			}
+			
+			
+				
+			   
 
 			
 			}
