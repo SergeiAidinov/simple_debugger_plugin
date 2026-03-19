@@ -122,9 +122,8 @@ public class TargetApplicationRepresentation {
 		if (objRef != null) {
 			long uniqueId = objRef.uniqueID();
 			if (visitedElements.containsKey(uniqueId)) {
-				return; // этот объект уже обработан
+				visitedElements.put(uniqueId, parentElement.getTag());
 			}
-			visitedElements.put(uniqueId, parentElement.getTag());
 		}
 
 		for (Method method : parentElement.getReferenceType().allMethods()) {
@@ -154,88 +153,53 @@ public class TargetApplicationRepresentation {
 	}
 
 	private void addField(UniversalElementRepresentation parentElement, Field field, BreakpointEvent breakpointEvent,
-	        int level) {
+			int level) {
 
-	    Value value = null;
-	    ObjectReference instance = null;
-	    try {
-	        if (field.isStatic()) {
-	            value = field.declaringType().getValue(field);
-	        } else {
-	            instance = parentElement.getObjectReference();
-	            if (instance != null) {
-	                value = instance.getValue(field);
-	            }
-	        }
-	    } catch (Exception e) {
-	        SimpleDebuggerLogger.warn("Failed to get value for field: " + field.name());
-	    }
+		Value value = null;
+		ObjectReference instance = parentElement.getObjectReference();
 
-	    ObjectReference valueObjectRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
-	    ReferenceType referenceType = valueObjectRef != null ? valueObjectRef.referenceType()
-	            : parentElement.getReferenceType();
-	    String valueText = Objects.isNull(value) ? "<null>" : value.toString();
+		try {
+			if (field.isStatic()) {
+				value = field.declaringType().getValue(field);
+			} else if (instance != null) {
+				value = instance.getValue(field);
+			}
+		} catch (Exception e) {
+			SimpleDebuggerLogger.warn("Failed to get value for field: " + field.name());
+			return;
+		}
 
-	    UniversalElementRepresentation fieldMember = UniversalElementRepresentation.builder()
-	            .referenceType(referenceType)
-	            .objectReference(valueObjectRef)
-	            .elementName(field.name())
-	            .additionalInfo(field.typeName())
-	            .elementType(UniversalElementType.FIELD)
-	            .currentRole(CurrentRole.INNER)
-	            .value(valueText)
-	            .isStatic(field.isStatic())
-	            .valueCategory(DebugUtils.determineValueCategory(value))
-	            .typeOrReturnType(field.typeName())
-	            .uniqueId(UUID.randomUUID())
-	            .parentUniqueId(parentElement.getTag().getUniqueId())
-	            .level(level)
-	            .build();
+		ObjectReference valueObj = (value instanceof ObjectReference) ? (ObjectReference) value : null;
 
-	    subordinates.put(fieldMember.getTag(), fieldMember);
+		String valueText = (value == null) ? "<null>" : value.toString();
 
-	    // Если поле — объект пользователя, рекурсивно раскрываем его поля
-	    if (fieldMember.getValueCategory().equals(ValueCategory.USER_OBJECT) && level < 5 && valueObjectRef != null) {
+		UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
+				.referenceType(valueObj != null ? valueObj.referenceType() : parentElement.getReferenceType())
+				.objectReference(valueObj).elementName(field.name()).additionalInfo(field.typeName())
+				.elementType(UniversalElementType.FIELD).currentRole(CurrentRole.INNER).value(valueText)
+				.isStatic(field.isStatic()).valueCategory(DebugUtils.determineValueCategory(value))
+				.typeOrReturnType(field.typeName()).uniqueId(UUID.randomUUID())
+				.parentUniqueId(parentElement.getTag().getUniqueId()).level(level).build();
 
-	        long objId = valueObjectRef.uniqueID();
-	        if (visitedElements.containsKey(objId)) {
-	            return; // объект уже обработан, выходим
-	        }
-	        visitedElements.put(objId, fieldMember.getTag());
+		subordinates.put(fieldElement.getTag(), fieldElement);
 
-	        for (Field nextField : valueObjectRef.referenceType().allFields()) {
-	            Value nextValue = null;
-	            try {
-	                nextValue = valueObjectRef.getValue(nextField);
-	            } catch (Exception e) {
-	                SimpleDebuggerLogger.warn("Failed to get value for field: " + nextField.name());
-	                continue;
-	            }
+// 🔒 Ограничения
+		if (valueObj == null || level >= 5 || !shouldExpand(valueObj)) {
+			return;
+		}
 
-	            ObjectReference nextObjRef = (nextValue instanceof ObjectReference) ? (ObjectReference) nextValue : null;
+		long objId = valueObj.uniqueID();
 
-	            UniversalElementRepresentation next = UniversalElementRepresentation.builder()
-	                    .referenceType(nextField.declaringType())
-	                    .objectReference(nextObjRef)
-	                    .elementName(nextField.name())
-	                    .additionalInfo(nextField.typeName())
-	                    .elementType(DebugUtils.determineUniversalElementType(nextField))
-	                    .currentRole(CurrentRole.INNER)
-	                    .value(nextValue == null ? "<null>" : nextValue.toString())
-	                    .isStatic(nextField.isStatic())
-	                    .valueCategory(DebugUtils.determineValueCategory(nextValue))
-	                    .typeOrReturnType(nextValue != null ? nextValue.type().name() : nextField.typeName())
-	                    .uniqueId(UUID.randomUUID())
-	                    .parentUniqueId(fieldMember.getTag().getUniqueId())
-	                    .level(level + 1)
-	                    .build();
+// 🔥 КЛЮЧ: проверка ДО рекурсии
+		if (visitedElements.containsKey(objId)) {
+			return;
+		}
+		visitedElements.put(objId, fieldElement.getTag());
 
-	            subordinates.put(next.getTag(), next);
-
-	            // рекурсивно вызываем для следующего поля
-	            addField(next, nextField, breakpointEvent, level + 1);
-	        }
-	    }
+// 👉 Рекурсивно раскрываем ПОЛЯ ОБЪЕКТА
+		for (Field innerField : valueObj.referenceType().allFields()) {
+			addField(fieldElement, innerField, breakpointEvent, level + 1);
+		}
 	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
