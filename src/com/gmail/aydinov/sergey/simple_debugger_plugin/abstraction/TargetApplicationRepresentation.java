@@ -43,8 +43,10 @@ import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
+import com.sun.jdi.PrimitiveValue;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
+import com.sun.jdi.StringReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
@@ -143,14 +145,14 @@ public class TargetApplicationRepresentation {
 			int level) {
 
 		Value value = null;
-		ObjectReference objectRef = null;
+		ObjectReference instance = null;
 		try {
 			if (field.isStatic()) {
 				value = field.declaringType().getValue(field);
 			} else {
-				objectRef = parentElement.getObjectReference();
-				if (objectRef != null) {
-					value = objectRef.getValue(field);
+				instance = parentElement.getObjectReference();
+				if (instance != null) {
+					value = instance.getValue(field);
 				}
 			}
 		} catch (Exception e) {
@@ -158,22 +160,33 @@ public class TargetApplicationRepresentation {
 		}
 
 		// if (value == null) {
+		ObjectReference valueObjectRef = (value instanceof ObjectReference) ? (ObjectReference) value : null;
+		ReferenceType referenceType = valueObjectRef != null ? valueObjectRef.referenceType()
+				: parentElement.getReferenceType();
 		String valueText = Objects.isNull(value) ? "<null>" : value.toString();
 		UniversalElementRepresentation fieldMember = UniversalElementRepresentation.builder()
-				.referenceType(parentElement.getReferenceType()).objectReference(parentElement.getObjectReference())
-				.elementName(field.name()).additionalInfo(field.typeName()).elementType(UniversalElementType.FIELD)
-				.currentRole(CurrentRole.INNER).value(valueText).isStatic(field.isStatic())
-				.valueCategory(DebugUtils.determineValueCategory(value)).typeOrReturnType(field.typeName())
-				.uniqueId(UUID.randomUUID()).parentUniqueId(parentElement.getTag().getUniqueId()).level(level).build();
+				.referenceType(referenceType).objectReference(valueObjectRef).elementName(field.name())
+				.additionalInfo(field.typeName()).elementType(UniversalElementType.FIELD).currentRole(CurrentRole.INNER)
+				.value(valueText).isStatic(field.isStatic()).valueCategory(DebugUtils.determineValueCategory(value))
+				.typeOrReturnType(field.typeName()).uniqueId(UUID.randomUUID())
+				.parentUniqueId(parentElement.getTag().getUniqueId()).level(level).build();
 
 		System.out.println("FOUND FIELD: " + fieldMember.toString());
 		subordinates.put(fieldMember.getTag(), fieldMember);
-		//System.out.println("shouldExpand: " + shouldExpand(objectRef));
-		if ()
 
-		// }
+		if (fieldMember.getValueCategory().equals(ValueCategory.USER_OBJECT) && level < 5) {
+			for (Field nextField : fieldMember.getReferenceType().allFields()) {
+			List<UniversalElementRepresentation> qq = subordinates.values().stream().filter(e -> e instanceof UniversalElementRepresentation)
+				.map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> e.getObjectReference().equals(valueObjectRef)).toList();
+			UniversalElementRepresentation ww = qq.get(0);
+			 Value ee = ww.getObjectReference().getValue(nextField);
+				
+			    System.out.println("NEXT FIELD: " + nextField.name() + " value: " + ee.toString());
 
-		shouldExpand(objectRef);
+			
+			}
+		}
 
 	}
 
