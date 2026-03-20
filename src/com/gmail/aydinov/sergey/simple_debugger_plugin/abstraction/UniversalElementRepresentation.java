@@ -11,7 +11,7 @@ import com.sun.jdi.Value;
 
 public class UniversalElementRepresentation extends AbstractElementRepresentation implements Comparable<UniversalElementRepresentation> {
 
-    public enum UniversalElementType { INTERFACE, CLASS, ENUM, FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, OBJECT_INSTANCE, UNKNOWN, REFERENCE, COLLECTION, MAP }
+    public enum UniversalElementType { INTERFACE, CLASS, ENUM, FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, /*OBJECT_INSTANCE,*/ UNKNOWN, REFERENCE /*, COLLECTION, MAP*/ }
     public enum CurrentRole { OUTER, INNER, LOCAL }
     public enum ValueCategory { PRIMITIVE, WRAPPER, STRING, COLLECTION, ARRAY, MAP, USER_OBJECT, NULL, NOT_SPECIFIED, AUXILIARY, UNKNOWN }
 
