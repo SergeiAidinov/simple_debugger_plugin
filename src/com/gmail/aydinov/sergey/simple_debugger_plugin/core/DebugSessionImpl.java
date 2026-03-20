@@ -218,7 +218,7 @@ public class DebugSessionImpl implements DebugSession {
 		    
 		}
 
-		System.out.println(topElementsWithSubordinates);
+	//	System.out.println(topElementsWithSubordinates);
 		System.out.println("<====");
 
 		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,

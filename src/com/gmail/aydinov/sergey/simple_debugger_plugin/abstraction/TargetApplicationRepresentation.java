@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,6 +34,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.LocalVariableShortDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
@@ -107,11 +109,53 @@ public class TargetApplicationRepresentation {
 		List<ReferenceType> loadedReferenceTypes = filterTargetClasses(waitUntilClassesAreLoaded(virtualMachine));
 		// System.out.println(loadedReferenceTypes);
 		loadTopLevelElements(loadedReferenceTypes, breakpointEvent);
+
+		Map<String, LocalVariableShortDTO> localsSnapshot = compileShortInfoAboutVariables(virtualMachine,
+				breakpointEvent);
+
 		for (Entry<Tag, UniversalElementRepresentation> entry : topLevelElements.entrySet()) {
 			recursievlyPopulateElements(PairDTO.of(entry.getKey(), entry.getValue()), breakpointEvent, 1);
 		}
-		if (Objects.nonNull(breakpointEvent))
-			addLocalVariables(virtualMachine, breakpointEvent);
+		if (!localsSnapshot.isEmpty())
+			addLocalVariables(virtualMachine, breakpointEvent, localsSnapshot);
+
+		System.out.println("SNAPSOT BEGINNING: ");
+		topLevelElements.values().stream().forEach(System.out::println);
+		subordinates.values().stream().forEach(System.out::println);
+		System.out.println("END OF SNAPSOT");
+	}
+
+	private Map<String, LocalVariableShortDTO> compileShortInfoAboutVariables(VirtualMachine virtualMachine,
+			BreakpointEvent breakpointEvent) {
+		if (Objects.isNull(breakpointEvent))
+			return Collections.emptyMap();
+		Map<String, LocalVariableShortDTO> shortInfo = new HashMap<String, LocalVariableShortDTO>();
+		StackFrame frame;
+		List<LocalVariable> locals;
+		try {
+			frame = breakpointEvent.thread().frame(0);
+			locals = frame.visibleVariables();
+		} catch (IncompatibleThreadStateException | AbsentInformationException e) {
+			SimpleDebuggerLogger.error(e.getMessage(), e);
+			return shortInfo;
+		}
+		Map<LocalVariable, Value> values = frame.getValues(locals);
+		for (LocalVariable local : locals) {
+			Value value = values.get(local);
+			String name = local.name();
+			String valueText;
+
+			if (value instanceof ObjectReference objRef) {
+				// Здесь безопасно делать invokeMethod, т.к. frame больше не нужен
+				int collectionSize = DebugUtils.getCollectionSize(objRef, breakpointEvent);
+				valueText = collectionSize >= 0 ? "size:" + collectionSize : value.toString();
+			} else {
+				valueText = DebugUtils.getLocalVariableValueAsString(value);
+			}
+			shortInfo.put(name, new LocalVariableShortDTO(name, local.typeName(), valueText,
+					DebugUtils.determineValueCategory(value)));
+		}
+		return shortInfo;
 	}
 
 	private void recursievlyPopulateElements(PairDTO<Tag, UniversalElementRepresentation> pairDTO,
@@ -393,60 +437,30 @@ public class TargetApplicationRepresentation {
 		return false;
 	}
 
-	private boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
+	private boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent,
+			Map<String, LocalVariableShortDTO> localsSnapshot) {
 		if (Objects.isNull(breakpointEvent))
 			return false;
-		StackFrame frame;
-		try {
-			frame = breakpointEvent.thread().frame(0);
-		} catch (IncompatibleThreadStateException e) {
-			SimpleDebuggerLogger.error(e.getMessage(), e);
-			return false;
-		}
 		Location location = breakpointEvent.location();
 		Method method = location.method();
 		if (method == null)
 			return false;
-
-		// Получаем представление метода
-		// Method method = frame.location().method();
-		ReferenceType type = method.declaringType();
-
-//		subordinates.values().stream().filter(e -> e instanceof UniversalElementRepresentation)
-//				.map(e -> (UniversalElementRepresentation) e)
-//				.filter(e -> e.getElementType().equals(UniversalElementType.METHOD))
-//				.forEach(e -> System.out.println("METHOD: " + e.getValue()));
-		// .filter(e -> Objects.equals(e.getElementName(), type.name())).findAny();
-
-		List<LocalVariable> locals = Collections.emptyList();
-		try {
-			// arguments = method.arguments();
-			locals = frame.visibleVariables();
-		} catch (AbsentInformationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		String valueText = null;
-		List<UniversalElementRepresentation> localVariables = new ArrayList<>();
-		for (LocalVariable local : locals) {
-			Value val;
-			try {
-				val = frame.getValue(local);
-			} catch (Exception e) {
-				// StackFrame мог устареть
-				SimpleDebuggerLogger.warn("Failed to read local variable: " + local.name());
-				continue;
-			}
-			valueText = "";
-			ObjectReference objRef = val instanceof ObjectReference ? (ObjectReference) val : null;
-			if (Objects.isNull(objRef)) {
-				valueText = DebugUtils.getLocalVariableValueAsString(val);
-			} else {
-				int q = DebugUtils.getCollectionSize(objRef, breakpointEvent);
-				valueText = q == -1 ? DebugUtils.getLocalVariableValueAsString(val) : "size:" + q + "; ";
-				// System.out.println("INNER COLLECTIONS: " + q);
-			}
+		Optional<UniversalElementRepresentation> methodRepresentation = subordinates.values().stream()
+				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> e.getElementType().equals(UniversalElementType.METHOD))
+				.filter(e -> Objects.equals(e.getValue(), DebugUtils.toReadableSignature(method))).findAny();
+		if (methodRepresentation.isEmpty())
+			return false;
+		for (Entry<String, LocalVariableShortDTO> entry : localsSnapshot.entrySet()) {
+			UniversalElementRepresentation localPrimitive = UniversalElementRepresentation.builder()
+					.referenceType(methodRepresentation.get().getReferenceType()).elementName(entry.getValue().getElementName())
+					.additionalInfo(entry.getValue().getAdditionalInfo())
+					.elementType(DebugUtils.determineUniversalElementType(entry.getValue()))
+					.currentRole(CurrentRole.LOCAL).value(entry.getValue().getValue())
+					.isStatic(false).valueCategory(entry.getValue().getValueCategory())
+					.uniqueId(UUID.randomUUID()).parentUniqueId(methodRepresentation.get().getTag().getUniqueId())
+					.level(3).build();
+			subordinates.put(localPrimitive.getTag(), localPrimitive);
 		}
 		return true;
 	}

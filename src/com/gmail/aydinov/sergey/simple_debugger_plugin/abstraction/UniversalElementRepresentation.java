@@ -72,7 +72,30 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
         if (cmp != 0) return cmp;
         return this.elementName.compareToIgnoreCase(other.elementName);
     }
+    
+    // ===================== toString =====================
+    @Override
+    public String toString() {
+        String indent = "  ".repeat(Math.max(0, getLevel()));
 
+        return new StringBuilder()
+                .append(indent)
+                .append("UniversalElementRepresentation {")
+                .append("\n").append(indent).append("  tag=").append(getTag())
+                .append("\n").append(indent).append("  elementName=").append(elementName)
+                .append("\n").append(indent).append("  additionalInfo=").append(additionalInfo)
+                .append("\n").append(indent).append("  elementType=").append(elementType)
+                .append("\n").append(indent).append("  currentRole=").append(currentRole)
+                .append("\n").append(indent).append("  value=").append(value)
+                .append("\n").append(indent).append("  isStatic=").append(isStatic)
+                .append("\n").append(indent).append("  valueCategory=").append(valueCategory)
+                .append("\n").append(indent).append("  typeOrReturnType=").append(typeOrReturnType)
+                .append("\n").append(indent).append("  referenceType=").append(referenceType)
+                .append("\n").append(indent).append("  level=").append(getLevel())
+                .append("\n").append(indent).append("}")
+                .toString();
+    }
+    
     // ===================== Builder =====================
     public static class Builder {
         private ReferenceType referenceType = null;
@@ -161,22 +184,5 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
                 .build();
     }
 
-    // ===================== toString =====================
-    @Override
-    public String toString() {
-        String indent = "  ".repeat(Math.max(0, getLevel()));
-
-        return new StringBuilder()
-                .append(indent)
-                .append("↳ ").append(elementName)
-                .append(" [tag=").append(getTag())          // <-- добавляем tag
-                .append(", type=").append(elementType)
-                .append(", valueCategory=").append(valueCategory)
-                .append(", typeOrReturnType=").append(typeOrReturnType)
-                .append(", isStatic=").append(isStatic)
-                .append(", level=").append(getLevel())
-                .append(", value=").append(value)
-                .append("]")
-                .toString();
-    }
+   
 }

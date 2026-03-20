@@ -1109,5 +1109,24 @@ public class DebugUtils {
         // ---------- Неизвестный объект ----------
         return null;
     }
+    
+    public static String toReadableSignature(com.sun.jdi.Method method) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(method.declaringType().name());
+        sb.append(".").append(method.name());
+        sb.append("(");
+
+        var args = method.argumentTypeNames();
+        for (int i = 0; i < args.size(); i++) {
+            sb.append(args.get(i));
+            if (i < args.size() - 1) {
+                sb.append(",");
+            }
+        }
+
+        sb.append(")");
+        return sb.toString();
+    }
 	
 }
