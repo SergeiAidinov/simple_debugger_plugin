@@ -184,12 +184,9 @@ public class DebugSessionImpl implements DebugSession {
 	}
 
 	private boolean updateUI(BreakpointEvent breakpointEvent) {
-
-	    // Получаем снимок приложения
 	    PairDTO<Map<Tag, UniversalElementRepresentation>, Map<Tag, AbstractElementRepresentation>> snapShot =
 	            TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot();
 
-	    // Преобразуем верхнеуровневые элементы в DTO
 	    Map<Tag, InnerElementRepresentationDTO> dtoMap = snapShot.getFirst().entrySet().stream()
 	            .collect(Collectors.toMap(
 	                    Map.Entry::getKey,
@@ -198,24 +195,34 @@ public class DebugSessionImpl implements DebugSession {
 
 	    Collection<AbstractElementRepresentation> subordinates = snapShot.getSecond().values();
 
-	    // Собираем структуру "топ-элемент → все его дочерние DTO"
 	    Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> result = new HashMap<>();
 
-	    for (InnerElementRepresentationDTO topDTO : dtoMap.values()) {
+	    // Для каждого топ-элемента создаём отдельный список потомков
+	    Collection<InnerElementRepresentationDTO> topElementsCopy = new ArrayList<>(dtoMap.values());
+	    for (InnerElementRepresentationDTO topDTO : topElementsCopy) {
 	        List<InnerElementRepresentationDTO> children = collectAllChildrenDTO(topDTO, subordinates, dtoMap);
 	        result.put(topDTO, children);
 	    }
 
-	    // Вывод и подсветка текущей строки
 	    System.out.println(result);
+
 	    currentLineHighlighter.highlight(breakpointEvent.location());
+
+	    Location location = breakpointEvent.location();
+	    String methodName = location.declaringType().name() + "." + location.method().name() + "()";
+	    DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(
+	            location.lineNumber(), methodName,
+	            DebugUtils.compileStackInfo(breakpointEvent.thread()), result
+	    );
+
+	    simpleDebugEventCollector.collectDebugEvent(new DebugEvent<>(
+	            SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
+	    simpleDebugEventCollector.collectDebugEvent(new DebugEvent<>(
+	            SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 
 	    return true;
 	}
 
-	/**
-	 * Собирает всех потомков DTO рекурсивно.
-	 */
 	private List<InnerElementRepresentationDTO> collectAllChildrenDTO(
 	        InnerElementRepresentationDTO rootDTO,
 	        Collection<AbstractElementRepresentation> allElements,
@@ -227,9 +234,6 @@ public class DebugSessionImpl implements DebugSession {
 	    return result;
 	}
 
-	/**
-	 * Рекурсивный обход.
-	 */
 	private void collectRecursiveDTO(
 	        InnerElementRepresentationDTO parentDTO,
 	        Collection<AbstractElementRepresentation> allElements,

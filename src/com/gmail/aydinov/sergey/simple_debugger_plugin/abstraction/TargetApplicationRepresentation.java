@@ -117,10 +117,10 @@ public class TargetApplicationRepresentation {
 		if (!localsSnapshot.isEmpty())
 			addLocalVariables(virtualMachine, breakpointEvent, localsSnapshot);
 
-		System.out.println("SNAPSOT BEGINNING: ");
-		topLevelElements.values().stream().forEach(System.out::println);
-		subordinates.values().stream().forEach(System.out::println);
-		System.out.println("END OF SNAPSOT");
+//		System.out.println("SNAPSOT BEGINNING: ");
+//		topLevelElements.values().stream().forEach(System.out::println);
+//		subordinates.values().stream().forEach(System.out::println);
+//		System.out.println("END OF SNAPSOT");
 	}
 
 	private Map<String, LocalVariableShortDTO> compileShortInfoAboutVariables(VirtualMachine virtualMachine,
