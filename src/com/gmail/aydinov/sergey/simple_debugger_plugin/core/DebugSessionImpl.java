@@ -185,57 +185,81 @@ public class DebugSessionImpl implements DebugSession {
 
 	private boolean updateUI(BreakpointEvent breakpointEvent) {
 
-		PairDTO<Map<Tag, UniversalElementRepresentation>, Map<Tag, AbstractElementRepresentation>> snapShot = TargetApplicationRepresentation
-				.getInstance().getTargetApplicationSnapshot();
+	    // Получаем снимок приложения
+	    PairDTO<Map<Tag, UniversalElementRepresentation>, Map<Tag, AbstractElementRepresentation>> snapShot =
+	            TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot();
 
-		Map<Tag, InnerElementRepresentationDTO> topLevelElements = snapShot.getFirst().entrySet().stream()
-				.collect(Collectors.toMap(Map.Entry::getKey,
-						e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-								.fromElement(e.getValue())));
-		Map<Tag, AbstractElementRepresentation> subordinates = snapShot.getSecond();
-		Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> result = new HashMap<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>>();
-		
-		for (InnerElementRepresentationDTO toplevelElement : topLevelElements.values()) {
-			List<AbstractElementRepresentation> accessibleElements = new ArrayList();
-			accessibleElements.addAll(subordinates.values());
-			result.put(toplevelElement, collectAllChildren(toplevelElement, accessibleElements));
-		}
+	    // Преобразуем верхнеуровневые элементы в DTO
+	    Map<Tag, InnerElementRepresentationDTO> dtoMap = snapShot.getFirst().entrySet().stream()
+	            .collect(Collectors.toMap(
+	                    Map.Entry::getKey,
+	                    e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getValue())
+	            ));
 
-		currentLineHighlighter.highlight(breakpointEvent.location());
-		return true;
+	    Collection<AbstractElementRepresentation> subordinates = snapShot.getSecond().values();
+
+	    // Собираем структуру "топ-элемент → все его дочерние DTO"
+	    Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> result = new HashMap<>();
+
+	    for (InnerElementRepresentationDTO topDTO : dtoMap.values()) {
+	        List<InnerElementRepresentationDTO> children = collectAllChildrenDTO(topDTO, subordinates, dtoMap);
+	        result.put(topDTO, children);
+	    }
+
+	    // Вывод и подсветка текущей строки
+	    System.out.println(result);
+	    currentLineHighlighter.highlight(breakpointEvent.location());
+
+	    return true;
 	}
 
-	private List<InnerElementRepresentationDTO> collectAllChildren(InnerElementRepresentationDTO topLevelElement,
-			List<AbstractElementRepresentation> accessibleElements) {
-		List<InnerElementRepresentationDTO> result = new ArrayList<InnerElementRepresentationDTO>();
-		List<InnerElementRepresentationDTO> foundSubordinates = new ArrayList<InnerElementRepresentationDTO>();
-		foundSubordinates.add(topLevelElement);
-		List<InnerElementRepresentationDTO> elementsToAdd = new ArrayList<InnerElementRepresentationDTO>();
-		List<AbstractElementRepresentation> elementstoRemove = new ArrayList<AbstractElementRepresentation>();
-		boolean found = true;
-		while (found) {
-			found = false;
-			for (InnerElementRepresentationDTO foundSubordinate : foundSubordinates) {
-				elementsToAdd.clear();
-				elementstoRemove.clear();
-				for (AbstractElementRepresentation abstractElementRepresentation : accessibleElements) {
-					if ((abstractElementRepresentation instanceof UniversalElementRepresentation universalElementRepresentation)) {
-						if (Objects.equals(universalElementRepresentation.getTag().getParentId(), foundSubordinate.getTag().getUniqueId())) {
-						elementstoRemove.add(abstractElementRepresentation);	
-						elementsToAdd.add(InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(universalElementRepresentation));
-						found = true;
-					}
-					}
-					
-			}
-				result.addAll(elementsToAdd);
-			}
-			accessibleElements.removeAll(elementstoRemove);
-		}
-		result.remove(topLevelElement);
-		return result;
+	/**
+	 * Собирает всех потомков DTO рекурсивно.
+	 */
+	private List<InnerElementRepresentationDTO> collectAllChildrenDTO(
+	        InnerElementRepresentationDTO rootDTO,
+	        Collection<AbstractElementRepresentation> allElements,
+	        Map<Tag, InnerElementRepresentationDTO> dtoMap
+	) {
+	    List<InnerElementRepresentationDTO> result = new ArrayList<>();
+	    Set<UUID> visited = new HashSet<>();
+	    collectRecursiveDTO(rootDTO, allElements, dtoMap, visited, result);
+	    return result;
 	}
 
+	/**
+	 * Рекурсивный обход.
+	 */
+	private void collectRecursiveDTO(
+	        InnerElementRepresentationDTO parentDTO,
+	        Collection<AbstractElementRepresentation> allElements,
+	        Map<Tag, InnerElementRepresentationDTO> dtoMap,
+	        Set<UUID> visited,
+	        List<InnerElementRepresentationDTO> result
+	) {
+	    UUID parentId = parentDTO.getTag().getUniqueId();
+
+	    for (AbstractElementRepresentation element : allElements) {
+	        if (Objects.equals(element.getTag().getParentId(), parentId)) {
+
+	            UUID childId = element.getTag().getUniqueId();
+	            if (visited.contains(childId)) continue; // защита от зацикливания
+	            visited.add(childId);
+
+	            // Получаем DTO из мапы или создаём новый
+	            InnerElementRepresentationDTO childDTO = dtoMap.get(element.getTag());
+	            if (childDTO == null) {
+	                childDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(element);
+	                dtoMap.put(element.getTag(), childDTO);
+	            }
+
+	            result.add(childDTO);
+
+	            // Рекурсивно собираем потомков
+	            collectRecursiveDTO(childDTO, allElements, dtoMap, visited, result);
+	        }
+	    }
+	}
 	private void logError(String message, Throwable exception) {
 		StatusManager.getManager().handle(new Status(IStatus.ERROR, "simple_debugger_plugin", message, exception),
 				StatusManager.LOG);
