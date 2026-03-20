@@ -468,7 +468,7 @@ public class DebugUtils {
 			return UniversalElementRepresentation.UniversalElementType.LOCAL_VARIABLE;
 		}
 
-		return null;
+		return UniversalElementRepresentation.UniversalElementType.UNKNOWN;
 	}
 
 	public static String extractSimpleName(String fullQualifiedName) {

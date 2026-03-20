@@ -38,17 +38,14 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.LocalVariableS
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
-import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
-import com.sun.jdi.PrimitiveValue;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
-import com.sun.jdi.StringReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
@@ -57,6 +54,7 @@ import com.sun.jdi.event.BreakpointEvent;
 
 public class TargetApplicationRepresentation {
 
+	private static final int MAX_LEVEL_RECURSION = 4;
 	private final Map<AbstractElementRepresentation.Tag, UniversalElementRepresentation> topLevelElements = new ConcurrentHashMap<>();
 	private final Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates = new ConcurrentHashMap<>();
 	private final Map<Long, AbstractElementRepresentation.Tag> visitedElements = new ConcurrentHashMap<>();
@@ -144,16 +142,20 @@ public class TargetApplicationRepresentation {
 			Value value = values.get(local);
 			String name = local.name();
 			String valueText;
-
+			TripletDTO<String, String, String> data = null;
+			String typeOrReturnType = "<null>";
 			if (value instanceof ObjectReference objRef) {
 				// Здесь безопасно делать invokeMethod, т.к. frame больше не нужен
 				int collectionSize = DebugUtils.getCollectionSize(objRef, breakpointEvent);
+				data = DebugUtils.determinCollectionType(objRef, breakpointEvent);
 				valueText = collectionSize >= 0 ? "size:" + collectionSize : value.toString();
+				typeOrReturnType = DebugUtils.getObjectReferenceValueAsString(objRef);
 			} else {
 				valueText = DebugUtils.getLocalVariableValueAsString(value);
 			}
+			
 			shortInfo.put(name, new LocalVariableShortDTO(name, local.typeName(), valueText,
-					DebugUtils.determineValueCategory(value)));
+					DebugUtils.determineValueCategory(value), typeOrReturnType, data));
 		}
 		return shortInfo;
 	}
@@ -228,7 +230,7 @@ public class TargetApplicationRepresentation {
 		subordinates.put(fieldElement.getTag(), fieldElement);
 
 // 🔒 Ограничения
-		if (valueObj == null || level >= 5 || !shouldExpand(valueObj)) {
+		if (valueObj == null || level >= MAX_LEVEL_RECURSION || !shouldExpand(valueObj)) {
 			return;
 		}
 
@@ -346,7 +348,7 @@ public class TargetApplicationRepresentation {
 					.elementName(DebugUtils.extractSimpleName(refType.name())).additionalInfo(refType.name())
 					.elementType(elementType).currentRole(CurrentRole.OUTER).value(refType.name())
 					.isStatic(refType.isStatic()).valueCategory(ValueCategory.USER_OBJECT)
-					.typeOrReturnType(refType.name()).uniqueId(UUID.randomUUID()).parentUniqueId(null).build();
+					.typeOrReturnType(refType.name()).uniqueId(UUID.randomUUID()).parentUniqueId(null).level(0).build();
 
 			topLevelElements.put(topLevelElement.getTag(), topLevelElement);
 		}
@@ -445,22 +447,45 @@ public class TargetApplicationRepresentation {
 		Method method = location.method();
 		if (method == null)
 			return false;
-		Optional<UniversalElementRepresentation> methodRepresentation = subordinates.values().stream()
+		Optional<UniversalElementRepresentation> methodRepresentationOptional = subordinates.values().stream()
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> e.getElementType().equals(UniversalElementType.METHOD))
 				.filter(e -> Objects.equals(e.getValue(), DebugUtils.toReadableSignature(method))).findAny();
-		if (methodRepresentation.isEmpty())
+		if (methodRepresentationOptional.isEmpty())
 			return false;
 		for (Entry<String, LocalVariableShortDTO> entry : localsSnapshot.entrySet()) {
+
+			if (List.of(ValueCategory.COLLECTION, ValueCategory.ARRAY, ValueCategory.MAP)
+					.contains(entry.getValue().getValueCategory())) {
+			String parameters = Objects.isNull(entry.getValue().getData().getThird()) ?
+					"params.:<" + entry.getValue().getData().getSecond() + ">" :
+					"params.:<" + entry.getValue().getData().getSecond() + ", " + 	entry.getValue().getData().getThird() + ">";
+			String valueText =  parameters + ", "  + entry.getValue().getData().getFirst() + ", " + entry.getValue().getValue() ;
+				UniversalElementRepresentation localStructure = UniversalElementRepresentation.builder()
+						.referenceType(methodRepresentationOptional.get().getReferenceType())
+						.elementName(entry.getValue().getElementName()).additionalInfo(entry.getValue().getAdditionalInfo())
+						.elementType(UniversalElementType.LOCAL_VARIABLE)
+						.currentRole(CurrentRole.LOCAL).value(valueText).isStatic(false)
+						.valueCategory(entry.getValue().getValueCategory())
+						.typeOrReturnType(entry.getValue().getTypeOrReturnType())
+						.uniqueId(UUID.randomUUID())
+						.parentUniqueId(methodRepresentationOptional.get().getTag().getUniqueId()).level(methodRepresentationOptional.get().getLevel() + 1).build();
+				
+				subordinates.put(localStructure.getTag(), localStructure);
+				
+			} else {
 			UniversalElementRepresentation localPrimitive = UniversalElementRepresentation.builder()
-					.referenceType(methodRepresentation.get().getReferenceType()).elementName(entry.getValue().getElementName())
-					.additionalInfo(entry.getValue().getAdditionalInfo())
+					.referenceType(methodRepresentationOptional.get().getReferenceType())
+					.elementName(entry.getValue().getElementName()).additionalInfo(entry.getValue().getAdditionalInfo())
 					.elementType(DebugUtils.determineUniversalElementType(entry.getValue()))
-					.currentRole(CurrentRole.LOCAL).value(entry.getValue().getValue())
-					.isStatic(false).valueCategory(entry.getValue().getValueCategory())
-					.uniqueId(UUID.randomUUID()).parentUniqueId(methodRepresentation.get().getTag().getUniqueId())
-					.level(3).build();
+					.currentRole(CurrentRole.LOCAL).value(entry.getValue().getValue()).isStatic(false)
+					.valueCategory(entry.getValue().getValueCategory())
+					.typeOrReturnType(entry.getValue().getTypeOrReturnType())
+					.uniqueId(UUID.randomUUID())
+					.parentUniqueId(methodRepresentationOptional.get().getTag().getUniqueId()).level(methodRepresentationOptional.get().getLevel() + 1).build();
+			
 			subordinates.put(localPrimitive.getTag(), localPrimitive);
+		}
 		}
 		return true;
 	}
