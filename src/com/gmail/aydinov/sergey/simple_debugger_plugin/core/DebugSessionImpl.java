@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -184,181 +185,55 @@ public class DebugSessionImpl implements DebugSession {
 
 	private boolean updateUI(BreakpointEvent breakpointEvent) {
 
-		PairDTO<Map<Tag, UniversalElementRepresentation>, Map<Tag, AbstractElementRepresentation>> qq = TargetApplicationRepresentation
+		PairDTO<Map<Tag, UniversalElementRepresentation>, Map<Tag, AbstractElementRepresentation>> snapShot = TargetApplicationRepresentation
 				.getInstance().getTargetApplicationSnapshot();
-		Map<Tag, UniversalElementRepresentation> topLevelElements = qq.getFirst();
-		Map<Tag, AbstractElementRepresentation> subordinates = qq.getSecond();
-//		topLevelElements.values().stream().forEach(e -> System.out.println("TL: " + e));
-//		subordinates.values().stream().forEach(e -> System.out.println("SO: " + e));
-		Location location = breakpointEvent.location();
-		String methodName = location.declaringType().name() + "." + location.method().name() + "()";
-		Set<InnerElementRepresentationDTO> innerElementDTOs = topLevelElements.values().stream()
-				.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e))
-				.collect(Collectors.toSet());
-		
-		
-		subordinates.values().stream().filter(e -> e instanceof UniversalElementRepresentation)
-				.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-						.fromElement((UniversalElementRepresentation) e))
-				.forEach(innerElementDTOs::add);
-		Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> topElementsWithSubordinates = new HashMap<>();
 
-		for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
-		    InnerElementRepresentationDTO topDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-		            .fromElement(topLevelElement);
-		    Set<InnerElementRepresentationDTO> subordinatesSet = new HashSet<InnerElementRepresentationDTO>();
-		    for (AbstractElementRepresentation subordinate : subordinates.values()) {
-		    	if (subordinate.getTag().getParentId().equals(topLevelElement.getTag().getUniqueId())) {
-		    		subordinatesSet.add(InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-				            .fromElement(subordinate));
-		    	}
-		    	topElementsWithSubordinates.put(topDTO, subordinatesSet);
-		    }
-
-		    
+		Map<Tag, InnerElementRepresentationDTO> topLevelElements = snapShot.getFirst().entrySet().stream()
+				.collect(Collectors.toMap(Map.Entry::getKey,
+						e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+								.fromElement(e.getValue())));
+		Map<Tag, AbstractElementRepresentation> subordinates = snapShot.getSecond();
+		Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> result = new HashMap<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>>();
+		
+		for (InnerElementRepresentationDTO toplevelElement : topLevelElements.values()) {
+			List<AbstractElementRepresentation> accessibleElements = new ArrayList();
+			accessibleElements.addAll(subordinates.values());
+			result.put(toplevelElement, collectAllChildren(toplevelElement, accessibleElements));
 		}
 
-	//	System.out.println(topElementsWithSubordinates);
-		System.out.println("<====");
-
-		DebugWindowDataDTO debugWindowDataDTO = new DebugWindowDataDTO(location.lineNumber(), methodName,
-				DebugUtils.compileStackInfo(breakpointEvent.thread()), topElementsWithSubordinates);
-
-		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<DebugWindowDataDTO>(
-				SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT, debugWindowDataDTO));
-		simpleDebugEventCollector
-				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 		currentLineHighlighter.highlight(breakpointEvent.location());
-
-		/*
-		 * for (UniversalElementRepresentation toplevelElement :
-		 * topLevelElements.values()) {
-		 * 
-		 * }
-		 * 
-		 * ObjectReference thisObj = null; try { thisObj =
-		 * breakpointEvent.thread().frame(0).thisObject(); } catch
-		 * (IncompatibleThreadStateException e) { // TODO Auto-generated catch block
-		 * e.printStackTrace(); }
-		 * 
-		 * if (thisObj != null) { String runtimeClass = thisObj.referenceType().name();
-		 * }
-		 * 
-		 * if (Objects.isNull(breakpointEvent)) return false; Location location =
-		 * breakpointEvent.location(); AtomicReference<ObjectReference> thisObjectRef =
-		 * new AtomicReference<>(); try {
-		 * thisObjectRef.set(breakpointEvent.thread().frame(0).thisObject()); } catch
-		 * (IncompatibleThreadStateException e) { e.printStackTrace(); return false; }
-		 * ThreadReference thread = breakpointEvent.thread(); StackFrame frame = null;
-		 * try { frame = thread.frame(0); } catch (IncompatibleThreadStateException e) {
-		 * // TODO Auto-generated catch block e.printStackTrace(); } if
-		 * (Objects.isNull(frame)) return false; ObjectReference inctance =
-		 * frame.thisObject(); //
-		 * TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().
-		 * getFirst().values().stream().forEach(e -> System.out.println("MODEL: " + e));
-		 * Optional<UniversalElementRepresentation> anchorInstanceOptional =
-		 * TargetApplicationRepresentation.getInstance()
-		 * .getTargetApplicationSnapshot().getFirst().values().stream() .filter(e ->
-		 * Objects.equals(e.getObjectReference(), inctance)) // .filter(e ->
-		 * Objects.isNull(e.getTag().getParentId())
-		 * 
-		 * .findAny();
-		 * 
-		 * if (anchorInstanceOptional.isEmpty()) return false;
-		 * UniversalElementRepresentation anchorElement = null; if
-		 * (anchorInstanceOptional.get() instanceof UniversalElementRepresentation) {
-		 * anchorElement = (UniversalElementRepresentation)
-		 * anchorInstanceOptional.get(); } else { // ElementReference elementReference =
-		 * (ElementReference) anchorInstanceOptional.get(); // anchorElement =
-		 * (UniversalElementRepresentation)
-		 * TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().
-		 * get(elementReference.getReferenceTag()); } System.out.println(anchorElement);
-		 * Set<UniversalElementRepresentation> relevantElements =
-		 * selectFieldsAndMethods(anchorElement); List<UniversalElementRepresentation>
-		 * locals = TargetApplicationRepresentation.getInstance()
-		 * .getTargetApplicationSnapshot().getSecond().values().stream() // берём только
-		 * реальные UniversalElementRepresentation .filter(e -> e instanceof
-		 * UniversalElementRepresentation) .map(e -> (UniversalElementRepresentation) e)
-		 * // безопасное приведение // фильтруем только локальные переменные .filter(w
-		 * -> w.getElementType() ==
-		 * UniversalElementRepresentation.UniversalElementType.LOCAL_VARIABLE)
-		 * .toList(); relevantElements.stream().forEach(e -> System.out.println("RL:" +
-		 * e)); relevantElements.addAll(locals); Set<InnerElementRepresentationDTO>
-		 * innerElementDTOs = new HashSet(); for (UniversalElementRepresentation element
-		 * : relevantElements) { InnerElementRepresentationDTO elementRepresentation =
-		 * InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-		 * .fromUniversalElement(element); innerElementDTOs.add(elementRepresentation);
-		 * } // System.out.println("MODEL SIZE: " +
-		 * TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().
-		 * size()); //
-		 * TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().
-		 * values().stream() // .forEach(e -> System.out.println("MD:" + e)); //
-		 * System.out.println("INNER_ELS:" + innerElementDTOs); String methodName =
-		 * location.declaringType().name() + "." + location.method().name() + "()";
-		 * DebugWindowDataDTO debugWindowDataDTO = new
-		 * DebugWindowDataDTO(location.lineNumber(), methodName,
-		 * DebugUtils.compileStackInfo(thread), innerElementDTOs);
-		 * simpleDebugEventCollector.collectDebugEvent(new
-		 * DebugEvent<DebugWindowDataDTO>(
-		 * SimpleDebuggerEventTypes.SimpleDebuggerEventType.STOPPED_AT_BREAKPOINT,
-		 * debugWindowDataDTO)); simpleDebugEventCollector .collectDebugEvent(new
-		 * DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-		 * currentLineHighlighter.highlight(breakpointEvent.location());
-		 * System.out.println("relevantElements: " + relevantElements.size());
-		 */
 		return true;
 	}
-	
-	// Метод для построения дерева дочерних элементов
-	private void buildSubTreeMap(
-	        InnerElementRepresentationDTO parent,
-	        Collection<AbstractElementRepresentation> allElements,
-	        Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> map) {
 
-	    Set<InnerElementRepresentationDTO> children = new HashSet<>();
-
-	    for (AbstractElementRepresentation element : allElements) {
-	        if (parent.getTag().getUniqueId().equals(element.getTag().getParentId())) {
-	            InnerElementRepresentationDTO child = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-	                    .fromElement(element);
-
-	            children.add(child);
-
-	            // рекурсивно строим поддерево
-	            buildSubTreeMap(child, allElements, map);
-	        }
-	    }
-
-	    map.put(parent, children);
-	}
-
-
-	private Set<UniversalElementRepresentation> selectFieldsAndMethods(UniversalElementRepresentation initElement) {
-		if (initElement == null) {
-			return Collections.emptySet();
-		}
-		Set<UniversalElementRepresentation> foundElements = new HashSet<>();
-		foundElements.add(initElement);
-		// Элементы текущего уровня обхода
-		Set<UniversalElementRepresentation> currentLevel = new HashSet<>();
-		currentLevel.add(initElement);
-		while (!currentLevel.isEmpty()) {
-			Set<UniversalElementRepresentation> nextLevel = new HashSet<>();
-			for (UniversalElementRepresentation parentElement : currentLevel) {
-				// Ищем всех детей текущего элемента
-				List<UniversalElementRepresentation> children = TargetApplicationRepresentation.getInstance()
-						.getTargetApplicationSnapshot().getSecond().values().stream()
-						.filter(e -> Objects.equals(e.getTag().getParentId(), parentElement.getTag().getUniqueId()))
-						.map(e -> (UniversalElementRepresentation) e).toList();
-
-				nextLevel.addAll(children);
+	private List<InnerElementRepresentationDTO> collectAllChildren(InnerElementRepresentationDTO topLevelElement,
+			List<AbstractElementRepresentation> accessibleElements) {
+		List<InnerElementRepresentationDTO> result = new ArrayList<InnerElementRepresentationDTO>();
+		List<InnerElementRepresentationDTO> foundSubordinates = new ArrayList<InnerElementRepresentationDTO>();
+		foundSubordinates.add(topLevelElement);
+		List<InnerElementRepresentationDTO> elementsToAdd = new ArrayList<InnerElementRepresentationDTO>();
+		List<AbstractElementRepresentation> elementstoRemove = new ArrayList<AbstractElementRepresentation>();
+		boolean found = true;
+		while (found) {
+			found = false;
+			for (InnerElementRepresentationDTO foundSubordinate : foundSubordinates) {
+				elementsToAdd.clear();
+				elementstoRemove.clear();
+				for (AbstractElementRepresentation abstractElementRepresentation : accessibleElements) {
+					if ((abstractElementRepresentation instanceof UniversalElementRepresentation universalElementRepresentation)) {
+						if (Objects.equals(universalElementRepresentation.getTag().getParentId(), foundSubordinate.getTag().getUniqueId())) {
+						elementstoRemove.add(abstractElementRepresentation);	
+						elementsToAdd.add(InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(universalElementRepresentation));
+						found = true;
+					}
+					}
+					
 			}
-			// Добавляем найденных детей в общий Set
-			foundElements.addAll(nextLevel);
-			// Переходим на следующий уровень
-			currentLevel = nextLevel;
+				result.addAll(elementsToAdd);
+			}
+			accessibleElements.removeAll(elementstoRemove);
 		}
-		return foundElements;
+		result.remove(topLevelElement);
+		return result;
 	}
 
 	private void logError(String message, Throwable exception) {

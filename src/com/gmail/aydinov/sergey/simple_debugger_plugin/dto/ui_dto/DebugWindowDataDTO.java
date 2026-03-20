@@ -15,9 +15,9 @@ public class DebugWindowDataDTO {
 	private final int lineNumber;
 	private final String methodName;
 	private final List<MethodCallInStackDTO> compileStackInfo;
-	private final Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> topElementsWithSubordinates;
+	private final Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> topElementsWithSubordinates;
 	public DebugWindowDataDTO(int lineNumber, String methodName, List<MethodCallInStackDTO> compileStackInfo,
-			Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> innerElementDTOs) {
+			Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> innerElementDTOs) {
 		super();
 		this.lineNumber = lineNumber;
 		this.methodName = methodName;
@@ -33,7 +33,7 @@ public class DebugWindowDataDTO {
 	public List<MethodCallInStackDTO> getCompileStackInfo() {
 		return compileStackInfo;
 	}
-	public Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> getTopElementsWithSubordinates() {
+	public Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> getTopElementsWithSubordinates() {
 		return topElementsWithSubordinates;
 	}
 	
@@ -55,9 +55,9 @@ public class DebugWindowDataDTO {
 
 	    sb.append("  topElementsWithSubordinates:\n");
 	    if (topElementsWithSubordinates != null && !topElementsWithSubordinates.isEmpty()) {
-	        for (Map.Entry<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> entry : topElementsWithSubordinates.entrySet()) {
+	        for (Map.Entry<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> entry : topElementsWithSubordinates.entrySet()) {
 	            InnerElementRepresentationDTO top = entry.getKey();
-	            Set<InnerElementRepresentationDTO> subs = entry.getValue();
+	            List<InnerElementRepresentationDTO> subs = entry.getValue();
 
 	            sb.append(formatElement(top));
 
