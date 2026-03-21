@@ -1047,7 +1047,7 @@ public class DebugUtils {
     /**
      * Получает размер коллекции или карты через invokeMethod.
      */
-    private static int getCollectionSize(ObjectReference objRef) {
+    public static int getCollectionSize(ObjectReference objRef) {
         try {
             Method sizeMethod = objRef.referenceType().methodsByName("size").stream().findFirst().orElse(null);
             if (sizeMethod != null) {
