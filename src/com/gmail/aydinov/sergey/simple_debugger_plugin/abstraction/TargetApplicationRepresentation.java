@@ -217,7 +217,9 @@ public class TargetApplicationRepresentation {
 
 	private void addField(UniversalElementRepresentation parentElement, Field field, BreakpointEvent breakpointEvent,
 			int level) {
-
+		if (level >= MAX_LEVEL_RECURSION) {
+			return;
+		}
 		Value value = null;
 		ObjectReference instance = parentElement.getObjectReference();
 
@@ -235,20 +237,15 @@ public class TargetApplicationRepresentation {
 		ObjectReference valueObj = (value instanceof ObjectReference) ? (ObjectReference) value : null;
 		String valueText = (value == null) ? "<null>" : value.toString();
 		ValueCategory category = DebugUtils.determineValueCategory(value);
-		if (List.of(ValueCategory.COLLECTION, ValueCategory.ARRAY, ValueCategory.MAP)
-				.contains(category) && Objects.nonNull(breakpointEvent)) {
-		int size = DebugUtils.getCollectionSize(valueObj, breakpointEvent);
-		TripletDTO<String, String, String> data = DebugUtils.determinCollectionType(valueObj, breakpointEvent);	
-		String parameters = Objects.isNull(data.getThird()) ?
-				"params.:<" + data.getSecond() + ">" :
-				"params.:<" + data.getSecond() + ", " + 	data.getThird() + ">";
-		 valueText =  parameters + ", "  + data.getFirst() + ", size:" + size;
+		if (List.of(ValueCategory.COLLECTION, ValueCategory.ARRAY, ValueCategory.MAP).contains(category)
+				&& Objects.nonNull(breakpointEvent)) {
+			int size = DebugUtils.getCollectionSize(valueObj, breakpointEvent);
+			TripletDTO<String, String, String> data = DebugUtils.determinCollectionType(valueObj, breakpointEvent);
+			String parameters = Objects.isNull(data.getThird()) ? "params.:<" + data.getSecond() + ">"
+					: "params.:<" + data.getSecond() + ", " + data.getThird() + ">";
+			valueText = parameters + ", " + data.getFirst() + ", size:" + size;
 		}
-		
 
-		ValueCategory category = DebugUtils.determineValueCategory(value);
-
-// 🔥 ОБРАБОТКА КОЛЛЕКЦИЙ
 		if (List.of(ValueCategory.COLLECTION, ValueCategory.MAP, ValueCategory.ARRAY).contains(category)) {
 			int size = (valueObj != null) ? DebugUtils.getCollectionSize(valueObj) : -1;
 			String valueTextWithSize = "size: " + (size != -1 ? size : "?") + "; " + valueText;
@@ -256,11 +253,9 @@ public class TargetApplicationRepresentation {
 			if (Objects.nonNull(breakpointEvent)) {
 				TripletDTO<String, String, String> data = DebugUtils.determinCollectionType(valueObj, breakpointEvent);
 				int collectionSize = DebugUtils.getCollectionSize(valueObj, breakpointEvent);
-				String parameters = Objects.isNull(data.getThird())
-						? "params.:<" + data.getSecond() + ">"
-						: "params.:<" + data.getSecond() + ", "
-								+ data.getThird() + ">";
-				valueTextWithSize = "size:"  + collectionSize + ", " + parameters + ", " + data.getFirst();
+				String parameters = Objects.isNull(data.getThird()) ? "params.:<" + data.getSecond() + ">"
+						: "params.:<" + data.getSecond() + ", " + data.getThird() + ">";
+				valueTextWithSize = "size:" + collectionSize + ", " + parameters + ", " + data.getFirst();
 			}
 			UniversalElementRepresentation collectionElement = UniversalElementRepresentation.builder()
 					.referenceType(valueObj != null ? valueObj.referenceType() : parentElement.getReferenceType())
@@ -272,45 +267,30 @@ public class TargetApplicationRepresentation {
 
 			subordinates.put(collectionElement.getTag(), collectionElement);
 
-// 🔄 Рекурсивно раскрываем элементы коллекции
-//			if (valueObj != null && shouldExpand(valueObj)) {
-//				long objId = valueObj.uniqueID();
-//				if (!visitedElements.containsKey(objId)) {
-//					visitedElements.put(objId, collectionElement.getTag());
-//					List<ObjectReference> children = DebugUtils.getCollectionSize(valueObj, breakpointEvent);
-//					for (ObjectReference child : children) {
-//						// Здесь создаем дочерние элементы с тем же уровнем рекурсии +1
-//						addField(collectionElement, child, breakpointEvent, level + 1);
-//					}
-//				}
-//			}
-			return; // После добавления коллекции не продолжаем обычную рекурсию по полям
-		}
+		} else {
+			// ---------------- Создаем элемент поля
+			UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
+					.referenceType(valueObj != null ? valueObj.referenceType() : parentElement.getReferenceType())
+					.objectReference(valueObj).elementName(field.name()).additionalInfo(field.typeName())
+					.elementType(UniversalElementType.FIELD).currentRole(CurrentRole.INNER).value(valueText)
+					.isStatic(field.isStatic()).valueCategory(category).typeOrReturnType(field.typeName())
+					.uniqueId(UUID.randomUUID()).parentUniqueId(parentElement.getTag().getUniqueId()).level(level)
+					.build();
 
-// 🔒 Ограничения для обычных объектов
-		if (valueObj == null || level >= MAX_LEVEL_RECURSION || !shouldExpand(valueObj)) {
-			return;
-		}
+			subordinates.put(fieldElement.getTag(), fieldElement);
 
-		long objId = valueObj.uniqueID();
-		if (visitedElements.containsKey(objId)) {
-			return;
-		}
-		visitedElements.put(objId, parentElement.getTag());
-
-// ---------------- Создаем элемент поля
-		UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
-				.referenceType(valueObj != null ? valueObj.referenceType() : parentElement.getReferenceType())
-				.objectReference(valueObj).elementName(field.name()).additionalInfo(field.typeName())
-				.elementType(UniversalElementType.FIELD).currentRole(CurrentRole.INNER).value(valueText)
-				.isStatic(field.isStatic()).valueCategory(category).typeOrReturnType(field.typeName())
-				.uniqueId(UUID.randomUUID()).parentUniqueId(parentElement.getTag().getUniqueId()).level(level).build();
-
-		subordinates.put(fieldElement.getTag(), fieldElement);
-
-// 👉 Рекурсивно раскрываем поля объекта
-		for (Field innerField : valueObj.referenceType().allFields()) {
-			addField(fieldElement, innerField, breakpointEvent, level + 1);
+			if (Objects.nonNull(valueObj)) {
+				long objId = valueObj.uniqueID();
+				if (visitedElements.containsKey(objId)) {
+					return;
+				}
+				visitedElements.put(objId, parentElement.getTag());
+				for (Field innerField : valueObj.referenceType().allFields()) {
+					if (shouldExpand(valueObj)) {
+						addField(fieldElement, innerField, breakpointEvent, level + 1);
+					}
+				}
+			}
 		}
 	}
 
@@ -532,7 +512,8 @@ public class TargetApplicationRepresentation {
 						? "params.:<" + entry.getValue().getData().getSecond() + ">"
 						: "params.:<" + entry.getValue().getData().getSecond() + ", "
 								+ entry.getValue().getData().getThird() + ">";
-				String valueText = entry.getValue().getValue() + ", " + parameters + ", " + entry.getValue().getData().getFirst();
+				String valueText = entry.getValue().getValue() + ", " + parameters + ", "
+						+ entry.getValue().getData().getFirst();
 				UniversalElementRepresentation localStructure = UniversalElementRepresentation.builder()
 						.referenceType(methodRepresentationOptional.get().getReferenceType())
 						.elementName(entry.getValue().getElementName())
