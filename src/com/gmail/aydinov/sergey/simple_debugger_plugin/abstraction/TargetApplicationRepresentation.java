@@ -139,23 +139,45 @@ public class TargetApplicationRepresentation {
 		}
 		Map<LocalVariable, Value> values = frame.getValues(locals);
 		for (LocalVariable local : locals) {
-			Value value = values.get(local);
-			String name = local.name();
-			String valueText;
-			TripletDTO<String, String, String> data = null;
-			String typeOrReturnType = "<null>";
-			if (value instanceof ObjectReference objRef) {
-				// Здесь безопасно делать invokeMethod, т.к. frame больше не нужен
-				int collectionSize = DebugUtils.getCollectionSize(objRef, breakpointEvent);
-				data = DebugUtils.determinCollectionType(objRef, breakpointEvent);
-				valueText = collectionSize >= 0 ? "size:" + collectionSize : value.toString();
-				typeOrReturnType = DebugUtils.getObjectReferenceValueAsString(objRef);
-			} else {
-				valueText = DebugUtils.getLocalVariableValueAsString(value);
-			}
-			
-			shortInfo.put(name, new LocalVariableShortDTO(name, local.typeName(), valueText,
-					DebugUtils.determineValueCategory(value), typeOrReturnType, data));
+		    Value value = values.get(local);
+		    String name = local.name();
+		    String valueText;
+		    TripletDTO<String, String, String> data = null;
+		    String typeOrReturnType;
+
+		    // ---------- Для ObjectReference (коллекции, объекты) ----------
+		    if (value instanceof ObjectReference objRef) {
+		        // размер коллекции
+		        int collectionSize = DebugUtils.getCollectionSize(objRef, breakpointEvent);
+		        data = DebugUtils.determinCollectionType(objRef, breakpointEvent);
+
+		        valueText = collectionSize >= 0 ? "size:" + collectionSize : DebugUtils.getLocalVariableValueAsString(value);
+		        typeOrReturnType = DebugUtils.determineValueCategory(value) == ValueCategory.COLLECTION
+		                || DebugUtils.determineValueCategory(value) == ValueCategory.MAP
+		                ? DebugUtils.compileCollectionDescription(data)
+		                : objRef.referenceType().name();
+
+		    } else {
+		        // ---------- Для примитивов или null ----------
+		        valueText = DebugUtils.getLocalVariableValueAsString(value);
+
+		        // Если null, используем тип локальной переменной
+		        if (value == null) {
+		            typeOrReturnType = local.typeName();
+		        } else {
+		            // Для примитивов берем type() у Value
+		            typeOrReturnType = value.type().name();
+		        }
+		    }
+
+		    shortInfo.put(name, new LocalVariableShortDTO(
+		            name,
+		            local.typeName(),
+		            valueText,
+		            DebugUtils.determineValueCategory(value),
+		            typeOrReturnType,
+		            data
+		    ));
 		}
 		return shortInfo;
 	}
@@ -324,34 +346,46 @@ public class TargetApplicationRepresentation {
 	}
 
 	private void loadTopLevelElements(List<ReferenceType> loadedReferenceTypes, BreakpointEvent breakpointEvent) {
-		for (ReferenceType refType : loadedReferenceTypes) {
+	    ObjectReference thisObject = null;
+	    StackFrame frame = null;
+	    if (breakpointEvent != null) {
+	        try {
+	            frame = breakpointEvent.thread().frame(0);
+	            thisObject = frame.thisObject(); // объект текущего экземпляра
+	        } catch (IncompatibleThreadStateException e) {
+	            e.printStackTrace();
+	        }
+	    }
 
-			UniversalElementType elementType = DebugUtils.determineUniversalElementType(refType);
-			if (elementType == null)
-				continue;
+	    for (ReferenceType refType : loadedReferenceTypes) {
 
-			// ✅ всегда создаём класс
-			ObjectReference thisObject = null;
-			if (Objects.nonNull(breakpointEvent)) {
-				StackFrame frame = null;
-				try {
-					frame = breakpointEvent.thread().frame(0);
-				} catch (IncompatibleThreadStateException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				thisObject = frame.thisObject();
-			}
+	        UniversalElementType elementType = DebugUtils.determineUniversalElementType(refType);
+	        if (elementType == null) continue;
 
-			UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
-					.referenceType(refType).objectReference(thisObject)
-					.elementName(DebugUtils.extractSimpleName(refType.name())).additionalInfo(refType.name())
-					.elementType(elementType).currentRole(CurrentRole.OUTER).value(refType.name())
-					.isStatic(refType.isStatic()).valueCategory(ValueCategory.USER_OBJECT)
-					.typeOrReturnType(refType.name()).uniqueId(UUID.randomUUID()).parentUniqueId(null).level(0).build();
+	        // Если текущий refType совпадает с объектом на стеке, используем его ObjectReference
+	        ObjectReference refObject = thisObject;
+	        if (refObject != null && !Objects.equals(refObject.referenceType(), refType)) {
+	            refObject = null; // если объект не того типа, оставляем null
+	        }
 
-			topLevelElements.put(topLevelElement.getTag(), topLevelElement);
-		}
+	        UniversalElementRepresentation topLevelElement = UniversalElementRepresentation.builder()
+	                .referenceType(refType)
+	                .objectReference(refObject) // вот сюда кладем реальный объект
+	                .elementName(DebugUtils.extractSimpleName(refType.name()))
+	                .additionalInfo(refType.name())
+	                .elementType(elementType)
+	                .currentRole(CurrentRole.OUTER)
+	                .value(refType.name())
+	                .isStatic(refType.isStatic())
+	                .valueCategory(ValueCategory.USER_OBJECT)
+	                .typeOrReturnType(refType.name())
+	                .uniqueId(UUID.randomUUID())
+	                .parentUniqueId(null)
+	                .level(0)
+	                .build();
+
+	        topLevelElements.put(topLevelElement.getTag(), topLevelElement);
+	    }
 	}
 
 	private void populateMembersForClass(BreakpointEvent breakpointEvent) {

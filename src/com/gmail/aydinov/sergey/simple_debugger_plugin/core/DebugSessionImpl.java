@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,6 +49,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.Location;
 import com.sun.jdi.ObjectReference;
+import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.event.BreakpointEvent;
@@ -195,11 +198,52 @@ public class DebugSessionImpl implements DebugSession {
 
 	    Collection<AbstractElementRepresentation> subordinates = snapShot.getSecond().values();
 
-	    Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> result = new HashMap<>();
+	    Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> result = new LinkedHashMap();
 
 	    // Для каждого топ-элемента создаём отдельный список потомков
 	    Collection<InnerElementRepresentationDTO> topElementsCopy = new ArrayList<>(dtoMap.values());
-	    for (InnerElementRepresentationDTO topDTO : topElementsCopy) {
+	    
+	    ThreadReference thread = breakpointEvent.thread();
+	    StackFrame frame = null;
+	    Optional<UniversalElementRepresentation> breakpointInstance = Optional.empty();
+		try {
+			frame = thread.frame(0);
+			ObjectReference thisObject = frame.thisObject();
+			List<UniversalElementRepresentation> allEntities = new ArrayList<UniversalElementRepresentation>();
+			allEntities.addAll(snapShot.getFirst().values().stream().toList());
+			allEntities.addAll(snapShot.getFirst().values().stream()
+					.filter(e -> (e instanceof UniversalElementRepresentation))
+					.toList());
+			if (thisObject != null) {
+			   System.out.println("Instance: " + thisObject);
+			   breakpointInstance = allEntities.stream()
+			    		.filter(e -> Objects.nonNull(e.getObjectReference()))
+			    		.filter(e -> Objects.equals(e.getObjectReference().uniqueID(), thisObject.uniqueID())).findAny();
+			} else {
+			    System.out.println("Static context (no instance)");
+			    ReferenceType refType = frame.location().declaringType();
+			    System.out.println(refType.name());
+			    breakpointInstance = allEntities.stream()
+			    		.filter(e -> Objects.nonNull(e.getReferenceType()))
+			    		.filter(e -> Objects.equals(e.getReferenceType(), refType)).findAny();
+			}
+		} catch (IncompatibleThreadStateException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		List<InnerElementRepresentationDTO> orderedTopElements = new LinkedList<InnerElementRepresentationDTO>();
+		System.out.println("========> " + breakpointInstance.get());
+		if (breakpointInstance.isPresent()) {
+			 InnerElementRepresentationDTO breakepointElementDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+			.fromElement(breakpointInstance.get());
+			orderedTopElements.add(breakepointElementDTO);
+			topElementsCopy.remove(breakepointElementDTO);
+			orderedTopElements.addAll(topElementsCopy);
+		} else {
+			orderedTopElements.addAll(topElementsCopy);
+		}
+		
+	    for (InnerElementRepresentationDTO topDTO : orderedTopElements) {
 	        List<InnerElementRepresentationDTO> children = collectAllChildrenDTO(topDTO, subordinates, dtoMap);
 	        result.put(topDTO, children);
 	    }
