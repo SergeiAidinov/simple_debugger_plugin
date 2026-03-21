@@ -31,11 +31,12 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	private SimpleDebugerWindowsManager() {
 		Map<String, PairDTO<Image, String>> iconsTemp = new HashMap<>();
 		List<TripletDTO<String, String, String>> namesAndPaths = List.of(
+				TripletDTO.of("interface", "/icons/interface.png", "interface"),
+				TripletDTO.of("class", "/icons/class.png", "class"),
 				TripletDTO.of("enum", "/icons/enum.png", "enum"),
 				TripletDTO.of("fieldIcon", "/icons/field.png", "non-static field"),
 				TripletDTO.of("debugger", "/icons/icon.png", "debugger_icon"),
 				TripletDTO.of("inspectIcon", "/icons/inspect.png", null),
-				TripletDTO.of("interface", "/icons/method.png", "interface"),
 				TripletDTO.of("method", "/icons/method.png", "non-static method"),
 				TripletDTO.of("static_field", "/icons/static_field.png", "static field"),
 				TripletDTO.of("static_method", "/icons/static_method.png", "static method"),

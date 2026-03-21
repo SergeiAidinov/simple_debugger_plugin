@@ -205,6 +205,7 @@ public class ClassMembersAtBreakpointTab {
 
 	    String key = switch (dto.getElementType()) {
 	        case INTERFACE -> "interface";
+	        case CLASS -> "class";
 	        case METHOD -> dto.isStatic() ? "static_method" : "method";
 	        case FIELD -> dto.isStatic() ? "static_field" : "fieldIcon";
 	        case LOCAL_VARIABLE -> "variableIcon";
@@ -223,6 +224,7 @@ public class ClassMembersAtBreakpointTab {
 
 	    String key = switch (dto.getElementType()) {
 	        case INTERFACE -> "interface";
+	        case CLASS -> "class";
 	        case METHOD -> dto.isStatic() ? "static_method" : "method";
 	        case FIELD -> dto.isStatic() ? "static_field" : "fieldIcon";
 	        case LOCAL_VARIABLE -> "variableIcon";
