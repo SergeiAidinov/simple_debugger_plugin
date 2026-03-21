@@ -1,14 +1,9 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -125,7 +120,7 @@ public class ClassMembersAtBreakpointTab {
 		}, e -> null);
 		// 1: Type / Return Type
 		createColumn(1, "Type / Return Type", 300, InnerElementRepresentationDTO::getTypeOrReturnType,
-				this::getTypeIcon);
+				UiUtils::getTypeIcon);
 		// 2: Value / Info
 		TableViewerColumn valueColumn = createColumn(2, "Value / Info", 400, dto -> {
 			String v = dto.getValue();
@@ -195,28 +190,6 @@ public class ClassMembersAtBreakpointTab {
 		}
 		return null;
 	}
-
-	// =========================================================
-	// Icons & tooltips
-	// =========================================================
-	private Image getTypeIcon(InnerElementRepresentationDTO dto) {
-	    if (dto == null || dto.getElementType() == UniversalElementType.REFERENCE)
-	        return null; // REFERENCE не отображаем
-
-	    String key = switch (dto.getElementType()) {
-	        case INTERFACE -> "interface";
-	        case CLASS -> "class";
-	        case METHOD -> dto.isStatic() ? "static_method" : "method";
-	        case FIELD -> dto.isStatic() ? "static_field" : "fieldIcon";
-	        case LOCAL_VARIABLE -> "variableIcon";
-	        case ENUM -> "enum";
-	        default -> "unknown";
-	    };
-
-	    PairDTO<Image, String> pair = SimpleDebugerWindowsManager.instance().icons.get(key);
-	    return pair != null ? pair.getFirst() : null;
-	}
-
 
 	private PairDTO<Image, String> getTypeTooltip(InnerElementRepresentationDTO dto) {
 	    if (dto == null || dto.getElementType() == UniversalElementType.REFERENCE)
