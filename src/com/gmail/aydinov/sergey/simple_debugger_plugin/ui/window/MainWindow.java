@@ -25,6 +25,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ClassMembersAtBreakpointTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleContentTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ContextTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
 
 /**
@@ -46,6 +47,7 @@ public class MainWindow {
 	private ClassMembersAtBreakpointTab classMembersAtBreakpoint;
 	private StackTabContent stackTabContent;
 	private ConsoleContentTab consoleTabContent;
+	private ContextTab contextTab;
 
 	private Button resumeButton;
 	private Label locationLabel;
@@ -110,6 +112,11 @@ public class MainWindow {
 		CTabItem consoleTabItem = new CTabItem(tabFolder, SWT.NONE);
 		consoleTabItem.setText("Console");
 		consoleTabItem.setControl(consoleTabContent.getControl());
+		
+		contextTab = new ContextTab(tabFolder);
+		CTabItem contextTabItem = new CTabItem(tabFolder, SWT.NONE);
+		contextTabItem.setText("Context");
+		contextTabItem.setControl(contextTab.getControl());
 
 		tabFolder.setSelection(0);
 
@@ -205,6 +212,7 @@ public class MainWindow {
 				STOP_INFO + debugWindowDataDTO.getMethodName() + " line: " + debugWindowDataDTO.getLineNumber());
 		resumeButton.setEnabled(true);
 		classMembersAtBreakpoint.showInnerElementsInTable(debugWindowDataDTO);
+		contextTab.showElementsFromSecondEntry(debugWindowDataDTO.getTopElementsWithSubordinates());
 		stackTabContent.updateStack(debugWindowDataDTO.getCompileStackInfo());
 	}
 

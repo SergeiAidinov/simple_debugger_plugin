@@ -79,13 +79,11 @@ public class ClassMembersAtBreakpointTab {
 	    if (dto == null || dto.getTopElementsWithSubordinates().isEmpty()) return;
 	    System.out.println(dto);
 	    List<InnerElementRepresentationDTO> ordered = new ArrayList<>();
-	    for (InnerElementRepresentationDTO topLevelDto : dto.getTopElementsWithSubordinates().keySet()) {
-	    	// topLevelDto.setLevel(0);
-		        ordered.add(topLevelDto);
-		        for (InnerElementRepresentationDTO subordinate : dto.getTopElementsWithSubordinates().get(topLevelDto)) {
-		        	//subordinate.setLevel(1);
-		        	ordered.add(subordinate);
-		        }
+	    if (!dto.getTopElementsWithSubordinates().isEmpty()) {
+	        Entry<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> firstEntry =
+	                dto.getTopElementsWithSubordinates().entrySet().iterator().next();
+	        ordered.add(firstEntry.getKey());
+	        ordered.addAll(firstEntry.getValue());
 	    }
 
 	    // Обновляем TableViewer в UI-потоке
@@ -97,38 +95,6 @@ public class ClassMembersAtBreakpointTab {
 	    });
 	}
 
-	/**
-	 * Построение списка элементов для TableViewer:
-	 * - top-level элементы и их подчинённые
-	 * - фильтруем REFERENCE
-	 * - используем уровень level, уже выставленный на бэке
-	 */
-	private List<InnerElementRepresentationDTO> buildOrderedList(
-	        Map<InnerElementRepresentationDTO, Set<InnerElementRepresentationDTO>> topWithSubs) {
-
-	    List<InnerElementRepresentationDTO> result = new ArrayList<>();
-
-	    // Сортировка top-level элементов
-	    List<InnerElementRepresentationDTO> topElements = topWithSubs.keySet().stream()
-	            .filter(e -> e.getElementType() != UniversalElementType.REFERENCE)
-	            .sorted()
-	            .toList();
-
-	    for (InnerElementRepresentationDTO top : topElements) {
-	        result.add(top);
-
-	        Set<InnerElementRepresentationDTO> subs = topWithSubs.getOrDefault(top, Set.of());
-	        List<InnerElementRepresentationDTO> filteredSubs = subs.stream()
-	                .filter(e -> e.getElementType() != UniversalElementType.REFERENCE)
-	                .sorted()
-	                .toList();
-
-	        result.addAll(filteredSubs);
-	    }
-
-	    return result;
-	}
-	    
 	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO userInstanceInspectionDTO) {
 		Display display = root.getDisplay();
 		display.asyncExec(() -> {
@@ -331,72 +297,6 @@ public class ClassMembersAtBreakpointTab {
 	// =========================================================
 	// Display
 	// =========================================================
-
-	private List<InnerElementRepresentationDTO> buildOrderedList(Set<InnerElementRepresentationDTO> allElements) {
-		// allElements.stream().forEach(e -> System.out.println(e));
-		Map<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> tree = new HashMap<>();
-		Set<InnerElementRepresentationDTO> elementsToDelete = new HashSet<>();
-		// 1️⃣ root элементы
-		for (InnerElementRepresentationDTO element : allElements) {
-			if (element.getTag().getParentId() == null) {
-				tree.put(element, PairDTO.of(new ArrayList<>(), new ArrayList<>()));
-				elementsToDelete.add(element);
-			}
-		}
-		// 2️⃣ второй уровень
-		for (InnerElementRepresentationDTO rootElement : tree.keySet()) {
-			for (InnerElementRepresentationDTO secondLevelElement : allElements) {
-				if (rootElement.getTag().getUniqueId().equals(secondLevelElement.getTag().getParentId())) {
-					tree.get(rootElement).getFirst().add(secondLevelElement);
-					elementsToDelete.add(secondLevelElement);
-				}
-			}
-		}
-		allElements.removeAll(elementsToDelete);
-		elementsToDelete.clear();
-		// 3️⃣ третий уровень
-		for (PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>> pair : tree.values()) {
-			for (InnerElementRepresentationDTO secondLevelElement : pair.getFirst()) {
-				for (InnerElementRepresentationDTO thirdLevelElement : allElements) {
-					if (secondLevelElement.getTag().getUniqueId().equals(thirdLevelElement.getTag().getParentId())) {
-						pair.getSecond().add(thirdLevelElement);
-						elementsToDelete.add(thirdLevelElement);
-					}
-				}
-			}
-		}
-		allElements.removeAll(elementsToDelete);
-		// 4️⃣ сборка результата
-		List<InnerElementRepresentationDTO> result = new ArrayList<>();
-		List<InnerElementRepresentationDTO> secondLevelElements = new ArrayList<>();
-		List<InnerElementRepresentationDTO> thirdLevelElements = new ArrayList<>();
-		for (Entry<InnerElementRepresentationDTO, PairDTO<List<InnerElementRepresentationDTO>, List<InnerElementRepresentationDTO>>> triplet : tree
-				.entrySet()) {
-			//triplet.getKey().setLevel(0);
-			result.add(triplet.getKey());
-//			secondLevelElements
-//					.addAll(triplet.getValue().getFirst().stream().sorted().peek(e -> e.setLevel(1)).toList());
-//			thirdLevelElements
-//					.addAll(triplet.getValue().getSecond().stream().sorted().peek(e -> e.setLevel(2)).toList());
-//		}
-
-		for (InnerElementRepresentationDTO secondLevelElement : secondLevelElements) {
-			result.add(secondLevelElement);
-			List<InnerElementRepresentationDTO> elementsToAdd = thirdLevelElements.stream().filter(
-					third -> Objects.equals(third.getTag().getParentId(), secondLevelElement.getTag().getUniqueId()))
-					.toList();
-			result.addAll(elementsToAdd);
-			thirdLevelElements.removeAll(elementsToAdd);
-		}
-
-		// 5️⃣ оставшиеся элементы, если есть
-//		if (!allElements.isEmpty()) {
-//			result.addAll(allElements.stream().sorted()
-//				//	.peek(e -> e.setLevel(0))
-//					.toList());
-		}
-		return result;
-	}
 
 	private void setupColumnClickListeners() {
 		Table table = viewer.getTable();
