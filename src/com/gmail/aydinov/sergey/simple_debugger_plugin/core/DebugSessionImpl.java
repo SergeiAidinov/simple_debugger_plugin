@@ -150,8 +150,8 @@ public class DebugSessionImpl implements DebugSession {
 					shouldRefreshSnapsotAndUi.set(true);
 					handleSingleUiEvent(uiEvent, breakpointEvent);
 					if (shouldRefreshSnapsotAndUi.get()) {
-//						TargetApplicationRepresentation.getInstance().takeSnapshotOfTargetApplication(
-//								TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), breakpointEvent);
+						TargetApplicationRepresentation.getInstance().takeSnapshotOfTargetApplication(
+								TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), breakpointEvent);
 						updateUI(breakpointEvent);
 					}
 				} catch (Throwable exception) {
