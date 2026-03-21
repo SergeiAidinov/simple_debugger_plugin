@@ -511,7 +511,7 @@ public class TargetApplicationRepresentation {
 			UniversalElementRepresentation localPrimitive = UniversalElementRepresentation.builder()
 					.referenceType(methodRepresentationOptional.get().getReferenceType())
 					.elementName(entry.getValue().getElementName()).additionalInfo(entry.getValue().getAdditionalInfo())
-					.elementType(DebugUtils.determineUniversalElementType(entry.getValue()))
+					.elementType(UniversalElementType.LOCAL_VARIABLE)
 					.currentRole(CurrentRole.LOCAL).value(entry.getValue().getValue()).isStatic(false)
 					.valueCategory(entry.getValue().getValueCategory())
 					.typeOrReturnType(entry.getValue().getTypeOrReturnType())
