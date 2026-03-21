@@ -212,7 +212,7 @@ public class MainWindow {
 				STOP_INFO + debugWindowDataDTO.getMethodName() + " line: " + debugWindowDataDTO.getLineNumber());
 		resumeButton.setEnabled(true);
 		classMembersAtBreakpoint.showInnerElementsInTable(debugWindowDataDTO);
-		contextTab.showElementsFromSecondEntry(debugWindowDataDTO.getTopElementsWithSubordinates());
+		contextTab.showElementsFromDebugWindowData(debugWindowDataDTO);
 		stackTabContent.updateStack(debugWindowDataDTO.getCompileStackInfo());
 	}
 

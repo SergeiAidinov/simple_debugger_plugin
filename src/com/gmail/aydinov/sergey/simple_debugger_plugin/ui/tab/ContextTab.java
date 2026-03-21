@@ -3,7 +3,6 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -17,12 +16,13 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
 /**
- * Вкладка отображения контекста — всех элементов, не относящихся к классу на брейкпойнте.
- * Только две колонки: Name и Type.
+ * Вкладка отображения контекста — всех элементов, не относящихся к классу на брейкпойнте,
+ * с поддержкой уровней вложенности (level).
  */
 public class ContextTab {
 
@@ -45,8 +45,18 @@ public class ContextTab {
     }
 
     private void setupColumns() {
-        // 0: Name
-        createColumn("Name", 300, InnerElementRepresentationDTO::getElementName, null);
+        // 0: Name с отступами
+        char arrow = '⮡';
+        createColumn("Name", 300,
+                dto -> {
+                    String indent = "     ".repeat(dto.getLevel());
+                    if (dto.getLevel() > 0)
+                        indent += arrow;
+                    return indent + dto.getElementName();
+                },
+                null
+        );
+
         // 1: Type
         createColumn("Type", 200, InnerElementRepresentationDTO::getTypeOrReturnType, this::getTypeIcon);
     }
@@ -105,24 +115,30 @@ public class ContextTab {
             }
         }
     }
-    
-    public void showElementsFromSecondEntry(Map<InnerElementRepresentationDTO,List<InnerElementRepresentationDTO>> map) {
-        if (map == null || map.size() < 2) return;
 
+    // =========================================================
+    // Методы для отображения данных с уровнями
+    // =========================================================
+
+    /** Показать элементы из DebugWindowDataDTO (вторая запись) */
+    public void showElementsFromDebugWindowData(DebugWindowDataDTO dto) {
+        if (dto == null || dto.getTopElementsWithSubordinates() == null || dto.getTopElementsWithSubordinates().isEmpty())
+            return;
         List<InnerElementRepresentationDTO> ordered = new ArrayList<>();
 
+        // Берём вторую запись
         int index = 0;
-        for (Map.Entry<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> entry : map.entrySet()) {
-            if (index == 1) { // вторая запись
-                // добавляем ключ
-                ordered.add(entry.getKey());
-                // добавляем подчинённых
-                ordered.addAll(entry.getValue());
-                break;
+        
+        for (Map.Entry<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> entry :
+                dto.getTopElementsWithSubordinates().entrySet()) {
+            if (index >= 1) {
+                addElementWithSubordinates(ordered, entry.getKey(), 0, dto.getTopElementsWithSubordinates());
+               // break;
             }
             index++;
         }
 
+        // Обновление UI
         root.getDisplay().asyncExec(() -> {
             if (!viewer.getTable().isDisposed()) {
                 viewer.setInput(ordered);
@@ -131,16 +147,18 @@ public class ContextTab {
         });
     }
 
-    public void showElements(List<InnerElementRepresentationDTO> elements) {
-        if (elements == null) return;
-
-        // Обновляем таблицу в UI-потоке
-        root.getDisplay().asyncExec(() -> {
-            if (!viewer.getTable().isDisposed()) {
-                viewer.setInput(new ArrayList<>(elements)); // создаем копию
-                viewer.refresh();
+    /** Рекурсивно добавляем элемент и его подчинённых */
+    private void addElementWithSubordinates(List<InnerElementRepresentationDTO> ordered,
+                                            InnerElementRepresentationDTO element,
+                                            int level,
+                                            Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> map) {
+        ordered.add(element);
+        List<InnerElementRepresentationDTO> subs = map.get(element);
+        if (subs != null) {
+            for (InnerElementRepresentationDTO sub : subs) {
+                addElementWithSubordinates(ordered, sub, level + 1, map);
             }
-        });
+        }
     }
 
     public Composite getControl() {
