@@ -234,6 +234,17 @@ public class TargetApplicationRepresentation {
 
 		ObjectReference valueObj = (value instanceof ObjectReference) ? (ObjectReference) value : null;
 		String valueText = (value == null) ? "<null>" : value.toString();
+		ValueCategory category = DebugUtils.determineValueCategory(value);
+		if (List.of(ValueCategory.COLLECTION, ValueCategory.ARRAY, ValueCategory.MAP)
+				.contains(category) && Objects.nonNull(breakpointEvent)) {
+		int size = DebugUtils.getCollectionSize(valueObj, breakpointEvent);
+		TripletDTO<String, String, String> data = DebugUtils.determinCollectionType(valueObj, breakpointEvent);	
+		String parameters = Objects.isNull(data.getThird()) ?
+				"params.:<" + data.getSecond() + ">" :
+				"params.:<" + data.getSecond() + ", " + 	data.getThird() + ">";
+		 valueText =  parameters + ", "  + data.getFirst() + ", size:" + size;
+		}
+		
 
 		ValueCategory category = DebugUtils.determineValueCategory(value);
 
