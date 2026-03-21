@@ -168,7 +168,7 @@ public class ClassMembersAtBreakpointTab {
 					return img;
 
 				if (index == 1) {
-					PairDTO<Image, String> tooltip = getTypeTooltip(dto);
+					PairDTO<Image, String> tooltip = UiUtils.getTypeTooltip(dto);
 					if (tooltip != null) {
 						item.setData("tooltip_col_" + index, tooltip.getSecond());
 					}
@@ -191,25 +191,7 @@ public class ClassMembersAtBreakpointTab {
 		return null;
 	}
 
-	private PairDTO<Image, String> getTypeTooltip(InnerElementRepresentationDTO dto) {
-	    if (dto == null || dto.getElementType() == UniversalElementType.REFERENCE)
-	        return null; // REFERENCE не отображаем
 
-	    String key = switch (dto.getElementType()) {
-	        case INTERFACE -> "interface";
-	        case CLASS -> "class";
-	        case METHOD -> dto.isStatic() ? "static_method" : "method";
-	        case FIELD -> dto.isStatic() ? "static_field" : "fieldIcon";
-	        case LOCAL_VARIABLE -> "variableIcon";
-	        case ENUM -> "enum";
-	        default -> "unknown";
-	    };
-
-	    return SimpleDebugerWindowsManager.instance().icons.getOrDefault(key,
-	            SimpleDebugerWindowsManager.instance().icons.get("unknown"));
-	}
-
-	// Пример исправления опечатки в getValueCategoty()
 	private Image getIcon(InnerElementRepresentationDTO dto) {
 		if (dto == null)
 			return null;

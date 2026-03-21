@@ -103,5 +103,24 @@ public class UiUtils {
 	    PairDTO<Image, String> pair = SimpleDebugerWindowsManager.instance().icons.get(key);
 	    return pair != null ? pair.getFirst() : null;
 	}
+	
+	public static PairDTO<Image, String> getTypeTooltip(InnerElementRepresentationDTO dto) {
+        if (dto == null) return null;
+
+        String key = switch (dto.getElementType()) {
+            case INTERFACE -> "interface";
+            case CLASS -> "class";
+            case METHOD -> dto.isStatic() ? "static_method" : "method";
+            case FIELD -> dto.isStatic() ? "static_field" : "fieldIcon";
+            case LOCAL_VARIABLE -> "variableIcon";
+            case ENUM -> "enum";
+            default -> "unknown";
+        };
+
+        return SimpleDebugerWindowsManager.instance()
+                .icons.getOrDefault(key,
+                        SimpleDebugerWindowsManager.instance().icons.get("unknown"));
+    }
+
 
 }
