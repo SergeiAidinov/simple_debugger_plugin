@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
+import org.eclipse.jface.viewers.ILazyContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
@@ -21,27 +21,27 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
 /**
- * Вкладка отображения контекста — всех элементов, не относящихся к классу на брейкпойнте,
- * с поддержкой уровней вложенности (level).
+ * ContextTab с ленивой подгрузкой (SWT.VIRTUAL) для большого числа элементов
+ * и поддержкой уровней вложенности (level).
  */
 public class ContextTab {
 
     private final Composite root;
     private final TableViewer viewer;
+    private List<InnerElementRepresentationDTO> flatList; // плоский список элементов с level
 
     public ContextTab(Composite parent) {
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(1, false));
 
-        Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION);
+        Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.VIRTUAL);
         table.setHeaderVisible(true);
         table.setLinesVisible(true);
         table.setLayoutData(new GridData(GridData.FILL_BOTH));
 
         viewer = new TableViewer(table);
-        viewer.setContentProvider(ArrayContentProvider.getInstance());
-
         setupColumns();
+        setupLazyContentProvider();
     }
 
     private void setupColumns() {
@@ -116,33 +116,49 @@ public class ContextTab {
         }
     }
 
-    // =========================================================
-    // Методы для отображения данных с уровнями
-    // =========================================================
+    private void setupLazyContentProvider() {
+        viewer.setContentProvider(new ILazyContentProvider() {
 
-    /** Показать элементы из DebugWindowDataDTO (вторая запись) */
+            @Override
+            public void dispose() { }
+
+            @Override
+            public void inputChanged(org.eclipse.jface.viewers.Viewer viewer, Object oldInput, Object newInput) {
+                if (newInput instanceof List<?> list) {
+                    flatList = (List<InnerElementRepresentationDTO>) list;
+                    ((TableViewer) viewer).setItemCount(flatList.size());
+                }
+            }
+
+            @Override
+            public void updateElement(int index) {
+                if (flatList != null && index < flatList.size()) {
+                    viewer.replace(flatList.get(index), index);
+                }
+            }
+        });
+    }
+
+    /** Показать элементы из DebugWindowDataDTO начиная со второй записи */
     public void showElementsFromDebugWindowData(DebugWindowDataDTO dto) {
         if (dto == null || dto.getTopElementsWithSubordinates() == null || dto.getTopElementsWithSubordinates().isEmpty())
             return;
-        List<InnerElementRepresentationDTO> ordered = new ArrayList<>();
 
-        // Берём вторую запись
+        // формируем плоский список с рекурсивными уровнями
+        List<InnerElementRepresentationDTO> ordered = new ArrayList<>();
         int index = 0;
-        
         for (Map.Entry<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> entry :
                 dto.getTopElementsWithSubordinates().entrySet()) {
-            if (index >= 1) {
+            if (index >= 1) { // начиная со второй
                 addElementWithSubordinates(ordered, entry.getKey(), 0, dto.getTopElementsWithSubordinates());
-               // break;
             }
             index++;
         }
 
-        // Обновление UI
+        // передаем плоский список в ленивый TableViewer
         root.getDisplay().asyncExec(() -> {
             if (!viewer.getTable().isDisposed()) {
                 viewer.setInput(ordered);
-                viewer.refresh();
             }
         });
     }
@@ -152,6 +168,7 @@ public class ContextTab {
                                             InnerElementRepresentationDTO element,
                                             int level,
                                             Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> map) {
+      //  element.setLevel(level); // важно установить уровень
         ordered.add(element);
         List<InnerElementRepresentationDTO> subs = map.get(element);
         if (subs != null) {
