@@ -93,10 +93,10 @@ public class TargetApplicationRepresentation {
 	}
 
 	public PairDTO<Map<Tag, UniversalElementRepresentation>, Map<Tag, AbstractElementRepresentation>> getTargetApplicationSnapshot() {
-		System.out.println("SNAPSOT BEGINNING: ");
-		topLevelElements.values().stream().forEach(System.out::println);
-		subordinates.values().stream().forEach(System.out::println);
-		System.out.println("END OF SNAPSOT");
+//		System.out.println("SNAPSOT BEGINNING: ");
+//		topLevelElements.values().stream().forEach(System.out::println);
+//		subordinates.values().stream().forEach(System.out::println);
+//		System.out.println("END OF SNAPSOT");
 		return PairDTO.of(topLevelElements, subordinates);
 	}
 

@@ -1,11 +1,10 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
-import java.lang.annotation.Target;
 import java.lang.reflect.Modifier;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
@@ -30,63 +29,117 @@ public class UserChangedFieldHandler implements UIEventHandler {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
-			BreakpointEvent breakpointEvent) {
-		UIEvent<UserChangedFieldEventDTO> userChangedFieldEvent = (UIEvent<UserChangedFieldEventDTO>) abstractSimpleDebuggerUIEvent;
-		updateField(userChangedFieldEvent.getPayload(), breakpointEvent);
+	public boolean handle(AbstractUIEvent abstractUIEvent, StackFrame currentFrame, BreakpointEvent breakpointEvent) {
+		UIEvent<UserChangedFieldEventDTO> event = (UIEvent<UserChangedFieldEventDTO>) abstractUIEvent;
+		UserChangedFieldEventDTO payload = event.getPayload();
+
+		// Сначала пытаемся изменить примитив / строку
+		if (!updatePrimitiveField(payload, currentFrame, breakpointEvent)) {
+			// Если это не примитив, пробуем изменить поле-класс
+			updateObjectField(payload, currentFrame, breakpointEvent);
+		}
+
 		return true;
 	}
 
-	private void updateField(UserChangedFieldEventDTO fieldEvent, BreakpointEvent breakpointEvent) {
-
-		Optional<UniversalElementRepresentation> fieldOntional = TargetApplicationRepresentation.getInstance()
+	// ------------------- Примитивы -------------------
+	private boolean updatePrimitiveField(UserChangedFieldEventDTO fieldEvent, StackFrame currentFrame,
+			BreakpointEvent breakpointEvent) {
+		Optional<UniversalElementRepresentation> elementOptional = TargetApplicationRepresentation.getInstance()
 				.getTargetApplicationSnapshot().getSecond().values().stream()
-				.filter(e -> (e instanceof UniversalElementRepresentation)).map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> Objects.equals(e.getTag(), fieldEvent.getTag())).findAny();
-		if (fieldOntional.isEmpty())
-			return;
-		Value value = null;
-		ObjectReference targetObject = fieldOntional.get().getObjectReference();
-		if (Objects.isNull(targetObject)) {
-			Optional<UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance()
-					.getTargetApplicationSnapshot().getSecond().values().stream()
-					.filter(e -> (e instanceof UniversalElementRepresentation))
-					.map(e -> (UniversalElementRepresentation) e)
-					.filter(e -> Objects.equals(e.getTag().getUniqueId(), fieldEvent.getTag().getParentId())).findAny();
-			if (qq.isPresent()) {
-				targetObject = qq.get().getObjectReference();
-			}
+
+		if (elementOptional.isEmpty())
+			return false;
+
+		UniversalElementRepresentation element = elementOptional.get();
+		ObjectReference targetObject = element.getObjectReference();
+
+		// Если объекта нет, пробуем родителя
+		if (targetObject == null) {
+			targetObject = findParentObject(fieldEvent.getTag().getParentId());
+			if (targetObject == null)
+				return false;
 		}
-		ReferenceType fieldReference = fieldOntional.get().getReferenceType();
-		Field field = fieldReference.fieldByName(fieldOntional.get().getElementName());
+
+		ReferenceType type = targetObject.referenceType();
+		Field field = type.fieldByName(element.getElementName());
+		if (field == null)
+			return false;
 
 		try {
-			if (Modifier.isStatic(field.modifiers()) && fieldReference instanceof ClassType classType) {
-				value = fieldReference.getValue(field);
-				System.out.println(value);
-				classType.setValue(field, value);
-			} else if (targetObject != null) {
-				Value v = targetObject.getValue(field);
-				System.out.println(v);
-				 Map<Field, Value> ee = targetObject.getValues(List.of(field));
-				 Value rr = ee.get(field); 
-				 Value newValue = DebugUtils.createJdiObjectFromString(
-						    TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), 
-						    field.type(),  // <--- используем type(), а не declaringType()
-						    fieldEvent.getNewValue(), 
-						    breakpointEvent.thread()
-						);
-				targetObject.setValue(field, newValue);
-			} else {
-				// Нечего менять: объект вне текущего стека
-				SimpleDebuggerLogger.warn("Cannot update field " + field.name() + ": object not available on stack");
-			}
-		} catch (InvalidTypeException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (ClassNotLoadedException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			// Пробуем создать JDI Value через DebugUtils
+			Value newValue = DebugUtils.createJdiObjectFromString(
+					TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), field.type(),
+					fieldEvent.getNewValue(), breakpointEvent.thread());
+
+			if (newValue == null)
+				return false;
+
+			targetObject.setValue(field, newValue);
+			return true;
+
+		} catch (InvalidTypeException | ClassNotLoadedException e) {
+			SimpleDebuggerLogger.error("Failed to update primitive field " + field.name(), e);
+			return false;
 		}
+	}
+
+	// ------------------- Поля классов -------------------
+	private void updateObjectField(UserChangedFieldEventDTO fieldEvent, StackFrame currentFrame,
+			BreakpointEvent breakpointEvent) {
+		// ReferenceType referenceType =
+
+		Optional<UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance()
+				.getTargetApplicationSnapshot().getSecond().values().stream()
+				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.equals(e.getTag(), fieldEvent.getTag())).findAny();
+
+		ObjectReference referenceType = qq.get().getObjectReference();
+		
+		ObjectReference parentObject =
+		        findParentObject(qq.get().getTag().getParentId());
+
+		if (parentObject == null)
+		    return;
+		
+		Field field = parentObject.referenceType()
+		        .fieldByName(qq.get().getElementName());
+
+		if (field == null)
+		    return;
+	
+	try {
+		Value newValue = DebugUtils.createJdiObjectFromString(
+		        TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(),
+		        field.type(),
+		        fieldEvent.getNewValue(),
+		        breakpointEvent.thread()
+		);
+		parentObject.setValue(field, newValue);
+	} catch (Exception e1) {
+		// TODO Auto-generated catch block
+		e1.printStackTrace();
+	}
+}
+
+	// ------------------- Вспомогательные методы -------------------
+	private ObjectReference findParentObject(UUID uuid) {
+		return TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getSecond().values()
+				.stream().filter(e -> e instanceof UniversalElementRepresentation)
+				.map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.equals(e.getTag().getUniqueId(), uuid))
+				.map(UniversalElementRepresentation::getObjectReference).filter(Objects::nonNull).findAny()
+				.orElse(null);
+	}
+
+	private Optional<UniversalElementRepresentation> findFieldRecursively(ObjectReference targetObject,
+			String fieldName) {
+		return TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getSecond().values()
+				.stream().filter(e -> e instanceof UniversalElementRepresentation)
+				.map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.equals(e.getObjectReference(), targetObject)).findAny();
+
 	}
 }

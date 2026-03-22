@@ -232,7 +232,7 @@ public class DebugSessionImpl implements DebugSession {
 			e1.printStackTrace();
 		}
 		List<InnerElementRepresentationDTO> orderedTopElements = new LinkedList<InnerElementRepresentationDTO>();
-		System.out.println("========> " + breakpointInstance.get());
+		//System.out.println("========> " + breakpointInstance.get());
 		if (breakpointInstance.isPresent()) {
 			 InnerElementRepresentationDTO breakepointElementDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
 			.fromElement(breakpointInstance.get());
