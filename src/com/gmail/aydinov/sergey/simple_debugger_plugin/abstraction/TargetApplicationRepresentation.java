@@ -38,6 +38,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.LocalVariableS
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
+import com.sun.jdi.ArrayReference;
+import com.sun.jdi.ArrayType;
 import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.LocalVariable;
@@ -51,6 +53,7 @@ import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.event.BreakpointEvent;
+
 
 public class TargetApplicationRepresentation {
 
@@ -246,7 +249,7 @@ public class TargetApplicationRepresentation {
 			valueText = parameters + ", " + data.getFirst() + ", size:" + size;
 		}
 
-		if (List.of(ValueCategory.COLLECTION, ValueCategory.MAP, ValueCategory.ARRAY).contains(category)) {
+		if (List.of(ValueCategory.COLLECTION, ValueCategory.MAP).contains(category)) {
 			int size = (valueObj != null) ? DebugUtils.getCollectionSize(valueObj) : -1;
 			String valueTextWithSize = "size: " + (size != -1 ? size : "?") + "; " + valueText;
 			String typeOrReturnType = field.name();
@@ -267,6 +270,27 @@ public class TargetApplicationRepresentation {
 
 			subordinates.put(collectionElement.getTag(), collectionElement);
 
+		} else if (ValueCategory.ARRAY == category && (valueObj instanceof ArrayReference arrayRef)) {
+			int size = arrayRef.length(); 
+		    ArrayType arrayType = (ArrayType) valueObj.referenceType();
+		    String elementType = arrayType.componentTypeName();
+		    valueText = "size:" + size + ", elementType:" + elementType;
+		    UniversalElementRepresentation arrayElement = UniversalElementRepresentation.builder()
+		            .referenceType(valueObj.referenceType())
+		            .objectReference(valueObj)
+		            .elementName(field.name())
+		            .additionalInfo(field.typeName())
+		            .elementType(UniversalElementType.FIELD)
+		            .currentRole(CurrentRole.INNER)
+		            .value(valueText)
+		            .isStatic(field.isStatic())
+		            .valueCategory(ValueCategory.ARRAY)
+		            .typeOrReturnType(field.typeName())
+		            .uniqueId(UUID.randomUUID())
+		            .parentUniqueId(parentElement.getTag().getUniqueId())
+		            .level(level)
+		            .build();
+		    subordinates.put(arrayElement.getTag(), arrayElement);
 		} else {
 			// ---------------- Создаем элемент поля
 			UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
@@ -292,6 +316,7 @@ public class TargetApplicationRepresentation {
 				}
 			}
 		}
+		
 	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
