@@ -197,7 +197,7 @@ public class TargetApplicationRepresentation {
 			if (shouldSkipMethod(method))
 				continue;
 			if (!method.declaringType().equals(parentElement.getReferenceType())) 
-		        continue; // пропускаем методы из интерфейсов/суперклассов
+		        continue; 
 		    
 			List<String> args = method.argumentTypeNames();
 			String methodArgs = String.join(", ", args);
