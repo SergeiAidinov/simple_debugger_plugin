@@ -57,7 +57,7 @@ import com.sun.jdi.event.BreakpointEvent;
 
 public class TargetApplicationRepresentation {
 
-	private static final int MAX_LEVEL_RECURSION = 4;
+	private static final int MAX_LEVEL_RECURSION = 3;
 	private final Map<AbstractElementRepresentation.Tag, UniversalElementRepresentation> topLevelElements = new ConcurrentHashMap<>();
 	private final Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates = new ConcurrentHashMap<>();
 //	private final Map<Long, AbstractElementRepresentation.Tag> visitedElements = new ConcurrentHashMap<>();
