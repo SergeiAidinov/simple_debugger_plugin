@@ -338,7 +338,7 @@ public class ClassMembersAtBreakpointTab {
 	}
 
 	private boolean isEditable(InnerElementRepresentationDTO dto) {
-		System.out.println(dto);
+		//System.out.println(dto);
 		return dto != null && dto.getTypeOrReturnType() != null
 				&& UiUtils.isStandartJavaType(dto.getTypeOrReturnType());
 	}
