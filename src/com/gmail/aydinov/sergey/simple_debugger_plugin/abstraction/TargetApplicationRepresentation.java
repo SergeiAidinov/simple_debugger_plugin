@@ -60,7 +60,7 @@ public class TargetApplicationRepresentation {
 	private static final int MAX_LEVEL_RECURSION = 4;
 	private final Map<AbstractElementRepresentation.Tag, UniversalElementRepresentation> topLevelElements = new ConcurrentHashMap<>();
 	private final Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates = new ConcurrentHashMap<>();
-	private final Map<Long, AbstractElementRepresentation.Tag> visitedElements = new ConcurrentHashMap<>();
+//	private final Map<Long, AbstractElementRepresentation.Tag> visitedElements = new ConcurrentHashMap<>();
 	private final DebugConfiguration debugConfiguration;
 	private static TargetApplicationRepresentation INSTANCE;
 
@@ -103,7 +103,7 @@ public class TargetApplicationRepresentation {
 	public void takeSnapshotOfTargetApplication(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent) {
 		subordinates.clear();
 		topLevelElements.clear();
-		visitedElements.clear();
+	//	visitedElements.clear();
 		SimpleDebuggerLogger.info("Waiting for target classes to load...");
 
 		// 1. Ждем загрузки всех классов
@@ -187,9 +187,9 @@ public class TargetApplicationRepresentation {
 
 		if (objRef != null) {
 			long uniqueId = objRef.uniqueID();
-			if (visitedElements.containsKey(uniqueId)) {
-				visitedElements.put(uniqueId, parentElement.getTag());
-			}
+//			if (!visitedElements.containsKey(uniqueId)) {
+//				visitedElements.put(uniqueId, parentElement.getTag());
+//			}
 		}
 
 		for (Method method : parentElement.getReferenceType().allMethods()) {
@@ -305,10 +305,10 @@ public class TargetApplicationRepresentation {
 
 			if (Objects.nonNull(valueObj)) {
 				long objId = valueObj.uniqueID();
-				if (visitedElements.containsKey(objId)) {
-					return;
-				}
-				visitedElements.put(objId, parentElement.getTag());
+//				if (visitedElements.containsKey(objId)) {
+//					return;
+//				}
+			//	visitedElements.put(objId, parentElement.getTag());
 				for (Field innerField : valueObj.referenceType().allFields()) {
 					if (shouldExpand(valueObj)) {
 						addField(fieldElement, innerField, breakpointEvent, level + 1);
