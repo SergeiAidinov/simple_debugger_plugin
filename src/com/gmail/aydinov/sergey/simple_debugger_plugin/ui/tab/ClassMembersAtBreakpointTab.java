@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -49,6 +50,11 @@ public class ClassMembersAtBreakpointTab {
 	private final TableViewer viewer;
 	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private InnerElementRepresentationDTO lastInspectedElement;
+//	private static final String GAP = "     ";
+	private static final String VERTICAL = "│   ";
+	private static final String SPACE = "     ";
+	private static final String BRANCH = "├── ";
+	private static final String LAST = "└── ";
 
 	private UUID currentElementId;
 	private TooltipManager tooltipManager;
@@ -69,25 +75,125 @@ public class ClassMembersAtBreakpointTab {
 		setupHoverInspectionListener();
 		// popupManager = new InstanceInspectionPopupManager(root);
 	}
+	
+	private boolean isLast(List<InnerElementRepresentationDTO> list, int index) {
+	    int currentLevel = list.get(index).getLevel();
 
-	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
-	    if (dto == null || dto.getTopElementsWithSubordinates().isEmpty()) return;
-	    System.out.println(dto);
-	    List<InnerElementRepresentationDTO> ordered = new ArrayList<>();
-	    if (!dto.getTopElementsWithSubordinates().isEmpty()) {
-	        Entry<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> firstEntry =
-	                dto.getTopElementsWithSubordinates().entrySet().iterator().next();
-	        ordered.add(firstEntry.getKey());
-	        ordered.addAll(firstEntry.getValue());
+	    for (int i = index + 1; i < list.size(); i++) {
+	        int nextLevel = list.get(i).getLevel();
+
+	        if (nextLevel == currentLevel) {
+	            return false; // есть сосед ниже
+	        }
+
+	        if (nextLevel < currentLevel) {
+	            return true; // вышли из уровня
+	        }
 	    }
 
-	    // Обновляем TableViewer в UI-потоке
-	    root.getDisplay().asyncExec(() -> {
-	        if (!viewer.getTable().isDisposed()) {
-	            viewer.setInput(ordered);
-	            viewer.refresh();
+	    return true;
+	}
+	
+//	private boolean hasNextOnLevel(List<InnerElementRepresentationDTO> list, int index, int level) {
+//	    for (int i = index + 1; i < list.size(); i++) {
+//	        int nextLevel = list.get(i).getLevel();
+//
+//	        if (nextLevel < level) {
+//	            return false;
+//	        }
+//
+//	        if (nextLevel == level) {
+//	            return true;
+//	        }
+//	    }
+//	    return false;
+//	}
+	
+	private boolean hasNextSiblingOnSameParent(List<InnerElementRepresentationDTO> list, int index, int level) {
+	    for (int i = index + 1; i < list.size(); i++) {
+	        int nextLevel = list.get(i).getLevel();
+
+	        if (nextLevel < level) {
+	            return false;
 	        }
-	    });
+
+	        if (nextLevel == level) {
+	            return true;
+	        }
+	    }
+	    return false;
+	}
+
+	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
+		if (dto == null || dto.getTopElementsWithSubordinates().isEmpty())
+			return;
+
+		List<InnerElementRepresentationDTO> ordered = new ArrayList<>();
+
+		Entry<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> firstEntry = dto
+				.getTopElementsWithSubordinates().entrySet().iterator().next();
+
+		InnerElementRepresentationDTO root = firstEntry.getKey();
+
+		List<InnerElementRepresentationDTO> all = new ArrayList<>();
+		all.add(root);
+		all.addAll(firstEntry.getValue());
+
+		ordered.add(root);
+
+		// =========================================================
+		// 1️⃣ ПОЛЯ
+		// =========================================================
+		all.stream()
+				.filter(e -> e.getElementType() == UniversalElementType.FIELD
+						&& Objects.equals(e.getTag().getParentId(), root. getTag().getUniqueId()))
+				.sorted(Comparator.comparing(e -> e.getElementName().toLowerCase()))
+				.forEach(field -> addRecursivelySorted(ordered, field, all));
+
+		// =========================================================
+		// 2️⃣ МЕТОДЫ
+		// =========================================================
+		List<InnerElementRepresentationDTO> methods = all.stream()
+				.filter(e -> e.getElementType() == UniversalElementType.METHOD
+						&& Objects.equals(e.getTag().getParentId(), root. getTag().getUniqueId()))
+				.sorted(Comparator.comparing(e -> e.getElementName().toLowerCase())).toList();
+
+		for (InnerElementRepresentationDTO method : methods) {
+			ordered.add(method);
+
+			// =========================================================
+			// 3️⃣ ЛОКАЛЬНЫЕ ПЕРЕМЕННЫЕ МЕТОДА
+			// =========================================================
+			List<InnerElementRepresentationDTO> locals = all.stream()
+					.filter(e -> e.getElementType() == UniversalElementType.LOCAL_VARIABLE
+							&& Objects.equals(e.getTag().getParentId(), method.getTag().getUniqueId()))
+					.sorted(Comparator.comparing(e -> e.getElementName().toLowerCase())).toList();
+
+			for (InnerElementRepresentationDTO local : locals) {
+				addRecursivelySorted(ordered, local, all);
+			}
+		}
+
+		Display.getDefault().asyncExec(() -> {
+			if (!viewer.getTable().isDisposed()) {
+				viewer.setInput(ordered);
+				viewer.refresh();
+			}
+		});
+	}
+
+	private void addRecursivelySorted(List<InnerElementRepresentationDTO> result, InnerElementRepresentationDTO parent,
+			List<InnerElementRepresentationDTO> all) {
+
+		result.add(parent);
+
+		List<InnerElementRepresentationDTO> children = all.stream()
+				.filter(e -> Objects.equals(e.getTag().getParentId(), parent.getTag().getUniqueId()))
+				.sorted(Comparator.comparing(e -> e.getElementName().toLowerCase())).toList();
+
+		for (InnerElementRepresentationDTO child : children) {
+			addRecursivelySorted(result, child, all);
+		}
 	}
 
 	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO userInstanceInspectionDTO) {
@@ -112,11 +218,33 @@ public class ClassMembersAtBreakpointTab {
 		// 0: Name
 		char arrow = '⮡';
 		createColumn(0, "Name", 250, e -> {
-			InnerElementRepresentationDTO dto = (InnerElementRepresentationDTO) e;
-			String indent = "     ".repeat(dto.getLevel()); // 3 пробела на уровень
-			if (dto.getLevel() > 0)
-				indent = indent + arrow;
-			return indent + dto.getElementName();
+		    InnerElementRepresentationDTO dto = (InnerElementRepresentationDTO) e;
+
+		    List<?> input = (List<?>) viewer.getInput();
+		    @SuppressWarnings("unchecked")
+		    List<InnerElementRepresentationDTO> list = (List<InnerElementRepresentationDTO>) input;
+
+		    int index = list.indexOf(dto);
+		    int level = dto.getLevel();
+
+		    StringBuilder indent = new StringBuilder();
+
+		    // вертикали
+		    for (int l = 0; l < level - 1; l++) {
+		        if (hasNextSiblingOnSameParent(list, index, l + 1)) {
+		            indent.append(VERTICAL);
+		        } else {
+		            indent.append(SPACE);
+		        }
+		    }
+
+		    // ветка
+		    if (level > 0) {
+		        indent.append(isLast(list, index) ? LAST : BRANCH);
+		    }
+
+		    return indent + dto.getElementName();
+
 		}, e -> null);
 		// 1: Type / Return Type
 		createColumn(1, "Type / Return Type", 300, InnerElementRepresentationDTO::getTypeOrReturnType,
@@ -190,7 +318,6 @@ public class ClassMembersAtBreakpointTab {
 		}
 		return null;
 	}
-
 
 	private Image getIcon(InnerElementRepresentationDTO dto) {
 		if (dto == null)
@@ -310,9 +437,8 @@ public class ClassMembersAtBreakpointTab {
 				tooltipManager.closePopup();
 				if (dto != null) {
 					if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-	                    uiEventCollector.collectUiEvent(
-	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto)
-	                    );
+						uiEventCollector.collectUiEvent(new UIEvent<>(
+								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
 					} else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
 //	                    uiEventCollector.collectUiEvent(
 //	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto)
