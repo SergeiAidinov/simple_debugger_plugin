@@ -345,7 +345,7 @@ public class ClassMembersAtBreakpointTab {
 
 	private void updateFieldValue(InnerElementRepresentationDTO dto, String newValue) {
 		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CHANGED_FIELD,
-				new UserChangedFieldEventDTO(dto.getElementName(), dto.getAdditionalInfo(), newValue)));
+				new UserChangedFieldEventDTO(dto.getTag(), newValue)));
 	}
 
 	private void updateVariableValue(InnerElementRepresentationDTO dto, String newValue) {
