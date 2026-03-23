@@ -17,6 +17,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -35,14 +36,13 @@ public class UserChangedFieldHandler implements UIEventHandler {
 	public boolean handle(AbstractUIEvent abstractUIEvent, StackFrame currentFrame, BreakpointEvent breakpointEvent) {
 		UIEvent<UserChangedFieldEventDTO> event = (UIEvent<UserChangedFieldEventDTO>) abstractUIEvent;
 		UserChangedFieldEventDTO payload = event.getPayload();
-
+		boolean shouldUpdateUi = false;
 		// Сначала пытаемся изменить примитив / строку
-		if (!updatePrimitiveField(payload, currentFrame, breakpointEvent)) {
-			// Если это не примитив, пробуем изменить поле-класс
-			updateObjectField(payload, currentFrame, breakpointEvent);
-		}
-
-		return true;
+		shouldUpdateUi = updatePrimitiveField(payload, currentFrame, breakpointEvent);
+		if (shouldUpdateUi)
+			return shouldUpdateUi;
+		else
+			return updateObjectField(payload, currentFrame, breakpointEvent);
 	}
 
 	// ------------------- Примитивы -------------------
@@ -90,66 +90,54 @@ public class UserChangedFieldHandler implements UIEventHandler {
 	}
 
 	// ------------------- Поля классов -------------------
-	private void updateObjectField(UserChangedFieldEventDTO fieldEvent, StackFrame currentFrame,
+	private boolean updateObjectField(UserChangedFieldEventDTO fieldEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
-		Optional<UniversalElementRepresentation> optional = TargetApplicationRepresentation.getInstance()
-				.getTargetApplicationSnapshot().getSecond().values().stream()
+		List<AbstractElementRepresentation> allElements = new ArrayList<AbstractElementRepresentation>(
+				TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getFirst().values());
+		allElements.addAll(
+				TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getSecond().values());
+		Optional<UniversalElementRepresentation> fieldToBeChangedOptional = allElements.stream()
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> Objects.equals(e.getTag(), fieldEvent.getTag())).findAny();
-		if (optional.isEmpty())
-			return;
-		UniversalElementRepresentation element = optional.get();
-
-//		ReferenceType referenceType = Objects.nonNull(currentFrame.thisObject())
-//				? currentFrame.thisObject().referenceType()
-//				: currentFrame.location().declaringType();
-	List<AbstractElementRepresentation>	allElements = new ArrayList<AbstractElementRepresentation>(TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot()
-			.getFirst().values());
-	allElements.addAll(TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot()
-			.getSecond().values());
-	
-	 Optional<ObjectReference> parentInstanceOptional = allElements.stream()
-				.filter(e -> e instanceof UniversalElementRepresentation)
-				.map(e -> (UniversalElementRepresentation) e)
-				.filter(e -> Objects.equals(element.getTag().getParentId(), e.getTag().getUniqueId()))
-				.map(e -> e.getObjectReference())
-				.findAny();
-	 
-	 Optional<ReferenceType> parentTypeOpt = allElements.stream()
-				.filter(e -> e instanceof UniversalElementRepresentation)
-				.map(e -> (UniversalElementRepresentation) e)
-				.filter(e -> Objects.equals(element.getTag().getParentId(), e.getTag().getUniqueId()))
-				.map(e -> e.getReferenceType())
-				.findAny();
-	 
-		if (parentInstanceOptional.isEmpty() || parentTypeOpt.isEmpty()) return;
+		if (fieldToBeChangedOptional.isEmpty())
+			return false;
+		UniversalElementRepresentation fieldToBeChanged = fieldToBeChangedOptional.get();
+		Optional<ObjectReference> parentInstanceOptional = allElements.stream()
+				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.equals(fieldToBeChanged.getTag().getParentId(), e.getTag().getUniqueId()))
+				.map(e -> e.getObjectReference()).findAny();
+		Optional<ReferenceType> parentTypeOpt = allElements.stream()
+				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.equals(fieldToBeChanged.getTag().getParentId(), e.getTag().getUniqueId()))
+				.map(e -> e.getReferenceType()).findAny();
+		if (parentInstanceOptional.isEmpty() || parentTypeOpt.isEmpty())
+			return false;
 		ObjectReference parentInstance = parentInstanceOptional.get();
 		ReferenceType parentType = parentTypeOpt.get();
-		
-		//ReferenceType referenceType = parentInstanceOptional.get();
-		Field field = parentType.fieldByName(element.getElementName());
+		Field field = parentType.fieldByName(fieldToBeChanged.getElementName());
 		if (Objects.isNull(field))
-			return;
+			return false;
 		Value value = null;
 		try {
 			value = DebugUtils.createJdiObjectFromString(
 					TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), field.type(),
 					fieldEvent.getNewValue(), currentFrame.thread());
-//			if (Modifier.isStatic(field.modifiers()) && parentType instanceof ClassType classType) {
-//				classType.setValue(field, value);
-//			}
-			if (Modifier.isStatic(field.modifiers()) && parentType instanceof ClassType classType) {
+			if (Modifier.isFinal(field.modifiers())) {
+				SimpleDebugerWindowsManager.instance().getOrCreateMainWindow().showError("Field Modification Error",
+						"Cannot modify a final field.");
+				return false;
+			} else if (Modifier.isStatic(field.modifiers()) && parentType instanceof ClassType classType) {
 				classType.setValue(field, value);
-			} else if (Objects.nonNull(currentFrame.thisObject())) {
+			} else {
 				parentInstance.setValue(field, value);
 			}
-		} catch (IllegalArgumentException iae) {
-			System.out.println("Cannot set value of final field");
 		} catch (Exception e) {
-			System.out.println("ERROR: " + e);
-			SimpleDebuggerLogger.error(null, e);
+			SimpleDebugerWindowsManager.instance().getOrCreateMainWindow().showError("Field Modification Error",
+					"Cannot modify a field.");
+			return false;
 		}
 		System.out.println("FIELD: " + field);
+		return true;
 	}
 
 	// ------------------- Вспомогательные методы -------------------
@@ -160,14 +148,5 @@ public class UserChangedFieldHandler implements UIEventHandler {
 				.filter(e -> Objects.equals(e.getTag().getUniqueId(), uuid))
 				.map(UniversalElementRepresentation::getObjectReference).filter(Objects::nonNull).findAny()
 				.orElse(null);
-	}
-
-	private Optional<UniversalElementRepresentation> findFieldRecursively(ObjectReference targetObject,
-			String fieldName) {
-		return TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getSecond().values()
-				.stream().filter(e -> e instanceof UniversalElementRepresentation)
-				.map(e -> (UniversalElementRepresentation) e)
-				.filter(e -> Objects.equals(e.getObjectReference(), targetObject)).findAny();
-
 	}
 }
