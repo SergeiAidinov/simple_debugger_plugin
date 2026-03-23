@@ -248,7 +248,7 @@ public class DebugSessionImpl implements DebugSession {
 	        result.put(topDTO, children);
 	    }
 
-	    System.out.println(result);
+	 //   System.out.println(result);
 
 	    currentLineHighlighter.highlight(breakpointEvent.location());
 
