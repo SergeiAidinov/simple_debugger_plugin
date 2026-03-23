@@ -89,40 +89,41 @@ public class UserChangedFieldHandler implements UIEventHandler {
 	// ------------------- Поля классов -------------------
 	private void updateObjectField(UserChangedFieldEventDTO fieldEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
-		// ReferenceType referenceType =
-
-		Optional<UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance()
+		Optional<UniversalElementRepresentation> optional = TargetApplicationRepresentation.getInstance()
 				.getTargetApplicationSnapshot().getSecond().values().stream()
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> Objects.equals(e.getTag(), fieldEvent.getTag())).findAny();
+		if (optional.isEmpty())
+			return;
+		UniversalElementRepresentation element = optional.get();
 
-		ObjectReference referenceType = qq.get().getObjectReference();
-		
-		ObjectReference parentObject =
-		        findParentObject(qq.get().getTag().getParentId());
-
-		if (parentObject == null)
-		    return;
-		
-		Field field = parentObject.referenceType()
-		        .fieldByName(qq.get().getElementName());
-
-		if (field == null)
-		    return;
-	
-	try {
-		Value newValue = DebugUtils.createJdiObjectFromString(
-		        TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(),
-		        field.type(),
-		        fieldEvent.getNewValue(),
-		        breakpointEvent.thread()
-		);
-		parentObject.setValue(field, newValue);
-	} catch (Exception e1) {
-		// TODO Auto-generated catch block
-		e1.printStackTrace();
+		ReferenceType referenceType = Objects.nonNull(currentFrame.thisObject())
+				? currentFrame.thisObject().referenceType()
+				: currentFrame.location().declaringType();
+		Field field = referenceType.fieldByName(element.getElementName());
+		if (Objects.isNull(field))
+			return;
+		Value value = null;
+		try {
+			value = DebugUtils.createJdiObjectFromString(
+					TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), field.type(),
+					fieldEvent.getNewValue(), currentFrame.thread());
+			if (Modifier.isStatic(field.modifiers()) && referenceType instanceof ClassType classType) {
+				classType.setValue(field, value);
+			}
+			if (Modifier.isStatic(field.modifiers()) && referenceType instanceof ClassType classType) {
+				classType.setValue(field, value);
+			} else if (Objects.nonNull(currentFrame.thisObject())) {
+				currentFrame.thisObject().setValue(field, value);
+			}
+		} catch (IllegalArgumentException iae) {
+			System.out.println("Cannot set value of final field");
+		} catch (Exception e) {
+			System.out.println("ERROR: " + e);
+			SimpleDebuggerLogger.error(null, e);
+		}
+		System.out.println("FIELD: " + field);
 	}
-}
 
 	// ------------------- Вспомогательные методы -------------------
 	private ObjectReference findParentObject(UUID uuid) {
