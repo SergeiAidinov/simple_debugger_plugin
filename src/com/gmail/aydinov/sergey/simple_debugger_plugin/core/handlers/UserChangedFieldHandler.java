@@ -1,11 +1,14 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
@@ -97,10 +100,34 @@ public class UserChangedFieldHandler implements UIEventHandler {
 			return;
 		UniversalElementRepresentation element = optional.get();
 
-		ReferenceType referenceType = Objects.nonNull(currentFrame.thisObject())
-				? currentFrame.thisObject().referenceType()
-				: currentFrame.location().declaringType();
-		Field field = referenceType.fieldByName(element.getElementName());
+//		ReferenceType referenceType = Objects.nonNull(currentFrame.thisObject())
+//				? currentFrame.thisObject().referenceType()
+//				: currentFrame.location().declaringType();
+	List<AbstractElementRepresentation>	allElements = new ArrayList<AbstractElementRepresentation>(TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot()
+			.getFirst().values());
+	allElements.addAll(TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot()
+			.getSecond().values());
+	
+	 Optional<ObjectReference> parentInstanceOptional = allElements.stream()
+				.filter(e -> e instanceof UniversalElementRepresentation)
+				.map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.equals(element.getTag().getParentId(), e.getTag().getUniqueId()))
+				.map(e -> e.getObjectReference())
+				.findAny();
+	 
+	 Optional<ReferenceType> parentTypeOpt = allElements.stream()
+				.filter(e -> e instanceof UniversalElementRepresentation)
+				.map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.equals(element.getTag().getParentId(), e.getTag().getUniqueId()))
+				.map(e -> e.getReferenceType())
+				.findAny();
+	 
+		if (parentInstanceOptional.isEmpty() || parentTypeOpt.isEmpty()) return;
+		ObjectReference parentInstance = parentInstanceOptional.get();
+		ReferenceType parentType = parentTypeOpt.get();
+		
+		//ReferenceType referenceType = parentInstanceOptional.get();
+		Field field = parentType.fieldByName(element.getElementName());
 		if (Objects.isNull(field))
 			return;
 		Value value = null;
@@ -108,13 +135,13 @@ public class UserChangedFieldHandler implements UIEventHandler {
 			value = DebugUtils.createJdiObjectFromString(
 					TargetVirtualMachineRepresentation.getInstance().getVirtualMachine(), field.type(),
 					fieldEvent.getNewValue(), currentFrame.thread());
-			if (Modifier.isStatic(field.modifiers()) && referenceType instanceof ClassType classType) {
-				classType.setValue(field, value);
-			}
-			if (Modifier.isStatic(field.modifiers()) && referenceType instanceof ClassType classType) {
+//			if (Modifier.isStatic(field.modifiers()) && parentType instanceof ClassType classType) {
+//				classType.setValue(field, value);
+//			}
+			if (Modifier.isStatic(field.modifiers()) && parentType instanceof ClassType classType) {
 				classType.setValue(field, value);
 			} else if (Objects.nonNull(currentFrame.thisObject())) {
-				currentFrame.thisObject().setValue(field, value);
+				parentInstance.setValue(field, value);
 			}
 		} catch (IllegalArgumentException iae) {
 			System.out.println("Cannot set value of final field");
