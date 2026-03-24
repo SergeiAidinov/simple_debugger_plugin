@@ -5,7 +5,7 @@ import java.util.UUID;
 import com.sun.jdi.ObjectReference;
 
 public abstract class AbstractElementRepresentation {
-    protected final Tag tag;
+    private final Tag tag;
     private final ObjectReference objectReference;
     private final int level;
 

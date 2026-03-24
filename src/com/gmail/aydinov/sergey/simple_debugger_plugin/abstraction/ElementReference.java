@@ -26,7 +26,7 @@ public class ElementReference extends AbstractElementRepresentation {
 
 	@Override
 	public String toString() {
-		return "ElementReference [referenceTag=" + referenceTag + ", tag=" + tag + ", getReferenceTag()="
+		return "ElementReference [referenceTag=" + referenceTag + ", tag=" + getTag() + ", getReferenceTag()="
 				+ getReferenceTag() + ", getElementName()=" + getElementName() + ", getTag()=" + getTag()
 				+ ", getObjectReference()=" + getObjectReference() + ", getClass()=" + getClass() + ", hashCode()="
 				+ hashCode() + ", toString()=" + super.toString() + "]";
