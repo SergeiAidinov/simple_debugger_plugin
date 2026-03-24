@@ -61,11 +61,12 @@ import com.sun.jdi.event.BreakpointEvent;
 
 public class TargetApplicationRepresentation {
 
-	private static final int MAX_LEVEL_RECURSION = 3;
+	public static final int DEAFAULT_LEVEL_RECURSION = 3;
 	private final Map<AbstractElementRepresentation.Tag, UniversalElementRepresentation> topLevelElements = new ConcurrentHashMap<>();
 	private final Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates = new ConcurrentHashMap<>();
 //	private final Map<Long, AbstractElementRepresentation.Tag> visitedElements = new ConcurrentHashMap<>();
 	private final DebugConfiguration debugConfiguration;
+	private final TargetAplicantionElementsLoader elementsLoader = new TargetAplicantionElementsLoader();
 	private static TargetApplicationRepresentation INSTANCE;
 
 	private TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
@@ -117,10 +118,18 @@ public class TargetApplicationRepresentation {
 
 		Map<String, LocalVariableShortDTO> localsSnapshot = compileShortInfoAboutVariables(virtualMachine,
 				breakpointEvent);
+		Map<Tag, AbstractElementRepresentation> iterationSubordinates = new ConcurrentHashMap<>();
 
 		for (Entry<Tag, UniversalElementRepresentation> entry : topLevelElements.entrySet()) {
-			subordinates.putAll(recursievlyPopulateSubordinatesElements(PairDTO.of(entry.getKey(), entry.getValue()), breakpointEvent, 1)) ;
+		    iterationSubordinates =
+		        elementsLoader.recursievlyPopulateSubordinatesElements(
+		            PairDTO.of(entry.getKey(), entry.getValue()),
+		            breakpointEvent,
+		            iterationSubordinates,
+		            1
+		        );
 		}
+		subordinates.putAll(iterationSubordinates);
 		if (!localsSnapshot.isEmpty())
 			addLocalVariables(virtualMachine, breakpointEvent, localsSnapshot);
 
@@ -184,150 +193,6 @@ public class TargetApplicationRepresentation {
 		return shortInfo;
 	}
 
-	private Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> recursievlyPopulateSubordinatesElements(PairDTO<Tag, UniversalElementRepresentation> pairDTO,
-			BreakpointEvent breakpointEvent, int level) {
-		final Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates = new ConcurrentHashMap<>();
-		UniversalElementRepresentation parentElement = pairDTO.getSecond();
-		ObjectReference objRef = parentElement.getObjectReference();
-
-		if (objRef != null) {
-			long uniqueId = objRef.uniqueID();
-//			if (!visitedElements.containsKey(uniqueId)) {
-//				visitedElements.put(uniqueId, parentElement.getTag());
-//			}
-		}
-
-		for (Method method : parentElement.getReferenceType().allMethods()) {
-
-			if (shouldSkipMethod(method))
-				continue;
-			if (!method.declaringType().equals(parentElement.getReferenceType())) 
-		        continue; 
-		    
-			List<String> args = method.argumentTypeNames();
-			String methodArgs = String.join(", ", args);
-
-			UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
-					.referenceType(parentElement.getReferenceType()).objectReference(parentElement.getObjectReference())
-					.elementName(method.name() + "()").additionalInfo(method.returnTypeName())
-					.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
-					.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-					.value(parentElement.getAdditionalInfo() + "." + method.name() + "(" + methodArgs + ")")
-					.isStatic(method.isStatic())
-					.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-					.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID())
-					.parentUniqueId(parentElement.getTag().getUniqueId()).level(parentElement.getLevel() + 1).build();
-			// System.out.println("METhOD FOUND: " + methodElement.toString());
-			subordinates.put(methodElement.getTag(), methodElement);
-		}
-
-		for (Field field : parentElement.getReferenceType().allFields()) {
-			addField(pairDTO.getSecond(), field, breakpointEvent, level);
-		}
-		
-		return subordinates;
-	}
-
-	private void addField(UniversalElementRepresentation parentElement, Field field, BreakpointEvent breakpointEvent,
-			int level) {
-		if (level >= MAX_LEVEL_RECURSION) {
-			return;
-		}
-		Value value = null;
-		ObjectReference instance = parentElement.getObjectReference();
-
-		try {
-			if (field.isStatic()) {
-				value = field.declaringType().getValue(field);
-			} else if (instance != null) {
-				value = instance.getValue(field);
-			}
-		} catch (Exception e) {
-			SimpleDebuggerLogger.warn("Failed to get value for field: " + field.name());
-			return;
-		}
-
-		ObjectReference valueObj = (value instanceof ObjectReference) ? (ObjectReference) value : null;
-		String valueText = (value == null) ? "<null>" : value.toString();
-		ValueCategory category = DebugUtils.determineValueCategory(value);
-		if (List.of(ValueCategory.COLLECTION, ValueCategory.ARRAY, ValueCategory.MAP).contains(category)
-				&& Objects.nonNull(breakpointEvent)) {
-			int size = DebugUtils.getCollectionSize(valueObj, breakpointEvent);
-			TripletDTO<String, String, String> data = DebugUtils.determinCollectionType(valueObj, breakpointEvent);
-			String parameters = Objects.isNull(data.getThird()) ? "params.:<" + data.getSecond() + ">"
-					: "params.:<" + data.getSecond() + ", " + data.getThird() + ">";
-			valueText = parameters + ", " + data.getFirst() + ", size:" + size;
-		}
-
-		if (List.of(ValueCategory.COLLECTION, ValueCategory.MAP).contains(category)) {
-			int size = (valueObj != null) ? DebugUtils.getCollectionSize(valueObj) : -1;
-			String valueTextWithSize = "size: " + (size != -1 ? size : "?") + "; " + valueText;
-			String typeOrReturnType = field.name();
-			if (Objects.nonNull(breakpointEvent)) {
-				TripletDTO<String, String, String> data = DebugUtils.determinCollectionType(valueObj, breakpointEvent);
-				int collectionSize = DebugUtils.getCollectionSize(valueObj, breakpointEvent);
-				String parameters = Objects.isNull(data.getThird()) ? "params.:<" + data.getSecond() + ">"
-						: "params.:<" + data.getSecond() + ", " + data.getThird() + ">";
-				valueTextWithSize = "size:" + collectionSize + ", " + parameters + ", " + data.getFirst();
-			}
-			UniversalElementRepresentation collectionElement = UniversalElementRepresentation.builder()
-					.referenceType(valueObj != null ? valueObj.referenceType() : parentElement.getReferenceType())
-					.objectReference(valueObj).elementName(field.name()).additionalInfo(field.typeName())
-					.elementType(UniversalElementType.FIELD).currentRole(CurrentRole.INNER).value(valueTextWithSize)
-					.isStatic(field.isStatic()).valueCategory(category).typeOrReturnType(typeOrReturnType)
-					.uniqueId(UUID.randomUUID()).parentUniqueId(parentElement.getTag().getUniqueId()).level(level)
-					.build();
-
-			subordinates.put(collectionElement.getTag(), collectionElement);
-
-		} else if (ValueCategory.ARRAY == category && (valueObj instanceof ArrayReference arrayRef)) {
-			int size = arrayRef.length(); 
-		    ArrayType arrayType = (ArrayType) valueObj.referenceType();
-		    String elementType = arrayType.componentTypeName();
-		    valueText = "size:" + size + ", elementType:" + elementType;
-		    UniversalElementRepresentation arrayElement = UniversalElementRepresentation.builder()
-		            .referenceType(valueObj.referenceType())
-		            .objectReference(valueObj)
-		            .elementName(field.name())
-		            .additionalInfo(field.typeName())
-		            .elementType(UniversalElementType.FIELD)
-		            .currentRole(CurrentRole.INNER)
-		            .value(valueText)
-		            .isStatic(field.isStatic())
-		            .valueCategory(ValueCategory.ARRAY)
-		            .typeOrReturnType(field.typeName())
-		            .uniqueId(UUID.randomUUID())
-		            .parentUniqueId(parentElement.getTag().getUniqueId())
-		            .level(level)
-		            .build();
-		    subordinates.put(arrayElement.getTag(), arrayElement);
-		} else {
-			// ---------------- Создаем элемент поля
-			UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
-					.referenceType(valueObj != null ? valueObj.referenceType() : parentElement.getReferenceType())
-					.objectReference(valueObj).elementName(field.name()).additionalInfo(field.typeName())
-					.elementType(UniversalElementType.FIELD).currentRole(CurrentRole.INNER).value(valueText)
-					.isStatic(field.isStatic()).valueCategory(category).typeOrReturnType(field.typeName())
-					.uniqueId(UUID.randomUUID()).parentUniqueId(parentElement.getTag().getUniqueId()).level(level)
-					.build();
-
-			subordinates.put(fieldElement.getTag(), fieldElement);
-
-			if (Objects.nonNull(valueObj)) {
-				long objId = valueObj.uniqueID();
-//				if (visitedElements.containsKey(objId)) {
-//					return;
-//				}
-			//	visitedElements.put(objId, parentElement.getTag());
-				for (Field innerField : valueObj.referenceType().allFields()) {
-					if (shouldExpand(valueObj)) {
-						addField(fieldElement, innerField, breakpointEvent, level + 1);
-					}
-				}
-			}
-		}
-		
-	}
 
 	private List<ReferenceType> waitUntilClassesAreLoaded(VirtualMachine virtualMachine) {
 		List<ReferenceType> referenceTypes = new ArrayList<>();
@@ -341,41 +206,6 @@ public class TargetApplicationRepresentation {
 			}
 		}
 		return referenceTypes;
-	}
-
-	private boolean shouldExpand(ObjectReference objRef) {
-		if (objRef == null)
-			return false;
-
-		String typeName = objRef.referenceType().name();
-
-		// ❌ Не лезем в String
-		if ("java.lang.String".equals(typeName))
-			return false;
-
-		// ❌ Не лезем в примитивные обёртки
-		if (typeName.startsWith("java.lang.")) {
-			switch (typeName) {
-			case "java.lang.Integer":
-			case "java.lang.Long":
-			case "java.lang.Boolean":
-			case "java.lang.Byte":
-			case "java.lang.Short":
-			case "java.lang.Character":
-			case "java.lang.Double":
-			case "java.lang.Float":
-				return false;
-			}
-		}
-
-		// ❌ Не лезем в стандартные классы JDK
-		if (typeName.startsWith("java.") || typeName.startsWith("javax.") || typeName.startsWith("jdk.")
-				|| typeName.startsWith("sun.")) {
-			return false;
-		}
-
-		// Всё остальное — пользовательские классы, можно раскрывать
-		return true;
 	}
 
 	private List<ReferenceType> filterTargetClasses(List<ReferenceType> referenceTypes) {
@@ -440,90 +270,6 @@ public class TargetApplicationRepresentation {
 		}
 	}
 
-	private void populateMembersForClass(BreakpointEvent breakpointEvent) {
-		for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
-			List<UniversalElementRepresentation> tops = new ArrayList();
-			tops.add(topLevelElement);
-			loadMembers(tops, topLevelElement.getTag().getParentId(), breakpointEvent);
-		}
-	}
-
-	private void loadMembers(List<UniversalElementRepresentation> universalElementRepresentations, UUID parentId,
-			BreakpointEvent breakpointEvent) {
-
-		for (UniversalElementRepresentation universalElementRepresentation : universalElementRepresentations) {
-			ObjectReference objectReferenceField = universalElementRepresentation.getObjectReference();
-			if (objectReferenceField == null)
-				continue;
-
-			for (Field field : objectReferenceField.referenceType().fields()) {
-				Value value = objectReferenceField.getValue(field);
-
-				// System.out.println(field.name() + " = " + value);
-				// System.out.println();
-			}
-
-			long objId = getObjectUniqueId(universalElementRepresentation.getObjectReference());
-			for (Method method : universalElementRepresentation.getReferenceType().allMethods()) {
-				try {
-					if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
-						continue;
-					if (method.declaringType().name().equals("java.lang.Object"))
-						continue;
-					if (method.declaringType().name().startsWith("java."))
-						continue;
-
-					String methodArgs = method.argumentTypes().stream().map(Type::name)
-							.collect(Collectors.joining(","));
-
-					UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
-							.referenceType(universalElementRepresentation.getReferenceType())
-							.objectReference(universalElementRepresentation.getObjectReference())
-							.elementName(universalElementRepresentation.getElementName() + "." + method.name())
-							.additionalInfo(method.returnTypeName())
-							.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
-							.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-							.value(universalElementRepresentation.getAdditionalInfo() + "." + method.name() + "("
-									+ methodArgs + ")")
-							.isStatic(method.isStatic())
-							.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-							.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID())
-							.parentUniqueId(universalElementRepresentation.getTag().getUniqueId()).build();
-
-					subordinates.put(methodElement.getTag(), methodElement);
-
-				} catch (Exception ignored) {
-				}
-				// targetApplicationSnapshot.put(reference.getTag(), reference);
-			}
-		}
-
-		return;
-	}
-
-	private boolean shouldSkipMethod(Method method) {
-		String name = method.name();
-		// конструкторы и статика
-		if ("<init>".equals(name) || "<clinit>".equals(name)) {
-			return true;
-		}
-		// lambda методы
-		if (name.startsWith("lambda$")) {
-			return true;
-		}
-		// synthetic / bridge
-		if (method.isSynthetic() || method.isBridge()) {
-			return true;
-		}
-		if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
-			return true;
-		if (method.declaringType().name().equals("java.lang.Object"))
-			return true;
-		if (method.declaringType().name().startsWith("java."))
-			return true;
-
-		return false;
-	}
 
 	private boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent,
 			Map<String, LocalVariableShortDTO> localsSnapshot) {
@@ -577,29 +323,6 @@ public class TargetApplicationRepresentation {
 			}
 		}
 		return true;
-	}
-
-	private long getObjectUniqueId(Object obj) {
-		if (obj instanceof ObjectReference objectRef) {
-			return objectRef.uniqueID();
-		}
-		// Для ReferenceType (классы) можно использовать hashCode +
-		// System.identityHashCode
-		else if (obj instanceof ReferenceType refType) {
-			// Для классов можно брать hashCode типа или уникальный tag
-			return refType.hashCode();
-		}
-		// Для всего остального — fallback
-		else {
-			return System.identityHashCode(obj);
-		}
-	}
-
-	// Метод определяет, нужно ли рекурсивно обрабатывать объект
-	private boolean isUserClassOrCollection(ObjectReference objRef) {
-		String name = objRef.referenceType().name();
-		return !name.startsWith("java.") && !name.startsWith("javax.") && !name.startsWith("jdk.")
-				&& !name.startsWith("sun.");
 	}
 
 	public IFile findIFileForLocation(Location location) {
