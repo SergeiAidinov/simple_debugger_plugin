@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,7 +27,11 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetApplicationBreakpointRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
@@ -437,7 +441,7 @@ public class TargetApplicationRepresentation {
 		for (UniversalElementRepresentation topLevelElement : topLevelElements.values()) {
 			List<UniversalElementRepresentation> tops = new ArrayList();
 			tops.add(topLevelElement);
-			loadMembers(tops, topLevelElement.tag.getParentId(), breakpointEvent);
+			loadMembers(tops, topLevelElement.getTag().getParentId(), breakpointEvent);
 		}
 	}
 
