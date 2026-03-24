@@ -119,7 +119,7 @@ public class TargetApplicationRepresentation {
 				breakpointEvent);
 
 		for (Entry<Tag, UniversalElementRepresentation> entry : topLevelElements.entrySet()) {
-			recursievlyPopulateElements(PairDTO.of(entry.getKey(), entry.getValue()), breakpointEvent, 1);
+			subordinates.putAll(recursievlyPopulateSubordinatesElements(PairDTO.of(entry.getKey(), entry.getValue()), breakpointEvent, 1)) ;
 		}
 		if (!localsSnapshot.isEmpty())
 			addLocalVariables(virtualMachine, breakpointEvent, localsSnapshot);
@@ -184,8 +184,9 @@ public class TargetApplicationRepresentation {
 		return shortInfo;
 	}
 
-	private void recursievlyPopulateElements(PairDTO<Tag, UniversalElementRepresentation> pairDTO,
+	private Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> recursievlyPopulateSubordinatesElements(PairDTO<Tag, UniversalElementRepresentation> pairDTO,
 			BreakpointEvent breakpointEvent, int level) {
+		final Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates = new ConcurrentHashMap<>();
 		UniversalElementRepresentation parentElement = pairDTO.getSecond();
 		ObjectReference objRef = parentElement.getObjectReference();
 
@@ -223,6 +224,8 @@ public class TargetApplicationRepresentation {
 		for (Field field : parentElement.getReferenceType().allFields()) {
 			addField(pairDTO.getSecond(), field, breakpointEvent, level);
 		}
+		
+		return subordinates;
 	}
 
 	private void addField(UniversalElementRepresentation parentElement, Field field, BreakpointEvent breakpointEvent,
