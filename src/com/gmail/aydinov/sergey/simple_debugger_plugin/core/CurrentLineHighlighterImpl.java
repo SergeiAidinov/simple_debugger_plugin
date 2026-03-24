@@ -6,6 +6,17 @@ import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.Position;
 import org.eclipse.jface.text.source.Annotation;
@@ -22,6 +33,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.CurrentLineHighlighter;
 import com.sun.jdi.Location;
+import com.sun.jdi.ReferenceType;
 
 /**
  * Highlights the current line in an Eclipse text editor.
@@ -123,7 +135,7 @@ public class CurrentLineHighlighterImpl implements CurrentLineHighlighter {
         IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
         if (workbenchPage == null) return null;
 
-        IFile file = TargetApplicationRepresentation.getInstance().findIFileForLocation(location);
+        IFile file = findIFileForLocation(location);
         if (file == null) throw new IllegalStateException("Cannot map location to IFile: " + location);
 
         IEditorPart editorPart = IDE.openEditor(workbenchPage, file, true);
@@ -133,4 +145,50 @@ public class CurrentLineHighlighterImpl implements CurrentLineHighlighter {
 
         throw new IllegalStateException("Opened editor is not a text editor");
     }
+    
+    public IFile findIFileForLocation(Location location) {
+		ReferenceType referenceType = location.declaringType();
+		if (Objects.isNull(referenceType)) {
+			return null;
+		}
+		String jvmName = referenceType.name();
+		String className = jvmName.replace('/', '.');
+		if (className.startsWith("L") && className.endsWith(";")) {
+			className = className.substring(1, className.length() - 1);
+		}
+		IWorkspace iWorkspace = ResourcesPlugin.getWorkspace();
+		IWorkspaceRoot iWorkspaceRoot = iWorkspace.getRoot();
+		for (IProject iProject : iWorkspaceRoot.getProjects()) {
+			try {
+				if (!iProject.isOpen() || !iProject.hasNature(JavaCore.NATURE_ID)) {
+					continue;
+				}
+			} catch (CoreException coreException) {
+				coreException.printStackTrace();
+			}
+			IJavaProject iJavaProject = JavaCore.create(iProject);
+			IType iType;
+			try {
+				iType = iJavaProject.findType(className);
+			} catch (JavaModelException javaModelException) {
+				javaModelException.printStackTrace();
+				continue;
+			}
+			if (Objects.nonNull(iType)) {
+				ICompilationUnit iCompilationUnit = iType.getCompilationUnit();
+				if (Objects.nonNull(iCompilationUnit)) {
+					try {
+						IResource iResource = iCompilationUnit.getUnderlyingResource();
+						if (iResource instanceof IFile) {
+							return (IFile) iResource;
+						}
+					} catch (JavaModelException javaModelException) {
+						javaModelException.printStackTrace();
+					}
+				}
+			}
+		}
+		return null;
+	}
+    
 }
