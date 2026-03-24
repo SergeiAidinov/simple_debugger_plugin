@@ -6,26 +6,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.ElementReference;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetAplicantionElementsLoader;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -145,7 +139,6 @@ public class InspectionSeanceHandler implements UIEventHandler {
 
 		private void compileCollectionElements(InnerElementRepresentationDTO anchorElement) {
 			// 1. Берем внутренние элементы коллекции
-			TargetAplicantionElementsLoader elementsLoader = new TargetAplicantionElementsLoader(anchorElement.getLevel());
 			List<AbstractElementRepresentation> allElements = new ArrayList<AbstractElementRepresentation>(
 					TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getFirst().values());
 			allElements.addAll(
@@ -156,16 +149,7 @@ public class InspectionSeanceHandler implements UIEventHandler {
 					.filter(e -> Objects.equals(e.getTag(), anchorElement.getTag())).findAny();
 			if (collectionElementOptional.isEmpty()) return;
 			UniversalElementRepresentation collectionElement = collectionElementOptional.get();
-			Optional<UniversalElementRepresentation> parentOfCollectionOptional = allElements.stream().filter(e -> e instanceof UniversalElementRepresentation)
-			.map(e -> (UniversalElementRepresentation) e)
-			.filter(e -> Objects.equals(e.getTag().getUniqueId(), anchorElement.getTag().getParentId()))
-			.findAny();
-			if (parentOfCollectionOptional.isEmpty()) return;
-			UniversalElementRepresentation parentOfCollection = parentOfCollectionOptional.get();
 			Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> collectionElements = new HashMap<AbstractElementRepresentation.Tag, AbstractElementRepresentation>();
-			Map<Tag, AbstractElementRepresentation> snap = elementsLoader.recursievlyPopulateSubordinatesElements(
-					PairDTO.of(collectionElement.getTag(), collectionElement), breakpointEvent,
-					collectionElements, anchorElement.getLevel(), true);
 			List<Value> qq = DebugUtils.iterateThroughCollection(collectionElement.getObjectReference(), breakpointEvent);
 			List<UniversalElementRepresentation> result = new ArrayList();
 			for (Value v : qq) {
@@ -184,16 +168,15 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			                })
 			                .findFirst()
 			                .orElseGet(() -> {
-
 			                    String valueText = type.startsWith("java.lang.")
 			                            ? objRef.toString()
 			                            : type;
 			                    return UniversalElementRepresentation.builder()
 			                            .referenceType(objRef.referenceType())
 			                            .objectReference(objRef)
-			                            .elementName("item") // 👈 без индекса
+			                            .elementName(valueText) // 👈 без индекса
 			                            .additionalInfo(type)
-			                            .elementType(UniversalElementType.FIELD)
+			                            .elementType(UniversalElementType.COLLECTION_ELEMENT)
 			                            .currentRole(CurrentRole.INNER)
 			                            .value(DebugUtils.getObjectReferenceValueAsString(objRef))
 			                            .valueCategory(DebugUtils.determineValueCategory(v))
@@ -225,58 +208,6 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			}
 			System.out.println(result);
 		}
-//			
-//			List<UniversalElementRepresentation> instances = TargetApplicationRepresentation.getInstance()
-//				    .getTargetApplicationSnapshot().getSecond().values().stream()
-//				    .map(e -> {
-//				        if (e instanceof ElementReference ref) {
-//				            // достаём реальный элемент из snapshot по referenceTag
-//				            AbstractElementRepresentation real = TargetApplicationRepresentation.getInstance()
-//				                    .getTargetApplicationSnapshot()
-//				                    .getSecond().get(ref.getReferenceTag());
-//				            if (real instanceof UniversalElementRepresentation ue) return ue;
-//				            return null;
-//				        }
-//				        if (e instanceof UniversalElementRepresentation ue) return ue;
-//				        return null;
-//				    })
-//				    .filter(Objects::nonNull)
-//				    .filter(e -> Objects.equals(e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
-//				    .toList();
-//
-//			// 2. Получаем ObjectReference для всех элементов коллекции
-//			Set<ObjectReference> collectionElementRefs = instances.stream()
-//					.map(UniversalElementRepresentation::getObjectReference).filter(Objects::nonNull)
-//					.flatMap(obj -> DebugUtils.iterateThroughCollection(obj, breakpointEvent).stream())
-//					.filter(ObjectReference.class::isInstance).map(ObjectReference.class::cast)
-//					.collect(Collectors.toSet());
-//
-//			// 3. Связываем ObjectReference с реальным Comparable значением
-//			List<PairDTO<ObjectReference, Comparable<Object>>> sortedPairs = collectionElementRefs.stream().map(ref -> {
-//				Object value = DebugUtils.getComparableValue(ref);
-//				return PairDTO.<ObjectReference, Comparable<Object>>of(ref,
-//						value instanceof Comparable ? (Comparable<Object>) value : null);
-//			}).filter(p -> p.getSecond() != null).sorted((p1, p2) -> p1.getSecond().compareTo(p2.getSecond())).toList();
-//
-//			// 4. Берем отсортированные ObjectReference
-//			List<ObjectReference> sortedRefs = sortedPairs.stream().map(PairDTO::getFirst).toList();
-//
-//			// 5. Создаем DTO с уже установленным value
-//			List<InnerElementRepresentationDTO> readyRepresentationDTOs = sortedRefs.stream()
-//				    .map(ref -> {
-//				        // достаем реальный элемент по objectReference
-//				        UniversalElementRepresentation uer = findUniversalElementByObjectReference(ref);
-//
-//				        // создаем DTO через универсальную фабрику
-//				        return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(uer);
-//				    })
-//				    .toList();
-//
-//			for (int i = 0; i < readyRepresentationDTOs.size(); i++) {
-//				colectionElements.put(i, readyRepresentationDTOs.get(i));
-//			}
-//
-//		}
 
 		private List<PairDTO<Integer, InnerElementRepresentationDTO>> getPage(int pageNumber) {
 			List<PairDTO<Integer, InnerElementRepresentationDTO>> result = new ArrayList<PairDTO<Integer, InnerElementRepresentationDTO>>();
@@ -293,35 +224,5 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		private void ignoreEvent(AbstractUIEvent debugEvent) {
 			SimpleDebuggerLogger.info("Intentionally ignored: " + debugEvent);
 		}
-		
-		private UniversalElementRepresentation findUniversalElementByObjectReference(ObjectReference ref) {
-
-		    return TargetApplicationRepresentation.getInstance()
-		        .getTargetApplicationSnapshot()
-		        .getSecond()
-		        .values().stream()
-		        .map(e -> {
-		            if (e instanceof ElementReference er) {
-		                AbstractElementRepresentation real =
-		                    TargetApplicationRepresentation.getInstance()
-		                        .getTargetApplicationSnapshot()
-		                        .getSecond()
-		                        .get(er.getReferenceTag());
-
-		                if (real instanceof UniversalElementRepresentation ue) return ue;
-
-		            } else if (e instanceof UniversalElementRepresentation ue) {
-		                return ue;
-		            }
-		            return null;
-		        })
-		        .filter(Objects::nonNull)
-		        .filter(e -> e.getObjectReference() != null)
-		        .filter(e -> e.getObjectReference().uniqueID() == ref.uniqueID())
-		        .findFirst()
-		        .orElse(null);
-		}
 	}
-	
-	
 }
