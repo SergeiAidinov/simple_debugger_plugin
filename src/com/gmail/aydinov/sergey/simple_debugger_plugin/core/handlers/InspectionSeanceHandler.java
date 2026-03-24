@@ -169,19 +169,12 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			List<Value> qq = DebugUtils.iterateThroughCollection(collectionElement.getObjectReference(), breakpointEvent);
 			List<UniversalElementRepresentation> result = new ArrayList();
 			for (Value v : qq) {
-
-			    if (v == null) {
-			        continue;
-			    }
-
+			    if (v == null) continue;
 			    // 🔹 1. Если это объект
 			    if (v instanceof ObjectReference objRef) {
-
 			        long id = objRef.uniqueID();
 			        String type = objRef.referenceType().name();
-
 			        System.out.println("OBJ -> id=" + id + ", type=" + type);
-
 			        UniversalElementRepresentation uer = collectionElements.values().stream()
 			                .filter(e -> e instanceof UniversalElementRepresentation)
 			                .map(e -> (UniversalElementRepresentation) e)
@@ -195,7 +188,6 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			                    String valueText = type.startsWith("java.lang.")
 			                            ? objRef.toString()
 			                            : type;
-
 			                    return UniversalElementRepresentation.builder()
 			                            .referenceType(objRef.referenceType())
 			                            .objectReference(objRef)
@@ -203,8 +195,8 @@ public class InspectionSeanceHandler implements UIEventHandler {
 			                            .additionalInfo(type)
 			                            .elementType(UniversalElementType.FIELD)
 			                            .currentRole(CurrentRole.INNER)
-			                            .value(valueText)
-			                            .valueCategory(ValueCategory.NOT_SPECIFIED)
+			                            .value(DebugUtils.getObjectReferenceValueAsString(objRef))
+			                            .valueCategory(DebugUtils.determineValueCategory(v))
 			                            .uniqueId(UUID.randomUUID())
 			                            .parentUniqueId(collectionElement.getTag().getUniqueId())
 			                            .level(collectionElement.getLevel() + 1)
