@@ -24,10 +24,19 @@ import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
 public class TargetAplicantionElementsLoader {
+	
+	private final int CURRENT_LEVEL_RECURSION;
+	
+	
 
-	Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> recursievlyPopulateSubordinatesElements(
+	public TargetAplicantionElementsLoader(int additionalDepthOfRecursion) {
+		
+		CURRENT_LEVEL_RECURSION = TargetApplicationRepresentation.DEAFAULT_LEVEL_RECURSION + additionalDepthOfRecursion;
+	}
+
+	public Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> recursievlyPopulateSubordinatesElements(
 			PairDTO<Tag, UniversalElementRepresentation> pairDTO, BreakpointEvent breakpointEvent,
-			Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates, int level) {
+			Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates, int level, boolean shoulExpandCollections) {
 		// final Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation>
 		// subordinates = new ConcurrentHashMap<>();
 		UniversalElementRepresentation parentElement = pairDTO.getSecond();
@@ -65,7 +74,7 @@ public class TargetAplicantionElementsLoader {
 		}
 
 		for (Field field : parentElement.getReferenceType().allFields()) {
-			addField(pairDTO.getSecond(), field, subordinates, breakpointEvent, level);
+			addField(pairDTO.getSecond(), field, subordinates, breakpointEvent, level, shoulExpandCollections);
 		}
 
 		return subordinates;
@@ -73,8 +82,8 @@ public class TargetAplicantionElementsLoader {
 
 	private void addField(UniversalElementRepresentation parentElement, Field field,
 			Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates,
-			BreakpointEvent breakpointEvent, int level) {
-		if (level >= TargetApplicationRepresentation.DEAFAULT_LEVEL_RECURSION) {
+			BreakpointEvent breakpointEvent, int level, boolean shouldExpandCollections) {
+		if (level >= CURRENT_LEVEL_RECURSION) {
 			return;
 		}
 		Value value = null;
@@ -155,8 +164,8 @@ public class TargetAplicantionElementsLoader {
 //				}
 				// visitedElements.put(objId, parentElement.getTag());
 				for (Field innerField : valueObj.referenceType().allFields()) {
-					if (shouldExpand(valueObj)) {
-						addField(fieldElement, innerField, subordinates, breakpointEvent, level + 1);
+					if (shouldExpand(valueObj, shouldExpandCollections)) {
+						addField(fieldElement, innerField, subordinates, breakpointEvent, (level + 1), shouldExpandCollections);
 					}
 				}
 			}
@@ -188,39 +197,51 @@ public class TargetAplicantionElementsLoader {
 		return false;
 	}
 
-	private boolean shouldExpand(ObjectReference objRef) {
-		if (objRef == null)
-			return false;
+	private boolean shouldExpand(ObjectReference objRef, boolean shoulExpandCollections) {
+	    if (objRef == null)
+	        return false;
 
-		String typeName = objRef.referenceType().name();
+	    String typeName = objRef.referenceType().name();
 
-		// ❌ Не лезем в String
-		if ("java.lang.String".equals(typeName))
-			return false;
+	    // ❌ Не лезем в String
+	    if ("java.lang.String".equals(typeName))
+	        return false;
 
-		// ❌ Не лезем в примитивные обёртки
-		if (typeName.startsWith("java.lang.")) {
-			switch (typeName) {
-			case "java.lang.Integer":
-			case "java.lang.Long":
-			case "java.lang.Boolean":
-			case "java.lang.Byte":
-			case "java.lang.Short":
-			case "java.lang.Character":
-			case "java.lang.Double":
-			case "java.lang.Float":
-				return false;
-			}
-		}
+	    // ❌ Не лезем в примитивные обёртки
+	    if (typeName.startsWith("java.lang.")) {
+	        switch (typeName) {
+	            case "java.lang.Integer":
+	            case "java.lang.Long":
+	            case "java.lang.Boolean":
+	            case "java.lang.Byte":
+	            case "java.lang.Short":
+	            case "java.lang.Character":
+	            case "java.lang.Double":
+	            case "java.lang.Float":
+	                return false;
+	        }
+	    }
 
-		// ❌ Не лезем в стандартные классы JDK
-		if (typeName.startsWith("java.") || typeName.startsWith("javax.") || typeName.startsWith("jdk.")
-				|| typeName.startsWith("sun.")) {
-			return false;
-		}
+	    // ✅ Расширяем коллекции, если включено
+	    if (shoulExpandCollections) {
+	        try {
+	            if (DebugUtils.isInstanceOf(objRef, "java.lang.Iterable") ||
+	                DebugUtils.isInstanceOf(objRef, "java.util.Map")) {
+	                return true;
+	            }
+	        } catch (Exception e) {
+	            // на всякий случай, не ломаем процесс
+	        }
+	    }
 
-		// Всё остальное — пользовательские классы, можно раскрывать
-		return true;
+	    // ❌ Не лезем в стандартные классы JDK
+	    if (typeName.startsWith("java.") || typeName.startsWith("javax.") || typeName.startsWith("jdk.")
+	            || typeName.startsWith("sun.")) {
+	        return false;
+	    }
+
+	    // Всё остальное — пользовательские классы, можно раскрывать
+	    return true;
 	}
 
 }

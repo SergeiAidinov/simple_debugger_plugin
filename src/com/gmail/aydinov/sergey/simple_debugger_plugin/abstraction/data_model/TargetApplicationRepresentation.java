@@ -49,7 +49,7 @@ public class TargetApplicationRepresentation {
 	private final Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates = new ConcurrentHashMap<>();
 //	private final Map<Long, AbstractElementRepresentation.Tag> visitedElements = new ConcurrentHashMap<>();
 	private final DebugConfiguration debugConfiguration;
-	private final TargetAplicantionElementsLoader elementsLoader = new TargetAplicantionElementsLoader();
+	private final TargetAplicantionElementsLoader elementsLoader = new TargetAplicantionElementsLoader(0);
 	private static TargetApplicationRepresentation INSTANCE;
 
 	private TargetApplicationRepresentation(IBreakpointManager iBreakpointManager,
@@ -109,7 +109,7 @@ public class TargetApplicationRepresentation {
 		            PairDTO.of(entry.getKey(), entry.getValue()),
 		            breakpointEvent,
 		            iterationSubordinates,
-		            1
+		            1, false
 		        );
 		}
 		subordinates.putAll(iterationSubordinates);
