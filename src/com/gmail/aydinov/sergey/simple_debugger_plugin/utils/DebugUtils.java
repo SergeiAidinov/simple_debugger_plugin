@@ -1128,5 +1128,29 @@ public class DebugUtils {
         sb.append(")");
         return sb.toString();
     }
-	
+
+    /**
+     * Проверяет, является ли objRef экземпляром класса/интерфейса с именем typeName
+     */
+    public static boolean isInstanceOf(ObjectReference objRef, String typeName) {
+        if (objRef == null || typeName == null) return false;
+
+        ReferenceType refType = objRef.referenceType();
+        if (refType == null) return false;
+
+        // если сам объект нужного типа
+        if (refType.name().equals(typeName)) return true;
+
+        // проверяем все интерфейсы класса
+        if (refType instanceof ClassType classType) {
+            for (InterfaceType iface : classType.allInterfaces()) {
+                if (iface.name().equals(typeName)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+    
 }

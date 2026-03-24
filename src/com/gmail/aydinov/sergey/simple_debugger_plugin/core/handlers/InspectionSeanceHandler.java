@@ -1,15 +1,24 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.ElementReference;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetAplicantionElementsLoader;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
@@ -31,6 +40,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWi
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StackFrame;
+import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
 public class InspectionSeanceHandler implements UIEventHandler {
@@ -55,7 +65,7 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		if (Objects.nonNull(uiEvent)) {
 			Thread collectionInspectionThread = new Thread(
 					new CollectionInspectionSeance(uiEvent.getPayload(), breakpointEvent));
-			collectionInspectionThread.setDaemon(false);
+			collectionInspectionThread.setDaemon(true);
 			try {
 				collectionInspectionThread.start();
 				try {
@@ -89,12 +99,12 @@ public class InspectionSeanceHandler implements UIEventHandler {
 
 		@Override
 		public void run() {
-			collectionInspection();
+			collectionInspection(anchorElement);
 		}
 
 		@SuppressWarnings("unchecked")
-		private void collectionInspection() {
-			compileCollectionElements();
+		private void collectionInspection(InnerElementRepresentationDTO anchorElement) {
+			compileCollectionElements(anchorElement);
 			CollectionPageDTO initPage = createPage(0);
 			debugEventCollector.collectDebugEvent(
 					new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION, initPage));
@@ -133,59 +143,148 @@ public class InspectionSeanceHandler implements UIEventHandler {
 					.build();
 		}
 
-		private void compileCollectionElements() {
+		private void compileCollectionElements(InnerElementRepresentationDTO anchorElement) {
 			// 1. Берем внутренние элементы коллекции
-			List<UniversalElementRepresentation> instances = TargetApplicationRepresentation.getInstance()
-				    .getTargetApplicationSnapshot().getSecond().values().stream()
-				    .map(e -> {
-				        if (e instanceof ElementReference ref) {
-				            // достаём реальный элемент из snapshot по referenceTag
-				            AbstractElementRepresentation real = TargetApplicationRepresentation.getInstance()
-				                    .getTargetApplicationSnapshot()
-				                    .getSecond().get(ref.getReferenceTag());
-				            if (real instanceof UniversalElementRepresentation ue) return ue;
-				            return null;
-				        }
-				        if (e instanceof UniversalElementRepresentation ue) return ue;
-				        return null;
-				    })
-				    .filter(Objects::nonNull)
-				    .filter(e -> Objects.equals(e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
-				    .toList();
+			TargetAplicantionElementsLoader elementsLoader = new TargetAplicantionElementsLoader(anchorElement.getLevel());
+			List<AbstractElementRepresentation> allElements = new ArrayList<AbstractElementRepresentation>(
+					TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getFirst().values());
+			allElements.addAll(
+					TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getSecond().values());
+			Optional<UniversalElementRepresentation> collectionElementOptional = allElements.stream()
+					.filter(e -> e instanceof UniversalElementRepresentation)
+					.map(e -> (UniversalElementRepresentation) e)
+					.filter(e -> Objects.equals(e.getTag(), anchorElement.getTag())).findAny();
+			if (collectionElementOptional.isEmpty()) return;
+			UniversalElementRepresentation collectionElement = collectionElementOptional.get();
+			Optional<UniversalElementRepresentation> parentOfCollectionOptional = allElements.stream().filter(e -> e instanceof UniversalElementRepresentation)
+			.map(e -> (UniversalElementRepresentation) e)
+			.filter(e -> Objects.equals(e.getTag().getUniqueId(), anchorElement.getTag().getParentId()))
+			.findAny();
+			if (parentOfCollectionOptional.isEmpty()) return;
+			UniversalElementRepresentation parentOfCollection = parentOfCollectionOptional.get();
+			Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> collectionElements = new HashMap<AbstractElementRepresentation.Tag, AbstractElementRepresentation>();
+			Map<Tag, AbstractElementRepresentation> snap = elementsLoader.recursievlyPopulateSubordinatesElements(
+					PairDTO.of(collectionElement.getTag(), collectionElement), breakpointEvent,
+					collectionElements, anchorElement.getLevel(), true);
+			List<Value> qq = DebugUtils.iterateThroughCollection(collectionElement.getObjectReference(), breakpointEvent);
+			List<UniversalElementRepresentation> result = new ArrayList();
+			for (Value v : qq) {
 
-			// 2. Получаем ObjectReference для всех элементов коллекции
-			Set<ObjectReference> collectionElementRefs = instances.stream()
-					.map(UniversalElementRepresentation::getObjectReference).filter(Objects::nonNull)
-					.flatMap(obj -> DebugUtils.iterateThroughCollection(obj, breakpointEvent).stream())
-					.filter(ObjectReference.class::isInstance).map(ObjectReference.class::cast)
-					.collect(Collectors.toSet());
+			    if (v == null) {
+			        continue;
+			    }
 
-			// 3. Связываем ObjectReference с реальным Comparable значением
-			List<PairDTO<ObjectReference, Comparable<Object>>> sortedPairs = collectionElementRefs.stream().map(ref -> {
-				Object value = DebugUtils.getComparableValue(ref);
-				return PairDTO.<ObjectReference, Comparable<Object>>of(ref,
-						value instanceof Comparable ? (Comparable<Object>) value : null);
-			}).filter(p -> p.getSecond() != null).sorted((p1, p2) -> p1.getSecond().compareTo(p2.getSecond())).toList();
+			    // 🔹 1. Если это объект
+			    if (v instanceof ObjectReference objRef) {
 
-			// 4. Берем отсортированные ObjectReference
-			List<ObjectReference> sortedRefs = sortedPairs.stream().map(PairDTO::getFirst).toList();
+			        long id = objRef.uniqueID();
+			        String type = objRef.referenceType().name();
 
-			// 5. Создаем DTO с уже установленным value
-			List<InnerElementRepresentationDTO> readyRepresentationDTOs = sortedRefs.stream()
-				    .map(ref -> {
-				        // достаем реальный элемент по objectReference
-				        UniversalElementRepresentation uer = findUniversalElementByObjectReference(ref);
+			        System.out.println("OBJ -> id=" + id + ", type=" + type);
 
-				        // создаем DTO через универсальную фабрику
-				        return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(uer);
-				    })
-				    .toList();
+			        UniversalElementRepresentation uer = collectionElements.values().stream()
+			                .filter(e -> e instanceof UniversalElementRepresentation)
+			                .map(e -> (UniversalElementRepresentation) e)
+			                .filter(e -> {
+			                    ObjectReference r = e.getObjectReference();
+			                    return r != null && r.uniqueID() == objRef.uniqueID();
+			                })
+			                .findFirst()
+			                .orElseGet(() -> {
 
-			for (int i = 0; i < readyRepresentationDTOs.size(); i++) {
-				colectionElements.put(i, readyRepresentationDTOs.get(i));
+			                    String valueText = type.startsWith("java.lang.")
+			                            ? objRef.toString()
+			                            : type;
+
+			                    return UniversalElementRepresentation.builder()
+			                            .referenceType(objRef.referenceType())
+			                            .objectReference(objRef)
+			                            .elementName("item") // 👈 без индекса
+			                            .additionalInfo(type)
+			                            .elementType(UniversalElementType.FIELD)
+			                            .currentRole(CurrentRole.INNER)
+			                            .value(valueText)
+			                            .valueCategory(ValueCategory.NOT_SPECIFIED)
+			                            .uniqueId(UUID.randomUUID())
+			                            .parentUniqueId(collectionElement.getTag().getUniqueId())
+			                            .level(collectionElement.getLevel() + 1)
+			                            .build();
+			                });
+
+			        result.add(uer);
+			    }
+
+			    // 🔹 2. Примитивы
+			    else {
+			        System.out.println("PRIMITIVE -> " + v);
+
+			        UniversalElementRepresentation primitiveElement =
+			                UniversalElementRepresentation.builder()
+			                        .elementName("item")
+			                        .value(v.toString())
+			                        .valueCategory(ValueCategory.PRIMITIVE)
+			                        .uniqueId(UUID.randomUUID())
+			                        .parentUniqueId(collectionElement.getTag().getUniqueId())
+			                        .level(collectionElement.getLevel() + 1)
+			                        .build();
+
+			        result.add(primitiveElement);
+			    }
 			}
-
+			System.out.println(result);
 		}
+//			
+//			List<UniversalElementRepresentation> instances = TargetApplicationRepresentation.getInstance()
+//				    .getTargetApplicationSnapshot().getSecond().values().stream()
+//				    .map(e -> {
+//				        if (e instanceof ElementReference ref) {
+//				            // достаём реальный элемент из snapshot по referenceTag
+//				            AbstractElementRepresentation real = TargetApplicationRepresentation.getInstance()
+//				                    .getTargetApplicationSnapshot()
+//				                    .getSecond().get(ref.getReferenceTag());
+//				            if (real instanceof UniversalElementRepresentation ue) return ue;
+//				            return null;
+//				        }
+//				        if (e instanceof UniversalElementRepresentation ue) return ue;
+//				        return null;
+//				    })
+//				    .filter(Objects::nonNull)
+//				    .filter(e -> Objects.equals(e.getTag().getParentId(), anchorElement.getTag().getUniqueId()))
+//				    .toList();
+//
+//			// 2. Получаем ObjectReference для всех элементов коллекции
+//			Set<ObjectReference> collectionElementRefs = instances.stream()
+//					.map(UniversalElementRepresentation::getObjectReference).filter(Objects::nonNull)
+//					.flatMap(obj -> DebugUtils.iterateThroughCollection(obj, breakpointEvent).stream())
+//					.filter(ObjectReference.class::isInstance).map(ObjectReference.class::cast)
+//					.collect(Collectors.toSet());
+//
+//			// 3. Связываем ObjectReference с реальным Comparable значением
+//			List<PairDTO<ObjectReference, Comparable<Object>>> sortedPairs = collectionElementRefs.stream().map(ref -> {
+//				Object value = DebugUtils.getComparableValue(ref);
+//				return PairDTO.<ObjectReference, Comparable<Object>>of(ref,
+//						value instanceof Comparable ? (Comparable<Object>) value : null);
+//			}).filter(p -> p.getSecond() != null).sorted((p1, p2) -> p1.getSecond().compareTo(p2.getSecond())).toList();
+//
+//			// 4. Берем отсортированные ObjectReference
+//			List<ObjectReference> sortedRefs = sortedPairs.stream().map(PairDTO::getFirst).toList();
+//
+//			// 5. Создаем DTO с уже установленным value
+//			List<InnerElementRepresentationDTO> readyRepresentationDTOs = sortedRefs.stream()
+//				    .map(ref -> {
+//				        // достаем реальный элемент по objectReference
+//				        UniversalElementRepresentation uer = findUniversalElementByObjectReference(ref);
+//
+//				        // создаем DTO через универсальную фабрику
+//				        return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(uer);
+//				    })
+//				    .toList();
+//
+//			for (int i = 0; i < readyRepresentationDTOs.size(); i++) {
+//				colectionElements.put(i, readyRepresentationDTOs.get(i));
+//			}
+//
+//		}
 
 		private List<PairDTO<Integer, InnerElementRepresentationDTO>> getPage(int pageNumber) {
 			List<PairDTO<Integer, InnerElementRepresentationDTO>> result = new ArrayList<PairDTO<Integer, InnerElementRepresentationDTO>>();
@@ -204,27 +303,33 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		}
 		
 		private UniversalElementRepresentation findUniversalElementByObjectReference(ObjectReference ref) {
+
 		    return TargetApplicationRepresentation.getInstance()
 		        .getTargetApplicationSnapshot()
-		        .getSecond() // Map<Tag, AbstractElementRepresentation>
+		        .getSecond()
 		        .values().stream()
 		        .map(e -> {
 		            if (e instanceof ElementReference er) {
-		                AbstractElementRepresentation real = TargetApplicationRepresentation.getInstance()
+		                AbstractElementRepresentation real =
+		                    TargetApplicationRepresentation.getInstance()
 		                        .getTargetApplicationSnapshot()
 		                        .getSecond()
 		                        .get(er.getReferenceTag());
+
 		                if (real instanceof UniversalElementRepresentation ue) return ue;
+
 		            } else if (e instanceof UniversalElementRepresentation ue) {
 		                return ue;
 		            }
 		            return null;
 		        })
 		        .filter(Objects::nonNull)
-		        .filter(e -> e.getObjectReference().equals(ref))
+		        .filter(e -> e.getObjectReference() != null)
+		        .filter(e -> e.getObjectReference().uniqueID() == ref.uniqueID())
 		        .findFirst()
-		        .orElseThrow(() -> new RuntimeException("UniversalElementRepresentation not found for ref: " + ref));
+		        .orElse(null);
 		}
-
 	}
+	
+	
 }
