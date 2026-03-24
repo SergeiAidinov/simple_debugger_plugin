@@ -10,21 +10,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.IBreakpointManager;
-import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IType;
-import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.JavaModelException;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.DebugConfiguration;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
@@ -42,9 +29,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.LocalVariableS
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.AbsentInformationException;
-import com.sun.jdi.ArrayReference;
-import com.sun.jdi.ArrayType;
-import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
@@ -52,7 +36,6 @@ import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
-import com.sun.jdi.Type;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
@@ -270,7 +253,6 @@ public class TargetApplicationRepresentation {
 		}
 	}
 
-
 	private boolean addLocalVariables(VirtualMachine virtualMachine, BreakpointEvent breakpointEvent,
 			Map<String, LocalVariableShortDTO> localsSnapshot) {
 		if (Objects.isNull(breakpointEvent))
@@ -323,51 +305,6 @@ public class TargetApplicationRepresentation {
 			}
 		}
 		return true;
-	}
-
-	public IFile findIFileForLocation(Location location) {
-		ReferenceType referenceType = location.declaringType();
-		if (Objects.isNull(referenceType)) {
-			return null;
-		}
-		String jvmName = referenceType.name();
-		String className = jvmName.replace('/', '.');
-		if (className.startsWith("L") && className.endsWith(";")) {
-			className = className.substring(1, className.length() - 1);
-		}
-		IWorkspace iWorkspace = ResourcesPlugin.getWorkspace();
-		IWorkspaceRoot iWorkspaceRoot = iWorkspace.getRoot();
-		for (IProject iProject : iWorkspaceRoot.getProjects()) {
-			try {
-				if (!iProject.isOpen() || !iProject.hasNature(JavaCore.NATURE_ID)) {
-					continue;
-				}
-			} catch (CoreException coreException) {
-				coreException.printStackTrace();
-			}
-			IJavaProject iJavaProject = JavaCore.create(iProject);
-			IType iType;
-			try {
-				iType = iJavaProject.findType(className);
-			} catch (JavaModelException javaModelException) {
-				javaModelException.printStackTrace();
-				continue;
-			}
-			if (Objects.nonNull(iType)) {
-				ICompilationUnit iCompilationUnit = iType.getCompilationUnit();
-				if (Objects.nonNull(iCompilationUnit)) {
-					try {
-						IResource iResource = iCompilationUnit.getUnderlyingResource();
-						if (iResource instanceof IFile) {
-							return (IFile) iResource;
-						}
-					} catch (JavaModelException javaModelException) {
-						javaModelException.printStackTrace();
-					}
-				}
-			}
-		}
-		return null;
 	}
 
 	public void detachDebugger() {
