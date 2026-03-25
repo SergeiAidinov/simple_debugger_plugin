@@ -143,10 +143,12 @@ public class TargetApplicationRepresentation {
 			String valueText;
 			TripletDTO<String, String, String> data = null;
 			String typeOrReturnType;
+			ObjectReference objReference = null;
 
 			// ---------- Для ObjectReference (коллекции, объекты) ----------
 			if (value instanceof ObjectReference objRef) {
 				// размер коллекции
+				objReference = objRef;
 				int collectionSize = DebugUtils.getCollectionSize(objRef, breakpointEvent);
 				data = DebugUtils.determinCollectionType(objRef, breakpointEvent);
 
@@ -171,7 +173,7 @@ public class TargetApplicationRepresentation {
 			}
 
 			shortInfo.put(name, new LocalVariableShortDTO(name, local.typeName(), valueText,
-					DebugUtils.determineValueCategory(value), typeOrReturnType, data));
+					DebugUtils.determineValueCategory(value), typeOrReturnType, data, objReference));
 		}
 		return shortInfo;
 	}
@@ -279,6 +281,7 @@ public class TargetApplicationRepresentation {
 						+ entry.getValue().getData().getFirst();
 				UniversalElementRepresentation localStructure = UniversalElementRepresentation.builder()
 						.referenceType(methodRepresentationOptional.get().getReferenceType())
+						.objectReference(entry.getValue().getObjectReference()) 
 						.elementName(entry.getValue().getElementName())
 						.additionalInfo(entry.getValue().getAdditionalInfo())
 						.elementType(UniversalElementType.LOCAL_VARIABLE).currentRole(CurrentRole.LOCAL)
