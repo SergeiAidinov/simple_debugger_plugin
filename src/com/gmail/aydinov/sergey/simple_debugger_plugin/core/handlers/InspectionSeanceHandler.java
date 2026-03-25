@@ -33,6 +33,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLog
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ObjectReference;
+import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
@@ -147,64 +148,64 @@ public class InspectionSeanceHandler implements UIEventHandler {
 					.filter(e -> e instanceof UniversalElementRepresentation)
 					.map(e -> (UniversalElementRepresentation) e)
 					.filter(e -> Objects.equals(e.getTag(), anchorElement.getTag())).findAny();
-			if (collectionElementOptional.isEmpty()) return;
+			if (collectionElementOptional.isEmpty())
+				return;
 			UniversalElementRepresentation collectionElement = collectionElementOptional.get();
 			Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> collectionElements = new HashMap<AbstractElementRepresentation.Tag, AbstractElementRepresentation>();
-			List<Value> qq = DebugUtils.iterateThroughCollection(collectionElement.getObjectReference(), breakpointEvent);
+			List<Value> qq = DebugUtils.iterateThroughCollection(collectionElement.getObjectReference(),
+					breakpointEvent);
+			if (qq.isEmpty()) {
+				Optional<UniversalElementRepresentation> ww = allElements.stream()
+						.filter(e -> e instanceof UniversalElementRepresentation)
+						.map(e -> (UniversalElementRepresentation) e)
+						.filter(e -> Objects.equals(e.getElementType(), UniversalElementType.LOCAL_VARIABLE))
+						.filter(e -> Objects.equals(e.getElementName(), anchorElement.getElementName())).findAny();
+				System.out.println(ww);
+				ObjectReference collectionRef = ww.get().getObjectReference();
+				ReferenceType rr = ww.get().getReferenceType();
+				List<Value> items = DebugUtils.iterateThroughCollection(collectionRef, breakpointEvent);
+				System.out.println(items);
+			}
 			List<UniversalElementRepresentation> result = new ArrayList();
 			for (Value v : qq) {
-			    if (v == null) continue;
-			    // 🔹 1. Если это объект
-			    if (v instanceof ObjectReference objRef) {
-			        long id = objRef.uniqueID();
-			        String type = objRef.referenceType().name();
-			        System.out.println("OBJ -> id=" + id + ", type=" + type);
-			        UniversalElementRepresentation uer = collectionElements.values().stream()
-			                .filter(e -> e instanceof UniversalElementRepresentation)
-			                .map(e -> (UniversalElementRepresentation) e)
-			                .filter(e -> {
-			                    ObjectReference r = e.getObjectReference();
-			                    return r != null && r.uniqueID() == objRef.uniqueID();
-			                })
-			                .findFirst()
-			                .orElseGet(() -> {
-			                    String valueText = type.startsWith("java.lang.")
-			                            ? objRef.toString()
-			                            : type;
-			                    return UniversalElementRepresentation.builder()
-			                            .referenceType(objRef.referenceType())
-			                            .objectReference(objRef)
-			                            .elementName(valueText) // 👈 без индекса
-			                            .additionalInfo(type)
-			                            .elementType(UniversalElementType.COLLECTION_ELEMENT)
-			                            .currentRole(CurrentRole.INNER)
-			                            .value(DebugUtils.getObjectReferenceValueAsString(objRef))
-			                            .valueCategory(DebugUtils.determineValueCategory(v))
-			                            .uniqueId(UUID.randomUUID())
-			                            .parentUniqueId(collectionElement.getTag().getUniqueId())
-			                            .level(collectionElement.getLevel() + 1)
-			                            .build();
-			                });
+				if (v == null)
+					continue;
+				// 🔹 1. Если это объект
+				if (v instanceof ObjectReference objRef) {
+					long id = objRef.uniqueID();
+					String type = objRef.referenceType().name();
+					System.out.println("OBJ -> id=" + id + ", type=" + type);
+					UniversalElementRepresentation uer = collectionElements.values().stream()
+							.filter(e -> e instanceof UniversalElementRepresentation)
+							.map(e -> (UniversalElementRepresentation) e).filter(e -> {
+								ObjectReference r = e.getObjectReference();
+								return r != null && r.uniqueID() == objRef.uniqueID();
+							}).findFirst().orElseGet(() -> {
+								String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
+								return UniversalElementRepresentation.builder().referenceType(objRef.referenceType())
+										.objectReference(objRef).elementName(valueText) // 👈 без индекса
+										.additionalInfo(type).elementType(UniversalElementType.COLLECTION_ELEMENT)
+										.currentRole(CurrentRole.INNER)
+										.value(DebugUtils.getObjectReferenceValueAsString(objRef))
+										.valueCategory(DebugUtils.determineValueCategory(v)).uniqueId(UUID.randomUUID())
+										.parentUniqueId(collectionElement.getTag().getUniqueId())
+										.level(collectionElement.getLevel() + 1).build();
+							});
 
-			        result.add(uer);
-			    }
+					result.add(uer);
+				}
 
-			    // 🔹 2. Примитивы
-			    else {
-			        System.out.println("PRIMITIVE -> " + v);
+				// 🔹 2. Примитивы
+				else {
+					System.out.println("PRIMITIVE -> " + v);
 
-			        UniversalElementRepresentation primitiveElement =
-			                UniversalElementRepresentation.builder()
-			                        .elementName("item")
-			                        .value(v.toString())
-			                        .valueCategory(ValueCategory.PRIMITIVE)
-			                        .uniqueId(UUID.randomUUID())
-			                        .parentUniqueId(collectionElement.getTag().getUniqueId())
-			                        .level(collectionElement.getLevel() + 1)
-			                        .build();
+					UniversalElementRepresentation primitiveElement = UniversalElementRepresentation.builder()
+							.elementName("item").value(v.toString()).valueCategory(ValueCategory.PRIMITIVE)
+							.uniqueId(UUID.randomUUID()).parentUniqueId(collectionElement.getTag().getUniqueId())
+							.level(collectionElement.getLevel() + 1).build();
 
-			        result.add(primitiveElement);
-			    }
+					result.add(primitiveElement);
+				}
 			}
 			System.out.println(result);
 		}
