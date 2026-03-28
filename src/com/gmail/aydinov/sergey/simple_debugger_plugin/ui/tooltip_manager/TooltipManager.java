@@ -20,6 +20,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Listener;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
@@ -233,14 +234,20 @@ public class TooltipManager {
 	            Object data = popup.getData("dto");
 
 	            if (data instanceof InnerElementRepresentationDTO clickedDto) {
+	            	ValueCategory category = dto.getValueCategory();
 
+	                if (category == ValueCategory.COLLECTION) {
+	                	uiEventCollector.collectUiEvent(
+		    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE, dto)
+		    	            );
+	                } else if (category == ValueCategory.MAP) {
+	                	uiEventCollector.collectUiEvent(
+		    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_MAP, dto)
+		    	            );
+	                } 
 	                SimpleDebugerWindowsManager.instance()
 	                        .getUniversalInspectorWindowFor(clickedDto);
-
 	                UniversalInspectorWindow.getInstance().open();
-	                uiEventCollector.collectUiEvent(
-	    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE, dto)
-	    	            );
 	                closePopup();
 	            }
 	        };
