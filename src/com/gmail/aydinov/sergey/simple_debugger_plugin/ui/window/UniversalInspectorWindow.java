@@ -6,6 +6,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -15,6 +16,7 @@ import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabItem;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
@@ -182,24 +184,19 @@ public class UniversalInspectorWindow {
 
 	@SuppressWarnings("unchecked")
 	public void handleDebugEvent(AbstractDebugEvent event) {
-		Display.getDefault().asyncExec(() -> {
-			switch (event.getType()) {
-			case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
-				SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow();
-				UniversalInspectorWindow.getInstance().open();
-				DebugEvent<CollectionPageDTO> e = (DebugEvent<CollectionPageDTO>) event;
-				showIterableTab(e.getPayload());
-			}
-			case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
-				DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e =
-				        (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
-				    MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = e.getPayload();
-				    showMapTab(page);
-			}
-			default -> {
-			}
-			}
-		});
+	    // мы уже находимся в UI-потоке
+	    switch (event.getType()) {
+	        case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
+	            DebugEvent<CollectionPageDTO> e = (DebugEvent<CollectionPageDTO>) event;
+	            showIterableTab(e.getPayload());
+	        }
+	        case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
+	            DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e =
+	                (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
+	            showMapTab(e.getPayload());
+	        }
+	        default -> {}
+	    }
 	}
 
 	private void showMapTab(MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page) {
@@ -230,4 +227,9 @@ public class UniversalInspectorWindow {
 			tabFolder.layout(true, true);
 		});
 	}
+
+	public Shell getShell() {
+		return shell;
+	}
+	
 }

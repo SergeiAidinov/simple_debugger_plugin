@@ -161,6 +161,7 @@ public class MapInspectionSeanceHandler implements UIEventHandler {
                     .fromIndex(fromIndex)
                     .toIndex(toIndex)
                     .entries(pageEntries)
+                    .anchorTag(anchorElement.getTag())
                     .build();
         }
 

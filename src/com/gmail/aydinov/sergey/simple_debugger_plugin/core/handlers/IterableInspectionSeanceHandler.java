@@ -137,6 +137,7 @@ public class IterableInspectionSeanceHandler implements UIEventHandler {
 					.totalPages((collectionElements.size() / DebugUtils.PAGE_SIZE) + 1)
 					.fromIndex(pageNumber * DebugUtils.PAGE_SIZE)
 					.toIndex(pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE - 1).entries(getPage(pageNumber))
+					.anchorTag(anchorElement.getTag())
 					.build();
 		}
 
