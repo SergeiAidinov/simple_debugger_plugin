@@ -1,12 +1,9 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window;
 
-import java.util.Objects;
-
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.custom.SashForm;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -14,222 +11,194 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TabItem;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapPageDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ArrayInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.MapInspectorTab;
 
 public class UniversalInspectorWindow {
 
-	private static UniversalInspectorWindow INSTANCE;
+    private static UniversalInspectorWindow INSTANCE;
 
-	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+    private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
-	private final Shell shell;
-	private final List navigationList;
-	private final CTabFolder tabFolder;
+    private final Shell shell;
+    private final List navigationList;
+    private final CTabFolder tabFolder;
 
-	// вкладка коллекции
-	private final ArrayInspectorTab arrayInspectorTab;
-	private final CTabItem arrayTabItem;
-	
-	private final MapInspectorTab mapInspectorTab;
-	private final CTabItem mapTabItem;
+    // вкладки
+    private ArrayInspectorTab arrayInspectorTab;
+    private CTabItem arrayTabItem;
 
-	private UniversalInspectorWindow() {
+    private MapInspectorTab mapInspectorTab;
+    private CTabItem mapTabItem;
 
-		Display display = Display.getDefault();
+    private ArrayInspectorTab instanceInspectorTab;
+    private CTabItem instanceTabItem;
 
-		shell = new Shell(display);
-		shell.setText("Universal Object Inspector");
-		shell.setSize(900, 700);
-		shell.setLayout(new FillLayout());
-		shell.setImage(SimpleDebugerWindowsManager.instance().icons.get("debugger").getFirst());
+    private enum CurrentTab { NONE, COLLECTION, MAP, INSTANCE }
+    private CurrentTab currentTab = CurrentTab.NONE;
 
-		SashForm sash = new SashForm(shell, SWT.HORIZONTAL);
+    private UniversalInspectorWindow() {
+        Display display = Display.getDefault();
 
-		// ===============================
-		// Левая панель — навигация
-		// ===============================
+        shell = new Shell(display);
+        shell.setText("Universal Object Inspector");
+        shell.setSize(900, 700);
+        shell.setLayout(new FillLayout());
 
-		Composite leftPanelComposite = new Composite(sash, SWT.BORDER);
-		leftPanelComposite.setLayout(new GridLayout(1, false));
-		leftPanelComposite.setLayoutData(new GridData(150, SWT.FILL, false, true));
+        SashForm sash = new SashForm(shell, SWT.HORIZONTAL);
 
-		navigationList = new List(leftPanelComposite, SWT.BORDER | SWT.V_SCROLL);
-		navigationList.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        // левая панель навигации
+        Composite leftPanel = new Composite(sash, SWT.BORDER);
+        leftPanel.setLayout(new GridLayout(1, false));
+        leftPanel.setLayoutData(new GridData(150, SWT.FILL, false, true));
+        navigationList = new List(leftPanel, SWT.BORDER | SWT.V_SCROLL);
+        navigationList.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-		// ===============================
-		// Правая панель — вкладки
-		// ===============================
+        // правая панель вкладок
+        Composite rightPanel = new Composite(sash, SWT.BORDER);
+        rightPanel.setLayout(new FillLayout());
+        tabFolder = new CTabFolder(rightPanel, SWT.BORDER);
 
-		Composite rightPanelComposite = new Composite(sash, SWT.BORDER);
-		rightPanelComposite.setLayout(new FillLayout());
+        sash.setWeights(new int[] { 20, 80 });
 
-		tabFolder = new CTabFolder(rightPanelComposite, SWT.BORDER);
+        shell.addListener(SWT.Close, e -> close());
+        shell.open();
+    }
 
-		// вкладка коллекции
-		arrayInspectorTab = new ArrayInspectorTab(tabFolder);
-		arrayTabItem = new CTabItem(tabFolder, SWT.NONE);
-		arrayTabItem.setText("Iterable");
-		arrayTabItem.setControl(arrayInspectorTab.getControl());
-		
-		mapInspectorTab = new MapInspectorTab(tabFolder);
-		mapTabItem = new CTabItem(tabFolder, SWT.NONE);
-		mapTabItem.setText("Map");
-		mapTabItem.setControl(mapInspectorTab.getControl());
+    public static UniversalInspectorWindow getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new UniversalInspectorWindow();
+        }
+        return INSTANCE;
+    }
 
-		sash.setWeights(new int[] { 20, 80 });
+    // =========================================================
+    // управление вкладками
+    // =========================================================
 
-		shell.addListener(SWT.Close, e -> close());
+    private void hideAllTabs() {
+        if (arrayInspectorTab != null && !arrayInspectorTab.getControl().isDisposed())
+            arrayInspectorTab.getControl().setVisible(false);
+        if (mapInspectorTab != null && !mapInspectorTab.getControl().isDisposed())
+            mapInspectorTab.getControl().setVisible(false);
+        if (instanceInspectorTab != null && !instanceInspectorTab.getControl().isDisposed())
+            instanceInspectorTab.getControl().setVisible(false);
+    }
 
-		shell.open();
-	}
+    private void showTab(CTabItem tabItem, Composite content) {
+        hideAllTabs();
+        content.setVisible(true);
+        tabFolder.setSelection(tabItem);
+        tabFolder.layout(true, true);
+    }
 
-	public static UniversalInspectorWindow getInstance() {
+    private void createArrayTabIfNeeded() {
+        if (arrayInspectorTab == null || arrayTabItem == null) {
+            arrayInspectorTab = new ArrayInspectorTab(tabFolder);
+            arrayTabItem = new CTabItem(tabFolder, SWT.NONE);
+            arrayTabItem.setText("Iterable");
+            arrayTabItem.setControl(arrayInspectorTab.getControl());
+        }
+    }
 
-		if (INSTANCE == null) {
-			INSTANCE = new UniversalInspectorWindow();
-		}
+    private void createMapTabIfNeeded() {
+        if (mapInspectorTab == null || mapTabItem == null) {
+            mapInspectorTab = new MapInspectorTab(tabFolder);
+            mapTabItem = new CTabItem(tabFolder, SWT.NONE);
+            mapTabItem.setText("Map");
+            mapTabItem.setControl(mapInspectorTab.getControl());
+        }
+    }
 
-		return INSTANCE;
-	}
+    private void createInstanceTabIfNeeded(String title) {
+        if (instanceInspectorTab == null || instanceTabItem == null) {
+            instanceInspectorTab = new ArrayInspectorTab(tabFolder); // или свой тип
+            instanceTabItem = new CTabItem(tabFolder, SWT.NONE);
+            instanceTabItem.setText(title);
+            instanceTabItem.setControl(instanceInspectorTab.getControl());
+        }
+    }
 
-	// =========================================================
-	// управление окном
-	// =========================================================
+    public void showIterableTab(CollectionPageDTO payload) {
+        if (tabFolder.isDisposed()) return;
 
-	public void open() {
+        Display.getDefault().asyncExec(() -> {
+            createArrayTabIfNeeded();
+            arrayInspectorTab.showPage(payload);
+            showTab(arrayTabItem, arrayInspectorTab.getControl());
+            currentTab = CurrentTab.COLLECTION;
+        });
+    }
 
-		if (!shell.isDisposed()) {
-			shell.forceActive();
-		}
-	}
+    public void showMapTab(MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page) {
+        if (tabFolder.isDisposed()) return;
 
-	public void close() {
+        Display.getDefault().asyncExec(() -> {
+            createMapTabIfNeeded();
+            mapInspectorTab.showPage(page);
+            showTab(mapTabItem, mapInspectorTab.getControl());
+            currentTab = CurrentTab.MAP;
+        });
+    }
 
-		if (!shell.isDisposed()) {
+    public void showInstanceTab(String title, CollectionPageDTO payload) {
+        if (tabFolder.isDisposed()) return;
 
-			Display.getDefault().asyncExec(() -> {
+        Display.getDefault().asyncExec(() -> {
+            createInstanceTabIfNeeded(title);
+            instanceInspectorTab.showPage(payload);
+            showTab(instanceTabItem, instanceInspectorTab.getControl());
+            currentTab = CurrentTab.INSTANCE;
+        });
+    }
 
-				if (!shell.isDisposed()) {
-					shell.close();
-				}
+    public void handleDebugEvent(AbstractDebugEvent event) {
+        switch (event.getType()) {
+            case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
+                @SuppressWarnings("unchecked")
+                DebugEvent<CollectionPageDTO> e = (DebugEvent<CollectionPageDTO>) event;
+                showIterableTab(e.getPayload());
+            }
+            case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
+                @SuppressWarnings("unchecked")
+                DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e =
+                        (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
+                showMapTab(e.getPayload());
+            }
+            default -> {}
+        }
+    }
 
-				INSTANCE = null;
+    // =========================================================
+    // управление окном
+    // =========================================================
 
-				uiEventCollector.collectUiEvent(
-						new UIEvent<>(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_ITERABLE, null));
-			});
-		}
-	}
+    public void open() {
+        if (!shell.isDisposed()) shell.forceActive();
+    }
 
-	// =========================================================
-	// отображение коллекции
-	// =========================================================
+    public void close() {
+        if (!shell.isDisposed()) {
+            Display.getDefault().asyncExec(() -> {
+                if (!shell.isDisposed()) shell.close();
+                INSTANCE = null;
+                uiEventCollector.collectUiEvent(
+                        new UIEvent<>(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_ITERABLE, null));
+            });
+        }
+    }
 
-	private void showInspectableElement(CollectionPageDTO pageDTO) {
-
-		Display.getDefault().asyncExec(() -> {
-
-			if (shell.isDisposed()) {
-				return;
-			}
-
-			// Добавляем в навигацию только первый показ коллекции
-			if (pageDTO.getCurrentPage() == 0) {
-
-				String displayText = pageDTO.getCollectionName();
-
-				navigationList.add(displayText);
-				navigationList.setTopIndex(navigationList.getItemCount() - 1);
-			}
-
-			// показываем страницу в вкладке
-			arrayInspectorTab.showPage(pageDTO);
-
-			tabFolder.setSelection(arrayTabItem);
-			tabFolder.layout(true, true);
-		});
-	}
-
-	// =========================================================
-	// добавление новых вкладок
-	// =========================================================
-
-	private CTabItem addNewTab(String title, Composite content) {
-
-		CTabItem item = new CTabItem(tabFolder, SWT.NONE);
-
-		item.setText(title);
-		item.setControl(content);
-
-		tabFolder.layout(true, true);
-		tabFolder.setSelection(item);
-
-		return item;
-	}
-
-	@SuppressWarnings("unchecked")
-	public void handleDebugEvent(AbstractDebugEvent event) {
-	    // мы уже находимся в UI-потоке
-	    switch (event.getType()) {
-	        case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
-	            DebugEvent<CollectionPageDTO> e = (DebugEvent<CollectionPageDTO>) event;
-	            showIterableTab(e.getPayload());
-	        }
-	        case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
-	            DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e =
-	                (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
-	            showMapTab(e.getPayload());
-	        }
-	        default -> {}
-	    }
-	}
-
-	private void showMapTab(MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page) {
-	    if (page == null || tabFolder.isDisposed())
-	        return;
-	    Display.getDefault().asyncExec(() -> {
-	        if (mapInspectorTab != null && !mapInspectorTab.getControl().isDisposed()) {
-	            // Показываем страницу в существующей вкладке
-	            mapInspectorTab.showPage(page);
-	            // Активируем вкладку
-	            tabFolder.setSelection(mapTabItem);
-	            tabFolder.layout(true, true);
-	        }
-	    });
-	}
-
-	private void showIterableTab(CollectionPageDTO payload) {
-		if (tabFolder.isDisposed())
-			return;
-
-		Display.getDefault().asyncExec(() -> {
-			// Переключаемся на вкладку коллекции
-			tabFolder.setSelection(arrayTabItem);
-
-			// Показываем страницу через ArrayInspectorTab
-			arrayInspectorTab.showPage(payload);
-
-			tabFolder.layout(true, true);
-		});
-	}
-
-	public Shell getShell() {
-		return shell;
-	}
-	
+    public Shell getShell() {
+        return shell;
+    }
 }
