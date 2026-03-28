@@ -43,6 +43,7 @@ public class IterableInspectionSeanceHandler implements UIEventHandler {
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
