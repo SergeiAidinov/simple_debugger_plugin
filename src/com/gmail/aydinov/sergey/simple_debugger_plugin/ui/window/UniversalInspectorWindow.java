@@ -75,7 +75,7 @@ public class UniversalInspectorWindow {
         arrayInspectorTab = new ArrayInspectorTab(tabFolder);
 
         arrayTabItem = new CTabItem(tabFolder, SWT.NONE);
-        arrayTabItem.setText("Collection");
+        arrayTabItem.setText("Iterable");
         arrayTabItem.setControl(arrayInspectorTab.getControl());
 
         sash.setWeights(new int[]{20, 80});

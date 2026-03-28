@@ -123,11 +123,11 @@ public class ArrayInspectorTab {
 			if (root.isDisposed() || viewer.getTable().isDisposed())
 				return;
 
-			collectionNameLabel.setText("Collection: " + safe(page.getCollectionName()));
+			collectionNameLabel.setText("Collection name: " + safe(page.getCollectionName()));
 			collectionTypeLabel.setText("Collection type: " + safe(page.getCollectionType()));
 			elementTypeLabel.setText("Element type: " + safe(page.getElementType()));
 			sizeLabel.setText("Size: " + page.getTotalElements());
-			pageInfoLabel.setText("Page: " + page.getCurrentPage() + " of " + page.getTotalPages() + "   Showing: "
+			pageInfoLabel.setText("Page (0-based): " + page.getCurrentPage() + " of " + page.getTotalPages() + "   Showing: "
 					+ page.getFromIndex() + "–" + page.getToIndex());
 
 			pageText.setText(String.valueOf(page.getCurrentPage()));
