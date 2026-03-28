@@ -11,7 +11,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvoked
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressedResumeButtonHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedAdditionalInfoAboutCollectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.InspectionSeanceHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IterableInspectionSeanceHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.MapInspectionSeanceHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
@@ -20,6 +21,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceElementInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -82,16 +84,28 @@ public final class SimpleDebuggerEventTypes {
 
 		//USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class, null),
 
-		USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION(InnerElementRepresentationDTO.class,
-				new InspectionSeanceHandler()),
+		USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE(InnerElementRepresentationDTO.class,
+				new IterableInspectionSeanceHandler()),
 		
-		USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION(null, new IgnoreEverntHandler()),
+		USER_CLOSED_INSPECTION_SEANCE_FOR_ITERABLE(null, new IgnoreEverntHandler()),
 
 		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, null), 
 		
 		USER_REQUESTED_COLLECTION_PAGE(Integer.class, null),
 		
-		DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION(CollectionPageDTO.class, null)
+		DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE(CollectionPageDTO.class, null), 
+		
+		
+		// === MAP ===
+
+		USER_STARTED_INSPECTION_SEANCE_FOR_MAP(InnerElementRepresentationDTO.class,
+		        new MapInspectionSeanceHandler()),
+
+		USER_CLOSED_INSPECTION_SEANCE_FOR_MAP(Void.class, new IgnoreEverntHandler()),
+
+		USER_REQUESTED_MAP_PAGE(Integer.class, null),
+
+		DISPLAY_PAGE_OF_MAP(MapPageDTO.class, null),
 
 		
 		;
@@ -118,10 +132,10 @@ public final class SimpleDebuggerEventTypes {
 
 	private static final EnumSet<SimpleDebuggerEventType> COLLECTION_INSPECTION_WINDOW_EVENTS = EnumSet.of(
 			SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE,
-			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION,
+			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE,
 			SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
-			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION,
-			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION
+			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_ITERABLE,
+			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE
 
 	);
 

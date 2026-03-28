@@ -119,7 +119,7 @@ public class UniversalInspectorWindow {
 
                 uiEventCollector.collectUiEvent(
                         new UIEvent<>(
-                                SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION,
+                                SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_ITERABLE,
                                 null
                         )
                 );
@@ -176,7 +176,7 @@ public class UniversalInspectorWindow {
 	@SuppressWarnings("unchecked")
 	public void handleDebugEvent(AbstractDebugEvent event) {
 		Display.getDefault().asyncExec(() -> {
-		if (Objects.equals(event.getType(), SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION)) {
+		if (Objects.equals(event.getType(), SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE)) {
 			DebugEvent<CollectionPageDTO> simpleDebugEvent = (DebugEvent<CollectionPageDTO>) event;
 			showInspectableElement(simpleDebugEvent.getPayload());
 		}
