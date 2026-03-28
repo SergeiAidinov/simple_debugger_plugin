@@ -50,7 +50,6 @@ public class ClassMembersAtBreakpointTab {
 	private final TableViewer viewer;
 	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private InnerElementRepresentationDTO lastInspectedElement;
-//	private static final String GAP = "     ";
 	private static final String VERTICAL = "│   ";
 	private static final String SPACE = "     ";
 	private static final String BRANCH = "├── ";
@@ -93,21 +92,6 @@ public class ClassMembersAtBreakpointTab {
 
 		return true;
 	}
-
-//	private boolean hasNextOnLevel(List<InnerElementRepresentationDTO> list, int index, int level) {
-//	    for (int i = index + 1; i < list.size(); i++) {
-//	        int nextLevel = list.get(i).getLevel();
-//
-//	        if (nextLevel < level) {
-//	            return false;
-//	        }
-//
-//	        if (nextLevel == level) {
-//	            return true;
-//	        }
-//	    }
-//	    return false;
-//	}
 
 	private boolean hasNextSiblingOnSameParent(List<InnerElementRepresentationDTO> list, int index, int level) {
 		for (int i = index + 1; i < list.size(); i++) {
@@ -403,18 +387,7 @@ public class ClassMembersAtBreakpointTab {
 				return;
 
 			// Открываем инспектор для данного объекта
-			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
-			System.out.println("In LISTENER");
-			// Генерация события в зависимости от категории
-			switch (category) {
-			case MAP -> uiEventCollector
-					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_MAP, dto));
-			case COLLECTION -> uiEventCollector.collectUiEvent(
-					new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE, dto));
-			default -> {
-				// ничего не делаем для других категорий
-			}
-			}
+		//	SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
 		});
 	}
 
