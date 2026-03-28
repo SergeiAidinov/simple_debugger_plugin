@@ -13,11 +13,13 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.TabItem;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
@@ -25,6 +27,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.Abstrac
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ArrayInspectorTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.MapInspectorTab;
 
 public class UniversalInspectorWindow {
 
@@ -39,6 +42,9 @@ public class UniversalInspectorWindow {
 	// вкладка коллекции
 	private final ArrayInspectorTab arrayInspectorTab;
 	private final CTabItem arrayTabItem;
+	
+	private final MapInspectorTab mapInspectorTab;
+	private final CTabItem mapTabItem;
 
 	private UniversalInspectorWindow() {
 
@@ -74,10 +80,14 @@ public class UniversalInspectorWindow {
 
 		// вкладка коллекции
 		arrayInspectorTab = new ArrayInspectorTab(tabFolder);
-
 		arrayTabItem = new CTabItem(tabFolder, SWT.NONE);
 		arrayTabItem.setText("Iterable");
 		arrayTabItem.setControl(arrayInspectorTab.getControl());
+		
+		mapInspectorTab = new MapInspectorTab(tabFolder);
+		mapTabItem = new CTabItem(tabFolder, SWT.NONE);
+		mapTabItem.setText("Map");
+		mapTabItem.setControl(mapInspectorTab.getControl());
 
 		sash.setWeights(new int[] { 20, 80 });
 
@@ -181,8 +191,10 @@ public class UniversalInspectorWindow {
 				showIterableTab(e.getPayload());
 			}
 			case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
-				DebugEvent<java.util.List<PairDTO<Integer, InnerElementRepresentationDTO>>> e = (DebugEvent<java.util.List<PairDTO<Integer, InnerElementRepresentationDTO>>>) event;
-				showMapTab(e.getPayload());
+				DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e =
+				        (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
+				    MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = e.getPayload();
+				    showMapTab(page);
 			}
 			default -> {
 			}
@@ -190,9 +202,18 @@ public class UniversalInspectorWindow {
 		});
 	}
 
-	private void showMapTab(java.util.List<PairDTO<Integer, InnerElementRepresentationDTO>> payload) {
-		// TODO Auto-generated method stub
-
+	private void showMapTab(MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page) {
+	    if (page == null || tabFolder.isDisposed())
+	        return;
+	    Display.getDefault().asyncExec(() -> {
+	        if (mapInspectorTab != null && !mapInspectorTab.getControl().isDisposed()) {
+	            // Показываем страницу в существующей вкладке
+	            mapInspectorTab.showPage(page);
+	            // Активируем вкладку
+	            tabFolder.setSelection(mapTabItem);
+	            tabFolder.layout(true, true);
+	        }
+	    });
 	}
 
 	private void showIterableTab(CollectionPageDTO payload) {

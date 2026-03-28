@@ -135,7 +135,8 @@ public final class SimpleDebuggerEventTypes {
 			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE,
 			SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
 			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_ITERABLE,
-			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE
+			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE,
+			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP
 
 	);
 

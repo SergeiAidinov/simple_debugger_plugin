@@ -4,20 +4,18 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
@@ -25,96 +23,154 @@ import com.sun.jdi.event.BreakpointEvent;
 
 public class MapInspectionSeanceHandler implements UIEventHandler {
 
-    private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+    private final SimpleDebuggerEventCollector eventCollector =
+            SimpleDebuggerEventCollector.instance();
 
     @SuppressWarnings("unchecked")
     @Override
-    public boolean handle(AbstractUIEvent abstractUIEvent, StackFrame currentFrame, BreakpointEvent breakpointEvent) {
-        System.out.println("MAP INSPECTION STARTED");
-        DebuggerContext.context().setStatus(SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_RUNNING);
+    public boolean handle(AbstractUIEvent abstractUIEvent,
+                          StackFrame currentFrame,
+                          BreakpointEvent breakpointEvent) {
 
-        UIEvent<InnerElementRepresentationDTO> uiEvent = null;
+        DebuggerContext.context().setStatus(
+                SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_RUNNING
+        );
+
+        UIEvent<InnerElementRepresentationDTO> uiEvent;
+
         try {
             uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractUIEvent;
-        } catch (ClassCastException ignored) {}
+        } catch (ClassCastException e) {
+            return false;
+        }
 
-        if (uiEvent != null) {
-            Thread mapInspectionThread = new Thread(new MapInspectionSeance(uiEvent.getPayload(), breakpointEvent));
-            mapInspectionThread.setDaemon(true);
-            mapInspectionThread.start();
-            try {
-                mapInspectionThread.join();
-            } catch (InterruptedException e) {
-                return false;
-            } finally {
-                DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-                SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().close();
-            }
+        Thread worker = new Thread(
+                new MapInspectionSeance(uiEvent.getPayload(), breakpointEvent)
+        );
+        worker.setDaemon(true);
+        worker.start();
+
+        try {
+            worker.join();
+        } catch (InterruptedException ignored) {
+            return false;
+        } finally {
+            DebuggerContext.context().setStatus(
+                    SimpleDebuggerStatus.DEBUG_SESSION_RUNNING
+            );
         }
 
         return true;
     }
 
+    // =========================================================
+    // Worker
+    // =========================================================
+
     private class MapInspectionSeance implements Runnable {
 
         private final InnerElementRepresentationDTO anchorElement;
         private final BreakpointEvent breakpointEvent;
-        private final TreeMap<Integer, InnerElementRepresentationDTO> mapElements = new TreeMap<>();
 
-        public MapInspectionSeance(InnerElementRepresentationDTO anchorElement, BreakpointEvent breakpointEvent) {
+        MapInspectionSeance(InnerElementRepresentationDTO anchorElement,
+                            BreakpointEvent breakpointEvent) {
             this.anchorElement = anchorElement;
             this.breakpointEvent = breakpointEvent;
         }
 
         @Override
         public void run() {
-            inspectMap(anchorElement);
-        }
+            Optional<UniversalElementRepresentation> mapOpt = findMap(anchorElement);
 
-        @SuppressWarnings("unchecked")
-        private void inspectMap(InnerElementRepresentationDTO anchorElement) {
-            // получаем объект Map из TargetApplicationRepresentation
-            Optional<UniversalElementRepresentation> mapOpt = TargetApplicationRepresentation.getInstance()
-					.getAllElements() // предполагаем метод, который объединяет first и
-					.stream().filter(e -> e instanceof UniversalElementRepresentation)
-					.map(e -> (UniversalElementRepresentation) e)
-					.filter(e -> Objects.equals(e.getTag(), anchorElement.getTag())).findAny();;
-            if (mapOpt.isEmpty()) return;
+            if (mapOpt.isEmpty()) {
+                return;
+            }
 
             UniversalElementRepresentation mapRef = mapOpt.get();
 
-            List<Map.Entry<Value, Value>> map = DebugUtils.iterateThroughMap(mapRef.getObjectReference(), breakpointEvent);
-        //    List<Map.Entry<Value, Value>> entries = new ArrayList<>(map.entrySet());
+            List<Map.Entry<Value, Value>> rawEntries =
+                    DebugUtils.iterateThroughMap(mapRef.getObjectReference(), breakpointEvent);
 
-            // превращаем в InnerElementRepresentationDTO
-            for (int i = 0; i < map.size(); i++) {
-                Map.Entry<Value, Value> entry = map.get(i);
+            List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> entries =
+                    buildEntries(rawEntries, mapRef);
 
-                InnerElementRepresentationDTO keyDto = DebugUtils.createInnerElementDTO(entry.getKey(), mapRef, i, "key");
-                InnerElementRepresentationDTO valueDto = DebugUtils.createInnerElementDTO(entry.getValue(), mapRef, i, "value");
+            MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page =
+                    buildPage(entries, mapRef);
 
-                // для удобства положим сначала ключ, потом значение
-                mapElements.put(i * 2, keyDto);
-                mapElements.put(i * 2 + 1, valueDto);
+            sendToUI(page);
+        }
+
+        // =========================================================
+        // Steps
+        // =========================================================
+
+        private Optional<UniversalElementRepresentation> findMap(InnerElementRepresentationDTO anchor) {
+            return TargetApplicationRepresentation.getInstance()
+                    .getAllElements()
+                    .stream()
+                    .filter(e -> e instanceof UniversalElementRepresentation)
+                    .map(e -> (UniversalElementRepresentation) e)
+                    .filter(e -> Objects.equals(e.getTag(), anchor.getTag()))
+                    .findFirst();
+        }
+
+        private List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> buildEntries(
+                List<Map.Entry<Value, Value>> rawEntries,
+                UniversalElementRepresentation mapRef
+        ) {
+            List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> result =
+                    new ArrayList<>(rawEntries.size());
+
+            for (int i = 0; i < rawEntries.size(); i++) {
+                Map.Entry<Value, Value> entry = rawEntries.get(i);
+
+                InnerElementRepresentationDTO keyDto =
+                        DebugUtils.createInnerElementDTO(entry.getKey(), mapRef, i, "key");
+
+                InnerElementRepresentationDTO valueDto =
+                        DebugUtils.createInnerElementDTO(entry.getValue(), mapRef, i, "value");
+
+                result.add(PairDTO.of(keyDto, valueDto));
             }
 
-            // создаём страницу (аналог CollectionPageDTO)
-            int totalElements = mapElements.size();
+            return result;
+        }
+
+        private MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> buildPage(
+                List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> entries,
+                UniversalElementRepresentation mapRef
+        ) {
+            int totalEntries = entries.size();
             int pageSize = DebugUtils.PAGE_SIZE;
-            int totalPages = (totalElements / pageSize) + 1;
+
             int currentPage = 0;
+            int totalPages = (int) Math.ceil((double) totalEntries / pageSize);
 
-            List<PairDTO<Integer, InnerElementRepresentationDTO>> pageEntries = mapElements.entrySet().stream()
-                    .skip(currentPage * pageSize)
-                    .limit(pageSize)
-                    .map(e -> PairDTO.of(e.getKey(), e.getValue()))
-                    .collect(Collectors.toList());
+            int fromIndex = currentPage * pageSize;
+            int toIndex = Math.min(fromIndex + pageSize, totalEntries);
 
-            // Отправка на UI
-            SimpleDebuggerEventCollector.instance().collectDebugEvent(
-                    new com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent<>(
+            List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> pageEntries =
+                    entries.subList(fromIndex, toIndex);
+
+            return MapPageDTO.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder()
+                    .mapName(anchorElement.getElementName())
+                    .mapType(mapRef.getElementType().name()) // при желании заменить на concrete
+                    .totalEntries(totalEntries)
+                    .currentPage(currentPage)
+                    .totalPages(totalPages)
+                    .fromIndex(fromIndex)
+                    .toIndex(toIndex)
+                    .entries(pageEntries)
+                    .build();
+        }
+
+        private void sendToUI(
+                MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page
+        ) {
+            eventCollector.collectDebugEvent(
+                    new DebugEvent<>(
                             SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP,
-                            pageEntries
+                            page
                     )
             );
         }
