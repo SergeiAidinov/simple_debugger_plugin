@@ -245,9 +245,9 @@ public class TooltipManager {
 		    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_MAP, dto)
 		    	            );
 	                } 
-	                SimpleDebugerWindowsManager.instance()
-	                        .getUniversalInspectorWindowFor(clickedDto);
-	                UniversalInspectorWindow.getInstance().open();
+//	                SimpleDebugerWindowsManager.instance()
+//	                        .getUniversalInspectorWindowFor(clickedDto);
+//	                UniversalInspectorWindow.getInstance().open();
 	                closePopup();
 	            }
 	        };
