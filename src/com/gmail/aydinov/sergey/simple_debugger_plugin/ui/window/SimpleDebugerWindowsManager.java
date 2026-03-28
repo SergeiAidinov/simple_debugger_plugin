@@ -101,7 +101,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 
 	            if (SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(event.getType())) {
 
-	                // извлекаем тег прямо здесь
+	                // извлекаем тег из события
 	                Tag newAnchorTag = null;
 	                switch (event.getType()) {
 	                    case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
@@ -119,15 +119,16 @@ public class SimpleDebugerWindowsManager implements Runnable {
 
 	                Tag finalNewAnchorTag = newAnchorTag; // для lambda
 	                display.asyncExec(() -> {
+	                    // если окно открыто и тег другой — закрываем
 	                    if (universalInspectorWindow != null && !Objects.equals(tag, finalNewAnchorTag)) {
-	                        // закрываем старое окно, если тег другой
 	                        universalInspectorWindow.close();
 	                        universalInspectorWindow = null;
 	                    }
 
+	                    // создаём новое окно только если его нет
 	                    if (universalInspectorWindow == null || universalInspectorWindow.getShell().isDisposed()) {
 	                        universalInspectorWindow = UniversalInspectorWindow.getInstance();
-	                        tag = finalNewAnchorTag; // присваиваем новый тег
+	                        tag = finalNewAnchorTag;
 	                        universalInspectorWindow.open();
 	                    }
 
