@@ -20,6 +20,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Listener;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
@@ -234,6 +235,7 @@ public class TooltipManager {
 	            Object data = popup.getData("dto");
 
 	            if (data instanceof InnerElementRepresentationDTO clickedDto) {
+	            	SimpleDebugerWindowsManager.instance().setTag(clickedDto.getTag());
 	            	ValueCategory category = dto.getValueCategory();
 
 	                if (category == ValueCategory.COLLECTION) {
@@ -264,4 +266,6 @@ public class TooltipManager {
 	        display.timerExec(150, this::checkPopupCursor);
 	    });
 	}
+	
+	
 }

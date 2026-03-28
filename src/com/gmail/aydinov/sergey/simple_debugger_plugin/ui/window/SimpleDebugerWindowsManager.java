@@ -9,13 +9,17 @@ import java.util.Objects;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 
 public class SimpleDebugerWindowsManager implements Runnable {
@@ -24,6 +28,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 
 	private MainWindow mainWindow;
 	private UniversalInspectorWindow universalInspectorWindow;
+	private Tag tag;
 
 	/** Минимальный ресурсный источник: карта с изображениями */
 	public final Map<String, PairDTO<Image, String>> icons;
@@ -85,28 +90,59 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	 * interrupted.
 	 */
 	private void dispatchEvent() {
-		while (!DebuggerContext.context().isInTerminalState()) {
-			try {
-				AbstractDebugEvent event = SimpleDebuggerEventCollector.instance().takeDebugEvent();
-				if (Objects.isNull(event)) continue;
-				SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
-				
-				if(SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(event.getType())) {
-					Display display = Display.getDefault();
-				    display.asyncExec(() -> {
-				        if (universalInspectorWindow == null) {
-				            universalInspectorWindow = UniversalInspectorWindow.getInstance();
-				        }
-				        universalInspectorWindow.handleDebugEvent(event);
-				    });
-				} else {
-					mainWindow.handleDebugEvent(event);
-				}
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				break; // exit loop if interrupted
-			}
-		}
+	    Display display = Display.getDefault();
+
+	    while (!DebuggerContext.context().isInTerminalState()) {
+	        try {
+	            AbstractDebugEvent event = SimpleDebuggerEventCollector.instance().takeDebugEvent();
+	            if (event == null) continue;
+
+	            SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
+
+	            if (SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(event.getType())) {
+
+	                // извлекаем тег прямо здесь
+	                Tag newAnchorTag = null;
+	                switch (event.getType()) {
+	                    case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
+	                        @SuppressWarnings("unchecked")
+	                        DebugEvent<CollectionPageDTO> e = (DebugEvent<CollectionPageDTO>) event;
+	                        newAnchorTag = e.getPayload().getAnchorTag();
+	                    }
+	                    case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
+	                        @SuppressWarnings("unchecked")
+	                        DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e =
+	                            (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
+	                        newAnchorTag = e.getPayload().getAnchorTag();
+	                    }
+	                }
+
+	                Tag finalNewAnchorTag = newAnchorTag; // для lambda
+	                display.asyncExec(() -> {
+	                    if (universalInspectorWindow != null && !Objects.equals(tag, finalNewAnchorTag)) {
+	                        // закрываем старое окно, если тег другой
+	                        universalInspectorWindow.close();
+	                        universalInspectorWindow = null;
+	                    }
+
+	                    if (universalInspectorWindow == null || universalInspectorWindow.getShell().isDisposed()) {
+	                        universalInspectorWindow = UniversalInspectorWindow.getInstance();
+	                        tag = finalNewAnchorTag; // присваиваем новый тег
+	                        universalInspectorWindow.open();
+	                    }
+
+	                    universalInspectorWindow.handleDebugEvent(event);
+	                });
+
+	            } else {
+	                mainWindow.handleDebugEvent(event);
+	            }
+
+	        } catch (InterruptedException e) {
+	            Thread.currentThread().interrupt();
+	            break;
+	        }
+	    }
 	}
 	
 	/**
@@ -135,4 +171,10 @@ public class SimpleDebugerWindowsManager implements Runnable {
 		this.universalInspectorWindow = universalInspectorWindow;
 		
 	}
+	
+	public void setTag(Tag tag) {
+		this.tag = tag;
+	}
+	
+	
 }
