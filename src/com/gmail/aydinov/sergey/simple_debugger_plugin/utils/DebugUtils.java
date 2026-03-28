@@ -1,8 +1,10 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.utils;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -14,7 +16,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TargetApplicationMeth
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.sun.jdi.AbsentInformationException;
@@ -1151,6 +1156,106 @@ public class DebugUtils {
         }
 
         return false;
+    }
+    
+    /**
+     * Проходит по объекту Map и возвращает пары ключ-значение.
+     * @param mapRef ObjectReference на объект Map
+     */
+    public static List<Map.Entry<Value, Value>> iterateThroughMap(ObjectReference instance, BreakpointEvent breakpointEvent) {
+        List<Map.Entry<Value, Value>> result = new ArrayList<>();
+        if (instance == null || breakpointEvent == null) return result;
+
+        ReferenceType refType = instance.referenceType();
+        if (!(refType instanceof ClassType classType)) return result;
+
+        boolean isMap = classType.allInterfaces().stream()
+                .anyMatch(iface -> "java.util.Map".equals(iface.name()));
+
+        if (!isMap) return result;
+
+        ThreadReference thread = breakpointEvent.thread();
+        try {
+            // получаем keySet()
+            Method keySetMethod = classType.concreteMethodByName("keySet", "()Ljava/util/Set;");
+            if (keySetMethod == null) return result;
+
+            Value keySetValue = instance.invokeMethod(thread, keySetMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+            if (!(keySetValue instanceof ObjectReference keySetRef)) return result;
+
+            // iterator() для ключей
+            ReferenceType keySetType = keySetRef.referenceType();
+            if (!(keySetType instanceof ClassType keySetClass)) return result;
+            Method iteratorMethod = keySetClass.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
+            if (iteratorMethod == null) return result;
+
+            Value iteratorValue = keySetRef.invokeMethod(thread, iteratorMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+            if (!(iteratorValue instanceof ObjectReference iterator)) return result;
+
+            ClassType iteratorType = (ClassType) iterator.referenceType();
+            Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
+            Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+            if (hasNextMethod == null || nextMethod == null) return result;
+
+            // проходим по ключам
+            while (true) {
+                Value hasNextVal = iterator.invokeMethod(thread, hasNextMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+                if (!(hasNextVal instanceof BooleanValue bv) || !bv.value()) break;
+
+                Value key = iterator.invokeMethod(thread, nextMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+                // get(key)
+                Method getMethod = classType.concreteMethodByName("get", "(Ljava/lang/Object;)Ljava/lang/Object;");
+                if (getMethod == null) continue;
+                Value value = instance.invokeMethod(thread, getMethod, List.of(key), ObjectReference.INVOKE_SINGLE_THREADED);
+
+                result.add(new AbstractMap.SimpleEntry<>(key, value));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    /**
+     * Создаёт DTO для ключа или значения Map.
+     * @param value ключ или значение
+     * @param parent родительский элемент (Map)
+     * @param index индекс пары
+     * @param roleLabel "key" или "value"
+     */
+    public static InnerElementRepresentationDTO createInnerElementDTO(Value value, UniversalElementRepresentation parent, int index, String roleLabel) {
+        UniversalElementRepresentation uer;
+
+        if (value instanceof ObjectReference objRef) {
+            String type = objRef.referenceType().name();
+            String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
+
+            uer = UniversalElementRepresentation.builder()
+                    .referenceType(objRef.referenceType())
+                    .objectReference(objRef)
+                    .elementName(roleLabel + ": " + valueText)
+                    .elementType(UniversalElementType.MAP_ELEMENT)
+                    .currentRole(CurrentRole.INNER)
+                    .value(DebugUtils.getObjectReferenceValueAsString(objRef))
+                    .valueCategory(DebugUtils.determineValueCategory(value))
+                    .uniqueId(java.util.UUID.randomUUID())
+                    .parentUniqueId(parent.getTag().getUniqueId())
+                    .level(parent.getLevel() + 1)
+                    .build();
+        } else {
+            // Примитив
+            uer = UniversalElementRepresentation.builder()
+                    .elementName(roleLabel + ": " + value.toString())
+                    .value(value.toString())
+                    .valueCategory(ValueCategory.PRIMITIVE)
+                    .uniqueId(java.util.UUID.randomUUID())
+                    .parentUniqueId(parent.getTag().getUniqueId())
+                    .level(parent.getLevel() + 1)
+                    .build();
+        }
+
+        return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(uer);
     }
     
 }

@@ -105,7 +105,7 @@ public final class SimpleDebuggerEventTypes {
 
 		USER_REQUESTED_MAP_PAGE(Integer.class, null),
 
-		DISPLAY_PAGE_OF_MAP(MapPageDTO.class, null),
+		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null),
 
 		
 		;
