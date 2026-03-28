@@ -20,6 +20,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.Simp
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -42,6 +43,9 @@ public class InspectionSeanceHandler implements UIEventHandler {
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
+	private String elementType = "";
+	private String collectionType = "";
+//	private final TreeMap<Integer, InnerElementRepresentationDTO> colectionElements = new TreeMap<>();
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -84,7 +88,7 @@ public class InspectionSeanceHandler implements UIEventHandler {
 
 		private final InnerElementRepresentationDTO anchorElement;
 		private final BreakpointEvent breakpointEvent;
-		private final TreeMap<Integer, InnerElementRepresentationDTO> colectionElements = new TreeMap<>();
+		private final TreeMap<Integer, InnerElementRepresentationDTO> collectionElements = new TreeMap<>();
 
 		public CollectionInspectionSeance(InnerElementRepresentationDTO anchorElement,
 				BreakpointEvent breakpointEvent) {
@@ -100,6 +104,7 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		@SuppressWarnings("unchecked")
 		private void collectionInspection(InnerElementRepresentationDTO anchorElement) {
 			compileCollectionElements(anchorElement);
+		//	ww = DebugUtils.determinCollectionType(anchorElement, breakpointEvent);
 			CollectionPageDTO initPage = createPage(0);
 			debugEventCollector.collectDebugEvent(
 					new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION, initPage));
@@ -126,93 +131,69 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		}
 
 		private CollectionPageDTO createPage(int pageNumber) {
-			String elementType = (Objects.nonNull(colectionElements.get(0))
-					&& Objects.nonNull(colectionElements.get(0).getTypeOrReturnType()))
-							? colectionElements.get(0).getTypeOrReturnType()
-							: DebugUtils.N_A;
 			return CollectionPageDTO.builder().collectionName(anchorElement.getElementName())
-					.collectionType(anchorElement.getTypeOrReturnType()).elementType(elementType)
-					.totalElements(colectionElements.size()).currentPage(pageNumber)
-					.totalPages(colectionElements.size() / DebugUtils.PAGE_SIZE).currentPage(pageNumber)
-					.fromIndex(pageNumber).toIndex(pageNumber + DebugUtils.PAGE_SIZE - 1).entries(getPage(pageNumber))
+					.collectionType(collectionType)
+					.elementType(elementType)
+					.totalElements(collectionElements.size()).currentPage(pageNumber)
+					.totalPages((collectionElements.size() / DebugUtils.PAGE_SIZE) + 1)
+					.fromIndex(pageNumber * DebugUtils.PAGE_SIZE)
+					.toIndex(pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE - 1).entries(getPage(pageNumber))
 					.build();
 		}
 
 		private void compileCollectionElements(InnerElementRepresentationDTO anchorElement) {
-			// 1. Берем внутренние элементы коллекции
-			List<AbstractElementRepresentation> allElements = new ArrayList<AbstractElementRepresentation>(
-					TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getFirst().values());
-			allElements.addAll(
-					TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getSecond().values());
-			Optional<UniversalElementRepresentation> collectionElementOptional = allElements.stream()
-					.filter(e -> e instanceof UniversalElementRepresentation)
+			// Получаем объект коллекции по тегу
+			Optional<UniversalElementRepresentation> collectionOpt = TargetApplicationRepresentation.getInstance()
+					.getAllElements() // предполагаем метод, который объединяет first и
+					.stream().filter(e -> e instanceof UniversalElementRepresentation)
 					.map(e -> (UniversalElementRepresentation) e)
 					.filter(e -> Objects.equals(e.getTag(), anchorElement.getTag())).findAny();
-			if (collectionElementOptional.isEmpty())
+
+			if (collectionOpt.isEmpty())
 				return;
-			UniversalElementRepresentation collectionElement = collectionElementOptional.get();
-			Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> collectionElements = new HashMap<AbstractElementRepresentation.Tag, AbstractElementRepresentation>();
-			List<Value> qq = DebugUtils.iterateThroughCollection(collectionElement.getObjectReference(),
-					breakpointEvent);
-			if (qq.isEmpty()) {
-				Optional<UniversalElementRepresentation> ww = allElements.stream()
-						.filter(e -> e instanceof UniversalElementRepresentation)
-						.map(e -> (UniversalElementRepresentation) e)
-						.filter(e -> Objects.equals(e.getElementType(), UniversalElementType.LOCAL_VARIABLE))
-						.filter(e -> Objects.equals(e.getElementName(), anchorElement.getElementName())).findAny();
-				System.out.println(ww);
-				ObjectReference collectionRef = ww.get().getObjectReference();
-				ReferenceType rr = ww.get().getReferenceType();
-				List<Value> items = DebugUtils.iterateThroughCollection(collectionRef, breakpointEvent);
-				System.out.println(items);
-			}
-			List<UniversalElementRepresentation> result = new ArrayList();
-			for (Value v : qq) {
+
+			UniversalElementRepresentation collection = collectionOpt.get();
+			TripletDTO<String, String, String> ww = DebugUtils.determinCollectionType(collection.getObjectReference(), breakpointEvent);
+			collectionType = ww.getFirst();
+			elementType = ww.getSecond();
+			// Получаем все значения коллекции
+			List<Value> values = DebugUtils.iterateThroughCollection(collection.getObjectReference(), breakpointEvent);
+
+			// Преобразуем в InnerElementRepresentationDTO и кладём в colectionElements
+			for (int i = 0; i < values.size(); i++) {
+				Value v = values.get(i);
 				if (v == null)
 					continue;
-				// 🔹 1. Если это объект
+
+				UniversalElementRepresentation uer;
 				if (v instanceof ObjectReference objRef) {
-					long id = objRef.uniqueID();
 					String type = objRef.referenceType().name();
-					System.out.println("OBJ -> id=" + id + ", type=" + type);
-					UniversalElementRepresentation uer = collectionElements.values().stream()
-							.filter(e -> e instanceof UniversalElementRepresentation)
-							.map(e -> (UniversalElementRepresentation) e).filter(e -> {
-								ObjectReference r = e.getObjectReference();
-								return r != null && r.uniqueID() == objRef.uniqueID();
-							}).findFirst().orElseGet(() -> {
-								String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
-								return UniversalElementRepresentation.builder().referenceType(objRef.referenceType())
-										.objectReference(objRef).elementName(valueText) // 👈 без индекса
-										.additionalInfo(type).elementType(UniversalElementType.COLLECTION_ELEMENT)
-										.currentRole(CurrentRole.INNER)
-										.value(DebugUtils.getObjectReferenceValueAsString(objRef))
-										.valueCategory(DebugUtils.determineValueCategory(v)).uniqueId(UUID.randomUUID())
-										.parentUniqueId(collectionElement.getTag().getUniqueId())
-										.level(collectionElement.getLevel() + 1).build();
-							});
+					String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
 
-					result.add(uer);
+					uer = UniversalElementRepresentation.builder().referenceType(objRef.referenceType())
+							.objectReference(objRef).elementName(valueText)
+							.elementType(UniversalElementType.COLLECTION_ELEMENT).currentRole(CurrentRole.INNER)
+							.value(DebugUtils.getObjectReferenceValueAsString(objRef))
+							.valueCategory(DebugUtils.determineValueCategory(v))
+						//	.typeOrReturnType(DebugUtils.)
+							.uniqueId(UUID.randomUUID())
+							.parentUniqueId(collection.getTag().getUniqueId()).level(collection.getLevel() + 1).build();
+				} else {
+					// Примитив
+					uer = UniversalElementRepresentation.builder().elementName("item").value(v.toString())
+							.valueCategory(ValueCategory.PRIMITIVE).uniqueId(UUID.randomUUID())
+							.parentUniqueId(collection.getTag().getUniqueId()).level(collection.getLevel() + 1).build();
 				}
 
-				// 🔹 2. Примитивы
-				else {
-					System.out.println("PRIMITIVE -> " + v);
-
-					UniversalElementRepresentation primitiveElement = UniversalElementRepresentation.builder()
-							.elementName("item").value(v.toString()).valueCategory(ValueCategory.PRIMITIVE)
-							.uniqueId(UUID.randomUUID()).parentUniqueId(collectionElement.getTag().getUniqueId())
-							.level(collectionElement.getLevel() + 1).build();
-
-					result.add(primitiveElement);
-				}
+				InnerElementRepresentationDTO dto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+						.fromElement(uer);
+				collectionElements.put(i, dto);
 			}
-			System.out.println(result);
 		}
 
 		private List<PairDTO<Integer, InnerElementRepresentationDTO>> getPage(int pageNumber) {
 			List<PairDTO<Integer, InnerElementRepresentationDTO>> result = new ArrayList<PairDTO<Integer, InnerElementRepresentationDTO>>();
-			List<InnerElementRepresentationDTO> entries = List.copyOf(colectionElements
+			List<InnerElementRepresentationDTO> entries = List.copyOf(collectionElements
 					.subMap((DebugUtils.PAGE_SIZE * pageNumber), true,
 							(DebugUtils.PAGE_SIZE * pageNumber + DebugUtils.PAGE_SIZE), false)
 					.values().stream().toList());

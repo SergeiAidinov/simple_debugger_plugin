@@ -67,7 +67,7 @@ public class CollectionPageDTO {
 
 
     public boolean hasNextPage() {
-        return currentPage < totalPages;
+        return currentPage < totalPages - 1;
     }
 
     public boolean hasPreviousPage() {

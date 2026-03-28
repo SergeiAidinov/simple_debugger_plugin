@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +26,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.BreakpointSubscriberRegistrar;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.LocalVariableShortDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
@@ -333,6 +335,14 @@ public class TargetApplicationRepresentation {
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}
+	}
+
+	public List<AbstractElementRepresentation> getAllElements() {
+		List<AbstractElementRepresentation> allElements = new ArrayList<AbstractElementRepresentation>(
+				TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getFirst().values());
+		allElements.addAll(
+				TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().getSecond().values());
+		return allElements;
 	}
 
 }
