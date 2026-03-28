@@ -75,25 +75,25 @@ public class ClassMembersAtBreakpointTab {
 		setupHoverInspectionListener();
 		// popupManager = new InstanceInspectionPopupManager(root);
 	}
-	
+
 	private boolean isLast(List<InnerElementRepresentationDTO> list, int index) {
-	    int currentLevel = list.get(index).getLevel();
+		int currentLevel = list.get(index).getLevel();
 
-	    for (int i = index + 1; i < list.size(); i++) {
-	        int nextLevel = list.get(i).getLevel();
+		for (int i = index + 1; i < list.size(); i++) {
+			int nextLevel = list.get(i).getLevel();
 
-	        if (nextLevel == currentLevel) {
-	            return false; // есть сосед ниже
-	        }
+			if (nextLevel == currentLevel) {
+				return false; // есть сосед ниже
+			}
 
-	        if (nextLevel < currentLevel) {
-	            return true; // вышли из уровня
-	        }
-	    }
+			if (nextLevel < currentLevel) {
+				return true; // вышли из уровня
+			}
+		}
 
-	    return true;
+		return true;
 	}
-	
+
 //	private boolean hasNextOnLevel(List<InnerElementRepresentationDTO> list, int index, int level) {
 //	    for (int i = index + 1; i < list.size(); i++) {
 //	        int nextLevel = list.get(i).getLevel();
@@ -108,20 +108,20 @@ public class ClassMembersAtBreakpointTab {
 //	    }
 //	    return false;
 //	}
-	
+
 	private boolean hasNextSiblingOnSameParent(List<InnerElementRepresentationDTO> list, int index, int level) {
-	    for (int i = index + 1; i < list.size(); i++) {
-	        int nextLevel = list.get(i).getLevel();
+		for (int i = index + 1; i < list.size(); i++) {
+			int nextLevel = list.get(i).getLevel();
 
-	        if (nextLevel < level) {
-	            return false;
-	        }
+			if (nextLevel < level) {
+				return false;
+			}
 
-	        if (nextLevel == level) {
-	            return true;
-	        }
-	    }
-	    return false;
+			if (nextLevel == level) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public void showInnerElementsInTable(DebugWindowDataDTO dto) {
@@ -146,7 +146,7 @@ public class ClassMembersAtBreakpointTab {
 		// =========================================================
 		all.stream()
 				.filter(e -> e.getElementType() == UniversalElementType.FIELD
-						&& Objects.equals(e.getTag().getParentId(), root. getTag().getUniqueId()))
+						&& Objects.equals(e.getTag().getParentId(), root.getTag().getUniqueId()))
 				.sorted(Comparator.comparing(e -> e.getElementName().toLowerCase()))
 				.forEach(field -> addRecursivelySorted(ordered, field, all));
 
@@ -155,7 +155,7 @@ public class ClassMembersAtBreakpointTab {
 		// =========================================================
 		List<InnerElementRepresentationDTO> methods = all.stream()
 				.filter(e -> e.getElementType() == UniversalElementType.METHOD
-						&& Objects.equals(e.getTag().getParentId(), root. getTag().getUniqueId()))
+						&& Objects.equals(e.getTag().getParentId(), root.getTag().getUniqueId()))
 				.sorted(Comparator.comparing(e -> e.getElementName().toLowerCase())).toList();
 
 		for (InnerElementRepresentationDTO method : methods) {
@@ -218,32 +218,32 @@ public class ClassMembersAtBreakpointTab {
 		// 0: Name
 		char arrow = '⮡';
 		createColumn(0, "Name", 250, e -> {
-		    InnerElementRepresentationDTO dto = (InnerElementRepresentationDTO) e;
+			InnerElementRepresentationDTO dto = (InnerElementRepresentationDTO) e;
 
-		    List<?> input = (List<?>) viewer.getInput();
-		    @SuppressWarnings("unchecked")
-		    List<InnerElementRepresentationDTO> list = (List<InnerElementRepresentationDTO>) input;
+			List<?> input = (List<?>) viewer.getInput();
+			@SuppressWarnings("unchecked")
+			List<InnerElementRepresentationDTO> list = (List<InnerElementRepresentationDTO>) input;
 
-		    int index = list.indexOf(dto);
-		    int level = dto.getLevel();
+			int index = list.indexOf(dto);
+			int level = dto.getLevel();
 
-		    StringBuilder indent = new StringBuilder();
+			StringBuilder indent = new StringBuilder();
 
-		    // вертикали
-		    for (int l = 0; l < level - 1; l++) {
-		        if (hasNextSiblingOnSameParent(list, index, l + 1)) {
-		            indent.append(VERTICAL);
-		        } else {
-		            indent.append(SPACE);
-		        }
-		    }
+			// вертикали
+			for (int l = 0; l < level - 1; l++) {
+				if (hasNextSiblingOnSameParent(list, index, l + 1)) {
+					indent.append(VERTICAL);
+				} else {
+					indent.append(SPACE);
+				}
+			}
 
-		    // ветка
-		    if (level > 0) {
-		        indent.append(isLast(list, index) ? LAST : BRANCH);
-		    }
+			// ветка
+			if (level > 0) {
+				indent.append(isLast(list, index) ? LAST : BRANCH);
+			}
 
-		    return indent + dto.getElementName();
+			return indent + dto.getElementName();
 
 		}, e -> null);
 		// 1: Type / Return Type
@@ -338,7 +338,7 @@ public class ClassMembersAtBreakpointTab {
 	}
 
 	private boolean isEditable(InnerElementRepresentationDTO dto) {
-		//System.out.println(dto);
+		// System.out.println(dto);
 		return dto != null && dto.getTypeOrReturnType() != null
 				&& UiUtils.isStandartJavaType(dto.getTypeOrReturnType());
 	}
@@ -390,28 +390,30 @@ public class ClassMembersAtBreakpointTab {
 				return;
 
 			int colIndex = getColumnIndexAtPoint(table, event.x);
-			// Наша третья колонка — индекс 2
 			if (colIndex != 2)
-				return;
+				return; // только третья колонка
 
 			Object data = item.getData();
 			if (!(data instanceof InnerElementRepresentationDTO dto))
 				return;
 
-			// Проверяем, по какой иконке кликнули
-			Image clickedImage = getIcon(dto);
-			if (clickedImage == null)
+			// 🔹 Используем category вместо сравнения Image
+			ValueCategory category = dto.getValueCategory();
+			if (category != ValueCategory.MAP && category != ValueCategory.COLLECTION)
 				return;
 
-			if (clickedImage == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-				// Клик по коллекции — создаем окно и генерируем событие
-				Display display = table.getDisplay();
-				display.asyncExec(() -> {
-					// new CollectionInspectorWindow().open();
-				});
-				SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
-				uiEventCollector.collectUiEvent(
-						new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_COLLECTION, dto));
+			// Открываем инспектор для данного объекта
+			SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
+			System.out.println("In LISTENER");
+			// Генерация события в зависимости от категории
+			switch (category) {
+			case MAP -> uiEventCollector
+					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_MAP, dto));
+			case COLLECTION -> uiEventCollector.collectUiEvent(
+					new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE, dto));
+			default -> {
+				// ничего не делаем для других категорий
+			}
 			}
 		});
 	}

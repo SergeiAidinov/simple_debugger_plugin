@@ -39,14 +39,10 @@ import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
-public class InspectionSeanceHandler implements UIEventHandler {
+public class IterableInspectionSeanceHandler implements UIEventHandler {
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
-	private String elementType = "";
-	private String collectionType = "";
-//	private final TreeMap<Integer, InnerElementRepresentationDTO> colectionElements = new TreeMap<>();
-
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
@@ -88,6 +84,8 @@ public class InspectionSeanceHandler implements UIEventHandler {
 
 		private final InnerElementRepresentationDTO anchorElement;
 		private final BreakpointEvent breakpointEvent;
+		private String elementType = "";
+		private String collectionType = "";
 		private final TreeMap<Integer, InnerElementRepresentationDTO> collectionElements = new TreeMap<>();
 
 		public CollectionInspectionSeance(InnerElementRepresentationDTO anchorElement,
@@ -107,7 +105,7 @@ public class InspectionSeanceHandler implements UIEventHandler {
 		//	ww = DebugUtils.determinCollectionType(anchorElement, breakpointEvent);
 			CollectionPageDTO initPage = createPage(0);
 			debugEventCollector.collectDebugEvent(
-					new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION, initPage));
+					new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, initPage));
 
 			while (true) {
 				AbstractUIEvent uiEvent = null;
@@ -118,14 +116,14 @@ public class InspectionSeanceHandler implements UIEventHandler {
 				}
 				if (!SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(uiEvent.getType()))
 					ignoreEvent(uiEvent);
-				else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_COLLECTION))
+				else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_ITERABLE))
 					break;
 				else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE)) {
 					UIEvent<Integer> userRequestetPage = (UIEvent<Integer>) uiEvent;
 					Integer pageNumber = userRequestetPage.getPayload();
 					CollectionPageDTO page = createPage(pageNumber);
 					debugEventCollector.collectDebugEvent(
-							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_COLLECTION, page));
+							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 				}
 			}
 		}
