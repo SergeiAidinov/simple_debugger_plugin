@@ -92,7 +92,7 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 					
 
 			debugEventCollector.collectDebugEvent(
-					new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObject));
+					new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectInspectionDTO));
 
 		}
 
