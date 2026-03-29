@@ -43,13 +43,10 @@ public class UniversalInspectorWindow {
     private MapInspectorTab mapInspectorTab;
     private CTabItem mapTabItem;
 
-    private ArrayInspectorTab instanceInspectorTab;
-    private CTabItem instanceTabItem;
-    
     private UserObjectStructureTab userObjectTab;
     private CTabItem userObjectTabItem;
 
-    private enum CurrentTab { NONE, COLLECTION, MAP, INSTANCE }
+    private enum CurrentTab { NONE, COLLECTION, MAP, USER_OBJECT }
     private CurrentTab currentTab = CurrentTab.NONE;
 
     private UniversalInspectorWindow() {
@@ -96,8 +93,8 @@ public class UniversalInspectorWindow {
             arrayInspectorTab.getControl().setVisible(false);
         if (mapInspectorTab != null && !mapInspectorTab.getControl().isDisposed())
             mapInspectorTab.getControl().setVisible(false);
-        if (instanceInspectorTab != null && !instanceInspectorTab.getControl().isDisposed())
-            instanceInspectorTab.getControl().setVisible(false);
+        if (userObjectTab != null && !userObjectTab.getControl().isDisposed())
+            userObjectTab.getControl().setVisible(false);
     }
 
     private void showTab(CTabItem tabItem, Composite content) {
@@ -125,15 +122,6 @@ public class UniversalInspectorWindow {
         }
     }
 
-    private void createInstanceTabIfNeeded(String title) {
-        if (instanceInspectorTab == null || instanceTabItem == null) {
-            instanceInspectorTab = new ArrayInspectorTab(tabFolder); // или свой тип
-            instanceTabItem = new CTabItem(tabFolder, SWT.NONE);
-            instanceTabItem.setText(title);
-            instanceTabItem.setControl(instanceInspectorTab.getControl());
-        }
-    }
-    
     private void createUserObjectTabIfNeeded(String title) {
         if (userObjectTab == null || userObjectTabItem == null) {
             userObjectTab = new UserObjectStructureTab(tabFolder);
@@ -165,17 +153,6 @@ public class UniversalInspectorWindow {
         });
     }
 
-    public void showInstanceTab(String title, CollectionPageDTO payload) {
-        if (tabFolder.isDisposed()) return;
-
-        Display.getDefault().asyncExec(() -> {
-            createInstanceTabIfNeeded(title);
-            instanceInspectorTab.showPage(payload);
-            showTab(instanceTabItem, instanceInspectorTab.getControl());
-            currentTab = CurrentTab.INSTANCE;
-        });
-    }
-    
     public void showUserObjectTab(String title, UserObjectInspectionDTO payload) {
         if (tabFolder.isDisposed()) return;
 
@@ -183,7 +160,7 @@ public class UniversalInspectorWindow {
             createUserObjectTabIfNeeded(title);
             userObjectTab.showUserObject(payload);
             showTab(userObjectTabItem, userObjectTab.getControl());
-            currentTab = CurrentTab.INSTANCE; // или создать новый тип, если нужно
+            currentTab = CurrentTab.USER_OBJECT;
         });
     }
 
