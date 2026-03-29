@@ -246,7 +246,12 @@ public class TooltipManager {
 	                	uiEventCollector.collectUiEvent(
 		    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_MAP, dto)
 		    	            );
-	                } 
+	                } else if (category == ValueCategory.USER_OBJECT) {
+	                	System.out.println("EVENT: USER OBJECT INSPECTION");
+	                	uiEventCollector.collectUiEvent(
+		    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT, dto)
+		    	            );
+	                }
 //	                SimpleDebugerWindowsManager.instance()
 //	                        .getUniversalInspectorWindowFor(clickedDto);
 //	                UniversalInspectorWindow.getInstance().open();
