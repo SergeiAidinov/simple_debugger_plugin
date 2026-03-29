@@ -8,6 +8,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChanged
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedVariableHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserClosedDebugWindowHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvokedMethodHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserObjectInspectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressedResumeButtonHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedAdditionalInfoAboutCollectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
@@ -24,6 +25,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceElementInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserObjectInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 
 /**
@@ -105,7 +107,9 @@ public final class SimpleDebuggerEventTypes {
 
 		USER_REQUESTED_MAP_PAGE(Integer.class, null),
 
-		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null),
+		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null), 
+		USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()), 
+		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectInspectionDTO.class, null),
 
 		
 		;

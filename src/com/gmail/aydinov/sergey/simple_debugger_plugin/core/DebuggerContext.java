@@ -34,7 +34,7 @@ public class DebuggerContext {
        // INSPECTION_SEANCE_CLOSING,
        // INSPECTION_SEANCE_STOPPED,
         DEBUG_SESSION_FINISHED,
-        DEBUGGER_STOPPED
+        DEBUGGER_STOPPED, USER_OBJECT_INSPECTION_SEANCE_RUNNING
     }
 
     private static final DebuggerContext INSTANCE = new DebuggerContext();
