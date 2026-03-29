@@ -16,6 +16,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserObjectInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
@@ -114,6 +115,10 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	                        DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e =
 	                            (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
 	                        newAnchorTag = e.getPayload().getAnchorTag();
+	                    }
+	                    case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
+	                    	DebugEvent<UserObjectInspectionDTO> e = (DebugEvent<UserObjectInspectionDTO>) event;
+	                        newAnchorTag = e.getPayload().getTag();
 	                    }
 	                }
 
