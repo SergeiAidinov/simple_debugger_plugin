@@ -1,10 +1,16 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import org.eclipse.jface.viewers.*;
+import org.eclipse.jface.window.ToolTip;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
+import org.eclipse.jface.window.ToolTip;
+import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
+
+// ...
+
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
@@ -90,6 +96,7 @@ public class MapInspectorTab {
 
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
+        ColumnViewerToolTipSupport.enableFor(viewer, org.eclipse.jface.window.ToolTip.NO_RECREATE);
 
         // Колонки
         createColumn("Key", 80,
@@ -114,10 +121,11 @@ public class MapInspectorTab {
 //                }
 //                return null;
             },
+            
             pair -> {
-                if (pair.getFirst() instanceof InnerElementRepresentationDTO keyRepresentation) {
-                    return keyRepresentation.getTypeOrReturnType();
-                }
+//                if (pair.getFirst() instanceof InnerElementRepresentationDTO keyRepresentation) {
+//                    return keyRepresentation.getTypeOrReturnType();
+//                }
                 return null;
             }
         );
@@ -139,7 +147,7 @@ public class MapInspectorTab {
                 if (pair.getSecond() instanceof InnerElementRepresentationDTO valueRepresentation) {
                     return getTooltipForValue(valueRepresentation);
                 }
-                return null;
+                return "default tooltip";
             }
         );
     }
@@ -208,6 +216,7 @@ public class MapInspectorTab {
         uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, page));
     }
 
+    @SuppressWarnings("unchecked")
     private <K, V> TableViewerColumn createColumn(String title, int width,
                                                    Function<PairDTO<K, V>, String> textExtractor,
                                                    Function<PairDTO<K, V>, Image> imageExtractor,
@@ -227,7 +236,8 @@ public class MapInspectorTab {
                 return "";
             }
 
-            @Override
+           
+			@Override
             public Image getImage(Object element) {
                 if (!(element instanceof PairDTO<?, ?> pair)) return null;
                 return imageExtractor.apply((PairDTO<K, V>) pair);
