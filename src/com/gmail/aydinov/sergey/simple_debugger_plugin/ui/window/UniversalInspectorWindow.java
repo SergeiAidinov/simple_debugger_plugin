@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window;
 
+import java.util.Queue;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
@@ -12,6 +14,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapPageDTO;
@@ -207,5 +210,21 @@ public class UniversalInspectorWindow {
 
     public Shell getShell() {
         return shell;
+    }
+    
+    public void populateNavigationListFromManagerQueue() {
+        Queue<Tag> tagQueue = SimpleDebugerWindowsManager.instance().tagQueue();
+        if (navigationList.isDisposed()) return;
+
+        Display.getDefault().asyncExec(() -> {
+            navigationList.removeAll(); // очищаем предыдущие элементы
+
+            int index = 0;
+            for (Tag tag : tagQueue) {
+                String itemText = "element[" + index + "]: " + tag.toString();
+                navigationList.add(itemText);
+                index++;
+            }
+        });
     }
 }

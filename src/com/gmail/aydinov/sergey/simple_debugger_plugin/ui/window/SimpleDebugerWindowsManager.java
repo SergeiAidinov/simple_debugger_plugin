@@ -2,9 +2,11 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window;
 
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
@@ -29,7 +31,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 
 	private MainWindow mainWindow;
 	private UniversalInspectorWindow universalInspectorWindow;
-	private Tag tag;
+	private final Queue<Tag> tagQueue = new LinkedList();
 
 	/** Минимальный ресурсный источник: карта с изображениями */
 	public final Map<String, PairDTO<Image, String>> icons;
@@ -125,7 +127,9 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	                Tag finalNewAnchorTag = newAnchorTag; // для lambda
 	                display.asyncExec(() -> {
 	                    // если окно открыто и тег другой — закрываем
-	                    if (universalInspectorWindow != null && !Objects.equals(tag, finalNewAnchorTag)) {
+	                    if (universalInspectorWindow != null 
+	                    	//	&& !Objects.equals(tag, finalNewAnchorTag)
+	                    		) {
 	                        universalInspectorWindow.close();
 	                        universalInspectorWindow = null;
 	                    }
@@ -133,7 +137,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	                    // создаём новое окно только если его нет
 	                    if (universalInspectorWindow == null || universalInspectorWindow.getShell().isDisposed()) {
 	                        universalInspectorWindow = UniversalInspectorWindow.getInstance();
-	                        tag = finalNewAnchorTag;
+	                        tagQueue.offer(finalNewAnchorTag);
 	                        universalInspectorWindow.open();
 	                    }
 
@@ -178,9 +182,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 		
 	}
 	
-	public void setTag(Tag tag) {
-		this.tag = tag;
+	public Queue<Tag> tagQueue(){
+		return tagQueue;
 	}
-	
-	
 }
