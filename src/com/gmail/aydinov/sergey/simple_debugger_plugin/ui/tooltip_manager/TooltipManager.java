@@ -238,7 +238,7 @@ public class TooltipManager {
 	            Object data = popup.getData("dto");
 
 	            if (data instanceof InnerElementRepresentationDTO clickedDto) {
-	            	SimpleDebugerWindowsManager.instance().setTag(clickedDto.getTag());
+	            	SimpleDebugerWindowsManager.instance().tagQueue().offer(clickedDto.getTag());
 	            	ValueCategory category = dto.getValueCategory();
 
 	                if (category == ValueCategory.COLLECTION) {
