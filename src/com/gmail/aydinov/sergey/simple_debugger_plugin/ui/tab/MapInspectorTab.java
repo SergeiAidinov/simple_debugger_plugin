@@ -6,6 +6,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapPageDTO;
@@ -13,14 +14,14 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
-import java.util.List;
 import java.util.function.Function;
 
 public class MapInspectorTab {
 
     private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
-
     private final Composite root;
     private final TableViewer viewer;
 
@@ -40,6 +41,7 @@ public class MapInspectorTab {
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(1, false));
 
+        // Header
         Composite header = new Composite(root, SWT.NONE);
         header.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
         header.setLayout(new GridLayout(2, false));
@@ -80,6 +82,7 @@ public class MapInspectorTab {
         nextButton.setText("Next");
         nextButton.addListener(SWT.Selection, e -> requestPage(currentPage + 1));
 
+        // Table
         Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
         table.setHeaderVisible(true);
         table.setLinesVisible(true);
@@ -88,8 +91,82 @@ public class MapInspectorTab {
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
 
-        createColumn("Key", 200, pair -> pair.getFirst().toString(), pair -> null);
-        createColumn("Value", 450, pair -> ((InnerElementRepresentationDTO) pair.getSecond()).getValue(), pair -> null);
+        // Колонки
+        createColumn("Key", 80,
+            pair -> {
+                if (pair.getFirst() instanceof InnerElementRepresentationDTO keyRepresentation) {
+                    return keyRepresentation.getElementName();
+                }
+                return "";
+            },
+            pair -> {
+                if (pair.getFirst() instanceof InnerElementRepresentationDTO keyRepresentation) {
+                	return UiUtils.getIcon(keyRepresentation);
+                }
+                	else return null;
+//                    if (UiUtils.isStandartJavaType(keyRepresentation.getTypeOrReturnType())) {
+//                     //   return SimpleDebugerWindowsManager.instance().icons.get("keyIcon").getFirst();
+//                    	return null;
+//                    } else {
+//                    	return UiUtils.getIcon(keyRepresentation);
+//                     //   return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
+//                    }
+//                }
+//                return null;
+            },
+            pair -> {
+                if (pair.getFirst() instanceof InnerElementRepresentationDTO keyRepresentation) {
+                    return keyRepresentation.getTypeOrReturnType();
+                }
+                return null;
+            }
+        );
+
+        createColumn("Value", 570,
+            pair -> {
+                if (pair.getSecond() instanceof InnerElementRepresentationDTO valueRepresentation) {
+                    return valueRepresentation.getValue();
+                }
+                return "";
+            },
+            pair -> {
+                if (pair.getSecond() instanceof InnerElementRepresentationDTO valueRepresentation) {
+                    return getIconForValue(valueRepresentation);
+                }
+                return null;
+            },
+            pair -> {
+                if (pair.getSecond() instanceof InnerElementRepresentationDTO valueRepresentation) {
+                    return getTooltipForValue(valueRepresentation);
+                }
+                return null;
+            }
+        );
+    }
+
+    private Image getIconForValue(InnerElementRepresentationDTO dto) {
+        if (dto == null) return null;
+
+        ValueCategory category = dto.getValueCategory();
+        if (category == null) return null;
+
+        if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
+            return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
+        }
+
+        if (category == ValueCategory.USER_OBJECT
+                && dto.getValue() != null
+                && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
+            return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
+        }
+
+        return null;
+    }
+
+    private String getTooltipForValue(InnerElementRepresentationDTO dto) {
+        if (dto == null) return "null";
+        var pair = UiUtils.getTypeTooltip(dto);
+        return pair != null ? pair.getSecond() : dto.getTypeOrReturnType();
     }
 
     public Composite getControl() {
@@ -98,8 +175,7 @@ public class MapInspectorTab {
 
     public void showPage(MapPageDTO page) {
         root.getDisplay().asyncExec(() -> {
-            if (root.isDisposed() || viewer.getTable().isDisposed())
-                return;
+            if (root.isDisposed() || viewer.getTable().isDisposed()) return;
 
             mapNameLabel.setText("Map name: " + safe(page.getMapName()));
             mapTypeLabel.setText("Map type: " + safe(page.getMapType()));
@@ -134,7 +210,9 @@ public class MapInspectorTab {
 
     private <K, V> TableViewerColumn createColumn(String title, int width,
                                                    Function<PairDTO<K, V>, String> textExtractor,
-                                                   Function<PairDTO<K, V>, Image> imageExtractor) {
+                                                   Function<PairDTO<K, V>, Image> imageExtractor,
+                                                   Function<PairDTO<K, V>, String> tooltipExtractor) {
+
         TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
         column.getColumn().setText(title);
         column.getColumn().setWidth(width);
@@ -154,7 +232,14 @@ public class MapInspectorTab {
                 if (!(element instanceof PairDTO<?, ?> pair)) return null;
                 return imageExtractor.apply((PairDTO<K, V>) pair);
             }
+
+            @Override
+            public String getToolTipText(Object element) {
+                if (!(element instanceof PairDTO<?, ?> pair)) return null;
+                return tooltipExtractor.apply((PairDTO<K, V>) pair);
+            }
         });
+
         return column;
     }
 

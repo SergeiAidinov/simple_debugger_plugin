@@ -125,10 +125,10 @@ public class MapInspectionSeanceHandler implements UIEventHandler {
                 Map.Entry<Value, Value> entry = rawEntries.get(i);
 
                 InnerElementRepresentationDTO keyDto =
-                        DebugUtils.createInnerElementDTO(entry.getKey(), mapRef, i, "key");
+                        DebugUtils.createInnerElementDTO(entry.getKey(), mapRef, i);
 
                 InnerElementRepresentationDTO valueDto =
-                        DebugUtils.createInnerElementDTO(entry.getValue(), mapRef, i, "value");
+                        DebugUtils.createInnerElementDTO(entry.getValue(), mapRef, i);
 
                 result.add(PairDTO.of(keyDto, valueDto));
             }

@@ -1224,7 +1224,7 @@ public class DebugUtils {
      * @param index индекс пары
      * @param roleLabel "key" или "value"
      */
-    public static InnerElementRepresentationDTO createInnerElementDTO(Value value, UniversalElementRepresentation parent, int index, String roleLabel) {
+    public static InnerElementRepresentationDTO createInnerElementDTO(Value value, UniversalElementRepresentation parent, int index) {
         UniversalElementRepresentation uer;
 
         if (value instanceof ObjectReference objRef) {
@@ -1234,7 +1234,7 @@ public class DebugUtils {
             uer = UniversalElementRepresentation.builder()
                     .referenceType(objRef.referenceType())
                     .objectReference(objRef)
-                    .elementName(roleLabel + ": " + valueText)
+                    .elementName(valueText)
                     .elementType(UniversalElementType.MAP_ELEMENT)
                     .currentRole(CurrentRole.INNER)
                     .value(DebugUtils.getObjectReferenceValueAsString(objRef))
@@ -1246,7 +1246,7 @@ public class DebugUtils {
         } else {
             // Примитив
             uer = UniversalElementRepresentation.builder()
-                    .elementName(roleLabel + ": " + value.toString())
+                    .elementName(value.toString())
                     .value(value.toString())
                     .valueCategory(ValueCategory.PRIMITIVE)
                     .uniqueId(java.util.UUID.randomUUID())
