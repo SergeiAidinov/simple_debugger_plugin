@@ -211,13 +211,16 @@ public class TooltipManager {
 	        popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
 	        StringBuilder info = new StringBuilder();
 	        info.append("Inspect element: ").append("\n")
-	            .append(GAP).append("type: ").append(dto.getTypeOrReturnType()).append("\n")
-	            .append(GAP).append("name: ").append(dto.getElementName()).append("\n")
-	            .append(GAP).append("size: ")
-	            .append(dto.getValue().substring(dto.getValue().lastIndexOf(":") + 1))
-	            .append("\n");
+	         .append(GAP).append("name: ").append(dto.getElementName()).append("\n")
+	            .append(GAP).append("type: ").append(dto.getAdditionalInfo()).append("\n")
+	            .append(GAP).append(dto.getValue().substring(0, dto.getValue().indexOf(','))).append("\n")
+	            .append(GAP)
+	            .append(dto.getValue().substring(dto.getValue().indexOf(',') + 2, dto.getValue().indexOf('>') + 1)).append("\n")
+	            .append(GAP)
+	            .append("instance: ").append(dto.getValue().substring(dto.getValue().indexOf('>') + 2, dto.getValue().length()))
+	            ;
 	        ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
-	        scrolled.setLayoutData(new GridData(400, 80));
+	        scrolled.setLayoutData(new GridData(400, 100));
 	        Composite content = new Composite(scrolled, SWT.NONE);
 	        content.setLayout(new GridLayout(1, false));
 	        Label label = new Label(content, SWT.WRAP);
