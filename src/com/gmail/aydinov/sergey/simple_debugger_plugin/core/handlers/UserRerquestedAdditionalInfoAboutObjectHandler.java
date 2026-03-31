@@ -9,7 +9,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -71,45 +73,61 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 	}
 
 	private Set<UniversalElementRepresentation> compileAdditionalInfo(UniversalElementRepresentation topLevelElement) {
-		Set<UniversalElementRepresentation> selectedElements = new HashSet<UniversalElementRepresentation>();
-		TargetApplicationRepresentation.getInstance().getAllElements()
+		Set<UniversalElementRepresentation> selectedElements = new HashSet<>();
+		UniversalElementRepresentation topLevelMatch = findElementByTag(topLevelElement.getTag());
+		if (topLevelMatch == null) {
+			return selectedElements;
+		}
 
-				.stream().filter(e -> Objects.nonNull(e))
-				.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
-				.ifPresent(elementName -> {
-					elementName.getTag().getUniqueId();
-					TargetApplicationRepresentation.getInstance().getAllElements().stream()
-							.filter(e -> Objects.equals(e.getElementName(), topLevelElement.getElementName())).findAny()
-							.ifPresent(field -> {
-								TargetApplicationRepresentation.getInstance().getAllElements().stream().filter(
-										e -> Objects.equals(e.getTag().getParentId(), field.getTag().getUniqueId()))
-								.filter(e -> e instanceof UniversalElementRepresentation)
-								.map(e -> (UniversalElementRepresentation) e)
-										.findAny().ifPresent(root -> {
-											boolean found = true;
-											Set<UniversalElementRepresentation> iterationElements = new HashSet<UniversalElementRepresentation>();
-											iterationElements.add(root);
-											while (found) {
-												for (UniversalElementRepresentation iterationElement : iterationElements) {
-													iterationElements.addAll(TargetApplicationRepresentation
-															.getInstance().getAllElements().stream()
-															.filter(e -> e instanceof UniversalElementRepresentation)
-															.map(e -> (UniversalElementRepresentation) e)
-															.filter(e -> Objects.equals(e.getObjectReference(),
-																	iterationElement.getObjectReference()))
-															.filter(e -> !Objects.equals(e.getAdditionalInfo(),
-																	topLevelElement.getTypeOrReturnType()))
-															.toList());
-												}
-												iterationElements.remove(root);
-												if (iterationElements.isEmpty())
-													found = false;
-												selectedElements.addAll(iterationElements);
-												iterationElements.clear();
-											}
-										});
-							});
-				});
+//		UniversalElementRepresentation rootChild = findRootChild(topLevelMatch, topLevelElement);
+//		if (rootChild == null) {
+//			return selectedElements;
+//		}
+
+		selectedElements.addAll(iterateRelatedElements(topLevelElement));
+
 		return selectedElements;
 	}
+
+	private UniversalElementRepresentation findElementByTag(Tag tag) {
+		return TargetApplicationRepresentation.getInstance().getAllElements().stream().filter(Objects::nonNull)
+				.filter(e -> Objects.equals(e.getTag(), tag)).filter(e -> e instanceof UniversalElementRepresentation)
+				.map(e -> (UniversalElementRepresentation) e).findAny().orElse(null);
+	}
+
+	private UniversalElementRepresentation findRootChild(UniversalElementRepresentation parent,
+			UniversalElementRepresentation topLevelElement) {
+		return TargetApplicationRepresentation.getInstance().getAllElements().stream()
+				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.equals(e.getTag().getParentId(), parent.getTag().getUniqueId())).findAny()
+				.orElse(null);
+	}
+
+	private Set<UniversalElementRepresentation> iterateRelatedElements(UniversalElementRepresentation topLevelElement) {
+		Set<UniversalElementRepresentation> selectedElements = new HashSet<>();
+		List<UniversalElementRepresentation> iterationElements = TargetApplicationRepresentation.getInstance()
+				.getAllElements().stream().filter(e -> e instanceof UniversalElementRepresentation)
+				.filter(e -> Objects.equals(e.getTag().getParentId(), topLevelElement.getTag().getUniqueId()))
+				.map(e -> (UniversalElementRepresentation) e).toList();
+		selectedElements.addAll(iterationElements);
+		
+		Optional<UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance()
+				.getAllElements().stream().filter(e -> e instanceof UniversalElementRepresentation)
+				.filter(e -> Objects.equals(e.getTag().getUniqueId(), topLevelElement.getTag().getParentId()))
+				.map(e -> (UniversalElementRepresentation) e).findAny();
+		
+		UniversalElementRepresentation qqq = qq .get();
+		
+		 List<UniversalElementRepresentation> mm = TargetApplicationRepresentation.getInstance()
+		.getAllElements().stream().filter(e -> e instanceof UniversalElementRepresentation)
+		.filter(e -> Objects.equals(e.getTag().getParentId(), qqq.getTag().getUniqueId()))
+		.map(e -> (UniversalElementRepresentation) e)
+		.filter(e -> Objects.equals(e.getElementType(), UniversalElementType.METHOD))
+		.toList();
+		
+		 selectedElements.addAll(mm);
+		
+		return selectedElements;
+	}
+
 }
