@@ -271,6 +271,9 @@ public class ClassMembersAtBreakpointTab {
 				if (!(element instanceof InnerElementRepresentationDTO dto))
 					return null;
 
+				if (dto.getLevel() != 1 && index == 2 && dto.getElementType() == UniversalElementType.FIELD)
+					return null;
+
 				Image img = imageExtractor.apply(dto);
 				if (img == null)
 					return null;
@@ -387,7 +390,7 @@ public class ClassMembersAtBreakpointTab {
 				return;
 
 			// Открываем инспектор для данного объекта
-		//	SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
+			// SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
 		});
 	}
 
@@ -407,27 +410,25 @@ public class ClassMembersAtBreakpointTab {
 				}
 			}
 			if (!Objects.equals(dto, lastInspectedElement)) {
-	            lastInspectedElement = dto;
-	            tooltipManager.closePopup();
-	            if (dto != null) {
-	                if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-	                    uiEventCollector.collectUiEvent(
-	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto)
-	                    );
-	                    Display display = root.getDisplay();
-	                    Point location = display.getCursorLocation();
-	                   // tooltipManager.showFieldInfoPopup(null, location);
-	                } else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-	                    uiEventCollector.collectUiEvent(
-	                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto)
-	                    );
-	                    Display display = root.getDisplay();
-	                    Point location = display.getCursorLocation();
-	                    tooltipManager.showTooltipForCollection(dto, location);
-	                }
-	            }
-	        }
-			
+				lastInspectedElement = dto;
+				tooltipManager.closePopup();
+				if (dto != null) {
+					if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+						uiEventCollector.collectUiEvent(new UIEvent<>(
+								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
+						Display display = root.getDisplay();
+						Point location = display.getCursorLocation();
+						// tooltipManager.showFieldInfoPopup(null, location);
+					} else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+						uiEventCollector.collectUiEvent(new UIEvent<>(
+								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto));
+						Display display = root.getDisplay();
+						Point location = display.getCursorLocation();
+						tooltipManager.showTooltipForCollection(dto, location);
+					}
+				}
+			}
+
 		});
 	}
 
