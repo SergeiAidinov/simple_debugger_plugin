@@ -79,8 +79,8 @@ public final class SimpleDebuggerEventTypes {
 		USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT(InnerElementRepresentationDTO.class,
 				new UserRerquestedAdditionalInfoAboutObjectHandler()),
 //
-//		USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class,
-//				new UserRequestedAdditionalInfoAboutCollectionHandler()),
+		USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class,
+				new UserRequestedAdditionalInfoAboutCollectionHandler()),
 
 		//USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementRepresentationDTO.class, null),
 
