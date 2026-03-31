@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +28,14 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.event.BreakpointEvent;
 
+
 public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHandler {
 
 	private final DebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventCollector.instance();
+
+	private static final EnumSet<UniversalElementType> firstGroup = EnumSet.of(UniversalElementType.INTERFACE, UniversalElementType.CLASS,
+			UniversalElementType.ENUM, UniversalElementType.FIELD);
+	private static final EnumSet<UniversalElementType> secondGroup = EnumSet.of(UniversalElementType.METHOD);
 
 	@Override
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
@@ -58,11 +64,11 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 		for (UniversalElementRepresentation element : elements) {
 			UserInstanceInnerElementInspectionDTO userInstanceInnerElementInspectionDTO = new UserInstanceInnerElementInspectionDTO(
 					element.getElementName(), element.getTypeOrReturnType(), element.getValue());
-			if (element.getElementType().ordinal() < 5)
+			if (firstGroup.contains(element.getElementType()))
 				separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
-			else if (element.getElementType().ordinal() == 5)
+			else if (secondGroup.contains(element.getElementType()))
 				separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
-			else if (element.getElementType().ordinal() > 5)
+			else 
 				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
 		}
 		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
@@ -110,23 +116,22 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 				.filter(e -> Objects.equals(e.getTag().getParentId(), topLevelElement.getTag().getUniqueId()))
 				.map(e -> (UniversalElementRepresentation) e).toList();
 		selectedElements.addAll(iterationElements);
-		
-		Optional<UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance()
-				.getAllElements().stream().filter(e -> e instanceof UniversalElementRepresentation)
+
+		Optional<UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance().getAllElements()
+				.stream().filter(e -> e instanceof UniversalElementRepresentation)
 				.filter(e -> Objects.equals(e.getTag().getUniqueId(), topLevelElement.getTag().getParentId()))
 				.map(e -> (UniversalElementRepresentation) e).findAny();
-		
-		UniversalElementRepresentation qqq = qq .get();
-		
-		 List<UniversalElementRepresentation> mm = TargetApplicationRepresentation.getInstance()
-		.getAllElements().stream().filter(e -> e instanceof UniversalElementRepresentation)
-		.filter(e -> Objects.equals(e.getTag().getParentId(), qqq.getTag().getUniqueId()))
-		.map(e -> (UniversalElementRepresentation) e)
-		.filter(e -> Objects.equals(e.getElementType(), UniversalElementType.METHOD))
-		.toList();
-		
-		 selectedElements.addAll(mm);
-		
+
+		UniversalElementRepresentation qqq = qq.get();
+
+		List<UniversalElementRepresentation> mm = TargetApplicationRepresentation.getInstance().getAllElements()
+				.stream().filter(e -> e instanceof UniversalElementRepresentation)
+				.filter(e -> Objects.equals(e.getTag().getParentId(), qqq.getTag().getUniqueId()))
+				.map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.equals(e.getElementType(), UniversalElementType.METHOD)).toList();
+
+		selectedElements.addAll(mm);
+
 		return selectedElements;
 	}
 
