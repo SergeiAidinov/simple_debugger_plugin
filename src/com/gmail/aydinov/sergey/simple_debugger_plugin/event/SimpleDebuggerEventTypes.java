@@ -108,7 +108,7 @@ public final class SimpleDebuggerEventTypes {
 		USER_REQUESTED_MAP_PAGE(Integer.class, null),
 
 		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null), 
-		USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()), 
+		USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(UserInstanceInspectionDTO.class, new UserObjectInspectionHandler()), 
 		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectInspectionDTO.class, null),
 
 		
@@ -133,7 +133,7 @@ public final class SimpleDebuggerEventTypes {
 	}
 
 	// --- Groups of event types ---
-
+	
 	private static final EnumSet<SimpleDebuggerEventType> COLLECTION_INSPECTION_WINDOW_EVENTS = EnumSet.of(
 			SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE,
 			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE,
@@ -145,8 +145,15 @@ public final class SimpleDebuggerEventTypes {
 
 	);
 
-	private static final Set<SimpleDebuggerEventType> INSPECTION_WINDOW_EVENTS = Set
+	private static final EnumSet<SimpleDebuggerEventType> INSPECTION_WINDOW_EVENTS = EnumSet
 			.of(SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT);
+	
+	private static final EnumSet<SimpleDebuggerEventType> INSPECTIONAL_EVENTS =
+	        EnumSet.copyOf(COLLECTION_INSPECTION_WINDOW_EVENTS);
+
+	static {
+	    INSPECTIONAL_EVENTS.add(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT);
+	}
 
 	/**
 	 * Checks if the event is an inspection window event.
@@ -164,5 +171,9 @@ public final class SimpleDebuggerEventTypes {
 
 	public static boolean isCollectionInspectionWindowEvent(SimpleDebuggerEventType type) {
 		return COLLECTION_INSPECTION_WINDOW_EVENTS.contains(type);
+	}
+	
+	public static boolean isInspectionEvent(SimpleDebuggerEventType type) {
+		return INSPECTIONAL_EVENTS.contains(type);
 	}
 }

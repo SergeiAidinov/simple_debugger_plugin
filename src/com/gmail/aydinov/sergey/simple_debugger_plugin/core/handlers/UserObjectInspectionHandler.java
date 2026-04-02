@@ -32,7 +32,7 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 		System.out.println("USER OBJECT. INSP. STARTED");
 		debugEventCollector
 				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-		DebuggerContext.context().setStatus(SimpleDebuggerStatus.USER_OBJECT_INSPECTION_SEANCE_RUNNING);
+	//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.USER_OBJECT_INSPECTION_SEANCE_RUNNING);
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
 		try {
 			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;

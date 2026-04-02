@@ -30,11 +30,11 @@ public class DebuggerContext {
         DEBUG_SESSION_PREPARED,
         DEBUG_SESSION_RUNNING,
         //COLLECTION_INSPECTION_SEANCE_STARTING,
-        COLLECTION_INSPECTION_SEANCE_RUNNING,
+        INSPECTION_SEANCE_RUNNING,
        // INSPECTION_SEANCE_CLOSING,
        // INSPECTION_SEANCE_STOPPED,
         DEBUG_SESSION_FINISHED,
-        DEBUGGER_STOPPED, USER_OBJECT_INSPECTION_SEANCE_RUNNING
+        DEBUGGER_STOPPED,
     }
 
     private static final DebuggerContext INSTANCE = new DebuggerContext();
@@ -44,7 +44,7 @@ public class DebuggerContext {
     		SimpleDebuggerStatus.DEBUGGER_STARTED,
     		SimpleDebuggerStatus.DEBUG_SESSION_RUNNING,
     		//SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_STARTING,
-    		SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_RUNNING,
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING,
     		//SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING,
     		//SimpleDebuggerStatus.INSPECTION_SEANCE_STOPPED,
     		SimpleDebuggerStatus.DEBUG_SESSION_FINISHED
@@ -56,7 +56,7 @@ public class DebuggerContext {
     
     private static final Set<SimpleDebuggerStatus> INSPECTION_SEANCE_RUNNING_STATES = EnumSet.of(
     		//SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_STARTING,
-    		SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_RUNNING
+    		SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING
     		//SimpleDebuggerStatus.INSPECTION_SEANCE_CLOSING
     );
 

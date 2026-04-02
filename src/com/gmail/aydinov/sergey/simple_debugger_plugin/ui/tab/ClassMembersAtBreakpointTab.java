@@ -186,7 +186,7 @@ public class ClassMembersAtBreakpointTab {
 			if (root.isDisposed())
 				return;
 			Point location = display.getCursorLocation();
-			tooltipManager.showFieldInfoPopup(userInstanceInspectionDTO, location);
+			tooltipManager.showTooltipForUserObject(userInstanceInspectionDTO, location);
 		});
 	}
 
