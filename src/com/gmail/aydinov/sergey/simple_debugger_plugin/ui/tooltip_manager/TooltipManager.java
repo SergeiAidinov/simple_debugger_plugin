@@ -124,51 +124,24 @@ public class TooltipManager {
 		display.timerExec(150, this::checkPopupCursor);
 	}
 
-	public void showFieldInfoPopup(UserInstanceInspectionDTO userInstanceInspectionDTO, Point location) {
-		if (userInstanceInspectionDTO.getInnerElementsByGroups().get(1).isEmpty() 
-				&& userInstanceInspectionDTO.getInnerElementsByGroups().get(2).isEmpty()
-				&& userInstanceInspectionDTO.getInnerElementsByGroups().get(3).isEmpty())
-			return;
-		Display display = root.getDisplay();
-		display.asyncExec(() -> {
-			if (root.isDisposed() || userInstanceInspectionDTO == null)
-				return;
-			closePopup();
-			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
-			popup.setLayout(new GridLayout(1, false));
-			StringBuilder info = new StringBuilder();
-			info.append("Field name: ").append(userInstanceInspectionDTO.getFieldName()).append("\n");
-			info.append("Field type: ").append(userInstanceInspectionDTO.getTypeName()).append("\n\n");
-			info.append("INFO: \n");
-			info.append("Fields: \n");
-			addGroupOfElements(info, userInstanceInspectionDTO.getInnerElementsByGroups().get(1),
-					List.of("name: ", "type: ", "value: "));
-			info.append("Metods: \n");
-			addGroupOfElements(info, userInstanceInspectionDTO.getInnerElementsByGroups().get(2),
-					new ArrayList<>(Arrays.asList("name: ", "return type: ", null)));
-			info.append("Others: \n");
-			addGroupOfElements(info, userInstanceInspectionDTO.getInnerElementsByGroups().get(3),
-					List.of("name: ", "type: ", "value: "));
-			ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
-			scrolled.setLayoutData(new GridData(400, 300)); // размер окна
-			Composite content = new Composite(scrolled, SWT.NONE);
-			content.setLayout(new GridLayout(1, false));
-			Label label = new Label(content, SWT.WRAP);
-			label.setText(info.toString());
-			label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-			scrolled.setContent(content);
-			scrolled.setExpandHorizontal(true);
-			scrolled.setExpandVertical(true);
-			scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-			popup.pack();
-			Point popupSize = popup.getSize();
-			Point adjustedLocation = adjustToScreen(location, popupSize);
-			popup.setLocation(adjustedLocation);
-			popup.open();
-			currentPopup = popup;
-			popup.addListener(SWT.Dispose, e -> currentPopup = null);
-			display.timerExec(150, this::checkPopupCursor);
-		});
+	public void showTooltipForUserObject(UserInstanceInspectionDTO dto, Point location) {
+
+	    if (dto.getInnerElementsByGroups().get(1).isEmpty()
+	            && dto.getInnerElementsByGroups().get(2).isEmpty()
+	            && dto.getInnerElementsByGroups().get(3).isEmpty())
+	        return;
+
+	    showPopup(
+	            dto,
+	            location,
+	            d -> buildUserObjectText((UserInstanceInspectionDTO) d),
+	            () -> uiEventCollector.collectUiEvent(
+	                    new UIEvent<>(
+	                            SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT,
+	                            dto
+	                    )
+	            )
+	    );
 	}
 
 	public void closePopup() {
@@ -203,79 +176,133 @@ public class TooltipManager {
 	}
 
 	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
+
+	    showPopup(
+	            dto,
+	            location,
+	            d -> buildCollectionText((InnerElementRepresentationDTO) d),
+	            () -> {
+	                SimpleDebugerWindowsManager.instance().tagQueue().offer(dto.getTag());
+
+	                switch (dto.getValueCategory()) {
+	                    case COLLECTION -> uiEventCollector.collectUiEvent(
+	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE, dto)
+	                    );
+	                    case MAP -> uiEventCollector.collectUiEvent(
+	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_MAP, dto)
+	                    );
+	                    case USER_OBJECT -> uiEventCollector.collectUiEvent(
+	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT, dto)
+	                    );
+	                }
+	            }
+	    );
+	}
+	
+	private void showPopup(
+	        Object dto,
+	        Point location,
+	        Function<Object, String> textBuilder,
+	        Runnable onClick) {
+
 	    Display display = root.getDisplay();
+
 	    display.asyncExec(() -> {
 	        if (root.isDisposed() || dto == null)
 	            return;
+
 	        closePopup();
+
 	        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
 	        popup.setLayout(new GridLayout(1, false));
-	        // сохраняем DTO внутри popup
-	        popup.setData("dto", dto);
 	        popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
-	        StringBuilder info = new StringBuilder();
-	        info.append("Inspect element: ").append("\n")
-	         .append(GAP).append("name: ").append(dto.getElementName()).append("\n")
-	            .append(GAP).append("type: ").append(dto.getAdditionalInfo()).append("\n")
-	            .append(GAP).append(dto.getValue().substring(0, dto.getValue().indexOf(','))).append("\n")
-	            .append(GAP)
-	            .append(dto.getValue().substring(dto.getValue().indexOf(',') + 2, dto.getValue().indexOf('>') + 1)).append("\n")
-	            .append(GAP)
-	            .append("instance: ").append(dto.getValue().substring(dto.getValue().indexOf('>') + 2, dto.getValue().length()))
-	            ;
+	        popup.setData("dto", dto);
+
+	        // ---- UI ----
 	        ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
-	        scrolled.setLayoutData(new GridData(400, 100));
+	        scrolled.setLayoutData(new GridData(400, 200));
+
 	        Composite content = new Composite(scrolled, SWT.NONE);
 	        content.setLayout(new GridLayout(1, false));
+
 	        Label label = new Label(content, SWT.WRAP);
-	        label.setText(info.toString());
+	        label.setText(textBuilder.apply(dto));
 	        label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 	        label.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
-	        label.setData("dto", dto);
+
 	        scrolled.setContent(content);
 	        scrolled.setExpandHorizontal(true);
 	        scrolled.setExpandVertical(true);
 	        scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 
-	        // обработчик клика
+	        // ---- CLICK HANDLER ----
 	        Listener clickHandler = e -> {
-	            Object data = popup.getData("dto");
-
-	            if (data instanceof InnerElementRepresentationDTO clickedDto) {
-	            	SimpleDebugerWindowsManager.instance().tagQueue().offer(clickedDto.getTag());
-	            	ValueCategory category = dto.getValueCategory();
-
-	                if (category == ValueCategory.COLLECTION) {
-	                	uiEventCollector.collectUiEvent(
-		    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE, dto)
-		    	            );
-	                } else if (category == ValueCategory.MAP) {
-	                	uiEventCollector.collectUiEvent(
-		    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_MAP, dto)
-		    	            );
-	                } else if (category == ValueCategory.USER_OBJECT) {
-	                	System.out.println("EVENT: USER OBJECT INSPECTION");
-	                	uiEventCollector.collectUiEvent(
-		    	                new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT, dto)
-		    	            );
-	                }
-//	                SimpleDebugerWindowsManager.instance()
-//	                        .getUniversalInspectorWindowFor(clickedDto);
-//	                UniversalInspectorWindow.getInstance().open();
-	                closePopup();
-	            }
+	            onClick.run();
+	            closePopup();
 	        };
+
 	        popup.addListener(SWT.MouseDown, clickHandler);
-	        label.addListener(SWT.MouseDown, clickHandler);
 	        content.addListener(SWT.MouseDown, clickHandler);
+	        label.addListener(SWT.MouseDown, clickHandler);
+	        scrolled.addListener(SWT.MouseDown, clickHandler);
+
+	        // ---- positioning ----
 	        popup.pack();
 	        Point popupSize = popup.getSize();
 	        Point adjustedLocation = adjustToScreen(location, popupSize);
+
 	        popup.setLocation(adjustedLocation);
 	        popup.open();
+
 	        currentPopup = popup;
 	        popup.addListener(SWT.Dispose, e -> currentPopup = null);
+
 	        display.timerExec(150, this::checkPopupCursor);
 	    });
+	}
+	
+	private String buildUserObjectText(UserInstanceInspectionDTO dto) {
+	    StringBuilder info = new StringBuilder();
+
+	    info.append("Field name: ").append(dto.getFieldName()).append("\n");
+	    info.append("Field type: ").append(dto.getTypeName()).append("\n\n");
+
+	    info.append("INFO:\nFields:\n");
+	    addGroupOfElements(info, dto.getInnerElementsByGroups().get(1),
+	            List.of("name: ", "type: ", "value: "));
+
+	    info.append("Methods:\n");
+	    addGroupOfElements(info, dto.getInnerElementsByGroups().get(2),
+	            List.of("name: ", "return type: ", ""));
+
+	    info.append("Others:\n");
+	    addGroupOfElements(info, dto.getInnerElementsByGroups().get(3),
+	            List.of("name: ", "type: ", "value: "));
+
+	    return info.toString();
+	}
+	
+	private String buildCollectionText(InnerElementRepresentationDTO dto) {
+	    String value = dto.getValue();
+
+	    int comma = value.indexOf(',');
+	    int gt = value.indexOf('>');
+
+	    StringBuilder info = new StringBuilder();
+
+	    info.append("Inspect element:\n")
+	        .append(GAP).append("name: ").append(dto.getElementName()).append("\n")
+	        .append(GAP).append("type: ").append(dto.getAdditionalInfo()).append("\n");
+
+	    if (comma != -1 && gt != -1) {
+	        info.append(GAP).append(value.substring(0, comma)).append("\n")
+	            .append(GAP).append(value.substring(comma + 2, gt + 1)).append("\n")
+	            .append(GAP).append("instance: ")
+	            .append(value.substring(gt + 2));
+	    } else {
+	        info.append(GAP).append(value);
+	    }
+
+	    return info.toString();
 	}
 }

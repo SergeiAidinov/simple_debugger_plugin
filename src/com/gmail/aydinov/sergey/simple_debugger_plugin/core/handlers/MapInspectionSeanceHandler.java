@@ -33,7 +33,7 @@ public class MapInspectionSeanceHandler implements UIEventHandler {
                           BreakpointEvent breakpointEvent) {
 
         DebuggerContext.context().setStatus(
-                SimpleDebuggerStatus.COLLECTION_INSPECTION_SEANCE_RUNNING
+                SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING
         );
 
         UIEvent<InnerElementRepresentationDTO> uiEvent;

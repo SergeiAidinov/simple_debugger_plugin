@@ -168,6 +168,12 @@ public class DebugSessionImpl implements DebugSession {
 		if (currentFrame == null)
 			return;
 		try {
+			if (SimpleDebuggerEventTypes.isInspectionEvent(abstractSimpleDebuggerUIEvent.getType())
+					&& DebuggerContext.context().isDebugSessionActive()) {
+				DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
+				InspectionSeance inspectionSeance = new InspectionSeanceImpl();
+				inspectionSeance.startInspectionSeanceForAnchorElement(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
+			}
 			UIEventHandler qq = abstractSimpleDebuggerUIEvent.getType().getUiEventHandler();
 			System.out.println(abstractSimpleDebuggerUIEvent.getType() + " handler: " + qq);
 			shouldRefreshSnapsotAndUi.set(abstractSimpleDebuggerUIEvent.getType().getUiEventHandler()
