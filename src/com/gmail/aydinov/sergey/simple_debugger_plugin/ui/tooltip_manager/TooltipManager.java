@@ -21,6 +21,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Listener;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
@@ -124,6 +125,10 @@ public class TooltipManager {
 	}
 
 	public void showFieldInfoPopup(UserInstanceInspectionDTO userInstanceInspectionDTO, Point location) {
+		if (userInstanceInspectionDTO.getInnerElementsByGroups().get(1).isEmpty() 
+				&& userInstanceInspectionDTO.getInnerElementsByGroups().get(2).isEmpty()
+				&& userInstanceInspectionDTO.getInnerElementsByGroups().get(3).isEmpty())
+			return;
 		Display display = root.getDisplay();
 		display.asyncExec(() -> {
 			if (root.isDisposed() || userInstanceInspectionDTO == null)
