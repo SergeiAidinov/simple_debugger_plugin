@@ -203,7 +203,7 @@ public class UniversalInspectorWindow {
                 if (!shell.isDisposed()) shell.close();
                 INSTANCE = null;
                 uiEventCollector.collectUiEvent(
-                        new UIEvent<>(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_ITERABLE, null));
+                        new UIEvent<>(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE, null));
             });
         }
     }
