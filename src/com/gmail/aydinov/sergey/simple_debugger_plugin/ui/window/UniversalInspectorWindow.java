@@ -17,6 +17,7 @@ import org.eclipse.swt.widgets.Shell;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.BreadcrumbItemDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -140,6 +141,7 @@ public class UniversalInspectorWindow {
         Display.getDefault().asyncExec(() -> {
             createArrayTabIfNeeded();
             arrayInspectorTab.showPage(payload);
+            showBreadcrumbs(payload.getBreadcrumbs()); 
             showTab(arrayTabItem, arrayInspectorTab.getControl());
             currentTab = CurrentTab.COLLECTION;
         });
@@ -151,6 +153,7 @@ public class UniversalInspectorWindow {
         Display.getDefault().asyncExec(() -> {
             createMapTabIfNeeded();
             mapInspectorTab.showPage(page);
+            showBreadcrumbs(page.getBreadcrumbs());
             showTab(mapTabItem, mapInspectorTab.getControl());
             currentTab = CurrentTab.MAP;
         });
@@ -224,6 +227,23 @@ public class UniversalInspectorWindow {
                 String itemText = "element[" + index + "]: " + tag.toString();
                 navigationList.add(itemText);
                 index++;
+            }
+        });
+    }
+    
+    private void showBreadcrumbs(java.util.List<BreadcrumbItemDTO> breadcrumbs) {
+        if (navigationList.isDisposed()) return;
+
+        Display.getDefault().asyncExec(() -> {
+            navigationList.removeAll();
+
+            for (int i = 0; i < breadcrumbs.size(); i++) {
+                BreadcrumbItemDTO item = breadcrumbs.get(i);
+
+                String prefix = (i == breadcrumbs.size() - 1) ? "➤ " : "  ";
+                String text = prefix + item.getDisplayName();
+
+                navigationList.add(text);
             }
         });
     }

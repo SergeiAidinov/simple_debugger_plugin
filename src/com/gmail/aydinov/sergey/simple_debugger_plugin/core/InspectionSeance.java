@@ -6,12 +6,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.AbstractInspectableElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableIterableElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.BreadcrumbItemDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
@@ -94,7 +96,7 @@ public class InspectionSeance {
 			if (anchorElement instanceof InspectableIterableElement inspectableCollection) {
 				InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
 				inspectableQueue.offer(ic);
-				ArrayPageDTO page = ic.createPage(0, ic);
+				ArrayPageDTO page = (ArrayPageDTO) ic.inspectPage(ic, 0);
 				debugEventCollector.collectDebugEvent(
 						new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 			}
@@ -117,7 +119,7 @@ public class InspectionSeance {
 					UIEvent<Integer> userRequestetPage = (UIEvent<Integer>) uiEvent;
 					Integer pageNumber = userRequestetPage.getPayload();
 					InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
-					ArrayPageDTO page = ic.createPage(pageNumber, ic);
+					ArrayPageDTO page = (ArrayPageDTO) ic.inspectPage(ic, pageNumber);
 					debugEventCollector.collectDebugEvent(
 							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 				}
@@ -127,6 +129,70 @@ public class InspectionSeance {
 
 		private void ignoreEvent(AbstractUIEvent debugEvent) {
 			SimpleDebuggerLogger.info("Intentionally ignored: " + debugEvent);
+		}
+		
+		private List<BreadcrumbItemDTO> buildBreadcrumbs() {
+		    List<BreadcrumbItemDTO> result = new ArrayList<>();
+
+		    for (AbstractInspectableElement element : inspectableQueue) {
+		        if (element == null) continue;
+
+		        String displayName = resolveDisplayName(element);
+		        String iconKey = resolveIconKey(element);
+		        UniversalElementType type = resolveElementType(element);
+		        boolean canInspect = element.isInspectable(); // или true, если метода нет
+
+		        result.add(new BreadcrumbItemDTO(
+		            displayName,
+		            iconKey,
+		            type,
+		            canInspect
+		        ));
+		    }
+
+		    return result;
+		}
+		
+		private String resolveDisplayName(AbstractInspectableElement element) {
+		    if (element.getElementName() != null && !element.getElementName().isBlank()) {
+		        return element.getElementName();
+		    }
+
+		    // fallback
+		    return element.getClass().getSimpleName();
+		}
+		
+		private String resolveIconKey(AbstractInspectableElement element) {
+		    if (element == null) return "unknown";
+
+		    UniversalElementType type = element.getElementType();
+		    if (type == null) return "unknown";
+
+		    return switch (type) {
+		        case INTERFACE -> "interface";
+		        case CLASS -> "class";
+		        case ENUM -> "enum";
+
+		        case FIELD -> "fieldIcon";
+		        case METHOD -> "method";
+
+		        case METHOD_PARAMETER, LOCAL_VARIABLE -> "variableIcon";
+
+		        case COLLECTION_ELEMENT, MAP_ELEMENT -> "lens";
+
+		        case REFERENCE -> "inspectIcon";
+
+		        case UNKNOWN -> "unknown";
+		    };
+		}
+		
+		private UniversalElementType resolveElementType(AbstractInspectableElement element) {
+		    if (element.getElementType() != null) {
+		        return element.getElementType();
+		    }
+
+		    // fallback (если вдруг не задано)
+		    return UniversalElementType.UNKNOWN;
 		}
 	}
 }

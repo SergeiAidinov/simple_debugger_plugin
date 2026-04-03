@@ -1,7 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import java.util.List;
-
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 
@@ -19,13 +18,14 @@ public class UserObjectInspectionDTO extends AbstractInspectionDTO {
     public UserObjectInspectionDTO(Tag tag,
                                    String elementName,
                                    String elementType,
+                                   List<BreadcrumbItemDTO> breadcrumbs,
                                    String className,
                                    String stringValue,
                                    List<InnerElementRepresentationDTO> instanceFields,
                                    List<InnerElementRepresentationDTO> staticFields,
                                    List<InnerElementRepresentationDTO> instanceMethods,
                                    List<InnerElementRepresentationDTO> staticMethods) {
-        super(tag, elementName, elementType);
+        super(tag, elementName, elementType, breadcrumbs);
         this.className = className;
         this.stringValue = stringValue;
         this.instanceFields = List.copyOf(instanceFields);
@@ -34,29 +34,12 @@ public class UserObjectInspectionDTO extends AbstractInspectionDTO {
         this.staticMethods = List.copyOf(staticMethods);
     }
 
-    public String getClassName() {
-        return className;
-    }
-
-    public String getStringValue() {
-        return stringValue;
-    }
-
-    public List<InnerElementRepresentationDTO> getInstanceFields() {
-        return instanceFields;
-    }
-
-    public List<InnerElementRepresentationDTO> getStaticFields() {
-        return staticFields;
-    }
-
-    public List<InnerElementRepresentationDTO> getInstanceMethods() {
-        return instanceMethods;
-    }
-
-    public List<InnerElementRepresentationDTO> getStaticMethods() {
-        return staticMethods;
-    }
+    public String getClassName() { return className; }
+    public String getStringValue() { return stringValue; }
+    public List<InnerElementRepresentationDTO> getInstanceFields() { return instanceFields; }
+    public List<InnerElementRepresentationDTO> getStaticFields() { return staticFields; }
+    public List<InnerElementRepresentationDTO> getInstanceMethods() { return instanceMethods; }
+    public List<InnerElementRepresentationDTO> getStaticMethods() { return staticMethods; }
 
     // =================== Builder ===================
     public static class Builder {
@@ -64,6 +47,7 @@ public class UserObjectInspectionDTO extends AbstractInspectionDTO {
         private Tag tag;
         private String elementName;
         private String elementType;
+        private List<BreadcrumbItemDTO> breadcrumbs = List.of(); // по умолчанию пустой
         private String className;
         private String stringValue;
         private List<InnerElementRepresentationDTO> instanceFields = List.of();
@@ -74,6 +58,7 @@ public class UserObjectInspectionDTO extends AbstractInspectionDTO {
         public Builder tag(Tag tag) { this.tag = tag; return this; }
         public Builder elementName(String elementName) { this.elementName = elementName; return this; }
         public Builder elementType(String elementType) { this.elementType = elementType; return this; }
+        public Builder breadcrumbs(List<BreadcrumbItemDTO> breadcrumbs) { this.breadcrumbs = breadcrumbs; return this; }
         public Builder className(String className) { this.className = className; return this; }
         public Builder stringValue(String stringValue) { this.stringValue = stringValue; return this; }
         public Builder instanceFields(List<InnerElementRepresentationDTO> instanceFields) { this.instanceFields = instanceFields; return this; }
@@ -82,9 +67,11 @@ public class UserObjectInspectionDTO extends AbstractInspectionDTO {
         public Builder staticMethods(List<InnerElementRepresentationDTO> staticMethods) { this.staticMethods = staticMethods; return this; }
 
         public UserObjectInspectionDTO build() {
-            return new UserObjectInspectionDTO(tag, elementName, elementType,
-                    className, stringValue, instanceFields, staticFields,
-                    instanceMethods, staticMethods);
+            return new UserObjectInspectionDTO(
+                tag, elementName, elementType, breadcrumbs,
+                className, stringValue, instanceFields, staticFields,
+                instanceMethods, staticMethods
+            );
         }
     }
 
