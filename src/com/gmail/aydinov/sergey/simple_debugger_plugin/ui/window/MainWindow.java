@@ -15,7 +15,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -199,7 +199,7 @@ public class MainWindow {
 				resumeButton.setEnabled(simpleDebugEvent.getPayload());
 			} else if (Objects.equals(event.getType(),
 					SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO)) {
-				DebugEvent<UserInstanceInspectionDTO> simpleDebugEvent = (DebugEvent<UserInstanceInspectionDTO>) event;
+				DebugEvent<UserInstanceDetailsDTO> simpleDebugEvent = (DebugEvent<UserInstanceDetailsDTO>) event;
 				classMembersAtBreakpoint.showFieldInfoPopupFromBackend(simpleDebugEvent.getPayload());
 			}
 		});

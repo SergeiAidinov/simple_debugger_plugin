@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 

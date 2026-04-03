@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import java.util.List;
 import java.util.Objects;

@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.inspectable;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IterableInspectionSeanceHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
@@ -26,7 +25,7 @@ import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
 
-public class InspectableCollection extends AbstractInspectableElement {
+public class InspectableIterableElement extends AbstractInspectableElement {
 
 	private final BreakpointEvent breakpointEvent;
 	private final InnerElementRepresentationDTO anchorElement;
@@ -34,9 +33,9 @@ public class InspectableCollection extends AbstractInspectableElement {
 	private String collectionType;
 	private String elementType;
 	private final TreeMap<Integer, InnerElementRepresentationDTO> collectionElements = new TreeMap<Integer, InnerElementRepresentationDTO>();
-	private final UIEventHandler handler = new IterableInspectionSeanceHandler();
+//	private final UIEventHandler handler = new IterableInspectionSeanceHandler();
 
-	InspectableCollection(InnerElementRepresentationDTO anchorElement,
+	InspectableIterableElement(InnerElementRepresentationDTO anchorElement,
 			StackFrame currentFrame, BreakpointEvent breakpointEvent) {
 		super(anchorElement.getTag());
 		this.breakpointEvent = breakpointEvent;
@@ -75,9 +74,9 @@ public class InspectableCollection extends AbstractInspectableElement {
 		return anchorElement;
 	}
 
-	public UIEventHandler getHandler() {
-		return handler;
-	}
+//	public UIEventHandler getHandler() {
+//		return handler;
+//	}
 
 	public void setCollectionType(String collectionType) {
 		this.collectionType = collectionType;
@@ -87,12 +86,12 @@ public class InspectableCollection extends AbstractInspectableElement {
 		this.elementType = elementType;
 	}
 
-	private CollectionPageDTO createPage(int pageNumber) {
-		return CollectionPageDTO.builder().collectionName(anchorElement.getElementName())
-				.collectionType(collectionType).elementType(elementType).totalElements(collectionElements.size())
-				.currentPage(pageNumber).totalPages((collectionElements.size() / DebugUtils.PAGE_SIZE) + 1)
+	public CollectionPageDTO createPage(int pageNumber, InspectableIterableElement inspectableCollection) {
+		return CollectionPageDTO.builder().collectionName(inspectableCollection.getAnchorElement().getElementName())
+				.collectionType(inspectableCollection.getCollectionType()).elementType(inspectableCollection.getElementType()).totalElements(inspectableCollection.getCollectionElements().size())
+				.currentPage(pageNumber).totalPages((inspectableCollection.getCollectionElements().size() / DebugUtils.PAGE_SIZE) + 1)
 				.fromIndex(pageNumber * DebugUtils.PAGE_SIZE)
-				.toIndex(pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE - 1).entries(getPage(pageNumber))
+				.toIndex(pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE - 1).entries(getPage(pageNumber, inspectableCollection))
 				.anchorTag(anchorElement.getTag()).build();
 	}
 
@@ -147,9 +146,9 @@ public class InspectableCollection extends AbstractInspectableElement {
 		}
 	}
 
-	private List<PairDTO<Integer, InnerElementRepresentationDTO>> getPage(int pageNumber) {
+	private List<PairDTO<Integer, InnerElementRepresentationDTO>> getPage(int pageNumber, InspectableIterableElement inspectableCollection) {
 		List<PairDTO<Integer, InnerElementRepresentationDTO>> result = new ArrayList<PairDTO<Integer, InnerElementRepresentationDTO>>();
-		List<InnerElementRepresentationDTO> entries = List.copyOf(collectionElements
+		List<InnerElementRepresentationDTO> entries = List.copyOf(inspectableCollection.getCollectionElements()
 				.subMap((DebugUtils.PAGE_SIZE * pageNumber), true,
 						(DebugUtils.PAGE_SIZE * pageNumber + DebugUtils.PAGE_SIZE), false)
 				.values().stream().toList());
@@ -158,8 +157,5 @@ public class InspectableCollection extends AbstractInspectableElement {
 		}
 		return result;
 	}
-	
-	
-	
 	
 }

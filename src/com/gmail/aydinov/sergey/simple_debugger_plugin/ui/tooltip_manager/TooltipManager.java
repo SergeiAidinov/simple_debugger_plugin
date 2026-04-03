@@ -24,8 +24,8 @@ import org.eclipse.swt.widgets.Listener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserElementDetailDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
@@ -124,7 +124,7 @@ public class TooltipManager {
 		display.timerExec(150, this::checkPopupCursor);
 	}
 
-	public void showTooltipForUserObject(UserInstanceInspectionDTO dto, Point location) {
+	public void showTooltipForUserObject(UserInstanceDetailsDTO dto, Point location) {
 
 	    if (dto.getInnerElementsByGroups().get(1).isEmpty()
 	            && dto.getInnerElementsByGroups().get(2).isEmpty()
@@ -134,7 +134,7 @@ public class TooltipManager {
 	    showPopup(
 	            dto,
 	            location,
-	            d -> buildUserObjectText((UserInstanceInspectionDTO) d),
+	            d -> buildUserObjectText((UserInstanceDetailsDTO) d),
 	            () -> uiEventCollector.collectUiEvent(
 	                    new UIEvent<>(
 	                            SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
@@ -151,11 +151,11 @@ public class TooltipManager {
 		currentPopup = null;
 	}
 
-	private void addGroupOfElements(StringBuilder stringBuilder, List<UserInstanceInnerElementInspectionDTO> list,
+	private void addGroupOfElements(StringBuilder stringBuilder, List<UserElementDetailDTO> list,
 			List<String> markers) {
 
 		for (int outer = 0; outer < list.size(); outer++) {
-			UserInstanceInnerElementInspectionDTO innerElement = list.get(outer);
+			UserElementDetailDTO innerElement = list.get(outer);
 			for (int i = 0; i < markers.size(); i++) {
 				String announce = markers.get(i);
 				if (i == 0) {
@@ -261,7 +261,7 @@ public class TooltipManager {
 	    });
 	}
 	
-	private String buildUserObjectText(UserInstanceInspectionDTO dto) {
+	private String buildUserObjectText(UserInstanceDetailsDTO dto) {
 	    StringBuilder info = new StringBuilder();
 
 	    info.append("Field name: ").append(dto.getFieldName()).append("\n");

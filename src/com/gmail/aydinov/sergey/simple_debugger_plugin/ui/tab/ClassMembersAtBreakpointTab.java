@@ -32,7 +32,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
@@ -180,7 +180,7 @@ public class ClassMembersAtBreakpointTab {
 		}
 	}
 
-	public void showFieldInfoPopupFromBackend(UserInstanceInspectionDTO userInstanceInspectionDTO) {
+	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO userInstanceInspectionDTO) {
 		Display display = root.getDisplay();
 		display.asyncExec(() -> {
 			if (root.isDisposed())
