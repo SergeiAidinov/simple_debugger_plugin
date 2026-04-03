@@ -6,11 +6,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.AbstractInspectableElement;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableIterableElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.inspectable.AbstractInspectableElement;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.inspectable.InspectableCollection;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -30,7 +30,7 @@ public class InspectionSeance {
 	private final AbstractInspectableElement anchorElement;
 	private final StackFrame currentFrame;
 	private final BreakpointEvent breakpointEvent;
-	
+
 	private final Deque<AbstractInspectableElement> inspectableQueue = new LinkedList<>();
 	private static boolean alreadyStarted = false;
 
@@ -45,7 +45,8 @@ public class InspectionSeance {
 	@SuppressWarnings("unchecked")
 	public static boolean startInspectionSeanceForAnchorElement(AbstractUIEvent abstractSimpleDebuggerUIEvent,
 			StackFrame currentFrame, BreakpointEvent breakpointEvent) {
-		if (alreadyStarted) return false;
+		if (alreadyStarted)
+			return false;
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
 		try {
 			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
@@ -56,12 +57,14 @@ public class InspectionSeance {
 			return false;
 		AbstractInspectableElement anchorElement = AbstractInspectableElement.factory()
 				.createInspectableElement(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-		if (Objects.isNull(anchorElement)) return false;
+		if (Objects.isNull(anchorElement))
+			return false;
 		new InspectionSeance(anchorElement, currentFrame, breakpointEvent);
 		return true;
 	}
-	
+
 	private void startInspectionProcedure() {
+		alreadyStarted = true;
 		InspectionProcedure inspectionProcedure = new InspectionProcedure();
 		Thread inspectionThread = new Thread(inspectionProcedure);
 		try {
@@ -73,11 +76,11 @@ public class InspectionSeance {
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 			alreadyStarted = false;
 		}
-		
+
 	}
 
 	private class InspectionProcedure implements Runnable {
-		
+
 		private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 		private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 
@@ -87,13 +90,14 @@ public class InspectionSeance {
 		}
 
 		private boolean inspectionProcedure() {
-			if (anchorElement instanceof InspectableCollection inspectableCollection) {
-				InspectableCollection ic = (InspectableCollection) anchorElement;
-				CollectionPageDTO page = createPage(0, ic);
+			if (anchorElement instanceof InspectableIterableElement inspectableCollection) {
+				InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
+				inspectableQueue.offer(ic);
+				CollectionPageDTO page = ic.createPage(0, ic);
 				debugEventCollector.collectDebugEvent(
 						new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 			}
-			
+
 			while (true) {
 				AbstractUIEvent uiEvent = null;
 				try {
@@ -101,52 +105,27 @@ public class InspectionSeance {
 					System.out.println("EVENT IN SEANCE: " + uiEvent);
 				} catch (InterruptedException e) {
 				}
-				if (Objects.isNull(uiEvent)) continue;
+				if (Objects.isNull(uiEvent))
+					continue;
 				if (!SimpleDebuggerEventTypes.isInspectionEvent(uiEvent.getType()))
 					ignoreEvent(uiEvent);
-				
-				
+
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE))
 					break;
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE)) {
 					UIEvent<Integer> userRequestetPage = (UIEvent<Integer>) uiEvent;
 					Integer pageNumber = userRequestetPage.getPayload();
-					InspectableCollection ic = (InspectableCollection) anchorElement;
-					CollectionPageDTO page = createPage(pageNumber, ic);
+					InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
+					CollectionPageDTO page = ic.createPage(pageNumber, ic);
 					debugEventCollector.collectDebugEvent(
 							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 				}
 			}
 			return true;
 		}
-	
-	private void ignoreEvent(AbstractUIEvent debugEvent) {
-		SimpleDebuggerLogger.info("Intentionally ignored: " + debugEvent);
-	}
-		
-	private CollectionPageDTO createPage(int pageNumber, InspectableCollection inspectableCollection) {
-		
-		
-	return CollectionPageDTO.builder().collectionName(inspectableCollection.getAnchorElement().getElementName())
-			.collectionType(inspectableCollection.getCollectionType()).elementType(inspectableCollection.getElementType()).totalElements(inspectableCollection.getCollectionElements().size())
-			.currentPage(pageNumber).totalPages((inspectableCollection.getCollectionElements().size() / DebugUtils.PAGE_SIZE) + 1)
-			.fromIndex(pageNumber * DebugUtils.PAGE_SIZE)
-			.toIndex(pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE - 1).entries(getPage(pageNumber, inspectableCollection))
-			.anchorTag(anchorElement.getTag()).build();
-}
-	
-	private List<PairDTO<Integer, InnerElementRepresentationDTO>> getPage(int pageNumber, InspectableCollection inspectableCollection) {
-	List<PairDTO<Integer, InnerElementRepresentationDTO>> result = new ArrayList<PairDTO<Integer, InnerElementRepresentationDTO>>();
-	List<InnerElementRepresentationDTO> entries = List.copyOf(inspectableCollection.getCollectionElements()
-			.subMap((DebugUtils.PAGE_SIZE * pageNumber), true,
-					(DebugUtils.PAGE_SIZE * pageNumber + DebugUtils.PAGE_SIZE), false)
-			.values().stream().toList());
-	for (int i = 0; i < entries.size(); i++) {
-		result.add(PairDTO.of((i + DebugUtils.PAGE_SIZE * pageNumber), entries.get(i)));
-	}
-	return result;
-}
-	
-	
+
+		private void ignoreEvent(AbstractUIEvent debugEvent) {
+			SimpleDebuggerLogger.info("Intentionally ignored: " + debugEvent);
+		}
 	}
 }

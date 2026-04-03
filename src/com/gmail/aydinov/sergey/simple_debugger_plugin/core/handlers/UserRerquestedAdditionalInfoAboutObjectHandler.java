@@ -16,8 +16,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInnerElementInspectionDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserElementDetailDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -57,12 +57,12 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 		relevantElements.remove(topLevelElement);
 		List<UniversalElementRepresentation> elements = new ArrayList<UniversalElementRepresentation>(relevantElements);
 		Collections.sort(elements);
-		Map<Integer, ArrayList<UserInstanceInnerElementInspectionDTO>> separatedIntoGroups = Map.of(1,
-				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 2,
-				new ArrayList<UserInstanceInnerElementInspectionDTO>(), 3,
-				new ArrayList<UserInstanceInnerElementInspectionDTO>());
+		Map<Integer, ArrayList<UserElementDetailDTO>> separatedIntoGroups = Map.of(1,
+				new ArrayList<UserElementDetailDTO>(), 2,
+				new ArrayList<UserElementDetailDTO>(), 3,
+				new ArrayList<UserElementDetailDTO>());
 		for (UniversalElementRepresentation element : elements) {
-			UserInstanceInnerElementInspectionDTO userInstanceInnerElementInspectionDTO = new UserInstanceInnerElementInspectionDTO(
+			UserElementDetailDTO userInstanceInnerElementInspectionDTO = new UserElementDetailDTO(
 					element.getElementName(), element.getTypeOrReturnType(), element.getValue());
 			if (firstGroup.contains(element.getElementType()))
 				separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
@@ -71,9 +71,9 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 			else 
 				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
 		}
-		UserInstanceInspectionDTO userInstanceInspectionDTO = new UserInstanceInspectionDTO(
+		UserInstanceDetailsDTO userInstanceInspectionDTO = new UserInstanceDetailsDTO(
 				topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(), separatedIntoGroups);
-		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<UserInstanceInspectionDTO>(
+		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<UserInstanceDetailsDTO>(
 				SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, userInstanceInspectionDTO));
 
 	}

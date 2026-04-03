@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.inspectable;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
@@ -42,7 +42,7 @@ public abstract class AbstractInspectableElement {
 				if (!(payload instanceof InnerElementRepresentationDTO dto)) {
 					throw new IllegalArgumentException("Invalid payload: " + payload);
 				}
-				yield new InspectableCollection(dto, currentFrame, breakpointEvent);
+				yield new InspectableIterableElement(dto, currentFrame, breakpointEvent);
 			}
 			default -> throw new UnsupportedOperationException("Unsupported event: " + event.getType());
 			};

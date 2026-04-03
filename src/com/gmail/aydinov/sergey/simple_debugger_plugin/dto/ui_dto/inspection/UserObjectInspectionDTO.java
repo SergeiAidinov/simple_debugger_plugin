@@ -1,8 +1,9 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import java.util.List;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 
 public class UserObjectInspectionDTO {
 

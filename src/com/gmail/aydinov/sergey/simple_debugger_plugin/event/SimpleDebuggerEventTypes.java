@@ -1,19 +1,15 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 import java.util.EnumSet;
-import java.util.Set;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IgnoreEverntHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedFieldHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedVariableHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserClosedDebugWindowHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvokedMethodHandler;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserObjectInspectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressedResumeButtonHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedAdditionalInfoAboutCollectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IterableInspectionSeanceHandler;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.MapInspectionSeanceHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
@@ -22,11 +18,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapPageDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceElementInspectionDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserInstanceInspectionDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.UserObjectInspectionDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
 
 /**
  * Types of events emitted by the simple debugger.
@@ -56,7 +50,7 @@ public final class SimpleDebuggerEventTypes {
 		/** Event triggered when a method is invoked in the target application */
 		METHOD_INVOKE(String.class, null),
 
-		DISPLAY_ADDITIONAL_INFO(UserInstanceInspectionDTO.class, null),
+		DISPLAY_ADDITIONAL_INFO(UserInstanceDetailsDTO.class, null),
 
 		DISPLAY_INSPECTION_WINDOW(Boolean.class, null),
 
