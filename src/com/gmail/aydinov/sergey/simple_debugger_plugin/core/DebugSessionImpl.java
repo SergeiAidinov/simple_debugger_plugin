@@ -171,6 +171,7 @@ public class DebugSessionImpl implements DebugSession {
 			}
 			UIEventHandler qq = abstractSimpleDebuggerUIEvent.getType().getUiEventHandler();
 			System.out.println(abstractSimpleDebuggerUIEvent.getType() + " handler: " + qq);
+			if (Objects.isNull(qq)) return;
 			shouldRefreshSnapsotAndUi.set(abstractSimpleDebuggerUIEvent.getType().getUiEventHandler()
 					.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent));
 			System.out.println(shouldRefreshSnapsotAndUi);
