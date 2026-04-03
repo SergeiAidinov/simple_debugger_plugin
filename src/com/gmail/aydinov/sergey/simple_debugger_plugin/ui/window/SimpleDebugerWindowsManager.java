@@ -13,10 +13,10 @@ import org.eclipse.swt.widgets.Display;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
@@ -109,7 +109,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	                switch (event.getType()) {
 	                    case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
 	                        @SuppressWarnings("unchecked")
-	                        DebugEvent<CollectionPageDTO> e = (DebugEvent<CollectionPageDTO>) event;
+	                        DebugEvent<ArrayPageDTO> e = (DebugEvent<ArrayPageDTO>) event;
 	                        newAnchorTag = e.getPayload().getAnchorTag();
 	                    }
 	                    case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {

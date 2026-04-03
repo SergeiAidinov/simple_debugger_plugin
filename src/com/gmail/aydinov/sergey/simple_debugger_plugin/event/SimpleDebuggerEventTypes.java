@@ -11,7 +11,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressed
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedAdditionalInfoAboutCollectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
@@ -19,6 +18,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEven
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
 
@@ -89,7 +89,7 @@ public final class SimpleDebuggerEventTypes {
 		
 		USER_REQUESTED_COLLECTION_PAGE(Integer.class, null),
 		
-		DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE(CollectionPageDTO.class, null), 
+		DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE(ArrayPageDTO.class, null), 
 		
 		
 		// === MAP ===

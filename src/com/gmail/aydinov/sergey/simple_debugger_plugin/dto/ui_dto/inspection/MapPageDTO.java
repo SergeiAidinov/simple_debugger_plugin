@@ -1,56 +1,45 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import java.util.List;
-import java.util.Objects;
-
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 
-public class MapPageDTO<K, V> {
+public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage {
 
     private final String mapName;
     private final String mapType;
-    private final int totalEntries;
-    private final int currentPage;
-    private final int totalPages;
     private final int fromIndex;
     private final int toIndex;
-    private final List<PairDTO<K, V>> entries;
 
-    private Tag anchorTag; // <- новое поле
+    private Tag anchorTag;
 
     private MapPageDTO(Builder<K, V> builder) {
+        super(builder.anchorTag, builder.mapName, builder.keyType(), 
+              builder.totalEntries, builder.currentPage, builder.totalPages, builder.entries);
+
         this.mapName = builder.mapName;
         this.mapType = builder.mapType;
-        this.totalEntries = builder.totalEntries;
-        this.currentPage = builder.currentPage;
-        this.totalPages = builder.totalPages;
         this.fromIndex = builder.fromIndex;
         this.toIndex = builder.toIndex;
-        this.entries = builder.entries;
-        this.anchorTag = builder.anchorTag; // присваиваем тег из билдер
+        this.anchorTag = builder.anchorTag;
     }
 
     // =================== Геттеры ===================
     public String getMapName() { return mapName; }
     public String getMapType() { return mapType; }
-    public int getTotalEntries() { return totalEntries; }
-    public int getCurrentPage() { return currentPage; }
-    public int getTotalPages() { return totalPages; }
     public int getFromIndex() { return fromIndex; }
     public int getToIndex() { return toIndex; }
-    public List<PairDTO<K, V>> getEntries() { return entries; }
+    public Tag getAnchorTag() { return anchorTag; }
+    public void setAnchorTag(Tag anchorTag) { this.anchorTag = anchorTag; }
 
-    public Tag getAnchorTag() { return anchorTag; }        // <- геттер для тега
-    public void setAnchorTag(Tag anchorTag) {             // <- сеттер для тега
-        this.anchorTag = anchorTag;
-    }
+    public boolean hasPreviousPage() { return getCurrentPage() > 0; }
+    public boolean hasNextPage() { return getCurrentPage() < getTotalPages() - 1; }
+
+    public static <K, V> Builder<K, V> builder() { return new Builder<>(); }
 
     // =========================================================
     // Builder
     // =========================================================
-    public static <K, V> Builder<K, V> builder() { return new Builder<>(); }
-
     public static class Builder<K, V> {
         private String mapName;
         private String mapType;
@@ -60,7 +49,7 @@ public class MapPageDTO<K, V> {
         private int fromIndex;
         private int toIndex;
         private List<PairDTO<K, V>> entries;
-        private Tag anchorTag; // <- тег в билдере
+        private Tag anchorTag;
 
         public Builder<K, V> mapName(String mapName) { this.mapName = mapName; return this; }
         public Builder<K, V> mapType(String mapType) { this.mapType = mapType; return this; }
@@ -70,20 +59,15 @@ public class MapPageDTO<K, V> {
         public Builder<K, V> fromIndex(int fromIndex) { this.fromIndex = fromIndex; return this; }
         public Builder<K, V> toIndex(int toIndex) { this.toIndex = toIndex; return this; }
         public Builder<K, V> entries(List<PairDTO<K, V>> entries) { this.entries = entries; return this; }
+        public Builder<K, V> anchorTag(Tag tag) { this.anchorTag = tag; return this; }
 
-        public Builder<K, V> anchorTag(Tag tag) {    // <- метод для установки тега
-            this.anchorTag = tag;
-            return this;
+        // Можем добавить метод для elementType, если нужно в AbstractInspectionCollectionPage
+        private String keyType() {
+            return mapType != null ? mapType : "Object"; // fallback
         }
 
         public MapPageDTO<K, V> build() {
             return new MapPageDTO<>(this);
         }
     }
-
-    // =========================================================
-    // Удобные методы
-    // =========================================================
-    public boolean hasPreviousPage() { return currentPage > 0; }
-    public boolean hasNextPage() { return currentPage < totalPages - 1; }
 }

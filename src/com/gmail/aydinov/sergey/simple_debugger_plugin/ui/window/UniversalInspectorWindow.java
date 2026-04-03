@@ -15,8 +15,8 @@ import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -134,7 +134,7 @@ public class UniversalInspectorWindow {
         }
     }
 
-    public void showIterableTab(CollectionPageDTO payload) {
+    public void showIterableTab(ArrayPageDTO payload) {
         if (tabFolder.isDisposed()) return;
 
         Display.getDefault().asyncExec(() -> {
@@ -171,7 +171,7 @@ public class UniversalInspectorWindow {
         switch (event.getType()) {
             case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
                 @SuppressWarnings("unchecked")
-                DebugEvent<CollectionPageDTO> e = (DebugEvent<CollectionPageDTO>) event;
+                DebugEvent<ArrayPageDTO> e = (DebugEvent<ArrayPageDTO>) event;
                 showIterableTab(e.getPayload());
             }
             case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {

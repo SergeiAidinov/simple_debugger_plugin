@@ -9,9 +9,9 @@ import java.util.Objects;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.AbstractInspectableElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableIterableElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
@@ -89,11 +89,12 @@ public class InspectionSeance {
 			inspectionProcedure();
 		}
 
+		@SuppressWarnings("unchecked")
 		private boolean inspectionProcedure() {
 			if (anchorElement instanceof InspectableIterableElement inspectableCollection) {
 				InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
 				inspectableQueue.offer(ic);
-				CollectionPageDTO page = ic.createPage(0, ic);
+				ArrayPageDTO page = ic.createPage(0, ic);
 				debugEventCollector.collectDebugEvent(
 						new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 			}
@@ -116,7 +117,7 @@ public class InspectionSeance {
 					UIEvent<Integer> userRequestetPage = (UIEvent<Integer>) uiEvent;
 					Integer pageNumber = userRequestetPage.getPayload();
 					InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
-					CollectionPageDTO page = ic.createPage(pageNumber, ic);
+					ArrayPageDTO page = ic.createPage(pageNumber, ic);
 					debugEventCollector.collectDebugEvent(
 							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 				}
