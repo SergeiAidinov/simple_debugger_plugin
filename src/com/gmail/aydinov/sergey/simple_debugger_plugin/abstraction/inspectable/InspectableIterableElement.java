@@ -87,8 +87,8 @@ public class InspectableIterableElement extends AbstractInspectableElement {
 	}
 
 	public ArrayPageDTO createPage(int pageNumber, InspectableIterableElement inspectableCollection) {
-		return ArrayPageDTO.builder().collectionName(inspectableCollection.getAnchorElement().getElementName())
-				.collectionType(inspectableCollection.getCollectionType()).elementType(inspectableCollection.getElementType()).totalElements(inspectableCollection.getCollectionElements().size())
+		return ArrayPageDTO.builder().elementName(inspectableCollection.getAnchorElement().getElementName())
+				.elementType(inspectableCollection.getCollectionType()).elementType(inspectableCollection.getElementType()).totalElements(inspectableCollection.getCollectionElements().size())
 				.currentPage(pageNumber).totalPages((inspectableCollection.getCollectionElements().size() / DebugUtils.PAGE_SIZE) + 1)
 				.fromIndex(pageNumber * DebugUtils.PAGE_SIZE)
 				.toIndex(pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE - 1).entries(getPage(pageNumber, inspectableCollection))

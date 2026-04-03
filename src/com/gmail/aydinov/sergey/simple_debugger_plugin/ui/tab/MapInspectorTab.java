@@ -185,8 +185,8 @@ public class MapInspectorTab {
         root.getDisplay().asyncExec(() -> {
             if (root.isDisposed() || viewer.getTable().isDisposed()) return;
 
-            mapNameLabel.setText("Map name: " + safe(page.getMapName()));
-            mapTypeLabel.setText("Map type: " + safe(page.getMapType()));
+            mapNameLabel.setText("Map name: " + safe(page.getElementName()));
+            mapTypeLabel.setText("Map type: " + safe(page.getElementType()));
             sizeLabel.setText("Size: " + page.getTotalElements());
             pageInfoLabel.setText("Page (0-based): " + page.getCurrentPage() + " of " + page.getTotalPages()
                     + "   Showing: " + page.getFromIndex() + "–" + page.getToIndex());

@@ -153,8 +153,8 @@ public class MapInspectionSeanceHandler implements UIEventHandler {
                     entries.subList(fromIndex, toIndex);
 
             return MapPageDTO.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder()
-                    .mapName(anchorElement.getElementName())
-                    .mapType(mapRef.getElementType().name()) // при желании заменить на concrete
+                    .elementName(anchorElement.getElementName())
+                    .elementType(mapRef.getElementType().name()) // при желании заменить на concrete
                     .totalEntries(totalEntries)
                     .currentPage(currentPage)
                     .totalPages(totalPages)

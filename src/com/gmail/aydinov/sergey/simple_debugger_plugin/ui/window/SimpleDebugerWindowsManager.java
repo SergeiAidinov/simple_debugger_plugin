@@ -110,13 +110,13 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	                    case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
 	                        @SuppressWarnings("unchecked")
 	                        DebugEvent<ArrayPageDTO> e = (DebugEvent<ArrayPageDTO>) event;
-	                        newAnchorTag = e.getPayload().getAnchorTag();
+	                        newAnchorTag = e.getPayload().getTag();
 	                    }
 	                    case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
 	                        @SuppressWarnings("unchecked")
 	                        DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e =
 	                            (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
-	                        newAnchorTag = e.getPayload().getAnchorTag();
+	                        newAnchorTag = e.getPayload().getTag();
 	                    }
 	                    case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
 	                    	DebugEvent<UserObjectInspectionDTO> e = (DebugEvent<UserObjectInspectionDTO>) event;

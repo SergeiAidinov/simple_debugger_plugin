@@ -4,6 +4,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.Abs
 
 public interface PageableInspectable {
 	
-	AbstractInspectionDTO inspectPage();
+	AbstractInspectionDTO inspectPage(AbstractInspectableElement inspectableElement, int pageNumber);
 
 }
