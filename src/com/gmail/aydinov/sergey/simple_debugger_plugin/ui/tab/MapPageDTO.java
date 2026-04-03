@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 import java.util.List;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionCollectionPage;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.BreadcrumbItemDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 
 public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K, V>> {
@@ -13,24 +14,23 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
     private MapPageDTO(Builder<K, V> builder) {
         super(
             builder.anchorTag,
-            builder.elementName,       // единое поле
-            builder.elementType,       // единое поле
+            builder.elementName,
+            builder.elementType,
             builder.totalEntries,
             builder.currentPage,
             builder.totalPages,
-            builder.entries            // тип соответствует дженерику T
+            builder.entries,
+            builder.breadcrumbs   // передаем breadcrumbs в super
         );
         this.fromIndex = builder.fromIndex;
         this.toIndex = builder.toIndex;
     }
 
-    // ================= Геттеры =================
     public int getFromIndex() { return fromIndex; }
     public int getToIndex() { return toIndex; }
 
     public static <K, V> Builder<K, V> builder() { return new Builder<>(); }
 
-    // ================= Builder =================
     public static class Builder<K, V> {
         private String elementName;
         private String elementType;
@@ -41,6 +41,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
         private int toIndex;
         private List<PairDTO<K, V>> entries;
         private Tag anchorTag;
+        private List<BreadcrumbItemDTO> breadcrumbs = List.of(); // по умолчанию пустой
 
         public Builder<K, V> elementName(String name) { this.elementName = name; return this; }
         public Builder<K, V> elementType(String type) { this.elementType = type; return this; }
@@ -51,6 +52,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
         public Builder<K, V> toIndex(int to) { this.toIndex = to; return this; }
         public Builder<K, V> entries(List<PairDTO<K, V>> list) { this.entries = list; return this; }
         public Builder<K, V> anchorTag(Tag tag) { this.anchorTag = tag; return this; }
+        public Builder<K, V> breadcrumbs(List<BreadcrumbItemDTO> breadcrumbs) { this.breadcrumbs = breadcrumbs; return this; }
 
         public MapPageDTO<K, V> build() {
             return new MapPageDTO<>(this);

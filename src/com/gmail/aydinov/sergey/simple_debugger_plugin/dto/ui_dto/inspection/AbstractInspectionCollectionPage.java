@@ -17,9 +17,10 @@ public abstract class AbstractInspectionCollectionPage<T> extends AbstractInspec
             int totalElements,
             int currentPage,
             int totalPages,
-            List<T> entries
+            List<T> entries, 
+            List<BreadcrumbItemDTO> breadcrumbs
     ) {
-        super(tag, elementName, elementType);
+        super(tag, elementName, elementType, breadcrumbs);
         this.totalElements = totalElements;
         this.currentPage = currentPage;
         this.totalPages = totalPages;

@@ -1,9 +1,9 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import java.util.List;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 
 public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integer, InnerElementRepresentationDTO>> {
 
@@ -13,12 +13,13 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
     private ArrayPageDTO(Builder builder) {
         super(
             builder.anchorTag,
-            builder.elementName,       // единое поле
-            builder.elementType,       // единое поле
+            builder.elementName,
+            builder.elementType,
             builder.totalElements,
             builder.currentPage,
             builder.totalPages,
-            builder.entries            // тип соответствует дженерику T
+            builder.entries,
+            builder.breadcrumbs != null ? builder.breadcrumbs : List.of()
         );
         this.fromIndex = builder.fromIndex;
         this.toIndex = builder.toIndex;
@@ -41,6 +42,7 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
         private int toIndex;
         private List<PairDTO<Integer, InnerElementRepresentationDTO>> entries;
         private Tag anchorTag;
+        private List<BreadcrumbItemDTO> breadcrumbs;
 
         public Builder elementName(String name) { this.elementName = name; return this; }
         public Builder elementType(String type) { this.elementType = type; return this; }
@@ -51,6 +53,7 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
         public Builder toIndex(int to) { this.toIndex = to; return this; }
         public Builder entries(List<PairDTO<Integer, InnerElementRepresentationDTO>> list) { this.entries = list; return this; }
         public Builder anchorTag(Tag tag) { this.anchorTag = tag; return this; }
+        public Builder breadcrumbs(List<BreadcrumbItemDTO> breadcrumbs) { this.breadcrumbs = breadcrumbs; return this; }
 
         public ArrayPageDTO build() {
             return new ArrayPageDTO(this);

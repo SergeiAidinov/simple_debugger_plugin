@@ -12,150 +12,149 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionCollectionPage;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
+public class InspectableIterableElement extends AbstractInspectableElement
+        implements PageableInspectable<AbstractInspectionCollectionPage<?>> {
 
-public class InspectableIterableElement extends AbstractInspectableElement {
+    private final BreakpointEvent breakpointEvent;
+    private final InnerElementRepresentationDTO anchorElement;
+    private int currentPage = 0;
+    private String collectionType;
+    private UniversalElementType elementType; // <- теперь enum
+    private final TreeMap<Integer, InnerElementRepresentationDTO> collectionElements = new TreeMap<>();
 
-	private final BreakpointEvent breakpointEvent;
-	private final InnerElementRepresentationDTO anchorElement;
-	private int currentPage = 0;
-	private String collectionType;
-	private String elementType;
-	private final TreeMap<Integer, InnerElementRepresentationDTO> collectionElements = new TreeMap<Integer, InnerElementRepresentationDTO>();
-//	private final UIEventHandler handler = new IterableInspectionSeanceHandler();
+    InspectableIterableElement(InnerElementRepresentationDTO anchorElement,
+                               StackFrame currentFrame,
+                               BreakpointEvent breakpointEvent) {
+        super(anchorElement.getTag(),
+              anchorElement.getElementName(),
+              anchorElement.getElementType(),
+              true);
+        this.breakpointEvent = breakpointEvent;
+        this.anchorElement = anchorElement;
 
-	InspectableIterableElement(InnerElementRepresentationDTO anchorElement,
-			StackFrame currentFrame, BreakpointEvent breakpointEvent) {
-		super(anchorElement.getTag());
-		this.breakpointEvent = breakpointEvent;
-		this.anchorElement = anchorElement;
-		this.currentPage = currentPage;
-		this.collectionType = collectionType;
-		this.elementType = elementType;
-		compileCollectionElements(anchorElement);
-	}
+        compileCollectionElements(anchorElement);
+    }
 
-	public int getCurrentPage() {
-		return currentPage;
-	}
+    public int getCurrentPage() { return currentPage; }
+    public void setCurrentPage(int currentPage) { this.currentPage = currentPage; }
+    public String getCollectionType() { return collectionType; }
+    public UniversalElementType getElementType() { return elementType; }
+    public TreeMap<Integer, InnerElementRepresentationDTO> getCollectionElements() { return collectionElements; }
+    public BreakpointEvent getBreakpointEvent() { return breakpointEvent; }
+    public InnerElementRepresentationDTO getAnchorElement() { return anchorElement; }
+    public void setCollectionType(String collectionType) { this.collectionType = collectionType; }
+    public void setElementType(UniversalElementType elementType) { this.elementType = elementType; }
 
-	public void setCurrentPage(int currentPage) {
-		this.currentPage = currentPage;
-	}
+    private void compileCollectionElements(InnerElementRepresentationDTO anchorElement) {
+        Optional<UniversalElementRepresentation> collectionOpt = TargetApplicationRepresentation.getInstance()
+                .getAllElements()
+                .stream()
+                .filter(e -> e instanceof UniversalElementRepresentation)
+                .map(e -> (UniversalElementRepresentation) e)
+                .filter(e -> Objects.equals(e.getTag(), anchorElement.getTag()))
+                .findAny();
 
-	public String getCollectionType() {
-		return collectionType;
-	}
+        if (collectionOpt.isEmpty()) return;
 
-	public String getElementType() {
-		return elementType;
-	}
+        UniversalElementRepresentation collection = collectionOpt.get();
 
-	public TreeMap<Integer, InnerElementRepresentationDTO> getCollectionElements() {
-		return collectionElements;
-	}
-	
-	public BreakpointEvent getBreakpointEvent() {
-		return breakpointEvent;
-	}
+        TripletDTO<String, String, String> ww = DebugUtils.determinCollectionType(
+                collection.getObjectReference(), breakpointEvent
+        );
+        collectionType = ww.getFirst();
 
-	public InnerElementRepresentationDTO getAnchorElement() {
-		return anchorElement;
-	}
+        // Преобразуем строку типа элемента в enum
+        try {
+            elementType = UniversalElementType.valueOf(ww.getSecond());
+        } catch (IllegalArgumentException e) {
+            elementType = UniversalElementType.UNKNOWN;
+        }
 
-//	public UIEventHandler getHandler() {
-//		return handler;
-//	}
+        List<Value> values = DebugUtils.iterateThroughCollection(collection.getObjectReference(), breakpointEvent);
 
-	public void setCollectionType(String collectionType) {
-		this.collectionType = collectionType;
-	}
+        for (int i = 0; i < values.size(); i++) {
+            Value v = values.get(i);
+            if (v == null) continue;
 
-	public void setElementType(String elementType) {
-		this.elementType = elementType;
-	}
+            UniversalElementRepresentation uer;
+            if (v instanceof ObjectReference objRef) {
+                String type = objRef.referenceType().name();
+                String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
 
-	public ArrayPageDTO createPage(int pageNumber, InspectableIterableElement inspectableCollection) {
-		return ArrayPageDTO.builder().elementName(inspectableCollection.getAnchorElement().getElementName())
-				.elementType(inspectableCollection.getCollectionType()).elementType(inspectableCollection.getElementType()).totalElements(inspectableCollection.getCollectionElements().size())
-				.currentPage(pageNumber).totalPages((inspectableCollection.getCollectionElements().size() / DebugUtils.PAGE_SIZE) + 1)
-				.fromIndex(pageNumber * DebugUtils.PAGE_SIZE)
-				.toIndex(pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE - 1).entries(getPage(pageNumber, inspectableCollection))
-				.anchorTag(anchorElement.getTag()).build();
-	}
+                uer = UniversalElementRepresentation.builder()
+                        .referenceType(objRef.referenceType())
+                        .objectReference(objRef)
+                        .elementName(valueText)
+                        .elementType(UniversalElementType.COLLECTION_ELEMENT)
+                        .currentRole(CurrentRole.INNER)
+                        .value(DebugUtils.getObjectReferenceValueAsString(objRef))
+                        .valueCategory(DebugUtils.determineValueCategory(v))
+                        .uniqueId(UUID.randomUUID())
+                        .parentUniqueId(collection.getTag().getUniqueId())
+                        .level(collection.getLevel() + 1)
+                        .build();
+            } else {
+                uer = UniversalElementRepresentation.builder()
+                        .elementName("item")
+                        .value(v.toString())
+                        .valueCategory(ValueCategory.PRIMITIVE)
+                        .uniqueId(UUID.randomUUID())
+                        .parentUniqueId(collection.getTag().getUniqueId())
+                        .level(collection.getLevel() + 1)
+                        .build();
+            }
 
-	private void compileCollectionElements(InnerElementRepresentationDTO anchorElement) {
-		// Получаем объект коллекции по тегу
-		Optional<UniversalElementRepresentation> collectionOpt = TargetApplicationRepresentation.getInstance()
-				.getAllElements() // предполагаем метод, который объединяет first и
-				.stream().filter(e -> e instanceof UniversalElementRepresentation)
-				.map(e -> (UniversalElementRepresentation) e)
-				.filter(e -> Objects.equals(e.getTag(), anchorElement.getTag())).findAny();
+            InnerElementRepresentationDTO dto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(uer);
+            collectionElements.put(i, dto);
+        }
+    }
 
-		if (collectionOpt.isEmpty())
-			return;
+    private List<PairDTO<Integer, InnerElementRepresentationDTO>> getPage(int pageNumber, InspectableIterableElement collection) {
+        List<PairDTO<Integer, InnerElementRepresentationDTO>> result = new ArrayList<>();
+        int from = pageNumber * DebugUtils.PAGE_SIZE;
+        int to = Math.min(from + DebugUtils.PAGE_SIZE, collection.getCollectionElements().size());
 
-		UniversalElementRepresentation collection = collectionOpt.get();
-		TripletDTO<String, String, String> ww = DebugUtils.determinCollectionType(collection.getObjectReference(),
-				breakpointEvent);
-		collectionType = ww.getFirst();
-		elementType = ww.getSecond();
-		// Получаем все значения коллекции
-		List<Value> values = DebugUtils.iterateThroughCollection(collection.getObjectReference(), breakpointEvent);
+        List<InnerElementRepresentationDTO> pageElements = new ArrayList<>(collection.getCollectionElements().subMap(from, to).values());
 
-		// Преобразуем в InnerElementRepresentationDTO и кладём в colectionElements
-		for (int i = 0; i < values.size(); i++) {
-			Value v = values.get(i);
-			if (v == null)
-				continue;
+        for (int i = 0; i < pageElements.size(); i++) {
+            result.add(PairDTO.of(from + i, pageElements.get(i)));
+        }
+        return result;
+    }
 
-			UniversalElementRepresentation uer;
-			if (v instanceof ObjectReference objRef) {
-				String type = objRef.referenceType().name();
-				String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
+    @Override
+    public AbstractInspectionCollectionPage<?> inspectPage(AbstractInspectableElement inspectableElement, int pageNumber) {
+        if (!(inspectableElement instanceof InspectableIterableElement collection))
+            throw new IllegalArgumentException("Expected InspectableIterableElement");
 
-				uer = UniversalElementRepresentation.builder().referenceType(objRef.referenceType())
-						.objectReference(objRef).elementName(valueText)
-						.elementType(UniversalElementType.COLLECTION_ELEMENT).currentRole(CurrentRole.INNER)
-						.value(DebugUtils.getObjectReferenceValueAsString(objRef))
-						.valueCategory(DebugUtils.determineValueCategory(v))
-						// .typeOrReturnType(DebugUtils.)
-						.uniqueId(UUID.randomUUID()).parentUniqueId(collection.getTag().getUniqueId())
-						.level(collection.getLevel() + 1).build();
-			} else {
-				// Примитив
-				uer = UniversalElementRepresentation.builder().elementName("item").value(v.toString())
-						.valueCategory(ValueCategory.PRIMITIVE).uniqueId(UUID.randomUUID())
-						.parentUniqueId(collection.getTag().getUniqueId()).level(collection.getLevel() + 1).build();
-			}
+        int totalElements = collection.getCollectionElements().size();
+        int totalPages = (totalElements + DebugUtils.PAGE_SIZE - 1) / DebugUtils.PAGE_SIZE;
+        int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
+        int toIndex = Math.min(fromIndex + DebugUtils.PAGE_SIZE - 1, totalElements - 1);
 
-			InnerElementRepresentationDTO dto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-					.fromElement(uer);
-			collectionElements.put(i, dto);
-		}
-	}
+        List<PairDTO<Integer, InnerElementRepresentationDTO>> pageEntries = getPage(pageNumber, collection);
 
-	private List<PairDTO<Integer, InnerElementRepresentationDTO>> getPage(int pageNumber, InspectableIterableElement inspectableCollection) {
-		List<PairDTO<Integer, InnerElementRepresentationDTO>> result = new ArrayList<PairDTO<Integer, InnerElementRepresentationDTO>>();
-		List<InnerElementRepresentationDTO> entries = List.copyOf(inspectableCollection.getCollectionElements()
-				.subMap((DebugUtils.PAGE_SIZE * pageNumber), true,
-						(DebugUtils.PAGE_SIZE * pageNumber + DebugUtils.PAGE_SIZE), false)
-				.values().stream().toList());
-		for (int i = 0; i < entries.size(); i++) {
-			result.add(PairDTO.of((i + DebugUtils.PAGE_SIZE * pageNumber), entries.get(i)));
-		}
-		return result;
-	}
-	
+        return ArrayPageDTO.builder()
+                .elementName(collection.getAnchorElement().getElementName())
+                .elementType(collection.getElementType().name()) // преобразуем enum в строку для DTO
+                .totalElements(totalElements)
+                .currentPage(pageNumber)
+                .totalPages(totalPages)
+                .fromIndex(fromIndex)
+                .toIndex(toIndex)
+                .entries(pageEntries)
+                .anchorTag(collection.getAnchorElement().getTag())
+                .build();
+    }
 }
