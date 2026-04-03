@@ -187,7 +187,7 @@ public class MapInspectorTab {
 
             mapNameLabel.setText("Map name: " + safe(page.getMapName()));
             mapTypeLabel.setText("Map type: " + safe(page.getMapType()));
-            sizeLabel.setText("Size: " + page.getTotalEntries());
+            sizeLabel.setText("Size: " + page.getTotalElements());
             pageInfoLabel.setText("Page (0-based): " + page.getCurrentPage() + " of " + page.getTotalPages()
                     + "   Showing: " + page.getFromIndex() + "–" + page.getToIndex());
 

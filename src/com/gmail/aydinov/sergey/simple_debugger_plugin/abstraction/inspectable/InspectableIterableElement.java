@@ -13,10 +13,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.CollectionPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ObjectReference;
@@ -86,8 +86,8 @@ public class InspectableIterableElement extends AbstractInspectableElement {
 		this.elementType = elementType;
 	}
 
-	public CollectionPageDTO createPage(int pageNumber, InspectableIterableElement inspectableCollection) {
-		return CollectionPageDTO.builder().collectionName(inspectableCollection.getAnchorElement().getElementName())
+	public ArrayPageDTO createPage(int pageNumber, InspectableIterableElement inspectableCollection) {
+		return ArrayPageDTO.builder().collectionName(inspectableCollection.getAnchorElement().getElementName())
 				.collectionType(inspectableCollection.getCollectionType()).elementType(inspectableCollection.getElementType()).totalElements(inspectableCollection.getCollectionElements().size())
 				.currentPage(pageNumber).totalPages((inspectableCollection.getCollectionElements().size() / DebugUtils.PAGE_SIZE) + 1)
 				.fromIndex(pageNumber * DebugUtils.PAGE_SIZE)

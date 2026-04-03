@@ -1,57 +1,37 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.dto;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import java.util.List;
-import java.util.Objects;
-
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 
-public class CollectionPageDTO {
+public class ArrayPageDTO extends AbstractInspectionCollectionPage {
 
     private final String collectionName;
     private final String collectionType;
-    private final String elementType;
-    private final int totalElements;
-    private final int currentPage;
-    private final int totalPages;
     private final int fromIndex;
     private final int toIndex;
 
-    private final List<PairDTO<Integer, InnerElementRepresentationDTO>> entries;
+    private Tag anchorTag;
 
-    private Tag anchorTag;  // <- новое поле
+    private ArrayPageDTO(Builder builder) {
+        super(builder.anchorTag, builder.collectionName, builder.elementType,
+              builder.totalElements, builder.currentPage, builder.totalPages, builder.entries);
 
-    private CollectionPageDTO(Builder builder) {
         this.collectionName = builder.collectionName;
         this.collectionType = builder.collectionType;
-        this.elementType = builder.elementType;
-        this.totalElements = builder.totalElements;
-        this.currentPage = builder.currentPage;
-        this.totalPages = builder.totalPages;
         this.fromIndex = builder.fromIndex;
         this.toIndex = builder.toIndex;
-        this.entries = builder.entries;
-        this.anchorTag = builder.anchorTag; // присваиваем тег из билдер
+        this.anchorTag = builder.anchorTag;
     }
 
     // =================== Геттеры ===================
     public String getCollectionName() { return collectionName; }
     public String getCollectionType() { return collectionType; }
-    public String getElementType() { return elementType; }
-    public int getTotalElements() { return totalElements; }
-    public int getCurrentPage() { return currentPage; }
-    public int getTotalPages() { return totalPages; }
     public int getFromIndex() { return fromIndex; }
     public int getToIndex() { return toIndex; }
-    public List<PairDTO<Integer, InnerElementRepresentationDTO>> getEntries() { return entries; }
-
-    public Tag getAnchorTag() { return anchorTag; }       // <- геттер для тега
-    public void setAnchorTag(Tag anchorTag) {             // <- сеттер для тега
-        this.anchorTag = anchorTag;
-    }
-
-    public boolean hasNextPage() { return currentPage < totalPages - 1; }
-    public boolean hasPreviousPage() { return currentPage > 0; }
+    public Tag getAnchorTag() { return anchorTag; }
+    public void setAnchorTag(Tag anchorTag) { this.anchorTag = anchorTag; }
 
     public static Builder builder() { return new Builder(); }
 
@@ -63,16 +43,13 @@ public class CollectionPageDTO {
         private String collectionName;
         private String collectionType;
         private String elementType;
-
         private int totalElements;
         private int currentPage;
         private int totalPages;
         private int fromIndex;
         private int toIndex;
-
         private List<PairDTO<Integer, InnerElementRepresentationDTO>> entries;
-
-        private Tag anchorTag;  // <- новый тег в билдере
+        private Tag anchorTag;
 
         public Builder collectionName(String value) { this.collectionName = value; return this; }
         public Builder collectionType(String value) { this.collectionType = value; return this; }
@@ -83,14 +60,10 @@ public class CollectionPageDTO {
         public Builder fromIndex(int value) { this.fromIndex = value; return this; }
         public Builder toIndex(int value) { this.toIndex = value; return this; }
         public Builder entries(List<PairDTO<Integer, InnerElementRepresentationDTO>> list) { this.entries = list; return this; }
+        public Builder anchorTag(Tag tag) { this.anchorTag = tag; return this; }
 
-        public Builder anchorTag(Tag tag) {    // <- метод для установки тега
-            this.anchorTag = tag;
-            return this;
-        }
-
-        public CollectionPageDTO build() {
-            return new CollectionPageDTO(this);
+        public ArrayPageDTO build() {
+            return new ArrayPageDTO(this);
         }
     }
 }
