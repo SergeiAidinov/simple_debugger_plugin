@@ -34,9 +34,9 @@ public class InspectionSeance {
 	private final Deque<AbstractInspectableElement> inspectableQueue = new LinkedList<>();
 	private static boolean alreadyStarted = false;
 
-	private InspectionSeance(AbstractInspectableElement anchorElement2, StackFrame currentFrame,
+	private InspectionSeance(AbstractInspectableElement anchorElement, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
-		this.anchorElement = anchorElement2;
+		this.anchorElement = anchorElement;
 		this.currentFrame = currentFrame;
 		this.breakpointEvent = breakpointEvent;
 		startInspectionProcedure();
@@ -102,7 +102,7 @@ public class InspectionSeance {
 				} catch (InterruptedException e) {
 				}
 				if (Objects.isNull(uiEvent)) continue;
-				if (!SimpleDebuggerEventTypes.isCollectionInspectionWindowEvent(uiEvent.getType()))
+				if (!SimpleDebuggerEventTypes.isInspectionEvent(uiEvent.getType()))
 					ignoreEvent(uiEvent);
 				
 				

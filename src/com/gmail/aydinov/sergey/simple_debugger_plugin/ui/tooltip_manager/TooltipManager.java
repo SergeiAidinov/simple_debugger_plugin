@@ -137,7 +137,7 @@ public class TooltipManager {
 	            d -> buildUserObjectText((UserInstanceInspectionDTO) d),
 	            () -> uiEventCollector.collectUiEvent(
 	                    new UIEvent<>(
-	                            SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT,
+	                            SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
 	                            dto
 	                    )
 	            )
@@ -186,13 +186,13 @@ public class TooltipManager {
 
 	                switch (dto.getValueCategory()) {
 	                    case COLLECTION -> uiEventCollector.collectUiEvent(
-	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE, dto)
+	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto)
 	                    );
 	                    case MAP -> uiEventCollector.collectUiEvent(
-	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_MAP, dto)
+	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto)
 	                    );
 	                    case USER_OBJECT -> uiEventCollector.collectUiEvent(
-	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT, dto)
+	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto)
 	                    );
 	                }
 	            }

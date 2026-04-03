@@ -86,8 +86,8 @@ public final class SimpleDebuggerEventTypes {
 
 		//USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class, null),
 
-		USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE(InnerElementRepresentationDTO.class,
-				new IterableInspectionSeanceHandler()),
+		USER_STARTED_INSPECTION_SEANCE(InnerElementRepresentationDTO.class,
+				null),
 		
 		USER_CLOSED_INSPECTION_SEANCE(null, new IgnoreEverntHandler()),
 
@@ -100,15 +100,15 @@ public final class SimpleDebuggerEventTypes {
 		
 		// === MAP ===
 
-		USER_STARTED_INSPECTION_SEANCE_FOR_MAP(InnerElementRepresentationDTO.class,
-		        new MapInspectionSeanceHandler()),
-
-		USER_CLOSED_INSPECTION_SEANCE_FOR_MAP(Void.class, new IgnoreEverntHandler()),
+//		USER_STARTED_INSPECTION_SEANCE_FOR_MAP(InnerElementRepresentationDTO.class,
+//		        new MapInspectionSeanceHandler()),
+//
+//		USER_CLOSED_INSPECTION_SEANCE_FOR_MAP(Void.class, new IgnoreEverntHandler()),
 
 		USER_REQUESTED_MAP_PAGE(Integer.class, null),
 
 		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null), 
-		USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(UserInstanceInspectionDTO.class, new UserObjectInspectionHandler()), 
+	//	USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(UserInstanceInspectionDTO.class, new UserObjectInspectionHandler()), 
 		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectInspectionDTO.class, null),
 
 		
@@ -134,9 +134,9 @@ public final class SimpleDebuggerEventTypes {
 
 	// --- Groups of event types ---
 	
-	private static final EnumSet<SimpleDebuggerEventType> COLLECTION_INSPECTION_WINDOW_EVENTS = EnumSet.of(
+	private static final EnumSet<SimpleDebuggerEventType> INSPECTION_EVENTS = EnumSet.of(
 			SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE,
-			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE,
+			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
 			SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
 			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE,
 			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE,
@@ -145,22 +145,22 @@ public final class SimpleDebuggerEventTypes {
 
 	);
 
-	private static final EnumSet<SimpleDebuggerEventType> INSPECTION_WINDOW_EVENTS = EnumSet
-			.of(SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT);
+//	private static final EnumSet<SimpleDebuggerEventType> INSPECTION_WINDOW_EVENTS = EnumSet
+//			.of(SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT);
 	
-	private static final EnumSet<SimpleDebuggerEventType> INSPECTIONAL_EVENTS =
-	        EnumSet.copyOf(COLLECTION_INSPECTION_WINDOW_EVENTS);
+//	private static final EnumSet<SimpleDebuggerEventType> INSPECTIONAL_EVENTS =
+//	        EnumSet.copyOf(INSPECTION_EVENTS);
 
-	static {
-	    INSPECTIONAL_EVENTS.add(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT);
-	}
+//	static {
+//	    INSPECTIONAL_EVENTS.add(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT);
+//	}
 
 	/**
 	 * Checks if the event is an inspection window event.
 	 */
-	public static boolean isInspectionWindowEvent(SimpleDebuggerEventType type) {
-		return INSPECTION_WINDOW_EVENTS.contains(type);
-	}
+//	public static boolean isInspectionWindowEvent(SimpleDebuggerEventType type) {
+//		return INSPECTION_WINDOW_EVENTS.contains(type);
+//	}
 
 	/**
 	 * Checks if the event is a debug window event.
@@ -169,11 +169,11 @@ public final class SimpleDebuggerEventTypes {
 //		return !isInspectionWindowEvent(type) && !is;
 //	}
 
-	public static boolean isCollectionInspectionWindowEvent(SimpleDebuggerEventType type) {
-		return COLLECTION_INSPECTION_WINDOW_EVENTS.contains(type);
-	}
+//	public static boolean isCollectionInspectionWindowEvent(SimpleDebuggerEventType type) {
+//		return INSPECTION_EVENTS.contains(type);
+//	}
 	
 	public static boolean isInspectionEvent(SimpleDebuggerEventType type) {
-		return INSPECTIONAL_EVENTS.contains(type);
+		return INSPECTION_EVENTS.contains(type);
 	}
 }

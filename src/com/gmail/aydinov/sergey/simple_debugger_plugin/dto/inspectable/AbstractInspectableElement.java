@@ -34,7 +34,7 @@ public abstract class AbstractInspectableElement {
 		public AbstractInspectableElement createInspectableElement(AbstractUIEvent event, StackFrame currentFrame,
 				BreakpointEvent breakpointEvent) {
 			return switch (event.getType()) {
-			case USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE -> {
+			case USER_STARTED_INSPECTION_SEANCE -> {
 				if (!(event instanceof UIEvent<?> rawEvent)) {
 					throw new IllegalArgumentException("Invalid event type: " + event);
 				}
