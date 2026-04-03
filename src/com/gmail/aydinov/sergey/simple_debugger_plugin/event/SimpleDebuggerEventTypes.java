@@ -89,7 +89,7 @@ public final class SimpleDebuggerEventTypes {
 		USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE(InnerElementRepresentationDTO.class,
 				new IterableInspectionSeanceHandler()),
 		
-		USER_CLOSED_INSPECTION_SEANCE_FOR_ITERABLE(null, new IgnoreEverntHandler()),
+		USER_CLOSED_INSPECTION_SEANCE(null, new IgnoreEverntHandler()),
 
 		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, null), 
 		
@@ -138,7 +138,7 @@ public final class SimpleDebuggerEventTypes {
 			SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE,
 			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_ITERABLE,
 			SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
-			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE_FOR_ITERABLE,
+			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE,
 			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE,
 			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP,
 			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT
