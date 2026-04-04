@@ -12,11 +12,11 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 
 /**
- * Простая вкладка: отображает содержимое объекта в виде Name | Value
+ * Вкладка: отображает структуру объекта (поля/методы)
  */
 public class UserObjectStructureTab {
 
@@ -35,9 +35,10 @@ public class UserObjectStructureTab {
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
 
-        // Две простые колонки
-        createColumn("Name", 200, PairDTO::getFirst);
-        createColumn("Value", 400, p -> p.getSecond() != null ? String.valueOf(p.getSecond()) : "null");
+        // Колонки под InnerElementRepresentationDTO
+        createColumn("Name", 200, InnerElementRepresentationDTO::getElementName);
+        createColumn("Type / Return", 200, InnerElementRepresentationDTO::getTypeOrReturnType);
+        createColumn("Value / Info", 400, dto -> dto.getValue() != null ? dto.getValue() : "");
     }
 
     public Composite getControl() {
@@ -57,12 +58,12 @@ public class UserObjectStructureTab {
     }
 
     /**
-     * Универсальное создание колонки для PairDTO
+     * Универсальное создание колонки
      */
     private TableViewerColumn createColumn(
             String title,
             int width,
-            java.util.function.Function<PairDTO<String, Object>, String> extractor
+            java.util.function.Function<InnerElementRepresentationDTO, String> extractor
     ) {
         TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
         column.getColumn().setText(title);
@@ -71,8 +72,9 @@ public class UserObjectStructureTab {
         column.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
-                if (element instanceof PairDTO<?, ?> pair) {
-                    return extractor.apply((PairDTO<String, Object>) pair);
+                if (element instanceof InnerElementRepresentationDTO dto) {
+                    String value = extractor.apply(dto);
+                    return value != null ? value : "";
                 }
                 return "";
             }
