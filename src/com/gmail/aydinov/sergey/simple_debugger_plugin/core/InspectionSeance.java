@@ -100,9 +100,8 @@ public class InspectionSeance {
 		@SuppressWarnings("unchecked")
 		private boolean inspectionProcedure() {
 			if (anchorElement instanceof InspectableIterableElement inspectableCollection) {
-				InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
-				inspectableQueue.offer(ic);
-				ArrayPageDTO page = (ArrayPageDTO) ic.inspectPage(ic, 0);
+				inspectableQueue.offer(inspectableCollection);
+				ArrayPageDTO page = (ArrayPageDTO) inspectableCollection.inspectPage(inspectableCollection, 0);
 				List<BreadcrumbItemDTO> qq = buildBreadcrumbs();
 				page.setBreadcrumbs(qq);
 				debugEventCollector.collectDebugEvent(
