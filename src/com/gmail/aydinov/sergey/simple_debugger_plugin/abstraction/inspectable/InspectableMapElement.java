@@ -12,123 +12,142 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionCollectionPage;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
+import com.sun.jdi.ObjectReference;
 import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
 public class InspectableMapElement extends AbstractInspectableElement
-        implements PageableInspectable<AbstractInspectionCollectionPage<?>> {
+		implements PageableInspectable<AbstractInspectionCollectionPage<?>> {
 
-    private final BreakpointEvent breakpointEvent;
-    private final InnerElementRepresentationDTO anchorElement;
+	private final BreakpointEvent breakpointEvent;
+	private final InnerElementRepresentationDTO anchorElement;
 
-    private int currentPage = 0;
-    private String mapType;
+	private int currentPage = 0;
+	private String mapType;
 
-    // 🔥 ключ → значение
-    private final List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> entries =
-            new ArrayList<>();
+	// 🔥 ключ → значение
+	private final List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> entries = new ArrayList<>();
 
-    InspectableMapElement(InnerElementRepresentationDTO anchorElement,
-                          BreakpointEvent breakpointEvent) {
-        super(anchorElement.getTag(),
-              anchorElement.getElementName(),
-              UniversalElementType.MAP_ELEMENT,
-              anchorElement.getValueCategory(),
-              true);
+	InspectableMapElement(InnerElementRepresentationDTO anchorElement, BreakpointEvent breakpointEvent) {
+		super(anchorElement.getTag(), anchorElement.getElementName(), UniversalElementType.MAP_ELEMENT,
+				anchorElement.getValueCategory(), true);
 
-        this.breakpointEvent = breakpointEvent;
-        this.anchorElement = anchorElement;
+		this.breakpointEvent = breakpointEvent;
+		this.anchorElement = anchorElement;
 
-        compileEntries();
-    }
+		compileEntries();
+	}
 
-    // ================= GETTERS =================
+	// ================= GETTERS =================
 
-    public int getCurrentPage() { return currentPage; }
-    public void setCurrentPage(int currentPage) { this.currentPage = currentPage; }
+	public int getCurrentPage() {
+		return currentPage;
+	}
 
-    public String getMapType() { return mapType; }
-    public List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> getEntries() {
-        return entries;
-    }
+	public void setCurrentPage(int currentPage) {
+		this.currentPage = currentPage;
+	}
 
-    public InnerElementRepresentationDTO getAnchorElement() { return anchorElement; }
+	public String getMapType() {
+		return mapType;
+	}
 
-    // ================= CORE =================
+	public List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> getEntries() {
+		return entries;
+	}
 
-    private void compileEntries() {
-        Optional<UniversalElementRepresentation> mapOpt =
-                TargetApplicationRepresentation.getInstance()
-                        .getAllElements()
-                        .stream()
-                        .filter(e -> e instanceof UniversalElementRepresentation)
-                        .map(e -> (UniversalElementRepresentation) e)
-                        .filter(e -> Objects.equals(e.getTag(), anchorElement.getTag()))
-                        .findFirst();
+	public InnerElementRepresentationDTO getAnchorElement() {
+		return anchorElement;
+	}
 
-        if (mapOpt.isEmpty()) return;
+	// ================= CORE =================
 
-        UniversalElementRepresentation mapRef = mapOpt.get();
-         List<Entry<Value, Value>> qq = DebugUtils.iterateThroughMap(mapRef.getObjectReference(), breakpointEvent);
+	private void compileEntries() {
+		Optional<UniversalElementRepresentation> mapOpt = TargetApplicationRepresentation.getInstance().getAllElements()
+				.stream().filter(e -> e instanceof UniversalElementRepresentation)
+				.map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.equals(e.getTag(), anchorElement.getTag())).findFirst();
 
-        mapType = mapRef.getReferenceType() != null
-                ? mapRef.getReferenceType().name()
-                : "Unknown";
+		if (mapOpt.isEmpty())
+			return;
 
-        List<Map.Entry<Value, Value>> rawEntries =
-                DebugUtils.iterateThroughMap(mapRef.getObjectReference(), breakpointEvent);
+		UniversalElementRepresentation mapRef = mapOpt.get();
+		List<Entry<Value, Value>> qq = DebugUtils.iterateThroughMap(mapRef.getObjectReference(), breakpointEvent);
 
-        for (int i = 0; i < rawEntries.size(); i++) {
-            Map.Entry<Value, Value> entry = rawEntries.get(i);
+		mapType = mapRef.getReferenceType() != null ? mapRef.getReferenceType().name() : "Unknown";
 
-//            InnerElementRepresentationDTO keyDto =
-//                    DebugUtils.createInnerElementDTO(entry.getKey(), mapRef, i, "key");
-//
-//            InnerElementRepresentationDTO valueDto =
-//                    DebugUtils.createInnerElementDTO(entry.getValue(), mapRef, i, "value");
+		List<Map.Entry<Value, Value>> rawEntries = DebugUtils.iterateThroughMap(mapRef.getObjectReference(),
+				breakpointEvent);
 
-        //    entries.add(PairDTO.of(keyDto, valueDto));
-        }
-    }
+		for (int i = 0; i < rawEntries.size(); i++) {
+			Map.Entry<Value, Value> entry = rawEntries.get(i);
+			if ((entry.getKey() instanceof ObjectReference keyRef)
+					&& (entry.getValue() instanceof ObjectReference valueRef)) {
+				String keyType = keyRef.referenceType().name();
+				String keyText = keyType.startsWith("java.lang.") ? keyRef.toString() : keyType;
 
-    private List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> getPage(int pageNumber) {
-        int from = pageNumber * DebugUtils.PAGE_SIZE;
-        int to = Math.min(from + DebugUtils.PAGE_SIZE, entries.size());
+				UniversalElementRepresentation keyRepresentation = UniversalElementRepresentation.builder()
+						.referenceType(keyRef.referenceType()).objectReference(keyRef).elementName(keyText)
+						.elementType(UniversalElementType.MAP_ELEMENT).currentRole(CurrentRole.INNER)
+						.value(DebugUtils.getObjectReferenceValueAsString(keyRef))
+						.valueCategory(DebugUtils.determineValueCategory(entry.getKey())).uniqueId(UUID.randomUUID())
+						.parentUniqueId(anchorElement.getTag().getUniqueId()).level(anchorElement.getLevel() + 1)
+						.build();
 
-        if (from >= entries.size()) return List.of();
+				InnerElementRepresentationDTO keyDto = DebugUtils.createInnerElementDTO(entry.getKey(),
+						keyRepresentation, i);
 
-        return entries.subList(from, to);
-    }
+				String valueType = keyRef.referenceType().name();
+				String valueText = keyType.startsWith("java.lang.") ? keyRef.toString() : valueType;
 
-    // ================= PAGINATION =================
+				UniversalElementRepresentation valueRepresentation = UniversalElementRepresentation.builder()
+						.referenceType(valueRef.referenceType()).objectReference(valueRef).elementName(valueText)
+						.elementType(UniversalElementType.MAP_ELEMENT).currentRole(CurrentRole.INNER)
+						.value(DebugUtils.getObjectReferenceValueAsString(valueRef))
+						.valueCategory(DebugUtils.determineValueCategory(entry.getValue())).uniqueId(UUID.randomUUID())
+						.parentUniqueId(anchorElement.getTag().getUniqueId()).level(anchorElement.getLevel() + 1)
+						.build();
 
-    @Override
-    public AbstractInspectionCollectionPage<?> inspectPage(
-            AbstractInspectableElement inspectableElement,
-            int pageNumber
-    ) {
-        if (!(inspectableElement instanceof InspectableMapElement map))
-            throw new IllegalArgumentException("Expected InspectableMapElement");
+				InnerElementRepresentationDTO valueDto = DebugUtils.createInnerElementDTO(entry.getValue(),
+						valueRepresentation, i);
 
-        int totalEntries = map.entries.size();
-        int totalPages = (totalEntries + DebugUtils.PAGE_SIZE - 1) / DebugUtils.PAGE_SIZE;
+				entries.add(PairDTO.of(keyDto, valueDto));
+			}
+		}
+		
+		System.out.println(entries);
+	}
 
-        int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
-        int toIndex = Math.min(fromIndex + DebugUtils.PAGE_SIZE - 1, totalEntries - 1);
+	private List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> getPage(int pageNumber) {
+		int from = pageNumber * DebugUtils.PAGE_SIZE;
+		int to = Math.min(from + DebugUtils.PAGE_SIZE, entries.size());
 
-        List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> pageEntries =
-                map.getPage(pageNumber);
+		if (from >= entries.size())
+			return List.of();
 
-        return MapPageDTO.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder()
-                .elementName(map.getAnchorElement().getElementName())
-                .elementType(map.getMapType())
-                .totalEntries(totalEntries)
-                .currentPage(pageNumber)
-                .totalPages(totalPages)
-                .fromIndex(fromIndex)
-                .toIndex(toIndex)
-                .entries(pageEntries)
-                .anchorTag(map.getAnchorElement().getTag())
-                .build();
-    }
+		return entries.subList(from, to);
+	}
+
+	// ================= PAGINATION =================
+
+	@Override
+	public AbstractInspectionCollectionPage<?> inspectPage(AbstractInspectableElement inspectableElement,
+			int pageNumber) {
+		if (!(inspectableElement instanceof InspectableMapElement map))
+			throw new IllegalArgumentException("Expected InspectableMapElement");
+
+		int totalEntries = map.entries.size();
+		int totalPages = (totalEntries + DebugUtils.PAGE_SIZE - 1) / DebugUtils.PAGE_SIZE;
+
+		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
+		int toIndex = Math.min(fromIndex + DebugUtils.PAGE_SIZE - 1, totalEntries - 1);
+
+		List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> pageEntries = map
+				.getPage(pageNumber);
+
+		return MapPageDTO.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder()
+				.elementName(map.getAnchorElement().getElementName()).elementType(map.getMapType())
+				.totalEntries(totalEntries).currentPage(pageNumber).totalPages(totalPages).fromIndex(fromIndex)
+				.toIndex(toIndex).entries(pageEntries).anchorTag(map.getAnchorElement().getTag()).build();
+	}
 }
