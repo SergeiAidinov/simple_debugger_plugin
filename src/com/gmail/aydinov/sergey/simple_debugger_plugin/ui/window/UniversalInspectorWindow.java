@@ -216,18 +216,18 @@ public class UniversalInspectorWindow {
     }
     
     public void populateNavigationListFromManagerQueue() {
-        Queue<Tag> tagQueue = SimpleDebugerWindowsManager.instance().tagQueue();
+    //    Queue<Tag> tagQueue = SimpleDebugerWindowsManager.instance().tagQueue();
         if (navigationList.isDisposed()) return;
 
         Display.getDefault().asyncExec(() -> {
             navigationList.removeAll(); // очищаем предыдущие элементы
 
             int index = 0;
-            for (Tag tag : tagQueue) {
-                String itemText = "element[" + index + "]: " + tag.toString();
-                navigationList.add(itemText);
-                index++;
-            }
+//            for (Tag tag : tagQueue) {
+//                String itemText = "element[" + index + "]: " + tag.toString();
+//                navigationList.add(itemText);
+//                index++;
+//            }
         });
     }
     
