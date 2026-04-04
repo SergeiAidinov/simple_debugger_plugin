@@ -109,6 +109,10 @@ public class InspectionSeance {
 						new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 			} else if (anchorElement instanceof InspectableMapElement inspectableMapElement) {
 				 MapPageDTO<UniversalElementRepresentation, UniversalElementRepresentation> page = (MapPageDTO<UniversalElementRepresentation, UniversalElementRepresentation>) inspectableMapElement.inspectPage(inspectableMapElement, 0);
+				 List<BreadcrumbItemDTO> qq = buildBreadcrumbs();
+					page.setBreadcrumbs(qq);
+					debugEventCollector.collectDebugEvent(
+							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
 			}
 
 			while (true) {
