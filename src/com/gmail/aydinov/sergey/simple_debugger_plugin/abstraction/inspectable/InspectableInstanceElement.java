@@ -24,13 +24,11 @@ public class InspectableInstanceElement extends AbstractInspectableElement {
 
 	private String classType;
 
-	private final List<PairDTO<String, Object>> fields = new ArrayList<>();
-	private final List<PairDTO<String, String>> methods = new ArrayList<>();
+	private final List<InnerElementRepresentationDTO> fields = new ArrayList<>();
 
 	public InspectableInstanceElement(InnerElementRepresentationDTO anchorElement, BreakpointEvent breakpointEvent) {
 		super(anchorElement.getTag(), anchorElement.getElementName(), anchorElement.getElementType(),
 				anchorElement.getValueCategory(), true);
-
 		this.breakpointEvent = breakpointEvent;
 		this.anchorElement = anchorElement;
 
@@ -41,12 +39,8 @@ public class InspectableInstanceElement extends AbstractInspectableElement {
 		return classType;
 	}
 
-	public List<PairDTO<String, Object>> getFields() {
+	public List<InnerElementRepresentationDTO> getFields() {
 		return fields;
-	}
-
-	public List<PairDTO<String, String>> getMethods() {
-		return methods;
 	}
 
 	public InnerElementRepresentationDTO getAnchorElement() {
@@ -54,56 +48,32 @@ public class InspectableInstanceElement extends AbstractInspectableElement {
 	}
 
 	private void compileFieldsAndMethods() {
-		ObjectReference objRef = null;
 		Optional<UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance().getAllElements()
 				.stream().filter(e -> e instanceof UniversalElementRepresentation)
 				.map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> Objects.equals(e.getTag(), anchorElement.getTag())).findAny();
-		if (qq.isPresent()) objRef = qq.get().getObjectReference();
-
-		if (objRef == null)
-			return;
-
-		ReferenceType refType = objRef.referenceType();
-		classType = refType != null ? refType.name() : "Unknown";
-
-		// ===== Поля =====
-		for (Field field : refType.allFields()) {
-			Value value = objRef.getValue(field);
-			InnerElementRepresentationDTO fieldDto = DebugUtils.createInnerElementDTO(value,
-					UniversalElementRepresentation.builder().referenceType(refType)
-							.objectReference(value instanceof ObjectReference ? (ObjectReference) value : null)
-							.elementName(field.name()).elementType(UniversalElementType.FIELD)
-							.currentRole(CurrentRole.INNER).value(DebugUtils.valueToString(value))
-							.valueCategory(DebugUtils.determineValueCategory(value)).uniqueId(UUID.randomUUID())
-							.parentUniqueId(anchorElement.getTag().getUniqueId()).level(anchorElement.getLevel() + 1)
-							.build(),
-					fields.size());
-			fields.add(PairDTO.of(field.name(), fieldDto));
+		
+		if (qq.isPresent()) {
+			List<UniversalElementRepresentation> ww = TargetApplicationRepresentation.getInstance().getAllElements()
+					.stream().filter(e -> e instanceof UniversalElementRepresentation)
+					.map(e -> (UniversalElementRepresentation) e)
+					.filter(e -> Objects.equals(e.getTag().getParentId(), qq.get().getTag().getUniqueId())).toList();
+			for (UniversalElementRepresentation universalElementRepresentation : ww) {
+				InnerElementRepresentationDTO innerElementRepresentationDTO = 
+					InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(universalElementRepresentation);
+				fields.add(innerElementRepresentationDTO);
+			}
+			System.out.println(ww);
 		}
-
-		// ===== Методы =====
-		for (Method method : refType.allMethods()) {
-			String arguments = String.join(", ", method.argumentTypeNames());
-			methods.add(PairDTO.of(method.name(), arguments));
-		}
-		System.out.println(fields + " " + methods);
 	}
 
 	public UserObjectPageDTO inspectPage(InspectableInstanceElement element) {
-	    // Собираем все поля как пары <имя, значение>
-	   List<PairDTO<String, Object>> fieldEntries = element.getFields();
-
-	    // Методы тоже можно добавить как пары <имя, аргументы>
-	    List<PairDTO<String,String>> methodEntries = element.getMethods();
-
-	    // Создаём DTO страницы
 	    return UserObjectPageDTO.builder()
 	            .anchorTag(element.getTag())
 	            .elementName(element.getElementName())
 	            .elementType(element.getElementType().name())
 	            .classType(element.getClassType())  // <-- сюда classType
-	            .entries(fieldEntries)
+	            .entries(fields)
 	            .build();
 	}
 	
