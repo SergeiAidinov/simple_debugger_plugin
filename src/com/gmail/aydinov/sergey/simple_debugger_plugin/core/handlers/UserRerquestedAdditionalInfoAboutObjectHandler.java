@@ -71,7 +71,7 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 			else 
 				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
 		}
-		UserInstanceDetailsDTO userInstanceInspectionDTO = new UserInstanceDetailsDTO(
+		UserInstanceDetailsDTO userInstanceInspectionDTO = new UserInstanceDetailsDTO(anchorElement.getTag(),
 				topLevelElement.getElementName(), anchorElement.getTypeOrReturnType(), separatedIntoGroups);
 		simpleDebugEventCollector.collectDebugEvent(new DebugEvent<UserInstanceDetailsDTO>(
 				SimpleDebuggerEventType.DISPLAY_ADDITIONAL_INFO, userInstanceInspectionDTO));

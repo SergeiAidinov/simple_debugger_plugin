@@ -19,6 +19,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
@@ -92,6 +93,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	 * blocks when no events are available and will only stop if the thread is
 	 * interrupted.
 	 */
+	@SuppressWarnings("unchecked")
 	private void dispatchEvent() {
 	    Display display = Display.getDefault();
 
@@ -113,13 +115,12 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	                        newAnchorTag = e.getPayload().getTag();
 	                    }
 	                    case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
-	                        @SuppressWarnings("unchecked")
 	                        DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e =
 	                            (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
 	                        newAnchorTag = e.getPayload().getTag();
 	                    }
 	                    case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
-	                    	DebugEvent<UserObjectInspectionDTO> e = (DebugEvent<UserObjectInspectionDTO>) event;
+	                    	DebugEvent<UserObjectPageDTO> e = (DebugEvent<UserObjectPageDTO>) event;
 	                        newAnchorTag = e.getPayload().getTag();
 	                    }
 	                }
