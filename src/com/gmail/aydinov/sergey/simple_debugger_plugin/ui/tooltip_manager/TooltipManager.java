@@ -21,6 +21,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Listener;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -136,10 +137,7 @@ public class TooltipManager {
 	            location,
 	            d -> buildUserObjectText((UserInstanceDetailsDTO) d),
 	            () -> uiEventCollector.collectUiEvent(
-	                    new UIEvent<>(
-	                            SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
-	                            dto
-	                    )
+	                    new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, convertUserInstanceToInnerDTO(dto))
 	            )
 	    );
 	}
@@ -191,9 +189,9 @@ public class TooltipManager {
 	                    case MAP -> uiEventCollector.collectUiEvent(
 	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto)
 	                    );
-	                    case USER_OBJECT -> uiEventCollector.collectUiEvent(
-	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto)
-	                    );
+//	                    case USER_OBJECT -> uiEventCollector.collectUiEvent(
+//	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto)
+//	                    );
 	                }
 	            }
 	    );
@@ -304,5 +302,19 @@ public class TooltipManager {
 	    }
 
 	    return info.toString();
+	}
+	
+	private InnerElementRepresentationDTO convertUserInstanceToInnerDTO(UserInstanceDetailsDTO dto) {
+	    return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(
+	        UniversalElementRepresentation.builder()
+	            .elementName(dto.getFieldName())
+	            .elementType(UniversalElementType.FIELD)
+	            .value(dto.toString())
+	            .valueCategory(ValueCategory.USER_OBJECT)
+	            .uniqueId(dto.getTag().getUniqueId())
+	            .parentUniqueId(dto.getTag().getParentId())
+	           // .level(dto.)
+	            .build()
+	    );
 	}
 }

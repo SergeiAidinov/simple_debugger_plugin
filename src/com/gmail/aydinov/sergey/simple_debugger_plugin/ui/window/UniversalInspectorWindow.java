@@ -20,6 +20,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.Arr
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.BreadcrumbItemDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
@@ -159,12 +160,12 @@ public class UniversalInspectorWindow {
         });
     }
 
-    public void showUserObjectTab(String title, UserObjectInspectionDTO payload) {
+    public void showUserObjectTab(String title, UserObjectPageDTO userObjectPageDTO) {
         if (tabFolder.isDisposed()) return;
 
         Display.getDefault().asyncExec(() -> {
             createUserObjectTabIfNeeded(title);
-            userObjectTab.showUserObject(payload);
+            userObjectTab.showUserObject(userObjectPageDTO);
             showTab(userObjectTabItem, userObjectTab.getControl());
             currentTab = CurrentTab.USER_OBJECT;
         });
@@ -185,7 +186,7 @@ public class UniversalInspectorWindow {
             }
             case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
                 @SuppressWarnings("unchecked")
-                DebugEvent<UserObjectInspectionDTO> e = (DebugEvent<UserObjectInspectionDTO>) event;
+                DebugEvent<UserObjectPageDTO> e = (DebugEvent<UserObjectPageDTO>) event;
                 showUserObjectTab("User Object", e.getPayload());
             }
             default -> {}

@@ -10,6 +10,7 @@ import java.util.Objects;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.AbstractInspectableElement;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableInstanceElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableIterableElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableMapElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
@@ -19,6 +20,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.Abs
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.BreadcrumbItemDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
@@ -46,7 +48,7 @@ public class InspectionSeance {
 		this.anchorElement = anchorElement;
 		this.currentFrame = currentFrame;
 		this.breakpointEvent = breakpointEvent;
-	//	inspectableQueue.offer(anchorElement);
+		// inspectableQueue.offer(anchorElement);
 		startInspectionProcedure();
 	}
 
@@ -107,12 +109,20 @@ public class InspectionSeance {
 				debugEventCollector.collectDebugEvent(
 						new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 			} else if (anchorElement instanceof InspectableMapElement inspectableMapElement) {
-				 MapPageDTO<UniversalElementRepresentation, UniversalElementRepresentation> page = (MapPageDTO<UniversalElementRepresentation, UniversalElementRepresentation>) inspectableMapElement.inspectPage(inspectableMapElement, 0);
-				 inspectableQueue.offer(inspectableMapElement);
-				 List<BreadcrumbItemDTO> qq = buildBreadcrumbs();
-					page.setBreadcrumbs(qq);
-					debugEventCollector.collectDebugEvent(
-							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
+				MapPageDTO<UniversalElementRepresentation, UniversalElementRepresentation> page = (MapPageDTO<UniversalElementRepresentation, UniversalElementRepresentation>) inspectableMapElement
+						.inspectPage(inspectableMapElement, 0);
+				inspectableQueue.offer(inspectableMapElement);
+				List<BreadcrumbItemDTO> qq = buildBreadcrumbs();
+				page.setBreadcrumbs(qq);
+				debugEventCollector.collectDebugEvent(
+						new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
+				
+			} else if (anchorElement instanceof InspectableInstanceElement inspectableInstanceElement) {
+				inspectableQueue.offer(inspectableInstanceElement);
+				 UserObjectPageDTO page = inspectableInstanceElement.inspectPage(inspectableInstanceElement);
+				 page.setBreadcrumbs(buildBreadcrumbs());
+				 debugEventCollector.collectDebugEvent(
+							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, page));
 			}
 
 			while (true) {
@@ -146,27 +156,22 @@ public class InspectionSeance {
 		private void ignoreEvent(AbstractUIEvent debugEvent) {
 			SimpleDebuggerLogger.info("Intentionally ignored: " + debugEvent);
 		}
-		
+
 		private List<BreadcrumbItemDTO> buildBreadcrumbs() {
-		    List<BreadcrumbItemDTO> result = new ArrayList<>();
+			List<BreadcrumbItemDTO> result = new ArrayList<>();
 
-		    for (AbstractInspectableElement element : inspectableQueue) {
-		        if (element == null) continue;
+			for (AbstractInspectableElement element : inspectableQueue) {
+				if (element == null)
+					continue;
 
-		        UniversalElementType type = element.getElementType();
-		        boolean canInspect = element.isInspectable(); // или true, если метода нет
-		        result.add(new BreadcrumbItemDTO(
-		            element.getElementName(),
-		            type,
-		            element.getValueCategory(),
-		            canInspect,
-		            element.getTag()
-		        ));
-		    }
+				UniversalElementType type = element.getElementType();
+				boolean canInspect = element.isInspectable(); // или true, если метода нет
+				result.add(new BreadcrumbItemDTO(element.getElementName(), type, element.getValueCategory(), canInspect,
+						element.getTag()));
+			}
 
-		    return result;
+			return result;
 		}
-		
-		
+
 	}
 }

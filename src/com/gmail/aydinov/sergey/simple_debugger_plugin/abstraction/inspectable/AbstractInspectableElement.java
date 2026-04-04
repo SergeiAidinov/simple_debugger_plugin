@@ -81,6 +81,8 @@ public abstract class AbstractInspectableElement {
 				return new InspectableIterableElement(dto, currentFrame, breakpointEvent);
 			else if (dto.getValueCategory().equals(ValueCategory.MAP))
 				return new InspectableMapElement(dto, breakpointEvent);
+			else if (dto.getValueCategory().equals(ValueCategory.USER_OBJECT))
+				return new InspectableInstanceElement(dto, breakpointEvent);
 			else
 				throw new IllegalArgumentException("Invalid category: " + dto);
 		}

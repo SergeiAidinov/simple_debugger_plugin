@@ -21,6 +21,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserIn
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 
 /**
  * Types of events emitted by the simple debugger.
@@ -103,7 +104,7 @@ public final class SimpleDebuggerEventTypes {
 
 		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null), 
 	//	USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(UserInstanceInspectionDTO.class, new UserObjectInspectionHandler()), 
-		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectInspectionDTO.class, null),
+		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectPageDTO.class, null),
 
 		
 		;
