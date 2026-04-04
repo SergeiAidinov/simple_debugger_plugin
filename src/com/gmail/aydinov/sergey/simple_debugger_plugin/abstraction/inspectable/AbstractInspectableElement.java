@@ -70,19 +70,19 @@ public abstract class AbstractInspectableElement {
 
 		public AbstractInspectableElement createInspectableElement(AbstractUIEvent event, StackFrame currentFrame,
 				BreakpointEvent breakpointEvent) {
-			return switch (event.getType()) {
-			case USER_STARTED_INSPECTION_SEANCE -> {
-				if (!(event instanceof UIEvent<?> rawEvent)) {
-					throw new IllegalArgumentException("Invalid event type: " + event);
-				}
-				Object payload = rawEvent.getPayload();
-				if (!(payload instanceof InnerElementRepresentationDTO dto)) {
-					throw new IllegalArgumentException("Invalid payload: " + payload);
-				}
-				yield new InspectableIterableElement(dto, currentFrame, breakpointEvent);
+			if (!(event instanceof UIEvent<?> rawEvent)) {
+				throw new IllegalArgumentException("Invalid event type: " + event);
 			}
-			default -> throw new UnsupportedOperationException("Unsupported event: " + event.getType());
-			};
+			Object payload = rawEvent.getPayload();
+			if (!(payload instanceof InnerElementRepresentationDTO dto)) {
+				throw new IllegalArgumentException("Invalid payload: " + payload);
+			}
+			if (dto.getValueCategory().equals(ValueCategory.COLLECTION))
+				return new InspectableIterableElement(dto, currentFrame, breakpointEvent);
+			else if (dto.getValueCategory().equals(ValueCategory.MAP))
+				return new InspectableMapElement(dto, breakpointEvent);
+			else
+				throw new IllegalArgumentException("Invalid category: " + dto);
 		}
 	}
 }
