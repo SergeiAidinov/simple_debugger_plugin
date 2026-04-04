@@ -212,19 +212,22 @@ public class ArrayInspectorTab {
         if (dto == null) return null;
 
         ValueCategory category = dto.getValueCategory();
+        if (category == null) return null;
 
+        // 🔹 Коллекции и мапы
         if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
             return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
         }
 
-        if (dto.getElementType() == UniversalElementType.FIELD
-                && category == ValueCategory.USER_OBJECT
+        // 🔹 Только пользовательские объекты (НЕ стандартные типы)
+        if (category == ValueCategory.USER_OBJECT
                 && dto.getValue() != null
                 && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
+
             return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
         }
 
-        // Иконка по умолчанию для остальных элементов
-        return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
+        // ❗ ВАЖНО: ничего не возвращаем для стандартных типов
+        return null;
     }
 }

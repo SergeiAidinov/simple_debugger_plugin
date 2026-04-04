@@ -146,7 +146,8 @@ public class InspectionSeance {
 		            element.getElementName(),
 		            type,
 		            element.getValueCategory(),
-		            canInspect
+		            canInspect,
+		            element.getTag()
 		        ));
 		    }
 
