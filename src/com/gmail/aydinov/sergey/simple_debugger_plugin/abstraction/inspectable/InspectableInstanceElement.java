@@ -22,7 +22,7 @@ public class InspectableInstanceElement extends AbstractInspectableElement {
 	private final BreakpointEvent breakpointEvent;
 	private final InnerElementRepresentationDTO anchorElement;
 
-	private String classType;
+	private String classType = "";
 
 	private final List<InnerElementRepresentationDTO> fields = new ArrayList<>();
 
@@ -54,6 +54,7 @@ public class InspectableInstanceElement extends AbstractInspectableElement {
 				.filter(e -> Objects.equals(e.getTag(), anchorElement.getTag())).findAny();
 		
 		if (qq.isPresent()) {
+			classType = qq.get().getAdditionalInfo();
 			List<UniversalElementRepresentation> ww = TargetApplicationRepresentation.getInstance().getAllElements()
 					.stream().filter(e -> e instanceof UniversalElementRepresentation)
 					.map(e -> (UniversalElementRepresentation) e)
@@ -72,7 +73,7 @@ public class InspectableInstanceElement extends AbstractInspectableElement {
 	            .anchorTag(element.getTag())
 	            .elementName(element.getElementName())
 	            .elementType(element.getElementType().name())
-	            .classType(element.getClassType())  // <-- сюда classType
+	            .classType(classType)  // <-- сюда classType
 	            .entries(fields)
 	            .build();
 	}
