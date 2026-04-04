@@ -2,10 +2,12 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
@@ -13,6 +15,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
 import java.util.List;
 import java.util.function.Function;
@@ -23,6 +28,7 @@ public class ArrayInspectorTab {
 
     private final Composite root;
     private final TableViewer viewer;
+    private final TooltipManager tooltipManager;
 
     private final Label collectionNameLabel;
     private final Label collectionTypeLabel;
@@ -91,12 +97,22 @@ public class ArrayInspectorTab {
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
 
-        // Колонки
+        // Инициализация тултипов
+        tooltipManager = new TooltipManager(table, root);
+        tooltipManager.setTooltipProvider(item -> {
+            int col = TooltipManager.getColumnIndexAtPoint(table,
+                    table.getDisplay().getCursorLocation().x - table.toDisplay(0, 0).x);
+            Object tip = item.getData("tooltip_col_" + col);
+            return tip instanceof String ? (String) tip : null;
+        });
+
+        // ===== Колонки =====
         createColumn("Index", 80,
                 pair -> String.valueOf(pair.getFirst()));
 
         createColumn("Value", 600,
-                pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()));
+                pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
+                pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
     }
 
     public Composite getControl() {
@@ -133,12 +149,7 @@ public class ArrayInspectorTab {
 
     private void requestPage() {
         int page;
-        try {
-            page = Integer.parseInt(pageText.getText().trim());
-        } catch (Exception e) {
-            page = 0;
-        }
-
+        try { page = Integer.parseInt(pageText.getText().trim()); } catch (Exception e) { page = 0; }
         if (page < 0) page = 0;
 
         uiEventCollector.collectUiEvent(
@@ -157,19 +168,19 @@ public class ArrayInspectorTab {
         if (value == null) return "null";
 
         String type = dto.getTypeOrReturnType();
-
-        // Можно легко расширить потом
-        if ("String".equals(type)) {
-            return "\"" + value + "\"";
-        }
+        if ("String".equals(type)) return "\"" + value + "\"";
 
         return value;
     }
 
-    private <K, V> TableViewerColumn createColumn(
+    // =======================
+    // Колонки с поддержкой иконок
+    // =======================
+    private <K,V> TableViewerColumn createColumn(
             String title,
             int width,
-            Function<PairDTO<K, V>, String> textExtractor
+            Function<PairDTO<K,V>, String> textExtractor,
+            Function<PairDTO<K,V>, Image> imageExtractor
     ) {
         TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
         column.getColumn().setText(title);
@@ -180,15 +191,66 @@ public class ArrayInspectorTab {
             public String getText(Object element) {
                 if (element instanceof PairDTO<?, ?> pair) {
                     @SuppressWarnings("unchecked")
-                    PairDTO<K, V> typedPair = (PairDTO<K, V>) pair;
-
+                    PairDTO<K,V> typedPair = (PairDTO<K,V>) pair;
                     String text = textExtractor.apply(typedPair);
                     return text != null ? text : "";
                 }
                 return "";
             }
+
+            @Override
+            public Image getImage(Object element) {
+                if (!(element instanceof PairDTO<?, ?> pair)) return null;
+
+                @SuppressWarnings("unchecked")
+                PairDTO<K,V> typedPair = (PairDTO<K,V>) pair;
+
+                if (!(typedPair.getSecond() instanceof InnerElementRepresentationDTO dto)) return null;
+
+                Image img = imageExtractor.apply(typedPair);
+                if (img == null) return null;
+
+                TableItem item = findTableItem(dto);
+                if (item != null) item.setData("tooltip_col_" + 1, img);
+
+                return img;
+            }
         });
 
         return column;
+    }
+
+    private <K,V> TableViewerColumn createColumn(
+            String title,
+            int width,
+            Function<PairDTO<K,V>, String> textExtractor
+    ) {
+        return createColumn(title, width, textExtractor, pair -> null);
+    }
+
+    private TableItem findTableItem(InnerElementRepresentationDTO dto) {
+        for (TableItem item : viewer.getTable().getItems()) {
+            if (item.getData() instanceof PairDTO<?,?> pair && pair.getSecond() == dto) return item;
+        }
+        return null;
+    }
+
+    private Image getIcon(InnerElementRepresentationDTO dto) {
+        if (dto == null) return null;
+
+        ValueCategory category = dto.getValueCategory();
+        if (category == null) return null;
+
+        if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
+            return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
+        }
+
+        if (category == ValueCategory.USER_OBJECT
+                && dto.getValue() != null
+                && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
+            return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
+        }
+
+        return null;
     }
 }
