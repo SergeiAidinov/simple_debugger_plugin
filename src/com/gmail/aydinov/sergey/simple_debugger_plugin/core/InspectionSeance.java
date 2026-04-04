@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
+import java.lang.annotation.ElementType;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -120,6 +121,8 @@ public class InspectionSeance {
 					Integer pageNumber = userRequestetPage.getPayload();
 					InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
 					ArrayPageDTO page = (ArrayPageDTO) ic.inspectPage(ic, pageNumber);
+					List<BreadcrumbItemDTO> qq = buildBreadcrumbs();
+					page.setBreadcrumbs(qq);
 					debugEventCollector.collectDebugEvent(
 							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 				}
@@ -137,15 +140,12 @@ public class InspectionSeance {
 		    for (AbstractInspectableElement element : inspectableQueue) {
 		        if (element == null) continue;
 
-		        String displayName = resolveDisplayName(element);
-		        String iconKey = resolveIconKey(element);
-		        UniversalElementType type = resolveElementType(element);
+		        UniversalElementType type = element.getElementType();
 		        boolean canInspect = element.isInspectable(); // или true, если метода нет
-
 		        result.add(new BreadcrumbItemDTO(
-		            displayName,
-		            iconKey,
+		            element.getElementName(),
 		            type,
+		            element.getValueCategory(),
 		            canInspect
 		        ));
 		    }
@@ -153,46 +153,6 @@ public class InspectionSeance {
 		    return result;
 		}
 		
-		private String resolveDisplayName(AbstractInspectableElement element) {
-		    if (element.getElementName() != null && !element.getElementName().isBlank()) {
-		        return element.getElementName();
-		    }
-
-		    // fallback
-		    return element.getClass().getSimpleName();
-		}
 		
-		private String resolveIconKey(AbstractInspectableElement element) {
-		    if (element == null) return "unknown";
-
-		    UniversalElementType type = element.getElementType();
-		    if (type == null) return "unknown";
-
-		    return switch (type) {
-		        case INTERFACE -> "interface";
-		        case CLASS -> "class";
-		        case ENUM -> "enum";
-
-		        case FIELD -> "fieldIcon";
-		        case METHOD -> "method";
-
-		        case METHOD_PARAMETER, LOCAL_VARIABLE -> "variableIcon";
-
-		        case COLLECTION_ELEMENT, MAP_ELEMENT -> "lens";
-
-		        case REFERENCE -> "inspectIcon";
-
-		        case UNKNOWN -> "unknown";
-		    };
-		}
-		
-		private UniversalElementType resolveElementType(AbstractInspectableElement element) {
-		    if (element.getElementType() != null) {
-		        return element.getElementType();
-		    }
-
-		    // fallback (если вдруг не задано)
-		    return UniversalElementType.UNKNOWN;
-		}
 	}
 }

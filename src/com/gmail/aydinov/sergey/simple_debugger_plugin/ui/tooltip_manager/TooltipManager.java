@@ -182,7 +182,7 @@ public class TooltipManager {
 	            location,
 	            d -> buildCollectionText((InnerElementRepresentationDTO) d),
 	            () -> {
-	                SimpleDebugerWindowsManager.instance().tagQueue().offer(dto.getTag());
+	              //  SimpleDebugerWindowsManager.instance().tagQueue().offer(dto.getTag());
 
 	                switch (dto.getValueCategory()) {
 	                    case COLLECTION -> uiEventCollector.collectUiEvent(

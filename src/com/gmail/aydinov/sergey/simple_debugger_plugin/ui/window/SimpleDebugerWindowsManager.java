@@ -31,7 +31,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 
 	private MainWindow mainWindow;
 	private UniversalInspectorWindow universalInspectorWindow;
-	private final Queue<Tag> tagQueue = new LinkedList();
+//	private final Queue<Tag> tagQueue = new LinkedList();
 
 	/** Минимальный ресурсный источник: карта с изображениями */
 	public final Map<String, PairDTO<Image, String>> icons;
@@ -137,7 +137,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	                    // создаём новое окно только если его нет
 	                    if (universalInspectorWindow == null || universalInspectorWindow.getShell().isDisposed()) {
 	                        universalInspectorWindow = UniversalInspectorWindow.getInstance();
-	                        tagQueue.offer(finalNewAnchorTag);
+	                     //   tagQueue.offer(finalNewAnchorTag);
 	                        universalInspectorWindow.open();
 	                    }
 
@@ -180,9 +180,5 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	public void setManageableCollectionInspectorWindow(UniversalInspectorWindow universalInspectorWindow) {
 		this.universalInspectorWindow = universalInspectorWindow;
 		
-	}
-	
-	public Queue<Tag> tagQueue(){
-		return tagQueue;
 	}
 }

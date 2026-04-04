@@ -23,14 +23,13 @@ import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
-public class InspectableIterableElement extends AbstractInspectableElement
-        implements PageableInspectable<AbstractInspectionCollectionPage<?>> {
+public class InspectableIterableElement extends AbstractInspectableElement implements PageableInspectable<AbstractInspectionCollectionPage<?>> {
 
     private final BreakpointEvent breakpointEvent;
     private final InnerElementRepresentationDTO anchorElement;
     private int currentPage = 0;
     private String collectionType;
-    private UniversalElementType elementType; // <- теперь enum
+   // private UniversalElementType elementType; // <- теперь enum
     private final TreeMap<Integer, InnerElementRepresentationDTO> collectionElements = new TreeMap<>();
 
     InspectableIterableElement(InnerElementRepresentationDTO anchorElement,
@@ -39,6 +38,7 @@ public class InspectableIterableElement extends AbstractInspectableElement
         super(anchorElement.getTag(),
               anchorElement.getElementName(),
               anchorElement.getElementType(),
+              anchorElement.getValueCategory(),
               true);
         this.breakpointEvent = breakpointEvent;
         this.anchorElement = anchorElement;
@@ -49,12 +49,12 @@ public class InspectableIterableElement extends AbstractInspectableElement
     public int getCurrentPage() { return currentPage; }
     public void setCurrentPage(int currentPage) { this.currentPage = currentPage; }
     public String getCollectionType() { return collectionType; }
-    public UniversalElementType getElementType() { return elementType; }
+    public UniversalElementType getElementType() { return super.getElementType(); }
     public TreeMap<Integer, InnerElementRepresentationDTO> getCollectionElements() { return collectionElements; }
     public BreakpointEvent getBreakpointEvent() { return breakpointEvent; }
     public InnerElementRepresentationDTO getAnchorElement() { return anchorElement; }
     public void setCollectionType(String collectionType) { this.collectionType = collectionType; }
-    public void setElementType(UniversalElementType elementType) { this.elementType = elementType; }
+//    public void setElementType(UniversalElementType elementType) { this.elementType = elementType; }
 
     private void compileCollectionElements(InnerElementRepresentationDTO anchorElement) {
         Optional<UniversalElementRepresentation> collectionOpt = TargetApplicationRepresentation.getInstance()
@@ -75,11 +75,11 @@ public class InspectableIterableElement extends AbstractInspectableElement
         collectionType = ww.getFirst();
 
         // Преобразуем строку типа элемента в enum
-        try {
-            elementType = UniversalElementType.valueOf(ww.getSecond());
-        } catch (IllegalArgumentException e) {
-            elementType = UniversalElementType.UNKNOWN;
-        }
+//        try {
+//            elementType = UniversalElementType.valueOf(ww.getSecond());
+//        } catch (IllegalArgumentException e) {
+//            elementType = UniversalElementType.UNKNOWN;
+//        }
 
         List<Value> values = DebugUtils.iterateThroughCollection(collection.getObjectReference(), breakpointEvent);
 

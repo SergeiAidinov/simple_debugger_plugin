@@ -13,7 +13,7 @@ public abstract class AbstractInspectionDTO {
     private final Tag tag;
     private final String elementName;
     private final String elementType;
-    private final List<BreadcrumbItemDTO> breadcrumbs; // breadcrumb path for UI
+    private List<BreadcrumbItemDTO> breadcrumbs; // breadcrumb path for UI
 
     /**
      * @param tag          unique tag of this element
@@ -47,4 +47,10 @@ public abstract class AbstractInspectionDTO {
     public List<BreadcrumbItemDTO> getBreadcrumbs() {
         return breadcrumbs;
     }
+
+	public void setBreadcrumbs(List<BreadcrumbItemDTO> breadcrumbs) {
+		this.breadcrumbs = breadcrumbs;
+	}
+    
+    
 }
