@@ -42,6 +42,7 @@ public class InspectionSeance {
 		this.anchorElement = anchorElement;
 		this.currentFrame = currentFrame;
 		this.breakpointEvent = breakpointEvent;
+	//	inspectableQueue.offer(anchorElement);
 		startInspectionProcedure();
 	}
 
@@ -98,6 +99,8 @@ public class InspectionSeance {
 				InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
 				inspectableQueue.offer(ic);
 				ArrayPageDTO page = (ArrayPageDTO) ic.inspectPage(ic, 0);
+				List<BreadcrumbItemDTO> qq = buildBreadcrumbs();
+				page.setBreadcrumbs(qq);
 				debugEventCollector.collectDebugEvent(
 						new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 			}
