@@ -1,13 +1,27 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
 
-import org.eclipse.jface.viewers.*;
-import org.eclipse.jface.window.ToolTip;
+import java.util.Objects;
+import java.util.function.Function;
+
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.ColumnLabelProvider;
+import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.layout.*;
-import org.eclipse.swt.widgets.*;
-import org.eclipse.jface.window.ToolTip;
-import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.Text;
+
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 
 // ...
 
@@ -16,14 +30,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
-
-import java.util.function.Function;
 
 public class MapInspectorTab {
 
@@ -40,8 +53,12 @@ public class MapInspectorTab {
     private final Text pageText;
     private final Button goButton;
     private final Button nextButton;
+    
+    private TooltipManager tooltipManager;
+    private InnerElementRepresentationDTO lastInspectedElement;
 
     private int currentPage = 0;
+    
 
     public MapInspectorTab(Composite parent) {
         root = new Composite(parent, SWT.NONE);
@@ -93,10 +110,15 @@ public class MapInspectorTab {
         table.setHeaderVisible(true);
         table.setLinesVisible(true);
         table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        setupTooltips(table);
 
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
         ColumnViewerToolTipSupport.enableFor(viewer, org.eclipse.jface.window.ToolTip.NO_RECREATE);
+      //  setupColumns();
+	//	setupTooltips(table);
+	//	setupColumnClickListeners();
+		setupHoverInspectionListener();
 
         // Колонки
         createColumn("Key", 80,
@@ -111,21 +133,8 @@ public class MapInspectorTab {
                 	return UiUtils.getIcon(keyRepresentation);
                 }
                 	else return null;
-//                    if (UiUtils.isStandartJavaType(keyRepresentation.getTypeOrReturnType())) {
-//                     //   return SimpleDebugerWindowsManager.instance().icons.get("keyIcon").getFirst();
-//                    	return null;
-//                    } else {
-//                    	return UiUtils.getIcon(keyRepresentation);
-//                     //   return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
-//                    }
-//                }
-//                return null;
             },
-            
             pair -> {
-//                if (pair.getFirst() instanceof InnerElementRepresentationDTO keyRepresentation) {
-//                    return keyRepresentation.getTypeOrReturnType();
-//                }
                 return null;
             }
         );
@@ -256,4 +265,84 @@ public class MapInspectorTab {
     private String safe(String value) {
         return value == null ? "" : value;
     }
+    
+    private void setupHoverInspectionListener() {
+		Table table = viewer.getTable();
+		table.addListener(SWT.MouseMove, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			InnerElementRepresentationDTO dto = null;
+			if (item != null && item.getData() instanceof PairDTO pair) {
+				InnerElementRepresentationDTO dataDto =	(InnerElementRepresentationDTO) pair.getSecond();
+				int colIndex = getColumnIndexAtPoint(table, event.x);
+				if (colIndex == 1) {
+					Image icon = getIcon(dataDto);
+					if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
+							|| icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+						dto = dataDto;
+					}
+				}
+			}
+			if (!Objects.equals(dto, lastInspectedElement)) {
+				lastInspectedElement = dto;
+				tooltipManager.closePopup();
+				if (dto != null) {
+					if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+						uiEventCollector.collectUiEvent(new UIEvent<>(
+								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
+						Display display = root.getDisplay();
+						Point location = display.getCursorLocation();
+					//	 tooltipManager.showFieldInfoPopup(null, location);
+					} else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+						uiEventCollector.collectUiEvent(new UIEvent<>(
+								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto));
+						Display display = root.getDisplay();
+						Point location = display.getCursorLocation();
+						tooltipManager.showTooltipForCollection(dto, location);
+					}
+				}
+			}
+
+		});
+	}
+    
+    
+
+    private Image getIcon(InnerElementRepresentationDTO dto) {
+		if (dto == null)
+			return null;
+		ValueCategory category = dto.getValueCategory();
+		if (category == null)
+			return null;
+		// коллекции и мапы
+		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
+			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
+		}
+		// Только поля пользовательского типа, которые реально инициализированы
+		if ((dto.getElementType() == UniversalElementType.MAP_ELEMENT) && category == ValueCategory.USER_OBJECT
+				&& dto.getValue() != null && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
+			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
+		}
+		return null;
+	}
+
+	private int getColumnIndexAtPoint(Table table, int x) {
+		int offset = 0;
+		for (int i = 0; i < table.getColumnCount(); i++) {
+			offset += table.getColumn(i).getWidth();
+			if (x < offset)
+				return i;
+		}
+		return table.getColumnCount() - 1;
+	}
+
+	private void setupTooltips(Table table) {
+		TooltipManager tooltipManager = new TooltipManager(table, root);
+		tooltipManager.setTooltipProvider(item -> {
+			int col = TooltipManager.getColumnIndexAtPoint(table,
+					table.getDisplay().getCursorLocation().x - table.toDisplay(0, 0).x);
+			Object tip = item.getData("tooltip_col_" + col);
+			return tip instanceof String ? (String) tip : null;
+		});
+		this.tooltipManager = tooltipManager;
+	}
 }
