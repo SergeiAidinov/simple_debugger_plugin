@@ -114,7 +114,7 @@ public class MapInspectorTab {
 
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
-        ColumnViewerToolTipSupport.enableFor(viewer, org.eclipse.jface.window.ToolTip.NO_RECREATE);
+     //   ColumnViewerToolTipSupport.enableFor(viewer, org.eclipse.jface.window.ToolTip.NO_RECREATE);
       //  setupColumns();
 	//	setupTooltips(table);
 	//	setupColumnClickListeners();
@@ -252,11 +252,11 @@ public class MapInspectorTab {
                 return imageExtractor.apply((PairDTO<K, V>) pair);
             }
 
-            @Override
-            public String getToolTipText(Object element) {
-                if (!(element instanceof PairDTO<?, ?> pair)) return null;
-                return tooltipExtractor.apply((PairDTO<K, V>) pair);
-            }
+//            @Override
+//            public String getToolTipText(Object element) {
+//                if (!(element instanceof PairDTO<?, ?> pair)) return null;
+//                return tooltipExtractor.apply((PairDTO<K, V>) pair);
+//            }
         });
 
         return column;
@@ -281,7 +281,7 @@ public class MapInspectorTab {
                         dto = dataDto;
                     }
 
-                    if (!Objects.equals(dto, lastInspectedElement)) {
+                    if (Objects.isNull(lastInspectedElement) || !Objects.equals(dto.getTag(), lastInspectedElement.getTag())) {
                         lastInspectedElement = dto;
                         tooltipManager.closePopup();
 

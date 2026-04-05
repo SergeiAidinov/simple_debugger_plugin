@@ -148,6 +148,8 @@ public class InspectionSeance {
 					page.setBreadcrumbs(qq);
 					debugEventCollector.collectDebugEvent(
 							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
+				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT)){
+					System.out.println("INSPECTION: " + uiEvent);
 				}
 			}
 			return true;
