@@ -267,43 +267,40 @@ public class MapInspectorTab {
     }
     
     private void setupHoverInspectionListener() {
-		Table table = viewer.getTable();
-		table.addListener(SWT.MouseMove, event -> {
-			TableItem item = table.getItem(new Point(event.x, event.y));
-			InnerElementRepresentationDTO dto = null;
-			if (item != null && item.getData() instanceof PairDTO pair) {
-				InnerElementRepresentationDTO dataDto =	(InnerElementRepresentationDTO) pair.getSecond();
-				int colIndex = getColumnIndexAtPoint(table, event.x);
-				if (colIndex == 1) {
-					Image icon = getIcon(dataDto);
-					if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
-							|| icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-						dto = dataDto;
-					}
-				}
-			}
-			if (!Objects.equals(dto, lastInspectedElement)) {
-				lastInspectedElement = dto;
-				tooltipManager.closePopup();
-				if (dto != null) {
-					if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-						uiEventCollector.collectUiEvent(new UIEvent<>(
-								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
-						Display display = root.getDisplay();
-						Point location = display.getCursorLocation();
-					//	 tooltipManager.showFieldInfoPopup(null, location);
-					} else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-						uiEventCollector.collectUiEvent(new UIEvent<>(
-								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto));
-						Display display = root.getDisplay();
-						Point location = display.getCursorLocation();
-						tooltipManager.showTooltipForCollection(dto, location);
-					}
-				}
-			}
+        Table table = viewer.getTable();
+        table.addListener(SWT.MouseMove, event -> {
+            TableItem item = table.getItem(new Point(event.x, event.y));
+            InnerElementRepresentationDTO dto = null;
+            if (item != null && item.getData() instanceof PairDTO pair) {
+                InnerElementRepresentationDTO dataDto = (InnerElementRepresentationDTO) pair.getSecond();
+                int colIndex = getColumnIndexAtPoint(table, event.x);
+                if (colIndex == 1) {
+                    Image icon = getIcon(dataDto); // <- вызываем один раз
+                    if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
+                            || icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+                        dto = dataDto;
+                    }
 
-		});
-	}
+                    if (!Objects.equals(dto, lastInspectedElement)) {
+                        lastInspectedElement = dto;
+                        tooltipManager.closePopup();
+
+                        if (dto != null) {
+                            if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+                                uiEventCollector.collectUiEvent(new UIEvent<>(
+                                        SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
+                            } else if (icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+                                uiEventCollector.collectUiEvent(new UIEvent<>(
+                                        SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto));
+                                Point location = root.getDisplay().getCursorLocation();
+                                tooltipManager.showTooltipForCollection(dto, location);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
     
     
 
