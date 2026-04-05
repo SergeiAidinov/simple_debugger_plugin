@@ -97,19 +97,23 @@ public class InspectableMapElement extends AbstractInspectableElement
 				InnerElementRepresentationDTO keyDto = DebugUtils.createInnerElementDTO(entry.getKey(),
 						keyRepresentation, i);
 
-				String valueType = keyRef.referenceType().name();
-				String valueText = keyType.startsWith("java.lang.") ? keyRef.toString() : valueType;
+				String valueType = valueRef.referenceType().name();
+				String valueText = valueType.startsWith("java.lang.") ? keyRef.toString() : valueType;
 
 				UniversalElementRepresentation valueRepresentation = UniversalElementRepresentation.builder()
 						.referenceType(valueRef.referenceType()).objectReference(valueRef).elementName(valueText)
-						.elementType(UniversalElementType.MAP_ELEMENT).currentRole(CurrentRole.INNER)
+						.elementType(UniversalElementType.MAP_ELEMENT)
+						.additionalInfo(" (id=" + String.valueOf(valueRef.uniqueID() + ")"))
+						.currentRole(CurrentRole.INNER)
 						.value(DebugUtils.getObjectReferenceValueAsString(valueRef))
 						.valueCategory(DebugUtils.determineValueCategory(entry.getValue())).uniqueId(UUID.randomUUID())
 						.parentUniqueId(anchorElement.getTag().getUniqueId()).level(anchorElement.getLevel() + 1)
 						.build();
 
-				InnerElementRepresentationDTO valueDto = DebugUtils.createInnerElementDTO(entry.getValue(),
-						valueRepresentation, i);
+				InnerElementRepresentationDTO valueDto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+						.fromElement(valueRepresentation);
+						
+						//DebugUtils.createInnerElementDTO(entry.getValue(), valueRepresentation, i);
 
 				entries.add(PairDTO.of(keyDto, valueDto));
 			}

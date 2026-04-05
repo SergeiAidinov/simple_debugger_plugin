@@ -142,7 +142,7 @@ public class MapInspectorTab {
         createColumn("Value", 570,
             pair -> {
                 if (pair.getSecond() instanceof InnerElementRepresentationDTO valueRepresentation) {
-                    return valueRepresentation.getValue();
+                    return valueRepresentation.getValue() + valueRepresentation.getAdditionalInfo();
                 }
                 return "";
             },
