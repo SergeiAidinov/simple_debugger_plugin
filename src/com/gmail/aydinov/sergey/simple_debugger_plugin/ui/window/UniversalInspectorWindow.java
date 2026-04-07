@@ -26,10 +26,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventC
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.ArrayInspectorTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.MapInspectorTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.UserObjectStructureTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ArrayInspectorTab;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.MapInspectorTab;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.UserObjectStructureTab;
 
 public class UniversalInspectorWindow {
 

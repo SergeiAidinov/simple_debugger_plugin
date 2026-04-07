@@ -23,10 +23,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventC
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ClassMembersAtBreakpointTab;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ConsoleContentTab;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.ContextTab;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.StackTabContent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.main_window_tab.ClassMembersAtBreakpointTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.main_window_tab.ConsoleContentTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.main_window_tab.ContextTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.main_window_tab.StackTabContent;
 
 /**
  * Main debugger window displaying combined Variables + Fields tab, stack trace,
