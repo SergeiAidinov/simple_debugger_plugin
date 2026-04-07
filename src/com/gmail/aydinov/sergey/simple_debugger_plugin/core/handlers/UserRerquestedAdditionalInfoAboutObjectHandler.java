@@ -13,6 +13,7 @@ import java.util.Set;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -28,13 +29,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.event.BreakpointEvent;
 
-
 public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHandler {
 
 	private final DebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventCollector.instance();
 
-	private static final EnumSet<UniversalElementType> firstGroup = EnumSet.of(UniversalElementType.INTERFACE, UniversalElementType.CLASS,
-			UniversalElementType.ENUM, UniversalElementType.FIELD);
+	private static final EnumSet<UniversalElementType> firstGroup = EnumSet.of(UniversalElementType.INTERFACE,
+			UniversalElementType.CLASS, UniversalElementType.ENUM, UniversalElementType.FIELD);
 	private static final EnumSet<UniversalElementType> secondGroup = EnumSet.of(UniversalElementType.METHOD);
 
 	@Override
@@ -47,9 +47,25 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 
 	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
 		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
-		Optional<UniversalElementRepresentation> topLevelElementOptional = TargetApplicationRepresentation.getInstance()
-				.getAllElements().stream().filter(e -> Objects.equals(e.getTag(), anchorElement.getTag()))
-				.map(e -> (UniversalElementRepresentation) e).findAny();
+		System.out.println("ANCHOR: " + anchorElement.toString());
+		TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(System.out::println);
+		Optional<UniversalElementRepresentation> topLevelElementOptional = Optional.empty();
+		if (anchorElement.getElementType().equals(UniversalElementType.FIELD)) {
+			topLevelElementOptional = TargetApplicationRepresentation.getInstance()
+					.getAllElements().stream().filter(e ->  Objects.equals(e.getTag(), anchorElement.getTag()))
+					.map(e -> (UniversalElementRepresentation) e).findAny();
+		} else if (anchorElement.getElementType().equals(UniversalElementType.MAP_ELEMENT)) {
+			 topLevelElementOptional = TargetApplicationRepresentation.getInstance()
+					.getAllElements().stream().filter(e -> {
+						if (Objects.nonNull(e.getObjectReference())) {
+							return Objects.equals(String.valueOf(e.getObjectReference().uniqueID()),
+									anchorElement.getAdditionalInfo());
+						} else
+							return false;
+					}).map(e -> (UniversalElementRepresentation) e).findAny();
+		}
+
+		
 		if (topLevelElementOptional.isEmpty())
 			return;
 		UniversalElementRepresentation topLevelElement = topLevelElementOptional.get();
@@ -58,8 +74,7 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 		List<UniversalElementRepresentation> elements = new ArrayList<UniversalElementRepresentation>(relevantElements);
 		Collections.sort(elements);
 		Map<Integer, ArrayList<UserElementDetailDTO>> separatedIntoGroups = Map.of(1,
-				new ArrayList<UserElementDetailDTO>(), 2,
-				new ArrayList<UserElementDetailDTO>(), 3,
+				new ArrayList<UserElementDetailDTO>(), 2, new ArrayList<UserElementDetailDTO>(), 3,
 				new ArrayList<UserElementDetailDTO>());
 		for (UniversalElementRepresentation element : elements) {
 			UserElementDetailDTO userInstanceInnerElementInspectionDTO = new UserElementDetailDTO(
@@ -68,7 +83,7 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 				separatedIntoGroups.get(1).add(userInstanceInnerElementInspectionDTO);
 			else if (secondGroup.contains(element.getElementType()))
 				separatedIntoGroups.get(2).add(userInstanceInnerElementInspectionDTO);
-			else 
+			else
 				separatedIntoGroups.get(3).add(userInstanceInnerElementInspectionDTO);
 		}
 		UserInstanceDetailsDTO userInstanceInspectionDTO = new UserInstanceDetailsDTO(anchorElement.getTag(),
@@ -102,15 +117,15 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 				.map(e -> (UniversalElementRepresentation) e).toList();
 		selectedElements.addAll(iterationElements);
 
-		Optional<UniversalElementRepresentation> classOfSelectedElementOptional = TargetApplicationRepresentation.getInstance().getAllElements()
-				.stream().filter(e -> e instanceof UniversalElementRepresentation)
+		Optional<UniversalElementRepresentation> classOfSelectedElementOptional = TargetApplicationRepresentation
+				.getInstance().getAllElements().stream().filter(e -> e instanceof UniversalElementRepresentation)
 				.filter(e -> Objects.equals(e.getTag().getUniqueId(), topLevelElement.getTag().getParentId()))
 				.map(e -> (UniversalElementRepresentation) e).findAny();
 
 		UniversalElementRepresentation classOfSelectedElement = classOfSelectedElementOptional.get();
 
-		List<UniversalElementRepresentation> methodsOfSelectedElement = TargetApplicationRepresentation.getInstance().getAllElements()
-				.stream().filter(e -> e instanceof UniversalElementRepresentation)
+		List<UniversalElementRepresentation> methodsOfSelectedElement = TargetApplicationRepresentation.getInstance()
+				.getAllElements().stream().filter(e -> e instanceof UniversalElementRepresentation)
 				.filter(e -> Objects.equals(e.getTag().getParentId(), classOfSelectedElement.getTag().getUniqueId()))
 				.map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> Objects.equals(e.getElementType(), UniversalElementType.METHOD)).toList();
