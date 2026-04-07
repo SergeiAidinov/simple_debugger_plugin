@@ -165,7 +165,7 @@ public class UniversalInspectorWindow {
 
         Display.getDefault().asyncExec(() -> {
             createUserObjectTabIfNeeded(title);
-            userObjectTab.showUserObject(userObjectPageDTO);
+            userObjectTab.showPage(userObjectPageDTO);
             showBreadcrumbs(userObjectPageDTO.getBreadcrumbs());
             showTab(userObjectTabItem, userObjectTab.getControl());
             currentTab = CurrentTab.USER_OBJECT;
