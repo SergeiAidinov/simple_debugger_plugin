@@ -16,8 +16,7 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
-public class InspectableMapElement extends AbstractInspectableElement
-		implements PageableInspectable<AbstractInspectionCollectionPage<?>> {
+public class InspectableMapElement extends AbstractInspectableElement implements PageableInspectable<AbstractInspectionCollectionPage<?>> {
 
 	private final BreakpointEvent breakpointEvent;
 	private final InnerElementRepresentationDTO anchorElement;
@@ -66,7 +65,7 @@ public class InspectableMapElement extends AbstractInspectableElement
 		Optional<UniversalElementRepresentation> mapOpt = TargetApplicationRepresentation.getInstance().getAllElements()
 				.stream().filter(e -> e instanceof UniversalElementRepresentation)
 				.map(e -> (UniversalElementRepresentation) e)
-				.filter(e -> Objects.equals(e.getTag(), anchorElement.getTag())).findFirst();
+				.filter(e -> Objects.equals(e.getTag(), anchorElement.getTag())).findAny();
 
 		if (mapOpt.isEmpty())
 			return;
@@ -103,7 +102,7 @@ public class InspectableMapElement extends AbstractInspectableElement
 				UniversalElementRepresentation valueRepresentation = UniversalElementRepresentation.builder()
 						.referenceType(valueRef.referenceType()).objectReference(valueRef).elementName(valueText)
 						.elementType(UniversalElementType.MAP_ELEMENT)
-						.additionalInfo(" (id=" + String.valueOf(valueRef.uniqueID() + ")"))
+						.additionalInfo(String.valueOf(valueRef.uniqueID()))
 						.currentRole(CurrentRole.INNER)
 						.value(DebugUtils.getObjectReferenceValueAsString(valueRef))
 						.valueCategory(DebugUtils.determineValueCategory(entry.getValue())).uniqueId(UUID.randomUUID())
