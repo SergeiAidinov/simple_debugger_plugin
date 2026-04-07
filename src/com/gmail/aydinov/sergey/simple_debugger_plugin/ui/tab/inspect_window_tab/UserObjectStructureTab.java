@@ -17,6 +17,7 @@ import org.eclipse.swt.widgets.Table;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
@@ -24,7 +25,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWi
 /**
  * Вкладка: отображает структуру объекта (поля/методы)
  */
-public class UserObjectStructureTab {
+public class UserObjectStructureTab implements InspectorTab{
 
     private final Composite root;
     private final TableViewer viewer;
@@ -64,6 +65,7 @@ public class UserObjectStructureTab {
         setupColumns();
     }
 
+    @Override
     public Composite getControl() {
         return root;
     }
@@ -71,20 +73,20 @@ public class UserObjectStructureTab {
     // =========================================================
     // Display
     // =========================================================
-
-    public void showUserObject(UserObjectPageDTO dto) {
-        if (dto == null) {
+    @Override
+    public void showPage(AbstractInspectionDTO abstractInspectionDTO) {
+        if (abstractInspectionDTO == null || (!(abstractInspectionDTO instanceof UserObjectPageDTO))) {
             viewer.setInput(List.of());
             return;
         }
-
+        UserObjectPageDTO page = (UserObjectPageDTO) abstractInspectionDTO;
         // 🔹 Header
-        objectNameLabel.setText("Object: " + safe(dto.getElementName()));
-        classTypeLabel.setText("Class: " + safe(dto.getClassType()));
-        elementTypeLabel.setText("Type: " + safe(dto.getElementType()));
+        objectNameLabel.setText("Object: " + safe(page.getElementName()));
+        classTypeLabel.setText("Class: " + safe(page.getClassType()));
+        elementTypeLabel.setText("Type: " + safe(page.getElementType()));
 
         // 🔹 Table
-        viewer.setInput(dto.getEntries() != null ? dto.getEntries() : List.of());
+        viewer.setInput(page.getEntries() != null ? page.getEntries() : List.of());
         viewer.refresh();
 
         root.layout(true, true);
