@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.main_window_tab;
 
 import java.util.ArrayList;
 import java.util.Comparator;
