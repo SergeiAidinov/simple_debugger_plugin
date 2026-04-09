@@ -7,12 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -41,8 +43,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 		Map<String, PairDTO<Image, String>> iconsTemp = new HashMap<>();
 		List<TripletDTO<String, String, String>> namesAndPaths = List.of(
 				TripletDTO.of("interface", "/icons/interface.png", "interface"),
-				TripletDTO.of("class", "/icons/class.png", "class"),
-				TripletDTO.of("enum", "/icons/enum.png", "enum"),
+				TripletDTO.of("class", "/icons/class.png", "class"), TripletDTO.of("enum", "/icons/enum.png", "enum"),
 				TripletDTO.of("fieldIcon", "/icons/field.png", "non-static field"),
 				TripletDTO.of("debugger", "/icons/icon.png", "debugger_icon"),
 				TripletDTO.of("inspectIcon", "/icons/inspect.png", null),
@@ -95,67 +96,62 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	 */
 	@SuppressWarnings("unchecked")
 	private void dispatchEvent() {
-	    Display display = Display.getDefault();
+		Display display = Display.getDefault();
 
-	    while (!DebuggerContext.context().isInTerminalState()) {
-	        try {
-	            AbstractDebugEvent event = SimpleDebuggerEventCollector.instance().takeDebugEvent();
-	            if (event == null) continue;
+		while (!DebuggerContext.context().isInTerminalState()) {
+			AtomicReference<AbstractDebugEvent> eventReference = new AtomicReference<AbstractDebugEvent>();
 
-	            SimpleDebuggerLogger.info("SimpleDebugEvent: " + event);
+			try {
+				eventReference.set(SimpleDebuggerEventCollector.instance().takeDebugEvent());
 
-	            if (SimpleDebuggerEventTypes.isInspectionEvent(event.getType())) {
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 
-	                // извлекаем тег из события
-	                Tag newAnchorTag = null;
-	                switch (event.getType()) {
-	                    case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
-	                        @SuppressWarnings("unchecked")
-	                        DebugEvent<ArrayPageDTO> e = (DebugEvent<ArrayPageDTO>) event;
-	                        newAnchorTag = e.getPayload().getTag();
-	                    }
-	                    case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
-	                        DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e =
-	                            (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
-	                        newAnchorTag = e.getPayload().getTag();
-	                    }
-	                    case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
-	                    	DebugEvent<UserObjectPageDTO> e = (DebugEvent<UserObjectPageDTO>) event;
-	                        newAnchorTag = e.getPayload().getTag();
-	                    }
-	                }
+			if (eventReference.get() == null)
+				continue;
 
-	                Tag finalNewAnchorTag = newAnchorTag; // для lambda
-	                display.asyncExec(() -> {
-	                    // если окно открыто и тег другой — закрываем
-//	                    if (universalInspectorWindow != null 
-//	                    	//	&& !Objects.equals(tag, finalNewAnchorTag)
-//	                    		) {
-//	                        universalInspectorWindow.close();
-//	                        universalInspectorWindow = null;
-//	                    }
+			SimpleDebuggerLogger.info("SimpleDebugEvent: " + eventReference.get());
 
-	                    // создаём новое окно только если его нет
-	                    if (universalInspectorWindow == null || universalInspectorWindow.getShell().isDisposed()) {
-	                        universalInspectorWindow = UniversalInspectorWindow.getInstance();
-	                     //   tagQueue.offer(finalNewAnchorTag);
-	                        universalInspectorWindow.open();
-	                    }
+			if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING)) {
+				mainWindow.handleDebugEvent(eventReference.get());
+			} else if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING)) {
+				display.asyncExec(() -> {
+					// создаём новое окно только если его нет
+					if (universalInspectorWindow == null || universalInspectorWindow.getShell().isDisposed()) {
+						universalInspectorWindow = UniversalInspectorWindow.getInstance();
+						// tagQueue.offer(finalNewAnchorTag);
+						universalInspectorWindow.open();
+					}
 
-	                    universalInspectorWindow.handleDebugEvent(event);
-	                });
+					universalInspectorWindow.handleDebugEvent(eventReference.get());
+				});
+				if (SimpleDebuggerEventTypes.isInspectionEvent(eventReference.get().getType())) {
 
-	            } else {
-	                mainWindow.handleDebugEvent(event);
-	            }
+					// извлекаем тег из события
+					Tag newAnchorTag = null;
+					switch (eventReference.get().getType()) {
+					case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
 
-	        } catch (InterruptedException e) {
-	            Thread.currentThread().interrupt();
-	            break;
-	        }
-	    }
+						DebugEvent<ArrayPageDTO> e = (DebugEvent<ArrayPageDTO>) eventReference.get();
+						newAnchorTag = e.getPayload().getTag();
+					}
+					case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
+						DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e = (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) eventReference
+								.get();
+						newAnchorTag = e.getPayload().getTag();
+					}
+					case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
+						DebugEvent<UserObjectPageDTO> e = (DebugEvent<UserObjectPageDTO>) eventReference.get();
+						newAnchorTag = e.getPayload().getTag();
+					}
+					}
+				}
+
+			}
+		}
 	}
-	
+
 	/**
 	 * Возвращает или создаёт главное окно
 	 */
@@ -166,7 +162,8 @@ public class SimpleDebugerWindowsManager implements Runnable {
 		return this.mainWindow;
 	}
 
-	public UniversalInspectorWindow getUniversalInspectorWindowFor(InnerElementRepresentationDTO innerElementRepresentationDTO) {
+	public UniversalInspectorWindow getUniversalInspectorWindowFor(
+			InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		if (DebuggerContext.context().isInTerminalState())
 			return null;
 		this.universalInspectorWindow = UniversalInspectorWindow.getInstance();
@@ -177,9 +174,8 @@ public class SimpleDebugerWindowsManager implements Runnable {
 		return universalInspectorWindow;
 	}
 
-	
 	public void setManageableCollectionInspectorWindow(UniversalInspectorWindow universalInspectorWindow) {
 		this.universalInspectorWindow = universalInspectorWindow;
-		
+
 	}
 }
