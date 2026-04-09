@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_ta
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
@@ -23,7 +24,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWi
 import java.util.List;
 import java.util.function.Function;
 
-public class ArrayInspectorTab implements InspectorTab {
+public class CollectionInspectorTab implements InspectorTab {
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
@@ -44,7 +45,7 @@ public class ArrayInspectorTab implements InspectorTab {
 
 	private int currentPage = 0;
 
-	public ArrayInspectorTab(Composite parent) {
+	public CollectionInspectorTab(Composite parent) {
 		root = new Composite(parent, SWT.NONE);
 		root.setLayout(new GridLayout(1, false));
 
@@ -108,6 +109,7 @@ public class ArrayInspectorTab implements InspectorTab {
 
 		createColumn("Value", 600, pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
 				pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
+		setupClickListener();
 	}
 
 	@Override
@@ -214,7 +216,7 @@ public class ArrayInspectorTab implements InspectorTab {
 
 				TableItem item = findTableItem(dto);
 				if (item != null)
-					item.setData("tooltip_col_" + 1, img);
+					item.setData("tooltip_col_" + 1, "Inspect element");
 
 				return img;
 			}
@@ -254,5 +256,28 @@ public class ArrayInspectorTab implements InspectorTab {
 		}
 
 		return null;
+	}
+	
+	private void setupClickListener() {
+	    Table table = viewer.getTable();
+
+	    table.addListener(SWT.MouseDown, event -> {
+	        TableItem item = table.getItem(new Point(event.x, event.y));
+	        if (item == null) return;
+
+	        Object data = item.getData();
+	        if (!(data instanceof PairDTO<?, ?> pair)) return;
+
+	        Object second = pair.getSecond();
+	        if (!(second instanceof InnerElementRepresentationDTO dto)) return;
+
+	        // 👉 Генерация события
+	        uiEventCollector.collectUiEvent(
+	            new UIEvent<>(
+	                SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
+	                dto
+	            )
+	        );
+	    });
 	}
 }

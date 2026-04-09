@@ -1,6 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +27,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserElementDetailDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
@@ -43,7 +45,8 @@ public class TooltipManager {
 	private final Composite root;
 	private Function<TableItem, String> tooltipProvider;
 	private Shell currentPopup;
-	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 
 	public TooltipManager(Table table, Composite root) {
 		this.table = table;
@@ -127,19 +130,13 @@ public class TooltipManager {
 
 	public void showTooltipForUserObject(UserInstanceDetailsDTO dto, Point location) {
 
-	    if (dto.getInnerElementsByGroups().get(1).isEmpty()
-	            && dto.getInnerElementsByGroups().get(2).isEmpty()
-	            && dto.getInnerElementsByGroups().get(3).isEmpty())
-	        return;
+		if (dto.getInnerElementsByGroups().get(1).isEmpty() && dto.getInnerElementsByGroups().get(2).isEmpty()
+				&& dto.getInnerElementsByGroups().get(3).isEmpty())
+			return;
 
-	    showPopup(
-	            dto,
-	            location,
-	            d -> buildUserObjectText((UserInstanceDetailsDTO) d),
-	            () -> uiEventCollector.collectUiEvent(
-	                    new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, convertUserInstanceToInnerDTO(dto))
-	            )
-	    );
+		showPopup(dto, location, d -> buildUserObjectText((UserInstanceDetailsDTO) d),
+				() -> uiEventCollector.collectUiEvent(new UIEvent<>(
+						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, convertUserInstanceToInnerDTO(dto))));
 	}
 
 	public void closePopup() {
@@ -175,146 +172,129 @@ public class TooltipManager {
 
 	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
 
-	    showPopup(
-	            dto,
-	            location,
-	            d -> buildCollectionText((InnerElementRepresentationDTO) d),
-	            () -> {
-	              //  SimpleDebugerWindowsManager.instance().tagQueue().offer(dto.getTag());
-
-	                switch (dto.getValueCategory()) {
-	                    case COLLECTION -> uiEventCollector.collectUiEvent(
-	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto)
-	                    );
-	                    case MAP -> uiEventCollector.collectUiEvent(
-	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto)
-	                    );
+		showPopup(dto, location, d -> buildCollectionText((InnerElementRepresentationDTO) d), () -> {
+			// SimpleDebugerWindowsManager.instance().tagQueue().offer(dto.getTag());
+			debugEventCollector
+					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
+			switch (dto.getValueCategory()) {
+			case COLLECTION -> uiEventCollector
+					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
+			case MAP -> uiEventCollector
+					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
 //	                    case USER_OBJECT -> uiEventCollector.collectUiEvent(
 //	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto)
 //	                    );
-	                }
-	            }
-	    );
+			default -> debugEventCollector
+					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+			}
+		});
 	}
-	
-	private void showPopup(
-	        Object dto,
-	        Point location,
-	        Function<Object, String> textBuilder,
-	        Runnable onClick) {
 
-	    Display display = root.getDisplay();
+	private void showPopup(Object dto, Point location, Function<Object, String> textBuilder, Runnable onClick) {
 
-	    display.asyncExec(() -> {
-	        if (root.isDisposed() || dto == null)
-	            return;
+		Display display = root.getDisplay();
 
-	        closePopup();
+		display.asyncExec(() -> {
+			if (root.isDisposed() || dto == null)
+				return;
 
-	        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
-	        popup.setLayout(new GridLayout(1, false));
-	        popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
-	        popup.setData("dto", dto);
+			closePopup();
 
-	        // ---- UI ----
-	        ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
-	        scrolled.setLayoutData(new GridData(400, 200));
+			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
+			popup.setLayout(new GridLayout(1, false));
+			popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
+			popup.setData("dto", dto);
 
-	        Composite content = new Composite(scrolled, SWT.NONE);
-	        content.setLayout(new GridLayout(1, false));
+			// ---- UI ----
+			ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
+			scrolled.setLayoutData(new GridData(400, 200));
 
-	        Label label = new Label(content, SWT.WRAP);
-	        label.setText(textBuilder.apply(dto));
-	        label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-	        label.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
+			Composite content = new Composite(scrolled, SWT.NONE);
+			content.setLayout(new GridLayout(1, false));
 
-	        scrolled.setContent(content);
-	        scrolled.setExpandHorizontal(true);
-	        scrolled.setExpandVertical(true);
-	        scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+			Label label = new Label(content, SWT.WRAP);
+			label.setText(textBuilder.apply(dto));
+			label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			label.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
 
-	        // ---- CLICK HANDLER ----
-	        Listener clickHandler = e -> {
-	            onClick.run();
-	            closePopup();
-	        };
+			scrolled.setContent(content);
+			scrolled.setExpandHorizontal(true);
+			scrolled.setExpandVertical(true);
+			scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 
-	        popup.addListener(SWT.MouseDown, clickHandler);
-	        content.addListener(SWT.MouseDown, clickHandler);
-	        label.addListener(SWT.MouseDown, clickHandler);
-	        scrolled.addListener(SWT.MouseDown, clickHandler);
+			// ---- CLICK HANDLER ----
+			Listener clickHandler = e -> {
+				onClick.run();
+				closePopup();
+			};
 
-	        // ---- positioning ----
-	        popup.pack();
-	        Point popupSize = popup.getSize();
-	        Point adjustedLocation = adjustToScreen(location, popupSize);
+			popup.addListener(SWT.MouseDown, clickHandler);
+			content.addListener(SWT.MouseDown, clickHandler);
+			label.addListener(SWT.MouseDown, clickHandler);
+			scrolled.addListener(SWT.MouseDown, clickHandler);
 
-	        popup.setLocation(adjustedLocation);
-	        popup.open();
+			// ---- positioning ----
+			popup.pack();
+			Point popupSize = popup.getSize();
+			Point adjustedLocation = adjustToScreen(location, popupSize);
 
-	        currentPopup = popup;
-	        popup.addListener(SWT.Dispose, e -> currentPopup = null);
+			popup.setLocation(adjustedLocation);
+			popup.open();
 
-	        display.timerExec(150, this::checkPopupCursor);
-	    });
+			currentPopup = popup;
+			popup.addListener(SWT.Dispose, e -> currentPopup = null);
+
+			display.timerExec(150, this::checkPopupCursor);
+		});
 	}
-	
+
 	private String buildUserObjectText(UserInstanceDetailsDTO dto) {
-	    StringBuilder info = new StringBuilder();
+		StringBuilder info = new StringBuilder();
 
-	    info.append("Field name: ").append(dto.getFieldName()).append("\n");
-	    info.append("Field type: ").append(dto.getTypeName()).append("\n\n");
+		info.append("Field name: ").append(dto.getFieldName()).append("\n");
+		info.append("Field type: ").append(dto.getTypeName()).append("\n\n");
 
-	    info.append("INFO:\nFields:\n");
-	    addGroupOfElements(info, dto.getInnerElementsByGroups().get(1),
-	            List.of("name: ", "type: ", "value: "));
+		info.append("INFO:\nFields:\n");
+		addGroupOfElements(info, dto.getInnerElementsByGroups().get(1), List.of("name: ", "type: ", "value: "));
 
-	    info.append("Methods:\n");
-	    addGroupOfElements(info, dto.getInnerElementsByGroups().get(2),
-	            List.of("name: ", "return type: ", ""));
+		info.append("Methods:\n");
+		addGroupOfElements(info, dto.getInnerElementsByGroups().get(2), List.of("name: ", "return type: ", ""));
 
-	    info.append("Others:\n");
-	    addGroupOfElements(info, dto.getInnerElementsByGroups().get(3),
-	            List.of("name: ", "type: ", "value: "));
+		info.append("Others:\n");
+		addGroupOfElements(info, dto.getInnerElementsByGroups().get(3), List.of("name: ", "type: ", "value: "));
 
-	    return info.toString();
+		return info.toString();
 	}
-	
+
 	private String buildCollectionText(InnerElementRepresentationDTO dto) {
-	    String value = dto.getValue();
+		String value = dto.getValue();
 
-	    int comma = value.indexOf(',');
-	    int gt = value.indexOf('>');
+		int comma = value.indexOf(',');
+		int gt = value.indexOf('>');
 
-	    StringBuilder info = new StringBuilder();
+		StringBuilder info = new StringBuilder();
 
-	    info.append("Inspect element:\n")
-	        .append(GAP).append("name: ").append(dto.getElementName()).append("\n")
-	        .append(GAP).append("type: ").append(dto.getAdditionalInfo()).append("\n");
+		info.append("Inspect element:\n").append(GAP).append("name: ").append(dto.getElementName()).append("\n")
+				.append(GAP).append("type: ").append(dto.getAdditionalInfo()).append("\n");
 
-	    if (comma != -1 && gt != -1) {
-	        info.append(GAP).append(value.substring(0, comma)).append("\n")
-	            .append(GAP).append(value.substring(comma + 2, gt + 1)).append("\n")
-	            .append(GAP).append("instance: ")
-	            .append(value.substring(gt + 2));
-	    } else {
-	        info.append(GAP).append(value);
-	    }
+		if (comma != -1 && gt != -1) {
+			info.append(GAP).append(value.substring(0, comma)).append("\n").append(GAP)
+					.append(value.substring(comma + 2, gt + 1)).append("\n").append(GAP).append("instance: ")
+					.append(value.substring(gt + 2));
+		} else {
+			info.append(GAP).append(value);
+		}
 
-	    return info.toString();
+		return info.toString();
 	}
-	
+
 	private InnerElementRepresentationDTO convertUserInstanceToInnerDTO(UserInstanceDetailsDTO dto) {
-	    return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(
-	        UniversalElementRepresentation.builder()
-	            .elementName(dto.getFieldName())
-	            .elementType(UniversalElementType.FIELD)
-	            .value(dto.toString())
-	            .valueCategory(ValueCategory.USER_OBJECT)
-	            .uniqueId(dto.getTag().getUniqueId())
-	            .parentUniqueId(dto.getTag().getParentId())
-	           // .level(dto.)
-	            .build()
-	    );
+		return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+				.fromElement(UniversalElementRepresentation.builder().elementName(dto.getFieldName())
+						.elementType(UniversalElementType.FIELD).value(dto.toString())
+						.valueCategory(ValueCategory.USER_OBJECT).uniqueId(dto.getTag().getUniqueId())
+						.parentUniqueId(dto.getTag().getParentId())
+						// .level(dto.)
+						.build());
 	}
 }
