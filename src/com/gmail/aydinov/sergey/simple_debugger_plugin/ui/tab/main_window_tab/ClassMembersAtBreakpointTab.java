@@ -34,7 +34,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDat
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
@@ -48,7 +50,7 @@ public class ClassMembersAtBreakpointTab {
 
 	private final Composite root;
 	private final TableViewer viewer;
-	private final SimpleDebuggerEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private InnerElementRepresentationDTO lastInspectedElement;
 	private static final String VERTICAL = "│   ";
 	private static final String SPACE = "     ";
@@ -390,7 +392,7 @@ public class ClassMembersAtBreakpointTab {
 				return;
 
 			// Открываем инспектор для данного объекта
-			// SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
+			 SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
 		});
 	}
 

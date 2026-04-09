@@ -27,7 +27,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventC
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.ArrayInspectorTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.CollectionInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.InspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.MapInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.UserObjectStructureTab;
@@ -44,7 +44,7 @@ public class UniversalInspectorWindow {
 	private final CTabFolder tabFolder;
 
 	// вкладки
-	private ArrayInspectorTab arrayInspectorTab;
+	private CollectionInspectorTab arrayInspectorTab;
 	private CTabItem arrayTabItem;
 
 	private MapInspectorTab mapInspectorTab;
@@ -114,9 +114,9 @@ public class UniversalInspectorWindow {
 		tabFolder.layout(true, true);
 	}
 
-	private ArrayInspectorTab createArrayTabIfNeeded() {
+	private CollectionInspectorTab createArrayTabIfNeeded() {
 		if (arrayInspectorTab == null || arrayTabItem == null) {
-			arrayInspectorTab = new ArrayInspectorTab(tabFolder);
+			arrayInspectorTab = new CollectionInspectorTab(tabFolder);
 			arrayTabItem = new CTabItem(tabFolder, SWT.NONE);
 			arrayTabItem.setText("Iterable");
 			arrayTabItem.setControl(arrayInspectorTab.getControl());
