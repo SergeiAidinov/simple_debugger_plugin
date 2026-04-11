@@ -70,6 +70,7 @@ public class InspectionSeance {
 				.createInspectableElement(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 		if (Objects.isNull(anchorElement))
 			return false;
+		
 		new InspectionSeance(anchorElement, currentFrame, breakpointEvent);
 		return true;
 	}
@@ -151,6 +152,10 @@ public class InspectionSeance {
 							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT)){
 					System.out.println("INSPECTION: " + uiEvent);
+					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
+					handler.handle(uiEvent, currentFrame, breakpointEvent);
+				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT)) {
+					UIEvent<InnerElementRepresentationDTO> inspectionForObject = (UIEvent<InnerElementRepresentationDTO>) uiEvent;
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
 				}

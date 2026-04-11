@@ -167,7 +167,7 @@ public class CollectionInspectorTab implements InspectorTab {
 		if (dto == null)
 			return "";
 
-		String value = dto.getValue();
+		String value = dto.getValue() + " (id=" + dto.getAdditionalInfo() + ")";
 		if (value == null)
 			return "null";
 
@@ -274,7 +274,7 @@ public class CollectionInspectorTab implements InspectorTab {
 	        // 👉 Генерация события
 	        uiEventCollector.collectUiEvent(
 	            new UIEvent<>(
-	                SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
+	                SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT,
 	                dto
 	            )
 	        );
