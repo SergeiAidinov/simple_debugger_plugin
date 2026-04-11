@@ -23,6 +23,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.Map
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
@@ -112,6 +113,10 @@ public class SimpleDebugerWindowsManager implements Runnable {
 				continue;
 
 			SimpleDebuggerLogger.info("SimpleDebugEvent: " + eventReference.get());
+			if (eventReference.get().getType().equals(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE)) {
+				mainWindow.handleDebugEvent(eventReference.get());
+				continue;
+			}
 
 			if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING)) {
 				mainWindow.handleDebugEvent(eventReference.get());
@@ -126,27 +131,6 @@ public class SimpleDebugerWindowsManager implements Runnable {
 
 					universalInspectorWindow.handleDebugEvent(eventReference.get());
 				});
-				if (SimpleDebuggerEventTypes.isInspectionEvent(eventReference.get().getType())) {
-
-					// извлекаем тег из события
-					Tag newAnchorTag = null;
-					switch (eventReference.get().getType()) {
-					case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
-
-						DebugEvent<ArrayPageDTO> e = (DebugEvent<ArrayPageDTO>) eventReference.get();
-						newAnchorTag = e.getPayload().getTag();
-					}
-					case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
-						DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e = (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) eventReference
-								.get();
-						newAnchorTag = e.getPayload().getTag();
-					}
-//					case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
-//						DebugEvent<UserObjectPageDTO> e = (DebugEvent<UserObjectPageDTO>) eventReference.get();
-//						newAnchorTag = e.getPayload().getTag();
-//					}
-					}
-				}
 
 			}
 		}

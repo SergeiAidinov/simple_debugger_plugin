@@ -275,7 +275,8 @@ public class TooltipManager {
 		StringBuilder info = new StringBuilder();
 
 		info.append("Inspect element:\n").append(GAP).append("name: ").append(dto.getElementName()).append("\n")
-				.append(GAP).append("type: ").append(dto.getAdditionalInfo()).append("\n");
+				.append(GAP).append("id = ").append(dto.getAdditionalInfo()).append("\n")
+				;
 
 		if (comma != -1 && gt != -1) {
 			info.append(GAP).append(value.substring(0, comma)).append("\n").append(GAP)

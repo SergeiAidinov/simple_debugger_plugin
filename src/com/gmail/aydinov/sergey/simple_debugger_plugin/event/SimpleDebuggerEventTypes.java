@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 
 import java.util.EnumSet;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IgnoreEverntHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedFieldHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedVariableHandler;
@@ -48,6 +49,8 @@ public final class SimpleDebuggerEventTypes {
 		REFRESH_CONSOLE(String.class, null),
 
 		SET_RESUME_BUTTON_STATE(Boolean.class, new IgnoreEverntHandler()),
+		
+		//SET_DEBUGGER_CONTEXT(DebuggerContext.class, null),
 
 		/** Event triggered when a method is invoked in the target application */
 		METHOD_INVOKE(String.class, null),

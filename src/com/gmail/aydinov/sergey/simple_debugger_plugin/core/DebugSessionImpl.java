@@ -130,7 +130,6 @@ public class DebugSessionImpl implements DebugSession {
 		if (Objects.nonNull(display) && !display.isDisposed()) {
 			while (DebuggerContext.context().isDebugSessionActive()) {
 				AbstractUIEvent uiEvent = null;
-				;
 				try {
 					// if (DebuggerContext.context().isDebugSessionActive())
 					uiEvent = uiEventCollector.takeUiEvent();
@@ -163,9 +162,8 @@ public class DebugSessionImpl implements DebugSession {
 		if (currentFrame == null)
 			return;
 		try {
-			if (SimpleDebuggerEventTypes.isInspectionEvent(abstractSimpleDebuggerUIEvent.getType())
-					&& DebuggerContext.context().isDebugSessionActive()) {
-				DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
+			if (DebuggerContext.context().getStatus().equals(DebuggerContext.SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING)) {
+			//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
 				//InspectionSeance inspectionSeance = InspectionSeanceImpl.;
 				InspectionSeance.startInspectionSeanceForAnchorElement(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			}
