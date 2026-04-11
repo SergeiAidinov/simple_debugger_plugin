@@ -10,6 +10,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.Simp
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -32,7 +33,7 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 		System.out.println("USER OBJECT. INSP. STARTED");
 		debugEventCollector
 				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-	//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.USER_OBJECT_INSPECTION_SEANCE_RUNNING);
+		// DebuggerContext.context().setStatus(SimpleDebuggerStatus.USER_OBJECT_INSPECTION_SEANCE_RUNNING);
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
 		try {
 			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
@@ -40,26 +41,41 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 
 		}
 		if (Objects.nonNull(uiEvent)) {
-			Thread collectionInspectionThread = new Thread(
-					new UserObjectInspectionSeance(uiEvent.getPayload(), breakpointEvent));
-			collectionInspectionThread.setDaemon(true);
+			InnerElementRepresentationDTO userObject = uiEvent.getPayload();
+			Optional<UniversalElementRepresentation> qq = findUserObject(userObject);
+			UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(userObject.getElementName())
+					.classType(userObject.getTypeOrReturnType()).anchorTag(userObject.getTag()).build();
+
 			try {
-				collectionInspectionThread.start();
-				try {
-					collectionInspectionThread.join();
-				} catch (InterruptedException e) {
-					return false;
-				}
+				debugEventCollector.collectDebugEvent(new DebugEvent<>(
+						SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
+//			Thread collectionInspectionThread = new Thread(
+//					new UserObjectInspectionSeance(uiEvent.getPayload(), breakpointEvent));
+//			collectionInspectionThread.setDaemon(true);
+//			try {
+//				collectionInspectionThread.start();
+//				try {
+//					collectionInspectionThread.join();
+//				} catch (InterruptedException e) {
+//					return false;
+//				}
 
 			} finally {
-				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-				debugEventCollector.collectDebugEvent(
-						new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-				SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().close();
+//				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
+//				debugEventCollector.collectDebugEvent(
+//						new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+//				SimpleDebugerWindowsManager.instance().getUniversalInspectorWindow().close();
 
 			}
 		}
 		return true;
+	}
+
+	private Optional<UniversalElementRepresentation> findUserObject(InnerElementRepresentationDTO anchor) {
+		return TargetApplicationRepresentation.getInstance().getAllElements().stream()
+				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.nonNull(e.getObjectReference()))
+				.filter(e -> Objects.equals(e.getObjectReference().toString(), anchor.getAdditionalInfo())).findFirst();
 	}
 
 	private class UserObjectInspectionSeance implements Runnable {
@@ -83,16 +99,14 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 
 		private void innerElementInspection() {
 			Optional<UniversalElementRepresentation> userObjectOptional = findUserObject(inspectableElement);
-			if (userObjectOptional.isEmpty()) return;
+			if (userObjectOptional.isEmpty())
+				return;
 			UniversalElementRepresentation userObject = userObjectOptional.get();
-			UserObjectInspectionDTO userObjectInspectionDTO = UserObjectInspectionDTO.builder()
-					.tag(userObject.getTag())
-					.className(userObject.getElementName())
-					.build();
-					
+			UserObjectInspectionDTO userObjectInspectionDTO = UserObjectInspectionDTO.builder().tag(userObject.getTag())
+					.className(userObject.getElementName()).build();
 
-			debugEventCollector.collectDebugEvent(
-					new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectInspectionDTO));
+			debugEventCollector.collectDebugEvent(new DebugEvent<>(
+					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectInspectionDTO));
 
 		}
 

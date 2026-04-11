@@ -156,10 +156,12 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
         }
 
         private static InnerElementRepresentationDTO fromUniversal(UniversalElementRepresentation element) {
+        	String additionalInfo = Objects.isNull(element.getObjectReference()) ? "<null>" 
+        			: String.valueOf(element.getObjectReference().uniqueID());
             return new InnerElementRepresentationDTO(
                     element.getTag(),
                     element.getElementName(),
-                    element.getAdditionalInfo(),
+                    additionalInfo,
                     element.getElementType(),
                     element.getValue(),
                     element.isStatic(),

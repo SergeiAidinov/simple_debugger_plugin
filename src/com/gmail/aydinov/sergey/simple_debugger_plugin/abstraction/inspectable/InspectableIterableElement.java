@@ -142,6 +142,21 @@ public class InspectableIterableElement extends AbstractInspectableElement imple
         int totalPages = (totalElements + DebugUtils.PAGE_SIZE - 1) / DebugUtils.PAGE_SIZE;
         int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
         int toIndex = Math.min(fromIndex + DebugUtils.PAGE_SIZE - 1, totalElements - 1);
+        Optional<UniversalElementRepresentation> c = TargetApplicationRepresentation.getInstance().getAllElements().stream()
+        .filter(e -> e instanceof UniversalElementRepresentation)
+        .map(e -> (UniversalElementRepresentation) e)
+       // .filter(e -> Objects.nonNull(e.getObjectReference()))
+        .filter(e -> Objects.equals(e.getTag(), inspectableElement.getTag())).findAny();
+        if (c.isEmpty()) return null;
+        
+        List<Value> ww = DebugUtils.iterateThroughCollection(c.get().getObjectReference(), breakpointEvent);
+        List<Long> collectionsElementsIds = new ArrayList<Long>();
+        for (Value value : ww) {
+        	if (value instanceof ObjectReference) {
+        	    ObjectReference objectReference = (ObjectReference) value;
+        	    collectionsElementsIds.add(objectReference.uniqueID());
+        	}
+        }
 
         List<PairDTO<Integer, InnerElementRepresentationDTO>> pageEntries = getPage(pageNumber, collection);
 
