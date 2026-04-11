@@ -246,7 +246,7 @@ public class DebugSessionImpl implements DebugSession {
 		}
 		
 	    for (InnerElementRepresentationDTO topDTO : orderedTopElements) {
-	        List<InnerElementRepresentationDTO> children = collectAllChildrenDTO(topDTO, subordinates, dtoMap);
+	        List<InnerElementRepresentationDTO> children = DebugUtils.collectAllChildrenDTO(topDTO, subordinates, dtoMap);
 	        result.put(topDTO, children);
 	    }
 
@@ -269,47 +269,48 @@ public class DebugSessionImpl implements DebugSession {
 	    return true;
 	}
 
-	private List<InnerElementRepresentationDTO> collectAllChildrenDTO(
-	        InnerElementRepresentationDTO rootDTO,
-	        Collection<AbstractElementRepresentation> allElements,
-	        Map<Tag, InnerElementRepresentationDTO> dtoMap
-	) {
-	    List<InnerElementRepresentationDTO> result = new ArrayList<>();
-	    Set<UUID> visited = new HashSet<>();
-	    collectRecursiveDTO(rootDTO, allElements, dtoMap, visited, result);
-	    return result;
-	}
-
-	private void collectRecursiveDTO(
-	        InnerElementRepresentationDTO parentDTO,
-	        Collection<AbstractElementRepresentation> allElements,
-	        Map<Tag, InnerElementRepresentationDTO> dtoMap,
-	        Set<UUID> visited,
-	        List<InnerElementRepresentationDTO> result
-	) {
-	    UUID parentId = parentDTO.getTag().getUniqueId();
-
-	    for (AbstractElementRepresentation element : allElements) {
-	        if (Objects.equals(element.getTag().getParentId(), parentId)) {
-
-	            UUID childId = element.getTag().getUniqueId();
-	            if (visited.contains(childId)) continue; // защита от зацикливания
-	            visited.add(childId);
-
-	            // Получаем DTO из мапы или создаём новый
-	            InnerElementRepresentationDTO childDTO = dtoMap.get(element.getTag());
-	            if (childDTO == null) {
-	                childDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(element);
-	                dtoMap.put(element.getTag(), childDTO);
-	            }
-
-	            result.add(childDTO);
-
-	            // Рекурсивно собираем потомков
-	            collectRecursiveDTO(childDTO, allElements, dtoMap, visited, result);
-	        }
-	    }
-	}
+//	private List<InnerElementRepresentationDTO> collectAllChildrenDTO(
+//	        InnerElementRepresentationDTO rootDTO,
+//	        Collection<AbstractElementRepresentation> allElements,
+//	        Map<Tag, InnerElementRepresentationDTO> dtoMap
+//	) {
+//	    List<InnerElementRepresentationDTO> result = new ArrayList<>();
+//	    Set<UUID> visited = new HashSet<>();
+//	    collectRecursiveDTO(rootDTO, allElements, dtoMap, visited, result);
+//	    return result;
+//	}
+//
+//	private void collectRecursiveDTO(
+//	        InnerElementRepresentationDTO parentDTO,
+//	        Collection<AbstractElementRepresentation> allElements,
+//	        Map<Tag, InnerElementRepresentationDTO> dtoMap,
+//	        Set<UUID> visited,
+//	        List<InnerElementRepresentationDTO> result
+//	) {
+//	    UUID parentId = parentDTO.getTag().getUniqueId();
+//
+//	    for (AbstractElementRepresentation element : allElements) {
+//	        if (Objects.equals(element.getTag().getParentId(), parentId)) {
+//
+//	            UUID childId = element.getTag().getUniqueId();
+//	            if (visited.contains(childId)) continue; // защита от зацикливания
+//	            visited.add(childId);
+//
+//	            // Получаем DTO из мапы или создаём новый
+//	            InnerElementRepresentationDTO childDTO = dtoMap.get(element.getTag());
+//	            if (childDTO == null) {
+//	                childDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(element);
+//	                dtoMap.put(element.getTag(), childDTO);
+//	            }
+//
+//	            result.add(childDTO);
+//
+//	            // Рекурсивно собираем потомков
+//	            collectRecursiveDTO(childDTO, allElements, dtoMap, visited, result);
+//	        }
+//	    }
+//	}
+//	
 	private void logError(String message, Throwable exception) {
 		StatusManager.getManager().handle(new Status(IStatus.ERROR, "simple_debugger_plugin", message, exception),
 				StatusManager.LOG);

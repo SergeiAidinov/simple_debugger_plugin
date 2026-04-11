@@ -16,6 +16,7 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.BreadcrumbItemDTO;
@@ -30,7 +31,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.CollectionInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.InspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.MapInspectorTab;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.UserObjectStructureTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 
 public class UniversalInspectorWindow {
@@ -44,14 +44,14 @@ public class UniversalInspectorWindow {
 	private final CTabFolder tabFolder;
 
 	// вкладки
-	private CollectionInspectorTab arrayInspectorTab;
-	private CTabItem arrayTabItem;
+	private CollectionInspectorTab collectionInspectorTab;
+	private CTabItem collectionTabItem;
 
 	private MapInspectorTab mapInspectorTab;
 	private CTabItem mapTabItem;
 
-	private UserObjectStructureTab userObjectTab;
-	private CTabItem userObjectTabItem;
+//	private UserObjectStructureTab userObjectTab;
+//	private CTabItem userObjectTabItem;
 
 	private enum CurrentTab {
 		NONE, COLLECTION, MAP, USER_OBJECT
@@ -99,12 +99,12 @@ public class UniversalInspectorWindow {
 	// =========================================================
 
 	private void hideAllTabs() {
-		if (arrayInspectorTab != null && !arrayInspectorTab.getControl().isDisposed())
-			arrayInspectorTab.getControl().setVisible(false);
+		if (collectionInspectorTab != null && !collectionInspectorTab.getControl().isDisposed())
+			collectionInspectorTab.getControl().setVisible(false);
 		if (mapInspectorTab != null && !mapInspectorTab.getControl().isDisposed())
 			mapInspectorTab.getControl().setVisible(false);
-		if (userObjectTab != null && !userObjectTab.getControl().isDisposed())
-			userObjectTab.getControl().setVisible(false);
+//		if (userObjectTab != null && !userObjectTab.getControl().isDisposed())
+//			userObjectTab.getControl().setVisible(false);
 	}
 
 	private void showTab(CTabItem tabItem, Composite content) {
@@ -115,13 +115,13 @@ public class UniversalInspectorWindow {
 	}
 
 	private CollectionInspectorTab createArrayTabIfNeeded() {
-		if (arrayInspectorTab == null || arrayTabItem == null) {
-			arrayInspectorTab = new CollectionInspectorTab(tabFolder);
-			arrayTabItem = new CTabItem(tabFolder, SWT.NONE);
-			arrayTabItem.setText("Iterable");
-			arrayTabItem.setControl(arrayInspectorTab.getControl());
+		if (collectionInspectorTab == null || collectionTabItem == null) {
+			collectionInspectorTab = new CollectionInspectorTab(tabFolder);
+			collectionTabItem = new CTabItem(tabFolder, SWT.NONE);
+			collectionTabItem.setText("Iterable");
+			collectionTabItem.setControl(collectionInspectorTab.getControl());
 		}
-		return arrayInspectorTab;
+		return collectionInspectorTab;
 	}
 
 	private void createMapTabIfNeeded() {
@@ -133,14 +133,14 @@ public class UniversalInspectorWindow {
 		}
 	}
 
-	private void createUserObjectTabIfNeeded(String title) {
-		if (userObjectTab == null || userObjectTabItem == null) {
-			userObjectTab = new UserObjectStructureTab(tabFolder);
-			userObjectTabItem = new CTabItem(tabFolder, SWT.NONE);
-			userObjectTabItem.setText(title);
-			userObjectTabItem.setControl(userObjectTab.getControl());
-		}
-	}
+//	private void createUserObjectTabIfNeeded(String title) {
+//		if (userObjectTab == null || userObjectTabItem == null) {
+//			userObjectTab = new UserObjectStructureTab(tabFolder);
+//			userObjectTabItem = new CTabItem(tabFolder, SWT.NONE);
+//			userObjectTabItem.setText(title);
+//			userObjectTabItem.setControl(userObjectTab.getControl());
+//		}
+//	}
 
 	public void showIterableTab(ArrayPageDTO payload) {
 		if (tabFolder.isDisposed())
@@ -148,9 +148,9 @@ public class UniversalInspectorWindow {
 
 		Display.getDefault().asyncExec(() -> {
 			createArrayTabIfNeeded();
-			arrayInspectorTab.showPage(payload);
+			collectionInspectorTab.showPage(payload);
 			showBreadcrumbs(payload.getBreadcrumbs());
-			showTab(arrayTabItem, arrayInspectorTab.getControl());
+			showTab(collectionTabItem, collectionInspectorTab.getControl());
 			currentTab = CurrentTab.COLLECTION;
 		});
 	}
@@ -168,35 +168,34 @@ public class UniversalInspectorWindow {
 		});
 	}
 
-	public void showUserObjectTab(String title, UserObjectPageDTO userObjectPageDTO) {
-		if (tabFolder.isDisposed())
-			return;
+//	public void showUserObjectTab(String title, UserObjectPageDTO userObjectPageDTO) {
+//		if (tabFolder.isDisposed())
+//			return;
+//
+//		Display.getDefault().asyncExec(() -> {
+//			createUserObjectTabIfNeeded(title);
+//			userObjectTab.showPage(userObjectPageDTO);
+//			showBreadcrumbs(userObjectPageDTO.getBreadcrumbs());
+//			showTab(userObjectTabItem, userObjectTab.getControl());
+//			currentTab = CurrentTab.USER_OBJECT;
+//		});
+//	}
 
-		Display.getDefault().asyncExec(() -> {
-			createUserObjectTabIfNeeded(title);
-			userObjectTab.showPage(userObjectPageDTO);
-			showBreadcrumbs(userObjectPageDTO.getBreadcrumbs());
-			showTab(userObjectTabItem, userObjectTab.getControl());
-			currentTab = CurrentTab.USER_OBJECT;
-		});
-	}
-
+	@SuppressWarnings("unchecked")
 	public void handleDebugEvent(AbstractDebugEvent event) {
 		switch (event.getType()) {
 		case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
-			@SuppressWarnings("unchecked")
 			DebugEvent<ArrayPageDTO> e = (DebugEvent<ArrayPageDTO>) event;
 			showIterableTab(e.getPayload());
 		}
 		case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
-			@SuppressWarnings("unchecked")
 			DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e = (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
 			showMapTab(e.getPayload());
 		}
-		case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
-			@SuppressWarnings("unchecked")
-			DebugEvent<UserObjectPageDTO> e = (DebugEvent<UserObjectPageDTO>) event;
-			showUserObjectTab("User Object", e.getPayload());
+		case DISPLAY_ADDITIONAL_INFO -> {
+			DebugEvent<UserInstanceDetailsDTO> e = (DebugEvent<UserInstanceDetailsDTO>) event;
+			collectionInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
+			
 		}
 		default -> {
 		}

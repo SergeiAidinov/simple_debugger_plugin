@@ -3,11 +3,15 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.utils;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.MethodCallInStackDTO;
@@ -17,7 +21,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.DebugWindowDataDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
@@ -60,7 +66,7 @@ import com.sun.jdi.event.BreakpointEvent;
  * </p>
  */
 public class DebugUtils {
-	
+
 	public static final String N_A = "[N/A]";
 	public static final int PAGE_SIZE = 20;
 
@@ -495,57 +501,57 @@ public class DebugUtils {
 
 	public static ValueCategory determineValueCategory(Value value) {
 
-	    if (value == null) {
-	        return ValueCategory.NULL;
-	    }
+		if (value == null) {
+			return ValueCategory.NULL;
+		}
 
-	    // ---------- Primitive ----------
-	    if (value instanceof com.sun.jdi.PrimitiveValue) {
-	        return ValueCategory.PRIMITIVE;
-	    }
+		// ---------- Primitive ----------
+		if (value instanceof com.sun.jdi.PrimitiveValue) {
+			return ValueCategory.PRIMITIVE;
+		}
 
-	    // ---------- Array ----------
-	    if (value instanceof com.sun.jdi.ArrayReference) {
-	        return ValueCategory.ARRAY;
-	    }
+		// ---------- Array ----------
+		if (value instanceof com.sun.jdi.ArrayReference) {
+			return ValueCategory.ARRAY;
+		}
 
-	    if (!(value instanceof com.sun.jdi.ObjectReference objectReference)) {
-	        return ValueCategory.NOT_SPECIFIED;
-	    }
+		if (!(value instanceof com.sun.jdi.ObjectReference objectReference)) {
+			return ValueCategory.NOT_SPECIFIED;
+		}
 
-	    ReferenceType referenceType = objectReference.referenceType();
-	    String typeName = referenceType.name();
+		ReferenceType referenceType = objectReference.referenceType();
+		String typeName = referenceType.name();
 
-	    // ---------- String ----------
-	    if ("java.lang.String".equals(typeName)) {
-	        return ValueCategory.STRING;
-	    }
+		// ---------- String ----------
+		if ("java.lang.String".equals(typeName)) {
+			return ValueCategory.STRING;
+		}
 
-	    // ---------- Wrapper (строго) ----------
-	    switch (typeName) {
-	        case "java.lang.Integer":
-	        case "java.lang.Long":
-	        case "java.lang.Double":
-	        case "java.lang.Float":
-	        case "java.lang.Boolean":
-	        case "java.lang.Character":
-	        case "java.lang.Byte":
-	        case "java.lang.Short":
-	            return ValueCategory.WRAPPER;
-	    }
+		// ---------- Wrapper (строго) ----------
+		switch (typeName) {
+		case "java.lang.Integer":
+		case "java.lang.Long":
+		case "java.lang.Double":
+		case "java.lang.Float":
+		case "java.lang.Boolean":
+		case "java.lang.Character":
+		case "java.lang.Byte":
+		case "java.lang.Short":
+			return ValueCategory.WRAPPER;
+		}
 
-	    // ---------- Map ----------
-	    if (implementsInterface(referenceType, "java.util.Map")) {
-	        return ValueCategory.MAP;
-	    }
+		// ---------- Map ----------
+		if (implementsInterface(referenceType, "java.util.Map")) {
+			return ValueCategory.MAP;
+		}
 
-	    // ---------- Collection ----------
-	    if (implementsInterface(referenceType, "java.util.Collection")) {
-	        return ValueCategory.COLLECTION;
-	    }
+		// ---------- Collection ----------
+		if (implementsInterface(referenceType, "java.util.Collection")) {
+			return ValueCategory.COLLECTION;
+		}
 
-	    // ---------- User object ----------
-	    return ValueCategory.USER_OBJECT;
+		// ---------- User object ----------
+		return ValueCategory.USER_OBJECT;
 	}
 
 //	private static boolean implementsInterface(ReferenceType referenceType, String interfaceName) {
@@ -556,7 +562,7 @@ public class DebugUtils {
 
 	public static String getLocalVariableValueAsString(Value value) {
 		try {
-			//Value value = frame.getValue(variable); // получаем Value из фрейма
+			// Value value = frame.getValue(variable); // получаем Value из фрейма
 			if (value == null)
 				return "null";
 
@@ -583,86 +589,74 @@ public class DebugUtils {
 	}
 
 	public static List<ObjectReference> getCollectionElements(ObjectReference objRef, BreakpointEvent breakpointEvent) {
-	    List<ObjectReference> result = new ArrayList<>();
+		List<ObjectReference> result = new ArrayList<>();
 
-	    if (objRef == null || breakpointEvent == null) {
-	        return result;
-	    }
+		if (objRef == null || breakpointEvent == null) {
+			return result;
+		}
 
-	    ReferenceType refType = objRef.referenceType();
-	    if (!(refType instanceof ClassType classType)) {
-	        return result;
-	    }
+		ReferenceType refType = objRef.referenceType();
+		if (!(refType instanceof ClassType classType)) {
+			return result;
+		}
 
-	    boolean isIterable = classType.allInterfaces().stream()
-	            .anyMatch(iface -> "java.lang.Iterable".equals(iface.name()));
+		boolean isIterable = classType.allInterfaces().stream()
+				.anyMatch(iface -> "java.lang.Iterable".equals(iface.name()));
 
-	    if (!isIterable) {
-	        return result;
-	    }
+		if (!isIterable) {
+			return result;
+		}
 
-	    ThreadReference thread = breakpointEvent.thread();
+		ThreadReference thread = breakpointEvent.thread();
 
-	    try {
-	        Method iteratorMethod = classType.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
-	        if (iteratorMethod == null) {
-	            return result;
-	        }
+		try {
+			Method iteratorMethod = classType.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
+			if (iteratorMethod == null) {
+				return result;
+			}
 
-	        Value iteratorValue = objRef.invokeMethod(
-	                thread,
-	                iteratorMethod,
-	                Collections.emptyList(),
-	                ObjectReference.INVOKE_SINGLE_THREADED
-	        );
+			Value iteratorValue = objRef.invokeMethod(thread, iteratorMethod, Collections.emptyList(),
+					ObjectReference.INVOKE_SINGLE_THREADED);
 
-	        if (!(iteratorValue instanceof ObjectReference iterator)) {
-	            return result;
-	        }
+			if (!(iteratorValue instanceof ObjectReference iterator)) {
+				return result;
+			}
 
-	        if (!(iterator.referenceType() instanceof ClassType iteratorType)) {
-	            return result;
-	        }
+			if (!(iterator.referenceType() instanceof ClassType iteratorType)) {
+				return result;
+			}
 
-	        Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
-	        Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+			Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
+			Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
 
-	        if (hasNextMethod == null || nextMethod == null) {
-	            return result;
-	        }
+			if (hasNextMethod == null || nextMethod == null) {
+				return result;
+			}
 
-	        while (true) {
-	            Value hasNextValue = iterator.invokeMethod(
-	                    thread,
-	                    hasNextMethod,
-	                    Collections.emptyList(),
-	                    ObjectReference.INVOKE_SINGLE_THREADED
-	            );
+			while (true) {
+				Value hasNextValue = iterator.invokeMethod(thread, hasNextMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
 
-	            if (!(hasNextValue instanceof BooleanValue booleanValue)) {
-	                break;
-	            }
+				if (!(hasNextValue instanceof BooleanValue booleanValue)) {
+					break;
+				}
 
-	            if (!booleanValue.value()) {
-	                break;
-	            }
+				if (!booleanValue.value()) {
+					break;
+				}
 
-	            Value elementValue = iterator.invokeMethod(
-	                    thread,
-	                    nextMethod,
-	                    Collections.emptyList(),
-	                    ObjectReference.INVOKE_SINGLE_THREADED
-	            );
+				Value elementValue = iterator.invokeMethod(thread, nextMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
 
-	            if (elementValue instanceof ObjectReference elementObject) {
-	                result.add(elementObject);
-	            }
-	        }
+				if (elementValue instanceof ObjectReference elementObject) {
+					result.add(elementObject);
+				}
+			}
 
-	    } catch (Exception ignored) {
-	    }
+		} catch (Exception ignored) {
+		}
 
-	    return result;
+		return result;
 	}
 
 	/**
@@ -789,7 +783,7 @@ public class DebugUtils {
 		return -1;
 	}
 
-	public static  TripletDTO<String, String, String> determinCollectionType(ObjectReference instance,
+	public static TripletDTO<String, String, String> determinCollectionType(ObjectReference instance,
 			BreakpointEvent breakpointEvent) {
 		if (Objects.isNull(instance) || Objects.isNull(breakpointEvent))
 			return TripletDTO.of(N_A, N_A, N_A);
@@ -843,7 +837,7 @@ public class DebugUtils {
 						System.out.println("value = " + value);
 						System.out.println(collectionType);
 						return TripletDTO.of(collectionType, collectionFirstParameter, collectionSecondParameter);
-						
+
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -858,19 +852,19 @@ public class DebugUtils {
 						ClassType iteratorType = (ClassType) iterator.referenceType();
 						collectionType = refType.name();
 						String[] parts = instance.toString().split(" ");
-						if (parts.length > 2) collectionType = parts[2];
+						if (parts.length > 2)
+							collectionType = parts[2];
 						Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
 						Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
-							Value resultHasNext = iterator.invokeMethod(breakpointEvent.thread(), hasNextMethod,
+						Value resultHasNext = iterator.invokeMethod(breakpointEvent.thread(), hasNextMethod,
+								Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+						if ((resultHasNext instanceof BooleanValue bool) && (bool.value())) {
+							Value element = iterator.invokeMethod(breakpointEvent.thread(), nextMethod,
 									Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-							if ((resultHasNext instanceof BooleanValue bool) && (bool.value())) {
-								Value element = iterator.invokeMethod(breakpointEvent.thread(), nextMethod,
-										Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-								collectionFirstParameter = element.type().name();
-							}
-							
-							
-							return TripletDTO.of(collectionType, collectionFirstParameter, collectionSecondParameter);
+							collectionFirstParameter = element.type().name();
+						}
+
+						return TripletDTO.of(collectionType, collectionFirstParameter, collectionSecondParameter);
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -885,377 +879,413 @@ public class DebugUtils {
 
 	// ---------------------- Вспомогательные методы ----------------------
 
-	private static ObjectReference getFirstElementFromIterator(ObjectReference collectionOrIterator, ThreadReference thread)
-	        throws Exception {
-	    ClassType iteratorType;
-	    ObjectReference iterator;
+	private static ObjectReference getFirstElementFromIterator(ObjectReference collectionOrIterator,
+			ThreadReference thread) throws Exception {
+		ClassType iteratorType;
+		ObjectReference iterator;
 
-	    if (collectionOrIterator.referenceType().name().equals("java.util.Iterator")) {
-	        iterator = collectionOrIterator;
-	        iteratorType = (ClassType) iterator.referenceType();
-	    } else {
-	        // Получаем iterator() для коллекции
-	        Method iteratorMethod = ((ClassType) collectionOrIterator.referenceType())
-	                .concreteMethodByName("iterator", "()Ljava/util/Iterator;");
-	        iterator = (ObjectReference) collectionOrIterator.invokeMethod(thread,
-	                iteratorMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-	        iteratorType = (ClassType) iterator.referenceType();
-	    }
+		if (collectionOrIterator.referenceType().name().equals("java.util.Iterator")) {
+			iterator = collectionOrIterator;
+			iteratorType = (ClassType) iterator.referenceType();
+		} else {
+			// Получаем iterator() для коллекции
+			Method iteratorMethod = ((ClassType) collectionOrIterator.referenceType()).concreteMethodByName("iterator",
+					"()Ljava/util/Iterator;");
+			iterator = (ObjectReference) collectionOrIterator.invokeMethod(thread, iteratorMethod,
+					Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+			iteratorType = (ClassType) iterator.referenceType();
+		}
 
-	    Method hasNext = iteratorType.concreteMethodByName("hasNext", "()Z");
-	    Value hasNextVal = iterator.invokeMethod(thread, hasNext, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-	    if (hasNextVal instanceof BooleanValue bool && bool.value()) {
-	        Method next = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
-	        return (ObjectReference) iterator.invokeMethod(thread, next, Collections.emptyList(),
-	                ObjectReference.INVOKE_SINGLE_THREADED);
-	    }
-	    return null;
+		Method hasNext = iteratorType.concreteMethodByName("hasNext", "()Z");
+		Value hasNextVal = iterator.invokeMethod(thread, hasNext, Collections.emptyList(),
+				ObjectReference.INVOKE_SINGLE_THREADED);
+		if (hasNextVal instanceof BooleanValue bool && bool.value()) {
+			Method next = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+			return (ObjectReference) iterator.invokeMethod(thread, next, Collections.emptyList(),
+					ObjectReference.INVOKE_SINGLE_THREADED);
+		}
+		return null;
 	}
 
 	private static boolean isLocalVariable(ReferenceType refType) {
-	    // Если имя пакета начинается с "java." или "jdk." – скорее всего поле, иначе локальная переменная
-	    return !refType.name().startsWith("java.") && !refType.name().startsWith("jdk.");
+		// Если имя пакета начинается с "java." или "jdk." – скорее всего поле, иначе
+		// локальная переменная
+		return !refType.name().startsWith("java.") && !refType.name().startsWith("jdk.");
 	}
 
 	private static Value invokeMethod(ObjectReference obj, String methodName, ThreadReference thread) throws Exception {
-	    ClassType type = (ClassType) obj.referenceType();
-	    Method method = type.concreteMethodByName(methodName, "()Ljava/lang/Object;");
-	    return obj.invokeMethod(thread, method, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+		ClassType type = (ClassType) obj.referenceType();
+		Method method = type.concreteMethodByName(methodName, "()Ljava/lang/Object;");
+		return obj.invokeMethod(thread, method, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
 	}
 
 	public static List<Value> iterateThroughCollection(ObjectReference instance, BreakpointEvent breakpointEvent) {
-	    List<Value> result = new ArrayList<>();
-	    if (instance == null || breakpointEvent == null) {
-	        return result;
-	    }
-	    ReferenceType refType = instance.referenceType();
-	    if (!(refType instanceof ClassType classType)) {
-	        return result;
-	    }
-	    boolean isIterable = classType.allInterfaces().stream()
-	            .anyMatch(iface -> "java.lang.Iterable".equals(iface.name()));
+		List<Value> result = new ArrayList<>();
+		if (instance == null || breakpointEvent == null) {
+			return result;
+		}
+		ReferenceType refType = instance.referenceType();
+		if (!(refType instanceof ClassType classType)) {
+			return result;
+		}
+		boolean isIterable = classType.allInterfaces().stream()
+				.anyMatch(iface -> "java.lang.Iterable".equals(iface.name()));
 
-	    if (!isIterable) {
-	        return result;
-	    }
-	    ThreadReference thread = breakpointEvent.thread();
-	    try {
-	        Method iteratorMethod = classType.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
-	        if (iteratorMethod == null) {
-	            return result;
-	        }
-	        Value iteratorValue = instance.invokeMethod(
-	                thread,
-	                iteratorMethod,
-	                Collections.emptyList(),
-	                ObjectReference.INVOKE_SINGLE_THREADED
-	        );
-	        if (!(iteratorValue instanceof ObjectReference iterator)) {
-	            return result;
-	        }
-	        if (!(iterator.referenceType() instanceof ClassType iteratorType)) {
-	            return result;
-	        }
-	        Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
-	        Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
-	        if (hasNextMethod == null || nextMethod == null) {
-	            return result;
-	        }
-	        while (true) {
-	            Value hasNextValue = iterator.invokeMethod(
-	                    thread,
-	                    hasNextMethod,
-	                    Collections.emptyList(),
-	                    ObjectReference.INVOKE_SINGLE_THREADED
-	            );
-	            if (!(hasNextValue instanceof BooleanValue booleanValue)) {
-	                break;
-	            }
-	            if (!booleanValue.value()) {
-	                break;
-	            }
-	            Value element = iterator.invokeMethod(
-	                    thread,
-	                    nextMethod,
-	                    Collections.emptyList(),
-	                    ObjectReference.INVOKE_SINGLE_THREADED
-	            );
-	            result.add(element);
-	        }
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
-	    return result;
+		if (!isIterable) {
+			return result;
+		}
+		ThreadReference thread = breakpointEvent.thread();
+		try {
+			Method iteratorMethod = classType.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
+			if (iteratorMethod == null) {
+				return result;
+			}
+			Value iteratorValue = instance.invokeMethod(thread, iteratorMethod, Collections.emptyList(),
+					ObjectReference.INVOKE_SINGLE_THREADED);
+			if (!(iteratorValue instanceof ObjectReference iterator)) {
+				return result;
+			}
+			if (!(iterator.referenceType() instanceof ClassType iteratorType)) {
+				return result;
+			}
+			Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
+			Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+			if (hasNextMethod == null || nextMethod == null) {
+				return result;
+			}
+			while (true) {
+				Value hasNextValue = iterator.invokeMethod(thread, hasNextMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
+				if (!(hasNextValue instanceof BooleanValue booleanValue)) {
+					break;
+				}
+				if (!booleanValue.value()) {
+					break;
+				}
+				Value element = iterator.invokeMethod(thread, nextMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
+				result.add(element);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return result;
 	}
-	
+
 	public static String compileCollectionDescription(TripletDTO<String, String, String> tripletDTO) {
-		if (Objects.isNull(tripletDTO.getFirst())) return "";
+		if (Objects.isNull(tripletDTO.getFirst()))
+			return "";
 		if (Objects.isNull(tripletDTO.getThird())) {
 			return tripletDTO.getFirst() + "<" + tripletDTO.getSecond() + ">";
 		} else {
 			return tripletDTO.getFirst() + "<" + tripletDTO.getSecond() + ", " + tripletDTO.getThird() + ">";
 		}
 	}
-	
-    /**
-     * Преобразует ObjectReference в читаемое строковое значение.
-     * Для примитивов, обёрток и String возвращает значение.
-     * Для коллекций и массивов возвращает краткое описание.
-     */
-    public static String getObjectReferenceValueAsString(ObjectReference objRef) {
-        if (objRef == null) return "null";
 
-        try {
-            ReferenceType refType = objRef.referenceType();
-            String typeName = refType.name();
+	/**
+	 * Преобразует ObjectReference в читаемое строковое значение. Для примитивов,
+	 * обёрток и String возвращает значение. Для коллекций и массивов возвращает
+	 * краткое описание.
+	 */
+	public static String getObjectReferenceValueAsString(ObjectReference objRef) {
+		if (objRef == null)
+			return "null";
 
-            // String
-            if ("java.lang.String".equals(typeName) && objRef instanceof StringReference sRef) {
-                return sRef.value();
-            }
+		try {
+			ReferenceType refType = objRef.referenceType();
+			String typeName = refType.name();
 
-            // Обёртки примитивов
-            if (typeName.startsWith("java.lang.") &&
-                List.of("Integer","Long","Short","Byte","Double","Float","Boolean","Character").contains(typeName.substring(10))) {
-                Field valueField = refType.fieldByName("value");
-                if (valueField != null) {
-                    Value val = objRef.getValue(valueField);
-                    return val != null ? val.toString() : "null";
-                }
-            }
+			// String
+			if ("java.lang.String".equals(typeName) && objRef instanceof StringReference sRef) {
+				return sRef.value();
+			}
 
-            // Массивы
-            if (objRef instanceof ArrayReference arrayRef) {
-                return "Array[" + arrayRef.length() + "]";
-            }
+			// Обёртки примитивов
+			if (typeName.startsWith("java.lang.")
+					&& List.of("Integer", "Long", "Short", "Byte", "Double", "Float", "Boolean", "Character")
+							.contains(typeName.substring(10))) {
+				Field valueField = refType.fieldByName("value");
+				if (valueField != null) {
+					Value val = objRef.getValue(valueField);
+					return val != null ? val.toString() : "null";
+				}
+			}
 
-            // Коллекции
-            if (implementsInterface(refType, "java.util.Collection")) {
-                return "Collection[size=" + getCollectionSize(objRef) + "]";
-            }
+			// Массивы
+			if (objRef instanceof ArrayReference arrayRef) {
+				return "Array[" + arrayRef.length() + "]";
+			}
 
-            // Map
-            if (implementsInterface(refType, "java.util.Map")) {
-                return "Map[size=" + getCollectionSize(objRef) + "]";
-            }
+			// Коллекции
+			if (implementsInterface(refType, "java.util.Collection")) {
+				return "Collection[size=" + getCollectionSize(objRef) + "]";
+			}
 
-            // Любой другой объект
-            return typeName;
+			// Map
+			if (implementsInterface(refType, "java.util.Map")) {
+				return "Map[size=" + getCollectionSize(objRef) + "]";
+			}
 
-        } catch (Exception e) {
-            return "<error>";
-        }
-    }
+			// Любой другой объект
+			return typeName;
 
-    
+		} catch (Exception e) {
+			return "<error>";
+		}
+	}
 
-    /**
-     * Получает размер коллекции или карты через invokeMethod.
-     */
-    public static int getCollectionSize(ObjectReference objRef) {
-        try {
-            Method sizeMethod = objRef.referenceType().methodsByName("size").stream().findFirst().orElse(null);
-            if (sizeMethod != null) {
-                Value sizeValue = objRef.invokeMethod(
-                        objRef.virtualMachine().allThreads().get(0),
-                        sizeMethod,
-                        List.of(),
-                        ObjectReference.INVOKE_SINGLE_THREADED
-                );
-                if (sizeValue instanceof PrimitiveValue pVal) {
-                    return Integer.parseInt(pVal.toString());
-                }
-            }
-        } catch (Exception ignored) { }
-        return -1;
-    }
+	/**
+	 * Получает размер коллекции или карты через invokeMethod.
+	 */
+	public static int getCollectionSize(ObjectReference objRef) {
+		try {
+			Method sizeMethod = objRef.referenceType().methodsByName("size").stream().findFirst().orElse(null);
+			if (sizeMethod != null) {
+				Value sizeValue = objRef.invokeMethod(objRef.virtualMachine().allThreads().get(0), sizeMethod,
+						List.of(), ObjectReference.INVOKE_SINGLE_THREADED);
+				if (sizeValue instanceof PrimitiveValue pVal) {
+					return Integer.parseInt(pVal.toString());
+				}
+			}
+		} catch (Exception ignored) {
+		}
+		return -1;
+	}
 
-    public static Comparable<?> getComparableValue(ObjectReference ref) {
-        if (ref == null) return null;
+	public static Comparable<?> getComparableValue(ObjectReference ref) {
+		if (ref == null)
+			return null;
 
-        ReferenceType refType = ref.referenceType();
-        String typeName = refType.name();
+		ReferenceType refType = ref.referenceType();
+		String typeName = refType.name();
 
-        // ---------- String ----------
-        if ("java.lang.String".equals(typeName)) {
-            StringReference sRef = (StringReference) ref;
-            return sRef.value();
-        }
+		// ---------- String ----------
+		if ("java.lang.String".equals(typeName)) {
+			StringReference sRef = (StringReference) ref;
+			return sRef.value();
+		}
 
-        // ---------- Wrapper ----------
-        if (typeName.equals("java.lang.Integer")) {
-            return ((IntegerValue) ref.getValue(refType.fieldByName("value"))).value();
-        }
-        if (typeName.equals("java.lang.Long")) {
-            return ((LongValue) ref.getValue(refType.fieldByName("value"))).value();
-        }
-        if (typeName.equals("java.lang.Double")) {
-            return ((DoubleValue) ref.getValue(refType.fieldByName("value"))).value();
-        }
-        if (typeName.equals("java.lang.Float")) {
-            return ((FloatValue) ref.getValue(refType.fieldByName("value"))).value();
-        }
-        if (typeName.equals("java.lang.Boolean")) {
-            return ((BooleanValue) ref.getValue(refType.fieldByName("value"))).value();
-        }
-        if (typeName.equals("java.lang.Character")) {
-            return (char) ((CharValue) ref.getValue(refType.fieldByName("value"))).value();
-        }
-        if (typeName.equals("java.lang.Byte")) {
-            return ((ByteValue) ref.getValue(refType.fieldByName("value"))).value();
-        }
-        if (typeName.equals("java.lang.Short")) {
-            return ((ShortValue) ref.getValue(refType.fieldByName("value"))).value();
-        }
+		// ---------- Wrapper ----------
+		if (typeName.equals("java.lang.Integer")) {
+			return ((IntegerValue) ref.getValue(refType.fieldByName("value"))).value();
+		}
+		if (typeName.equals("java.lang.Long")) {
+			return ((LongValue) ref.getValue(refType.fieldByName("value"))).value();
+		}
+		if (typeName.equals("java.lang.Double")) {
+			return ((DoubleValue) ref.getValue(refType.fieldByName("value"))).value();
+		}
+		if (typeName.equals("java.lang.Float")) {
+			return ((FloatValue) ref.getValue(refType.fieldByName("value"))).value();
+		}
+		if (typeName.equals("java.lang.Boolean")) {
+			return ((BooleanValue) ref.getValue(refType.fieldByName("value"))).value();
+		}
+		if (typeName.equals("java.lang.Character")) {
+			return (char) ((CharValue) ref.getValue(refType.fieldByName("value"))).value();
+		}
+		if (typeName.equals("java.lang.Byte")) {
+			return ((ByteValue) ref.getValue(refType.fieldByName("value"))).value();
+		}
+		if (typeName.equals("java.lang.Short")) {
+			return ((ShortValue) ref.getValue(refType.fieldByName("value"))).value();
+		}
 
-        // ---------- Примитивные поля (если ObjectReference ссылается на объект с одним полем value) ----------
-        // можно расширить при необходимости
+		// ---------- Примитивные поля (если ObjectReference ссылается на объект с одним
+		// полем value) ----------
+		// можно расширить при необходимости
 
-        // ---------- Неизвестный объект ----------
-        return null;
-    }
-    
-    public static String toReadableSignature(com.sun.jdi.Method method) {
-        StringBuilder sb = new StringBuilder();
+		// ---------- Неизвестный объект ----------
+		return null;
+	}
 
-        sb.append(method.declaringType().name());
-        sb.append(".").append(method.name());
-        sb.append("(");
+	public static String toReadableSignature(com.sun.jdi.Method method) {
+		StringBuilder sb = new StringBuilder();
 
-        var args = method.argumentTypeNames();
-        for (int i = 0; i < args.size(); i++) {
-            sb.append(args.get(i));
-            if (i < args.size() - 1) {
-                sb.append(",");
-            }
-        }
+		sb.append(method.declaringType().name());
+		sb.append(".").append(method.name());
+		sb.append("(");
 
-        sb.append(")");
-        return sb.toString();
-    }
+		var args = method.argumentTypeNames();
+		for (int i = 0; i < args.size(); i++) {
+			sb.append(args.get(i));
+			if (i < args.size() - 1) {
+				sb.append(",");
+			}
+		}
 
-    /**
-     * Проверяет, является ли objRef экземпляром класса/интерфейса с именем typeName
-     */
-    public static boolean isInstanceOf(ObjectReference objRef, String typeName) {
-        if (objRef == null || typeName == null) return false;
+		sb.append(")");
+		return sb.toString();
+	}
 
-        ReferenceType refType = objRef.referenceType();
-        if (refType == null) return false;
+	/**
+	 * Проверяет, является ли objRef экземпляром класса/интерфейса с именем typeName
+	 */
+	public static boolean isInstanceOf(ObjectReference objRef, String typeName) {
+		if (objRef == null || typeName == null)
+			return false;
 
-        // если сам объект нужного типа
-        if (refType.name().equals(typeName)) return true;
+		ReferenceType refType = objRef.referenceType();
+		if (refType == null)
+			return false;
 
-        // проверяем все интерфейсы класса
-        if (refType instanceof ClassType classType) {
-            for (InterfaceType iface : classType.allInterfaces()) {
-                if (iface.name().equals(typeName)) {
-                    return true;
-                }
-            }
-        }
+		// если сам объект нужного типа
+		if (refType.name().equals(typeName))
+			return true;
 
-        return false;
-    }
-    
-    /**
-     * Проходит по объекту Map и возвращает пары ключ-значение.
-     * @param mapRef ObjectReference на объект Map
-     */
-    public static List<Map.Entry<Value, Value>> iterateThroughMap(ObjectReference instance, BreakpointEvent breakpointEvent) {
-        List<Map.Entry<Value, Value>> result = new ArrayList<>();
-        if (instance == null || breakpointEvent == null) return result;
+		// проверяем все интерфейсы класса
+		if (refType instanceof ClassType classType) {
+			for (InterfaceType iface : classType.allInterfaces()) {
+				if (iface.name().equals(typeName)) {
+					return true;
+				}
+			}
+		}
 
-        ReferenceType refType = instance.referenceType();
-        if (!(refType instanceof ClassType classType)) return result;
+		return false;
+	}
 
-        boolean isMap = classType.allInterfaces().stream()
-                .anyMatch(iface -> "java.util.Map".equals(iface.name()));
+	/**
+	 * Проходит по объекту Map и возвращает пары ключ-значение.
+	 * 
+	 * @param mapRef ObjectReference на объект Map
+	 */
+	public static List<Map.Entry<Value, Value>> iterateThroughMap(ObjectReference instance,
+			BreakpointEvent breakpointEvent) {
+		List<Map.Entry<Value, Value>> result = new ArrayList<>();
+		if (instance == null || breakpointEvent == null)
+			return result;
 
-        if (!isMap) return result;
+		ReferenceType refType = instance.referenceType();
+		if (!(refType instanceof ClassType classType))
+			return result;
 
-        ThreadReference thread = breakpointEvent.thread();
-        try {
-            // получаем keySet()
-            Method keySetMethod = classType.concreteMethodByName("keySet", "()Ljava/util/Set;");
-            if (keySetMethod == null) return result;
+		boolean isMap = classType.allInterfaces().stream().anyMatch(iface -> "java.util.Map".equals(iface.name()));
 
-            Value keySetValue = instance.invokeMethod(thread, keySetMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-            if (!(keySetValue instanceof ObjectReference keySetRef)) return result;
+		if (!isMap)
+			return result;
 
-            // iterator() для ключей
-            ReferenceType keySetType = keySetRef.referenceType();
-            if (!(keySetType instanceof ClassType keySetClass)) return result;
-            Method iteratorMethod = keySetClass.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
-            if (iteratorMethod == null) return result;
+		ThreadReference thread = breakpointEvent.thread();
+		try {
+			// получаем keySet()
+			Method keySetMethod = classType.concreteMethodByName("keySet", "()Ljava/util/Set;");
+			if (keySetMethod == null)
+				return result;
 
-            Value iteratorValue = keySetRef.invokeMethod(thread, iteratorMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-            if (!(iteratorValue instanceof ObjectReference iterator)) return result;
+			Value keySetValue = instance.invokeMethod(thread, keySetMethod, Collections.emptyList(),
+					ObjectReference.INVOKE_SINGLE_THREADED);
+			if (!(keySetValue instanceof ObjectReference keySetRef))
+				return result;
 
-            ClassType iteratorType = (ClassType) iterator.referenceType();
-            Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
-            Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
-            if (hasNextMethod == null || nextMethod == null) return result;
+			// iterator() для ключей
+			ReferenceType keySetType = keySetRef.referenceType();
+			if (!(keySetType instanceof ClassType keySetClass))
+				return result;
+			Method iteratorMethod = keySetClass.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
+			if (iteratorMethod == null)
+				return result;
 
-            // проходим по ключам
-            while (true) {
-                Value hasNextVal = iterator.invokeMethod(thread, hasNextMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-                if (!(hasNextVal instanceof BooleanValue bv) || !bv.value()) break;
+			Value iteratorValue = keySetRef.invokeMethod(thread, iteratorMethod, Collections.emptyList(),
+					ObjectReference.INVOKE_SINGLE_THREADED);
+			if (!(iteratorValue instanceof ObjectReference iterator))
+				return result;
 
-                Value key = iterator.invokeMethod(thread, nextMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-                // get(key)
-                Method getMethod = classType.concreteMethodByName("get", "(Ljava/lang/Object;)Ljava/lang/Object;");
-                if (getMethod == null) continue;
-                Value value = instance.invokeMethod(thread, getMethod, List.of(key), ObjectReference.INVOKE_SINGLE_THREADED);
+			ClassType iteratorType = (ClassType) iterator.referenceType();
+			Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
+			Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+			if (hasNextMethod == null || nextMethod == null)
+				return result;
 
-                result.add(new AbstractMap.SimpleEntry<>(key, value));
-            }
+			// проходим по ключам
+			while (true) {
+				Value hasNextVal = iterator.invokeMethod(thread, hasNextMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
+				if (!(hasNextVal instanceof BooleanValue bv) || !bv.value())
+					break;
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return result;
-    }
+				Value key = iterator.invokeMethod(thread, nextMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
+				// get(key)
+				Method getMethod = classType.concreteMethodByName("get", "(Ljava/lang/Object;)Ljava/lang/Object;");
+				if (getMethod == null)
+					continue;
+				Value value = instance.invokeMethod(thread, getMethod, List.of(key),
+						ObjectReference.INVOKE_SINGLE_THREADED);
 
-    /**
-     * Создаёт DTO для ключа или значения Map.
-     * @param value ключ или значение
-     * @param parent родительский элемент (Map)
-     * @param index индекс пары
-     * @param roleLabel "key" или "value"
-     */
-    public static InnerElementRepresentationDTO createInnerElementDTO(Value value, UniversalElementRepresentation parent, int index) {
-        UniversalElementRepresentation uer;
+				result.add(new AbstractMap.SimpleEntry<>(key, value));
+			}
 
-        if (value instanceof ObjectReference objRef) {
-            String type = objRef.referenceType().name();
-            String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
 
-            uer = UniversalElementRepresentation.builder()
-                    .referenceType(objRef.referenceType())
-                    .objectReference(objRef)
-                    .elementName(valueText)
-                    .elementType(UniversalElementType.MAP_ELEMENT)
-                    .currentRole(CurrentRole.INNER)
-                    .value(DebugUtils.getObjectReferenceValueAsString(objRef))
-                    .valueCategory(DebugUtils.determineValueCategory(value))
-                    .uniqueId(java.util.UUID.randomUUID())
-                    .parentUniqueId(parent.getTag().getUniqueId())
-                    .level(parent.getLevel() + 1)
-                    .build();
-        } else {
-            // Примитив
-            uer = UniversalElementRepresentation.builder()
-                    .elementName(value.toString())
-                    .value(value.toString())
-                    .valueCategory(ValueCategory.PRIMITIVE)
-                    .uniqueId(java.util.UUID.randomUUID())
-                    .parentUniqueId(parent.getTag().getUniqueId())
-                    .level(parent.getLevel() + 1)
-                    .build();
-        }
+	/**
+	 * Создаёт DTO для ключа или значения Map.
+	 * 
+	 * @param value     ключ или значение
+	 * @param parent    родительский элемент (Map)
+	 * @param index     индекс пары
+	 * @param roleLabel "key" или "value"
+	 */
+	public static InnerElementRepresentationDTO createInnerElementDTO(Value value,
+			UniversalElementRepresentation parent, int index) {
+		UniversalElementRepresentation uer;
 
-        return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(uer);
-    }
-    
+		if (value instanceof ObjectReference objRef) {
+			String type = objRef.referenceType().name();
+			String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
+
+			uer = UniversalElementRepresentation.builder().referenceType(objRef.referenceType()).objectReference(objRef)
+					.elementName(valueText).elementType(UniversalElementType.MAP_ELEMENT).currentRole(CurrentRole.INNER)
+					.value(DebugUtils.getObjectReferenceValueAsString(objRef))
+					.valueCategory(DebugUtils.determineValueCategory(value)).uniqueId(java.util.UUID.randomUUID())
+					.parentUniqueId(parent.getTag().getUniqueId()).level(parent.getLevel() + 1).build();
+		} else {
+			// Примитив
+			uer = UniversalElementRepresentation.builder().elementName(value.toString()).value(value.toString())
+					.valueCategory(ValueCategory.PRIMITIVE).uniqueId(java.util.UUID.randomUUID())
+					.parentUniqueId(parent.getTag().getUniqueId()).level(parent.getLevel() + 1).build();
+		}
+
+		return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(uer);
+	}
+
+	public static List<InnerElementRepresentationDTO> collectAllChildrenDTO(InnerElementRepresentationDTO rootDTO,
+			Collection<AbstractElementRepresentation> allElements, Map<Tag, InnerElementRepresentationDTO> dtoMap) {
+		List<InnerElementRepresentationDTO> result = new ArrayList<>();
+		Set<UUID> visited = new HashSet<>();
+		collectRecursiveDTO(rootDTO, allElements, dtoMap, visited, result);
+		return result;
+	}
+
+	private static void collectRecursiveDTO(InnerElementRepresentationDTO parentDTO,
+			Collection<AbstractElementRepresentation> allElements, Map<Tag, InnerElementRepresentationDTO> dtoMap,
+			Set<UUID> visited, List<InnerElementRepresentationDTO> result) {
+		UUID parentId = parentDTO.getTag().getUniqueId();
+
+		for (AbstractElementRepresentation element : allElements) {
+			if (Objects.equals(element.getTag().getParentId(), parentId)) {
+
+				UUID childId = element.getTag().getUniqueId();
+				if (visited.contains(childId))
+					continue; // защита от зацикливания
+				visited.add(childId);
+
+				// Получаем DTO из мапы или создаём новый
+				InnerElementRepresentationDTO childDTO = dtoMap.get(element.getTag());
+				if (childDTO == null) {
+					childDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(element);
+					dtoMap.put(element.getTag(), childDTO);
+				}
+
+				result.add(childDTO);
+
+				// Рекурсивно собираем потомков
+				collectRecursiveDTO(childDTO, allElements, dtoMap, visited, result);
+			}
+		}
+	}
+
 }

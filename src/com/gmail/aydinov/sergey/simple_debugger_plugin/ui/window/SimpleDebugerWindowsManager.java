@@ -141,10 +141,10 @@ public class SimpleDebugerWindowsManager implements Runnable {
 								.get();
 						newAnchorTag = e.getPayload().getTag();
 					}
-					case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
-						DebugEvent<UserObjectPageDTO> e = (DebugEvent<UserObjectPageDTO>) eventReference.get();
-						newAnchorTag = e.getPayload().getTag();
-					}
+//					case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
+//						DebugEvent<UserObjectPageDTO> e = (DebugEvent<UserObjectPageDTO>) eventReference.get();
+//						newAnchorTag = e.getPayload().getTag();
+//					}
 					}
 				}
 

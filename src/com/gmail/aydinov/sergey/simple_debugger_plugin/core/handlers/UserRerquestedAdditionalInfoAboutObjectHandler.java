@@ -63,6 +63,17 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 						} else
 							return false;
 					}).map(e -> (UniversalElementRepresentation) e).findAny();
+		} else if (anchorElement.getElementType().equals(UniversalElementType.COLLECTION_ELEMENT)) {
+			System.out.println(anchorElement);
+			topLevelElementOptional = TargetApplicationRepresentation.getInstance()
+					.getAllElements().stream().filter(e -> {
+						if (Objects.nonNull(e.getObjectReference())) {
+							return Objects.equals(String.valueOf(e.getObjectReference().uniqueID()),
+									anchorElement.getAdditionalInfo());
+						} else
+							return false;
+					}).map(e -> (UniversalElementRepresentation) e).findAny();
+			
 		}
 
 		

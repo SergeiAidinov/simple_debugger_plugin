@@ -119,13 +119,14 @@ public class InspectionSeance {
 				debugEventCollector.collectDebugEvent(
 						new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
 				
-			} else if (anchorElement instanceof InspectableInstanceElement inspectableInstanceElement) {
-				inspectableQueue.offer(inspectableInstanceElement);
-				 UserObjectPageDTO page = inspectableInstanceElement.inspectPage(inspectableInstanceElement);
-				 page.setBreadcrumbs(buildBreadcrumbs());
-				 debugEventCollector.collectDebugEvent(
-							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, page));
-			}
+			} 
+//			else if (anchorElement instanceof InspectableInstanceElement inspectableInstanceElement) {
+//				inspectableQueue.offer(inspectableInstanceElement);
+//				 UserObjectPageDTO page = inspectableInstanceElement.inspectPage(inspectableInstanceElement);
+//				 page.setBreadcrumbs(buildBreadcrumbs());
+//				 debugEventCollector.collectDebugEvent(
+//							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, page));
+//			}
 
 			while (true) {
 				AbstractUIEvent uiEvent = null;
