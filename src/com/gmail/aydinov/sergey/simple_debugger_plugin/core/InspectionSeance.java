@@ -40,6 +40,8 @@ public class InspectionSeance {
 	private final AbstractInspectableElement anchorElement;
 	private final StackFrame currentFrame;
 	private final BreakpointEvent breakpointEvent;
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 
 	private final Deque<AbstractInspectableElement> inspectableQueue = new LinkedList<>();
 	private static boolean alreadyStarted = false;
@@ -86,6 +88,7 @@ public class InspectionSeance {
 			SimpleDebuggerLogger.error(e.getMessage(), e);
 		} finally {
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
+			debugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 			alreadyStarted = false;
 		}
 
@@ -93,16 +96,22 @@ public class InspectionSeance {
 
 	private class InspectionProcedure implements Runnable {
 
-		private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
-		private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
+		
 
 		@Override
 		public void run() {
+			try {
 			inspectionProcedure();
+			} finally {
+				debugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
+			}
 		}
 
 		@SuppressWarnings("unchecked")
 		private boolean inspectionProcedure() {
+		//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
+			debugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
 			if (anchorElement instanceof InspectableIterableElement inspectableCollection) {
 				inspectableQueue.offer(inspectableCollection);
 				ArrayPageDTO page = (ArrayPageDTO) inspectableCollection.inspectPage(inspectableCollection, 0);
