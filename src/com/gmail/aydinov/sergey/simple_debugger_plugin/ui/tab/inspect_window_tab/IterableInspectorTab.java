@@ -34,7 +34,7 @@ public class IterableInspectorTab implements InspectorTab {
     private final TableViewer viewer;
     private final TooltipManager tooltipManager;
 
-    private InnerElementRepresentationDTO lastInspectedElement;
+    private String lastInspectedElementId;
 
     private final Label collectionNameLabel;
     private final Label collectionTypeLabel;
@@ -165,24 +165,27 @@ public class IterableInspectorTab implements InspectorTab {
                 }
             }
 
-            if (!Objects.equals(dto, lastInspectedElement)) {
-                lastInspectedElement = dto;
+            String currentId = dto != null ? dto.getAdditionalInfo() : null;
+
+            if (!Objects.equals(currentId, lastInspectedElementId)) {
+                lastInspectedElementId = currentId;
+
                 tooltipManager.closePopup();
 
-                if (dto != null) {
-                    Image icon = getIcon(dto);
+                if (dto == null) return;
 
-                    if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-                        uiEventCollector.collectUiEvent(
-                                new UIEvent<>(
-                                        SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
-                                        dto
-                                )
-                        );
-                    } else if (icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-                        Point location = table.getDisplay().getCursorLocation();
-                        tooltipManager.showTooltipForCollection(dto, location);
-                    }
+                Image icon = getIcon(dto);
+
+                if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+                    uiEventCollector.collectUiEvent(
+                            new UIEvent<>(
+                                    SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
+                                    dto
+                            )
+                    );
+                } else if (icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+                    Point location = table.getDisplay().getCursorLocation();
+                    tooltipManager.showTooltipForCollection(dto, location);
                 }
             }
         });

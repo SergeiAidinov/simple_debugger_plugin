@@ -23,6 +23,7 @@ import org.eclipse.swt.widgets.Listener;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserElementDetailDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
@@ -171,23 +172,42 @@ public class TooltipManager {
 	}
 
 	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
+	    if (DebuggerContext.context().isInspectionSeanceActive()) {
+	        // 🔹 Сеанс уже идет → popup только для просмотра (НЕкликабельный)
+	        showPopup(dto, location,
+	                d -> buildCollectionText((InnerElementRepresentationDTO) d),
+	                null // 👈 ключевой момент
+	        );
+	        return;
+	    }
 
-		showPopup(dto, location, d -> buildCollectionText((InnerElementRepresentationDTO) d), () -> {
-			// SimpleDebugerWindowsManager.instance().tagQueue().offer(dto.getTag());
-			debugEventCollector
-					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-			switch (dto.getValueCategory()) {
-			case COLLECTION -> uiEventCollector
-					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
-			case MAP -> uiEventCollector
-					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
-//	                    case USER_OBJECT -> uiEventCollector.collectUiEvent(
-//	                            new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto)
-//	                    );
-			default -> debugEventCollector
-					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-			}
-		});
+	    // 🔹 Сеанса нет → popup кликабельный и запускает инспекцию
+	    showPopup(dto, location,
+	            d -> buildCollectionText((InnerElementRepresentationDTO) d),
+	            () -> {
+	                debugEventCollector.collectDebugEvent(
+	                        new DebugEvent<Boolean>(
+	                                SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE,
+	                                false
+	                        )
+	                );
+
+	                switch (dto.getValueCategory()) {
+	                    case COLLECTION, MAP -> uiEventCollector.collectUiEvent(
+	                            new UIEvent<>(
+	                                    SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
+	                                    dto
+	                            )
+	                    );
+	                    default -> debugEventCollector.collectDebugEvent(
+	                            new DebugEvent<Boolean>(
+	                                    SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE,
+	                                    true
+	                            )
+	                    );
+	                }
+	            }
+	    );
 	}
 
 	private void showPopup(Object dto, Point location, Function<Object, String> textBuilder, Runnable onClick) {
@@ -202,10 +222,13 @@ public class TooltipManager {
 
 			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
 			popup.setLayout(new GridLayout(1, false));
-			popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
-			popup.setData("dto", dto);
 
-			// ---- UI ----
+// 👉 курсор только если кликабельный
+			if (onClick != null) {
+				popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
+			}
+
+// UI
 			ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
 			scrolled.setLayoutData(new GridData(400, 200));
 
@@ -215,25 +238,29 @@ public class TooltipManager {
 			Label label = new Label(content, SWT.WRAP);
 			label.setText(textBuilder.apply(dto));
 			label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-			label.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
+
+			if (onClick != null) {
+				label.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
+			}
 
 			scrolled.setContent(content);
 			scrolled.setExpandHorizontal(true);
 			scrolled.setExpandVertical(true);
 			scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 
-			// ---- CLICK HANDLER ----
-			Listener clickHandler = e -> {
-				onClick.run();
-				closePopup();
-			};
+// 👉 обработчик только если есть действие
+			if (onClick != null) {
+				Listener clickHandler = e -> {
+					onClick.run();
+					closePopup();
+				};
 
-			popup.addListener(SWT.MouseDown, clickHandler);
-			content.addListener(SWT.MouseDown, clickHandler);
-			label.addListener(SWT.MouseDown, clickHandler);
-			scrolled.addListener(SWT.MouseDown, clickHandler);
+				popup.addListener(SWT.MouseDown, clickHandler);
+				content.addListener(SWT.MouseDown, clickHandler);
+				label.addListener(SWT.MouseDown, clickHandler);
+				scrolled.addListener(SWT.MouseDown, clickHandler);
+			}
 
-			// ---- positioning ----
 			popup.pack();
 			Point popupSize = popup.getSize();
 			Point adjustedLocation = adjustToScreen(location, popupSize);
@@ -275,8 +302,7 @@ public class TooltipManager {
 		StringBuilder info = new StringBuilder();
 
 		info.append("Inspect element:\n").append(GAP).append("name: ").append(dto.getElementName()).append("\n")
-				.append(GAP).append("id = ").append(dto.getAdditionalInfo()).append("\n")
-				;
+				.append(GAP).append("id = ").append(dto.getAdditionalInfo()).append("\n");
 
 		if (comma != -1 && gt != -1) {
 			info.append(GAP).append(value.substring(0, comma)).append("\n").append(GAP)
