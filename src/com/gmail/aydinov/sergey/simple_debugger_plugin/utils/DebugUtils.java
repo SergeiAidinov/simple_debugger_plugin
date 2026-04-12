@@ -69,6 +69,7 @@ public class DebugUtils {
 
 	public static final String N_A = "[N/A]";
 	public static final int PAGE_SIZE = 20;
+	public static final String GAP = "  ";
 
 	public static Value createJdiValueFromString(VirtualMachine virtualMachine, LocalVariable localVariable,
 			String sourceString) {
@@ -1286,6 +1287,28 @@ public class DebugUtils {
 				collectRecursiveDTO(childDTO, allElements, dtoMap, visited, result);
 			}
 		}
+	}
+	
+	public static String buildCollectionText(InnerElementRepresentationDTO dto) {
+		String value = dto.getValue();
+
+		int comma = value.indexOf(',');
+		int gt = value.indexOf('>');
+
+		StringBuilder info = new StringBuilder();
+
+		info.append("Inspect element:\n").append(GAP).append("name: ").append(dto.getElementName()).append("\n")
+				.append(GAP).append("id = ").append(dto.getAdditionalInfo()).append("\n");
+
+		if (comma != -1 && gt != -1) {
+			info.append(GAP).append(value.substring(0, comma)).append("\n").append(GAP)
+					.append(value.substring(comma + 2, gt + 1)).append("\n").append(GAP).append("instance: ")
+					.append(value.substring(gt + 2));
+		} else {
+			info.append(GAP).append(value);
+		}
+
+		return info.toString();
 	}
 
 }

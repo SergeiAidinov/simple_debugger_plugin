@@ -9,14 +9,18 @@ import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
@@ -32,8 +36,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserIn
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
@@ -42,6 +48,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWi
 public class MapInspectorTab implements InspectorTab {
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 	private final Composite root;
 	private final TableViewer viewer;
 
@@ -55,10 +62,10 @@ public class MapInspectorTab implements InspectorTab {
 	private final Button goButton;
 	private final Button nextButton;
 
-	private TooltipManager tooltipManager;
+//	private TooltipManager tooltipManager;
 //	private InnerElementRepresentationDTO lastInspectedElement;
 	private String lastInspectedElementId;
-
+	private Shell currentPopup;
 	private int currentPage = 0;
 
 	public MapInspectorTab(Composite parent) {
@@ -286,7 +293,7 @@ public class MapInspectorTab implements InspectorTab {
 					String currentId = dto != null ? dto.getAdditionalInfo() : null;
 					if (!Objects.equals(currentId, lastInspectedElementId)) {
 						lastInspectedElementId = currentId;
-						tooltipManager.closePopup();
+						closePopup();
 						if (dto != null) {
 							if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
 								uiEventCollector.collectUiEvent(new UIEvent<>(
@@ -295,13 +302,140 @@ public class MapInspectorTab implements InspectorTab {
 								uiEventCollector.collectUiEvent(new UIEvent<>(
 										SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto));
 								Point location = root.getDisplay().getCursorLocation();
-								tooltipManager.showTooltipForCollection(dto, location);
+								showTooltipForCollection(dto, location);
 							}
 						}
 					}
 				}
 			}
 		});
+	}
+
+	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
+
+		showPopup(dto, location, d -> buildCollectionText((InnerElementRepresentationDTO) d), () -> {
+			debugEventCollector
+					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
+			switch (dto.getValueCategory()) {
+			case COLLECTION -> uiEventCollector
+					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
+			case MAP -> uiEventCollector
+					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
+			default -> debugEventCollector
+					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+			}
+		});
+	}
+
+	private String buildCollectionText(InnerElementRepresentationDTO dto) {
+		String value = dto.getValue();
+
+		int comma = value.indexOf(',');
+		int gt = value.indexOf('>');
+
+		StringBuilder info = new StringBuilder();
+
+		info.append("Inspect element:\n").append(UiUtils.GAP).append("name: ").append(dto.getElementName()).append("\n")
+				.append(UiUtils.GAP).append("id = ").append(dto.getAdditionalInfo()).append("\n");
+
+		if (comma != -1 && gt != -1) {
+			info.append(UiUtils.GAP).append(value.substring(0, comma)).append("\n").append(UiUtils.GAP)
+					.append(value.substring(comma + 2, gt + 1)).append("\n").append(UiUtils.GAP).append("instance: ")
+					.append(value.substring(gt + 2));
+		} else {
+			info.append(UiUtils.GAP).append(value);
+		}
+
+		return info.toString();
+	}
+
+	private void showPopup(Object dto, Point location, Function<Object, String> textBuilder, Runnable onClick) {
+
+		Display display = root.getDisplay();
+
+		display.asyncExec(() -> {
+			if (root.isDisposed() || dto == null)
+				return;
+
+			closePopup();
+
+			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
+			popup.setLayout(new GridLayout(1, false));
+
+// 👉 курсор только если кликабельный
+			if (onClick != null) {
+				popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
+			}
+
+// UI
+			ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
+			scrolled.setLayoutData(new GridData(400, 200));
+
+			Composite content = new Composite(scrolled, SWT.NONE);
+			content.setLayout(new GridLayout(1, false));
+
+			Label label = new Label(content, SWT.WRAP);
+			label.setText(textBuilder.apply(dto));
+			label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+			if (onClick != null) {
+				label.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
+			}
+
+			scrolled.setContent(content);
+			scrolled.setExpandHorizontal(true);
+			scrolled.setExpandVertical(true);
+			scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+
+// 👉 обработчик только если есть действие
+			if (onClick != null) {
+				Listener clickHandler = e -> {
+					onClick.run();
+					closePopup();
+				};
+
+				popup.addListener(SWT.MouseDown, clickHandler);
+				content.addListener(SWT.MouseDown, clickHandler);
+				label.addListener(SWT.MouseDown, clickHandler);
+				scrolled.addListener(SWT.MouseDown, clickHandler);
+			}
+
+			popup.pack();
+			Point popupSize = popup.getSize();
+			Point adjustedLocation = UiUtils.adjustToScreen(root, location, popupSize);
+
+			popup.setLocation(adjustedLocation);
+			popup.open();
+
+			currentPopup = popup;
+			popup.addListener(SWT.Dispose, e -> currentPopup = null);
+
+			display.timerExec(150, this::checkPopupCursor);
+		});
+	}
+	
+	private void checkPopupCursor() {
+		if (currentPopup == null || currentPopup.isDisposed())
+			return;
+		Display display = root.getDisplay();
+		Point cursor = display.getCursorLocation();
+		Rectangle popupBounds = currentPopup.getBounds();
+		Point rootLocation = root.toDisplay(0, 0);
+		Rectangle rootBounds = new Rectangle(rootLocation.x, rootLocation.y, root.getSize().x, root.getSize().y);
+		boolean cursorInsidePopup = popupBounds.contains(cursor);
+		boolean cursorInsideTable = rootBounds.contains(cursor);
+		if (!cursorInsidePopup && !cursorInsideTable) {
+			closePopup();
+			return;
+		}
+		display.timerExec(150, this::checkPopupCursor);
+	}
+
+	public void closePopup() {
+		if (currentPopup != null && !currentPopup.isDisposed()) {
+			currentPopup.dispose();
+		}
+		currentPopup = null;
 	}
 
 	private Image getIcon(InnerElementRepresentationDTO dto) {
@@ -340,7 +474,7 @@ public class MapInspectorTab implements InspectorTab {
 			Object tip = item.getData("tooltip_col_" + col);
 			return tip instanceof String ? (String) tip : null;
 		});
-		this.tooltipManager = tooltipManager;
+	//	this.tooltipManager = tooltipManager;
 	}
 
 	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO dto) {
@@ -350,7 +484,18 @@ public class MapInspectorTab implements InspectorTab {
             if (root.isDisposed()) return;
 
             Point location = display.getCursorLocation();
-            tooltipManager.showTooltipForUserObject(dto, location);
+           showTooltipForUserObject(dto, location);
         });
     }
+
+	public void showTooltipForUserObject(UserInstanceDetailsDTO dto, Point location) {
+
+		if (dto.getInnerElementsByGroups().get(1).isEmpty() && dto.getInnerElementsByGroups().get(2).isEmpty()
+				&& dto.getInnerElementsByGroups().get(3).isEmpty())
+			return;
+
+		showPopup(dto, location, d -> UiUtils.buildUserObjectText((UserInstanceDetailsDTO) d),
+				() -> uiEventCollector.collectUiEvent(new UIEvent<>(
+						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, UiUtils.convertUserInstanceToInnerDTO(dto))));
+	}
 }
