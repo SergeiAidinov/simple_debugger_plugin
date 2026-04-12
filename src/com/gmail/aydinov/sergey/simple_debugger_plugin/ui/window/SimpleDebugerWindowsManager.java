@@ -70,7 +70,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 
 	@Override
 	public void run() {
-		dispatchEvent();
+		dispatchEventToWindow();
 	}
 
 	/**
@@ -96,7 +96,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 	 * interrupted.
 	 */
 	@SuppressWarnings("unchecked")
-	private void dispatchEvent() {
+	private void dispatchEventToWindow() {
 		Display display = Display.getDefault();
 
 		while (!DebuggerContext.context().isInTerminalState()) {
