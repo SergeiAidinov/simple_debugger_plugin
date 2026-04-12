@@ -1,16 +1,29 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Table;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserElementDetailDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
 public class UiUtils {
+	
+	private static String GAP = "  ";
+	private static String SEPARATOR = "---------------------------------------------- \n";
 	
 	private static final Set<String> JAVA_STANDARD_TYPES = Set.of("int", "long", "short", "byte", "float", "double",
 			"boolean", "char", "java.lang.Integer", "java.lang.Long", "java.lang.Short", "java.lang.Byte",
@@ -121,6 +134,78 @@ public class UiUtils {
                 .icons.getOrDefault(key,
                         SimpleDebugerWindowsManager.instance().icons.get("unknown"));
     }
+	
+	public static Point adjustToScreen(Composite root, Point desiredLocation, Point popupSize) {
+		Display display = root.getDisplay();
+		Rectangle screen = display.getPrimaryMonitor().getClientArea();
+		int x = desiredLocation.x;
+		int y = desiredLocation.y;
+		if (x + popupSize.x > screen.x + screen.width) {
+			x = screen.x + screen.width - popupSize.x;
+		}
+		if (y + popupSize.y > screen.y + screen.height) {
+			y = screen.y + screen.height - popupSize.y;
+		}
+		if (x < screen.x) {
+			x = screen.x;
+		}
+		if (y < screen.y) {
+			y = screen.y;
+		}
+		return new Point(x, y);
+	}
+	
+	public static String buildUserObjectText(UserInstanceDetailsDTO dto) {
+		StringBuilder info = new StringBuilder();
+
+		info.append("Field name: ").append(dto.getFieldName()).append("\n");
+		info.append("Field type: ").append(dto.getTypeName()).append("\n\n");
+
+		info.append("INFO:\nFields:\n");
+		addGroupOfElements(info, dto.getInnerElementsByGroups().get(1), List.of("name: ", "type: ", "value: "));
+
+		info.append("Methods:\n");
+		addGroupOfElements(info, dto.getInnerElementsByGroups().get(2), List.of("name: ", "return type: ", ""));
+
+		info.append("Others:\n");
+		addGroupOfElements(info, dto.getInnerElementsByGroups().get(3), List.of("name: ", "type: ", "value: "));
+
+		return info.toString();
+	}
+
+	private static void addGroupOfElements(StringBuilder stringBuilder, List<UserElementDetailDTO> list,
+			List<String> markers) {
+
+		for (int outer = 0; outer < list.size(); outer++) {
+			UserElementDetailDTO innerElement = list.get(outer);
+			for (int i = 0; i < markers.size(); i++) {
+				String announce = markers.get(i);
+				if (i == 0) {
+					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(GAP).append(announce)
+							.append(innerElement.getName()).append("\n"));
+				} else if (i == 1) {
+					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(GAP).append(announce)
+							.append(innerElement.getTypeOrReturnType()).append("\n"));
+				} else if (i == 2) {
+					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(GAP).append(announce)
+							.append(innerElement.getValue()).append("\n"));
+				}
+				if (i == 2 && (list.size() - outer != 1))
+					stringBuilder.append("\n");
+			}
+		}
+		stringBuilder.append(SEPARATOR + "\n");
+	}
+	
+	public static int getColumnIndexAtPoint(Table table, int x) {
+		int offset = 0;
+		for (int i = 0; i < table.getColumnCount(); i++) {
+			offset += table.getColumn(i).getWidth();
+			if (x < offset)
+				return i;
+		}
+		return table.getColumnCount() - 1;
+	}
 
 
 }
