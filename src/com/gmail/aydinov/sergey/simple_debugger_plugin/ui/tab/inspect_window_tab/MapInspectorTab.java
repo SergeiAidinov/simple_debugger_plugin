@@ -28,6 +28,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -55,7 +56,8 @@ public class MapInspectorTab implements InspectorTab {
 	private final Button nextButton;
 
 	private TooltipManager tooltipManager;
-	private InnerElementRepresentationDTO lastInspectedElement;
+//	private InnerElementRepresentationDTO lastInspectedElement;
+	private String lastInspectedElementId;
 
 	private int currentPage = 0;
 
@@ -281,12 +283,10 @@ public class MapInspectorTab implements InspectorTab {
 							|| icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
 						dto = dataDto;
 					}
-
-					if (Objects.isNull(lastInspectedElement)
-							|| !Objects.equals(dto.getTag(), lastInspectedElement.getTag())) {
-						lastInspectedElement = dto;
+					String currentId = dto != null ? dto.getAdditionalInfo() : null;
+					if (!Objects.equals(currentId, lastInspectedElementId)) {
+						lastInspectedElementId = currentId;
 						tooltipManager.closePopup();
-
 						if (dto != null) {
 							if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
 								uiEventCollector.collectUiEvent(new UIEvent<>(
@@ -342,4 +342,15 @@ public class MapInspectorTab implements InspectorTab {
 		});
 		this.tooltipManager = tooltipManager;
 	}
+
+	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO dto) {
+        Display display = root.getDisplay();
+
+        display.asyncExec(() -> {
+            if (root.isDisposed()) return;
+
+            Point location = display.getCursorLocation();
+            tooltipManager.showTooltipForUserObject(dto, location);
+        });
+    }
 }

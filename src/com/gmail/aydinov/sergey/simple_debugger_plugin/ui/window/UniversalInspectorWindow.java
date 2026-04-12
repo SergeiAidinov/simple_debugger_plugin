@@ -54,11 +54,11 @@ public class UniversalInspectorWindow {
 //	private UserObjectStructureTab userObjectTab;
 //	private CTabItem userObjectTabItem;
 
-	private enum CurrentTab {
+	private enum InspectionTabs {
 		NONE, COLLECTION, MAP, USER_OBJECT
 	}
 
-	private CurrentTab currentTab = CurrentTab.NONE;
+	private static InspectionTabs currentTab = InspectionTabs.NONE;
 
 	private UniversalInspectorWindow() {
 		Display display = Display.getDefault();
@@ -146,13 +146,12 @@ public class UniversalInspectorWindow {
 	public void showIterableTab(ArrayPageDTO payload) {
 		if (tabFolder.isDisposed())
 			return;
-
 		Display.getDefault().asyncExec(() -> {
 			createIterableTabIfNeeded();
 			iterableInspectorTab.showPage(payload);
 			showBreadcrumbs(payload.getBreadcrumbs());
 			showTab(collectionTabItem, iterableInspectorTab.getControl());
-			currentTab = CurrentTab.COLLECTION;
+			currentTab = InspectionTabs.COLLECTION;
 		});
 	}
 
@@ -165,7 +164,7 @@ public class UniversalInspectorWindow {
 			mapInspectorTab.showPage(page);
 			showBreadcrumbs(page.getBreadcrumbs());
 			showTab(mapTabItem, mapInspectorTab.getControl());
-			currentTab = CurrentTab.MAP;
+			currentTab = InspectionTabs.MAP;
 		});
 	}
 
@@ -182,7 +181,7 @@ public class UniversalInspectorWindow {
 //		});
 //	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "static-access" })
 	public void handleDebugEvent(AbstractDebugEvent event) {
 		switch (event.getType()) {
 		case DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE -> {
@@ -195,9 +194,14 @@ public class UniversalInspectorWindow {
 		}
 		case DISPLAY_ADDITIONAL_INFO -> {
 			DebugEvent<UserInstanceDetailsDTO> e = (DebugEvent<UserInstanceDetailsDTO>) event;
+			if (currentTab == InspectionTabs.COLLECTION) {
 			createIterableTabIfNeeded();
 			iterableInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
-			
+			} else if (currentTab == InspectionTabs.MAP) {
+				createMapTabIfNeeded();
+				mapInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
+			}
+
 		}
 		default -> {
 		}
