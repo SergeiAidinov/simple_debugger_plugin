@@ -161,7 +161,7 @@ public class IterableInspectorTab implements InspectorTab {
 			if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
 				Object second = pair.getSecond();
 				if (second instanceof InnerElementRepresentationDTO dataDto) {
-					int colIndex = getColumnIndexAtPoint(table, event.x);
+					int colIndex =UiUtils.getColumnIndexAtPoint(table, event.x);
 					if (colIndex == 1) {
 						Image icon = getIcon(dataDto);
 						if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
@@ -195,20 +195,20 @@ public class IterableInspectorTab implements InspectorTab {
 		});
 	}
 
-	public static int getColumnIndexAtPoint(Table table, int x) {
-		int offset = 0;
-		for (int i = 0; i < table.getColumnCount(); i++) {
-			offset += table.getColumn(i).getWidth();
-			if (x < offset)
-				return i;
-		}
-		return table.getColumnCount() - 1;
-	}
+//	public static int getColumnIndexAtPoint(Table table, int x) {
+//		int offset = 0;
+//		for (int i = 0; i < table.getColumnCount(); i++) {
+//			offset += table.getColumn(i).getWidth();
+//			if (x < offset)
+//				return i;
+//		}
+//		return table.getColumnCount() - 1;
+//	}
 
 	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO dto) {
 		Display display = root.getDisplay();
 		 Point location = display.getCursorLocation();
-		showPopup(dto, location, d -> buildUserObjectText((UserInstanceDetailsDTO) d), null);
+		showPopup(dto, location, d -> UiUtils.buildUserObjectText((UserInstanceDetailsDTO) d), null);
 	//	Display display = root.getDisplay();
 //        display.asyncExec(() -> {
 //            if (root.isDisposed()) return;
@@ -218,23 +218,23 @@ public class IterableInspectorTab implements InspectorTab {
 
 	}
 
-	private String buildUserObjectText(UserInstanceDetailsDTO dto) {
-		StringBuilder info = new StringBuilder();
-
-		info.append("Field name: ").append(dto.getFieldName()).append("\n");
-		info.append("Field type: ").append(dto.getTypeName()).append("\n\n");
-
-		info.append("INFO:\nFields:\n");
-		addGroupOfElements(info, dto.getInnerElementsByGroups().get(1), List.of("name: ", "type: ", "value: "));
-
-		info.append("Methods:\n");
-		addGroupOfElements(info, dto.getInnerElementsByGroups().get(2), List.of("name: ", "return type: ", ""));
-
-		info.append("Others:\n");
-		addGroupOfElements(info, dto.getInnerElementsByGroups().get(3), List.of("name: ", "type: ", "value: "));
-
-		return info.toString();
-	}
+//	private String buildUserObjectText(UserInstanceDetailsDTO dto) {
+//		StringBuilder info = new StringBuilder();
+//
+//		info.append("Field name: ").append(dto.getFieldName()).append("\n");
+//		info.append("Field type: ").append(dto.getTypeName()).append("\n\n");
+//
+//		info.append("INFO:\nFields:\n");
+//		addGroupOfElements(info, dto.getInnerElementsByGroups().get(1), List.of("name: ", "type: ", "value: "));
+//
+//		info.append("Methods:\n");
+//		addGroupOfElements(info, dto.getInnerElementsByGroups().get(2), List.of("name: ", "return type: ", ""));
+//
+//		info.append("Others:\n");
+//		addGroupOfElements(info, dto.getInnerElementsByGroups().get(3), List.of("name: ", "type: ", "value: "));
+//
+//		return info.toString();
+//	}
 
 	private void addGroupOfElements(StringBuilder stringBuilder, List<UserElementDetailDTO> list,
 			List<String> markers) {
@@ -313,7 +313,7 @@ public class IterableInspectorTab implements InspectorTab {
 
 			popup.pack();
 			Point popupSize = popup.getSize();
-			Point adjustedLocation = adjustToScreen(location, popupSize);
+			Point adjustedLocation = UiUtils.adjustToScreen(root, location, popupSize);
 
 			popup.setLocation(adjustedLocation);
 			popup.open();
@@ -342,25 +342,25 @@ public class IterableInspectorTab implements InspectorTab {
 		display.timerExec(150, this::checkPopupCursor);
 	}
 
-	private Point adjustToScreen(Point desiredLocation, Point popupSize) {
-		Display display = root.getDisplay();
-		Rectangle screen = display.getPrimaryMonitor().getClientArea();
-		int x = desiredLocation.x;
-		int y = desiredLocation.y;
-		if (x + popupSize.x > screen.x + screen.width) {
-			x = screen.x + screen.width - popupSize.x;
-		}
-		if (y + popupSize.y > screen.y + screen.height) {
-			y = screen.y + screen.height - popupSize.y;
-		}
-		if (x < screen.x) {
-			x = screen.x;
-		}
-		if (y < screen.y) {
-			y = screen.y;
-		}
-		return new Point(x, y);
-	}
+//	private Point adjustToScreen(Point desiredLocation, Point popupSize) {
+//		Display display = root.getDisplay();
+//		Rectangle screen = display.getPrimaryMonitor().getClientArea();
+//		int x = desiredLocation.x;
+//		int y = desiredLocation.y;
+//		if (x + popupSize.x > screen.x + screen.width) {
+//			x = screen.x + screen.width - popupSize.x;
+//		}
+//		if (y + popupSize.y > screen.y + screen.height) {
+//			y = screen.y + screen.height - popupSize.y;
+//		}
+//		if (x < screen.x) {
+//			x = screen.x;
+//		}
+//		if (y < screen.y) {
+//			y = screen.y;
+//		}
+//		return new Point(x, y);
+//	}
 
 	public void closePopup() {
 		if (currentPopup != null && !currentPopup.isDisposed()) {
