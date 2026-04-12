@@ -422,9 +422,9 @@ public class ClassMembersAtBreakpointTab {
 						uiEventCollector.collectUiEvent(new UIEvent<>(
 								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
 					} else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-						DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
-						uiEventCollector.collectUiEvent(new UIEvent<>(
-								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto));
+					//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
+//						uiEventCollector.collectUiEvent(new UIEvent<>(
+//								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto));
 						Display display = root.getDisplay();
 						Point location = display.getCursorLocation();
 						tooltipManager.showTooltipForCollection(dto, location);

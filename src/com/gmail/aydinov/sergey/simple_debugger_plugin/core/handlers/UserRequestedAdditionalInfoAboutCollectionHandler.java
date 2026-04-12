@@ -16,18 +16,18 @@ public class UserRequestedAdditionalInfoAboutCollectionHandler implements UIEven
 	@Override
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
-//		UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
-//		System.out.println(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION.name()
-//				+ userRequestedAdditionalInfo.toString());
-//		collectBriefInfoAboutCollection(userRequestedAdditionalInfo);
+		UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
+		System.out.println(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION.name()
+				+ userRequestedAdditionalInfo.toString());
+		collectBriefInfoAboutCollection(userRequestedAdditionalInfo);
 		return false;
 	}
 
 	
-//	private void collectBriefInfoAboutCollection(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
+	private void collectBriefInfoAboutCollection(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
 //		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
 //		UniversalElementRepresentation qq = TargetApplicationRepresentation.getInstance().getTargetApplicationSnapshot().get(anchorElement.getTag());
 //		System.out.println(qq);
-//	}
+	}
 
 }

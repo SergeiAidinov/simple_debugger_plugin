@@ -141,38 +141,12 @@ public final class SimpleDebuggerEventTypes {
 			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE,
 			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE,
 			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP,
-			SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT
-		//	SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT
+			SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
+			SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION
 
 	);
 
-//	private static final EnumSet<SimpleDebuggerEventType> INSPECTION_WINDOW_EVENTS = EnumSet
-//			.of(SimpleDebuggerEventType.SHOW_ANCHOR_ELEMENT);
-	
-//	private static final EnumSet<SimpleDebuggerEventType> INSPECTIONAL_EVENTS =
-//	        EnumSet.copyOf(INSPECTION_EVENTS);
 
-//	static {
-//	    INSPECTIONAL_EVENTS.add(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT);
-//	}
-
-	/**
-	 * Checks if the event is an inspection window event.
-	 */
-//	public static boolean isInspectionWindowEvent(SimpleDebuggerEventType type) {
-//		return INSPECTION_WINDOW_EVENTS.contains(type);
-//	}
-
-	/**
-	 * Checks if the event is a debug window event.
-	 */
-//	public static boolean isMainWindowEvent(SimpleDebuggerEventType type) {
-//		return !isInspectionWindowEvent(type) && !is;
-//	}
-
-//	public static boolean isCollectionInspectionWindowEvent(SimpleDebuggerEventType type) {
-//		return INSPECTION_EVENTS.contains(type);
-//	}
 	
 	public static boolean isInspectionEvent(SimpleDebuggerEventType type) {
 		return INSPECTION_EVENTS.contains(type);

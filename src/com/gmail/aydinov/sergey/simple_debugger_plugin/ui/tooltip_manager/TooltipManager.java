@@ -172,42 +172,19 @@ public class TooltipManager {
 	}
 
 	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
-	    if (DebuggerContext.context().isInspectionSeanceActive()) {
-	        // 🔹 Сеанс уже идет → popup только для просмотра (НЕкликабельный)
-	        showPopup(dto, location,
-	                d -> buildCollectionText((InnerElementRepresentationDTO) d),
-	                null // 👈 ключевой момент
-	        );
-	        return;
-	    }
 
-	    // 🔹 Сеанса нет → popup кликабельный и запускает инспекцию
-	    showPopup(dto, location,
-	            d -> buildCollectionText((InnerElementRepresentationDTO) d),
-	            () -> {
-	                debugEventCollector.collectDebugEvent(
-	                        new DebugEvent<Boolean>(
-	                                SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE,
-	                                false
-	                        )
-	                );
-
-	                switch (dto.getValueCategory()) {
-	                    case COLLECTION, MAP -> uiEventCollector.collectUiEvent(
-	                            new UIEvent<>(
-	                                    SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
-	                                    dto
-	                            )
-	                    );
-	                    default -> debugEventCollector.collectDebugEvent(
-	                            new DebugEvent<Boolean>(
-	                                    SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE,
-	                                    true
-	                            )
-	                    );
-	                }
-	            }
-	    );
+		showPopup(dto, location, d -> buildCollectionText((InnerElementRepresentationDTO) d), () -> {
+			debugEventCollector
+					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
+			switch (dto.getValueCategory()) {
+			case COLLECTION -> uiEventCollector
+					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
+			case MAP -> uiEventCollector
+					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
+			default -> debugEventCollector
+					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+			}
+		});
 	}
 
 	private void showPopup(Object dto, Point location, Function<Object, String> textBuilder, Runnable onClick) {
