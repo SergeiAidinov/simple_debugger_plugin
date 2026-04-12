@@ -32,7 +32,7 @@ public class IterableInspectorTab implements InspectorTab {
 
     private final Composite root;
     private final TableViewer viewer;
-    private final TooltipManager tooltipManager;
+    private final  TooltipManager tooltipManager;
 
     private String lastInspectedElementId;
 
@@ -154,7 +154,7 @@ public class IterableInspectorTab implements InspectorTab {
             if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
                 Object second = pair.getSecond();
                 if (second instanceof InnerElementRepresentationDTO dataDto) {
-                    int colIndex = TooltipManager.getColumnIndexAtPoint(table, event.x);
+                    int colIndex = tooltipManager.getColumnIndexAtPoint(table, event.x);
                     if (colIndex == 1) {
                         Image icon = getIcon(dataDto);
                         if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
@@ -193,10 +193,8 @@ public class IterableInspectorTab implements InspectorTab {
 
     public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO dto) {
         Display display = root.getDisplay();
-
         display.asyncExec(() -> {
             if (root.isDisposed()) return;
-
             Point location = display.getCursorLocation();
             tooltipManager.showTooltipForUserObject(dto, location);
         });
