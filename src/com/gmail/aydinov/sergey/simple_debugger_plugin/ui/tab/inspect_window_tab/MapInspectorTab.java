@@ -67,6 +67,7 @@ public class MapInspectorTab implements InspectorTab {
 	private String lastInspectedElementId;
 	private Shell currentPopup;
 	private int currentPage = 0;
+//	private String currentId;
 
 	public MapInspectorTab(Composite parent) {
 		root = new Composite(parent, SWT.NONE);
@@ -118,7 +119,7 @@ public class MapInspectorTab implements InspectorTab {
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		setupTooltips(table);
+	//	setupTooltips(table);
 
 		viewer = new TableViewer(table);
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
@@ -277,40 +278,83 @@ public class MapInspectorTab implements InspectorTab {
 	}
 
 	private void setupHoverInspectionListener() {
-		Table table = viewer.getTable();
-		table.addListener(SWT.MouseMove, event -> {
-			TableItem item = table.getItem(new Point(event.x, event.y));
-			InnerElementRepresentationDTO dto = null;
-			if (item != null && item.getData() instanceof PairDTO pair) {
-				InnerElementRepresentationDTO dataDto = (InnerElementRepresentationDTO) pair.getSecond();
-				int colIndex = getColumnIndexAtPoint(table, event.x);
-				if (colIndex == 1) {
-					Image icon = getIcon(dataDto); // <- вызываем один раз
-					if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
-							|| icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-						dto = dataDto;
-					}
-					String currentId = dto != null ? dto.getAdditionalInfo() : null;
-					if (!Objects.equals(currentId, lastInspectedElementId)) {
-						lastInspectedElementId = currentId;
-						closePopup();
-						if (dto != null) {
-							if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-								uiEventCollector.collectUiEvent(new UIEvent<>(
-										SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
-							} else if (icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-								uiEventCollector.collectUiEvent(new UIEvent<>(
-										SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION, dto));
-								Point location = root.getDisplay().getCursorLocation();
-								showTooltipForCollection(dto, location);
-							}
-						}
-					}
-				}
-			}
-		});
-	}
+	    Table table = viewer.getTable();
 
+	    table.addListener(SWT.MouseMove, event -> {
+
+	        Point point = new Point(event.x, event.y);
+	        TableItem item = table.getItem(point);
+
+	        InnerElementRepresentationDTO dto = null;
+
+	        if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
+
+	            Object value = pair.getSecond();
+	            if (value instanceof InnerElementRepresentationDTO dataDto) {
+
+	                int colIndex = getColumnIndexByBounds(table, item, event.x, event.y);
+
+	                if (colIndex == 1) { // Value column
+
+	                    Image icon = getIcon(dataDto);
+
+	                    Image inspectIcon = SimpleDebugerWindowsManager.instance()
+	                            .icons.get("inspectIcon").getFirst();
+
+	                    Image lensIcon = SimpleDebugerWindowsManager.instance()
+	                            .icons.get("lens").getFirst();
+
+	                    if (icon == inspectIcon || icon == lensIcon) {
+	                        dto = dataDto;
+	                    }
+	                }
+	            }
+	        }
+
+	        String currentId = dto != null ? dto.getAdditionalInfo() : null;
+
+	        if (!Objects.equals(currentId, lastInspectedElementId)) {
+	            lastInspectedElementId = currentId;
+
+	            closePopup();
+
+	            if (dto == null) return;
+
+	            Image icon = getIcon(dto);
+
+	            Image inspectIcon = SimpleDebugerWindowsManager.instance()
+	                    .icons.get("inspectIcon").getFirst();
+
+	            Image lensIcon = SimpleDebugerWindowsManager.instance()
+	                    .icons.get("lens").getFirst();
+
+	            if (icon == inspectIcon) {
+
+	                uiEventCollector.collectUiEvent(
+	                        new UIEvent<>(
+	                                SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
+	                                dto));
+
+	            } else if (icon == lensIcon) {
+
+	                Point location = table.toDisplay(event.x, event.y);
+	                showTooltipForCollection(dto, location);
+	            }
+	        }
+	    });
+	}
+	
+	private int getColumnIndexByBounds(Table table, TableItem item, int x, int y) {
+
+	    for (int i = 0; i < table.getColumnCount(); i++) {
+	        Rectangle rect = item.getBounds(i);
+	        if (rect.contains(x, y)) {
+	            return i;
+	        }
+	    }
+	    return -1;
+	}
+	
 	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
 
 		showPopup(dto, location, d -> buildCollectionText((InnerElementRepresentationDTO) d), () -> {
@@ -350,15 +394,11 @@ public class MapInspectorTab implements InspectorTab {
 	}
 
 	private void showPopup(Object dto, Point location, Function<Object, String> textBuilder, Runnable onClick) {
-
 		Display display = root.getDisplay();
-
 		display.asyncExec(() -> {
 			if (root.isDisposed() || dto == null)
 				return;
-
 			closePopup();
-
 			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
 			popup.setLayout(new GridLayout(1, false));
 
@@ -456,27 +496,6 @@ public class MapInspectorTab implements InspectorTab {
 		return null;
 	}
 
-	private int getColumnIndexAtPoint(Table table, int x) {
-		int offset = 0;
-		for (int i = 0; i < table.getColumnCount(); i++) {
-			offset += table.getColumn(i).getWidth();
-			if (x < offset)
-				return i;
-		}
-		return table.getColumnCount() - 1;
-	}
-
-	private void setupTooltips(Table table) {
-		TooltipManager tooltipManager = new TooltipManager(table, root);
-		tooltipManager.setTooltipProvider(item -> {
-			int col = TooltipManager.getColumnIndexAtPoint(table,
-					table.getDisplay().getCursorLocation().x - table.toDisplay(0, 0).x);
-			Object tip = item.getData("tooltip_col_" + col);
-			return tip instanceof String ? (String) tip : null;
-		});
-	//	this.tooltipManager = tooltipManager;
-	}
-
 	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO dto) {
         Display display = root.getDisplay();
 
@@ -484,7 +503,8 @@ public class MapInspectorTab implements InspectorTab {
             if (root.isDisposed()) return;
 
             Point location = display.getCursorLocation();
-           showTooltipForUserObject(dto, location);
+         //  showTooltipForUserObject(dto, location);
+            showPopup(dto, location, d -> UiUtils.buildUserObjectText((UserInstanceDetailsDTO) d), null);
         });
     }
 

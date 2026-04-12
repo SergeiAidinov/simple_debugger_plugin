@@ -195,84 +195,21 @@ public class IterableInspectorTab implements InspectorTab {
 		});
 	}
 
-//	public static int getColumnIndexAtPoint(Table table, int x) {
-//		int offset = 0;
-//		for (int i = 0; i < table.getColumnCount(); i++) {
-//			offset += table.getColumn(i).getWidth();
-//			if (x < offset)
-//				return i;
-//		}
-//		return table.getColumnCount() - 1;
-//	}
-
 	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO dto) {
 		Display display = root.getDisplay();
 		 Point location = display.getCursorLocation();
 		showPopup(dto, location, d -> UiUtils.buildUserObjectText((UserInstanceDetailsDTO) d), null);
-	//	Display display = root.getDisplay();
-//        display.asyncExec(() -> {
-//            if (root.isDisposed()) return;
-//            Point location = display.getCursorLocation();
-//           // tooltipManager.showTooltipForUserObject(dto, location);
-//        }
 
-	}
-
-//	private String buildUserObjectText(UserInstanceDetailsDTO dto) {
-//		StringBuilder info = new StringBuilder();
-//
-//		info.append("Field name: ").append(dto.getFieldName()).append("\n");
-//		info.append("Field type: ").append(dto.getTypeName()).append("\n\n");
-//
-//		info.append("INFO:\nFields:\n");
-//		addGroupOfElements(info, dto.getInnerElementsByGroups().get(1), List.of("name: ", "type: ", "value: "));
-//
-//		info.append("Methods:\n");
-//		addGroupOfElements(info, dto.getInnerElementsByGroups().get(2), List.of("name: ", "return type: ", ""));
-//
-//		info.append("Others:\n");
-//		addGroupOfElements(info, dto.getInnerElementsByGroups().get(3), List.of("name: ", "type: ", "value: "));
-//
-//		return info.toString();
-//	}
-
-	private void addGroupOfElements(StringBuilder stringBuilder, List<UserElementDetailDTO> list,
-			List<String> markers) {
-
-		for (int outer = 0; outer < list.size(); outer++) {
-			UserElementDetailDTO innerElement = list.get(outer);
-			for (int i = 0; i < markers.size(); i++) {
-				String announce = markers.get(i);
-				if (i == 0) {
-					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(GAP).append(announce)
-							.append(innerElement.getName()).append("\n"));
-				} else if (i == 1) {
-					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(GAP).append(announce)
-							.append(innerElement.getTypeOrReturnType()).append("\n"));
-				} else if (i == 2) {
-					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(GAP).append(announce)
-							.append(innerElement.getValue()).append("\n"));
-				}
-				if (i == 2 && (list.size() - outer != 1))
-					stringBuilder.append("\n");
-			}
-		}
-		stringBuilder.append(SEPARATOR + "\n");
 	}
 
 	private void showPopup(Object dto, Point location, Function<Object, String> textBuilder, Runnable onClick) {
-
 		Display display = root.getDisplay();
-
 		display.asyncExec(() -> {
 			if (root.isDisposed() || dto == null)
 				return;
-
 			closePopup();
-
 			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
 			popup.setLayout(new GridLayout(1, false));
-
 //👉 курсор только если кликабельный
 			if (onClick != null) {
 				popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
