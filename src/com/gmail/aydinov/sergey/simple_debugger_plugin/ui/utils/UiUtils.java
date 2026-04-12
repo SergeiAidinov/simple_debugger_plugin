@@ -24,7 +24,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWi
 public class UiUtils {
 	
 	public static String GAP = "  ";
-	private static String SEPARATOR = "---------------------------------------------- \n";
+	public static String SEPARATOR = "---------------------------------------------- \n";
 	
 	private static final Set<String> JAVA_STANDARD_TYPES = Set.of("int", "long", "short", "byte", "float", "double",
 			"boolean", "char", "java.lang.Integer", "java.lang.Long", "java.lang.Short", "java.lang.Byte",

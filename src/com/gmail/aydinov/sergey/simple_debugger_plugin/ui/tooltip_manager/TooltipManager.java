@@ -38,10 +38,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWi
 
 public class TooltipManager {
 
-	private static final int OFFSET_X = -100;
-	private static final int OFFSET_Y = OFFSET_X;
-	private static String GAP = "  ";
-	private static String SEPARATOR = "---------------------------------------------- \n";
+//	private static final int OFFSET_X = -100;
+//	private static final int OFFSET_Y = OFFSET_X;
+//	private static String GAP = "  ";
+//	private static String SEPARATOR = "---------------------------------------------- \n";
 
 	private final Table table;
 	private final Composite root;
@@ -156,20 +156,20 @@ public class TooltipManager {
 			for (int i = 0; i < markers.size(); i++) {
 				String announce = markers.get(i);
 				if (i == 0) {
-					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(GAP).append(announce)
+					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(UiUtils.GAP).append(announce)
 							.append(innerElement.getName()).append("\n"));
 				} else if (i == 1) {
-					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(GAP).append(announce)
+					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(UiUtils.GAP).append(announce)
 							.append(innerElement.getTypeOrReturnType()).append("\n"));
 				} else if (i == 2) {
-					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(GAP).append(announce)
+					Optional.ofNullable(announce).ifPresent(e -> stringBuilder.append(UiUtils.GAP).append(announce)
 							.append(innerElement.getValue()).append("\n"));
 				}
 				if (i == 2 && (list.size() - outer != 1))
 					stringBuilder.append("\n");
 			}
 		}
-		stringBuilder.append(SEPARATOR + "\n");
+		stringBuilder.append(UiUtils.SEPARATOR + "\n");
 	}
 
 	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
@@ -279,15 +279,15 @@ public class TooltipManager {
 
 		StringBuilder info = new StringBuilder();
 
-		info.append("Inspect element:\n").append(GAP).append("name: ").append(dto.getElementName()).append("\n")
-				.append(GAP).append("id = ").append(dto.getAdditionalInfo()).append("\n");
+		info.append("Inspect element:\n").append(UiUtils.GAP).append("name: ").append(dto.getElementName()).append("\n")
+				.append(UiUtils.GAP).append("id = ").append(dto.getAdditionalInfo()).append("\n");
 
 		if (comma != -1 && gt != -1) {
-			info.append(GAP).append(value.substring(0, comma)).append("\n").append(GAP)
-					.append(value.substring(comma + 2, gt + 1)).append("\n").append(GAP).append("instance: ")
+			info.append(UiUtils.GAP).append(value.substring(0, comma)).append("\n").append(UiUtils.GAP)
+					.append(value.substring(comma + 2, gt + 1)).append("\n").append(UiUtils.GAP).append("instance: ")
 					.append(value.substring(gt + 2));
 		} else {
-			info.append(GAP).append(value);
+			info.append(UiUtils.GAP).append(value);
 		}
 
 		return info.toString();
