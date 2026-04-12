@@ -12,6 +12,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Table;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
@@ -22,7 +23,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWi
 
 public class UiUtils {
 	
-	private static String GAP = "  ";
+	public static String GAP = "  ";
 	private static String SEPARATOR = "---------------------------------------------- \n";
 	
 	private static final Set<String> JAVA_STANDARD_TYPES = Set.of("int", "long", "short", "byte", "float", "double",
@@ -207,5 +208,14 @@ public class UiUtils {
 		return table.getColumnCount() - 1;
 	}
 
+	public static InnerElementRepresentationDTO convertUserInstanceToInnerDTO(UserInstanceDetailsDTO dto) {
+		return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+				.fromElement(UniversalElementRepresentation.builder().elementName(dto.getFieldName())
+						.elementType(UniversalElementType.FIELD).value(dto.toString())
+						.valueCategory(ValueCategory.USER_OBJECT).uniqueId(dto.getTag().getUniqueId())
+						.parentUniqueId(dto.getTag().getParentId())
+						// .level(dto.)
+						.build());
+	}
 
 }

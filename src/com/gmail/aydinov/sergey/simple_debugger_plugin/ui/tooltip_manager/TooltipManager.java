@@ -33,6 +33,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
 public class TooltipManager {
@@ -137,7 +138,7 @@ public class TooltipManager {
 
 		showPopup(dto, location, d -> buildUserObjectText((UserInstanceDetailsDTO) d),
 				() -> uiEventCollector.collectUiEvent(new UIEvent<>(
-						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, convertUserInstanceToInnerDTO(dto))));
+						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, UiUtils.convertUserInstanceToInnerDTO(dto))));
 	}
 
 	public void closePopup() {
@@ -292,13 +293,13 @@ public class TooltipManager {
 		return info.toString();
 	}
 
-	private InnerElementRepresentationDTO convertUserInstanceToInnerDTO(UserInstanceDetailsDTO dto) {
-		return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-				.fromElement(UniversalElementRepresentation.builder().elementName(dto.getFieldName())
-						.elementType(UniversalElementType.FIELD).value(dto.toString())
-						.valueCategory(ValueCategory.USER_OBJECT).uniqueId(dto.getTag().getUniqueId())
-						.parentUniqueId(dto.getTag().getParentId())
-						// .level(dto.)
-						.build());
-	}
+//	private InnerElementRepresentationDTO convertUserInstanceToInnerDTO(UserInstanceDetailsDTO dto) {
+//		return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+//				.fromElement(UniversalElementRepresentation.builder().elementName(dto.getFieldName())
+//						.elementType(UniversalElementType.FIELD).value(dto.toString())
+//						.valueCategory(ValueCategory.USER_OBJECT).uniqueId(dto.getTag().getUniqueId())
+//						.parentUniqueId(dto.getTag().getParentId())
+//						// .level(dto.)
+//						.build());
+//	}
 }
