@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public class CollectionInspectorTab implements InspectorTab {
+public class IterableInspectorTab implements InspectorTab {
 
     private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
@@ -49,7 +49,7 @@ public class CollectionInspectorTab implements InspectorTab {
 
     private int currentPage = 0;
 
-    public CollectionInspectorTab(Composite parent) {
+    public IterableInspectorTab(Composite parent) {
         root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(1, false));
 
@@ -151,16 +151,12 @@ public class CollectionInspectorTab implements InspectorTab {
         table.addListener(SWT.MouseMove, event -> {
             TableItem item = table.getItem(new Point(event.x, event.y));
             InnerElementRepresentationDTO dto = null;
-
             if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
                 Object second = pair.getSecond();
-
                 if (second instanceof InnerElementRepresentationDTO dataDto) {
                     int colIndex = TooltipManager.getColumnIndexAtPoint(table, event.x);
-
                     if (colIndex == 1) {
                         Image icon = getIcon(dataDto);
-
                         if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
                                 || icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
                             dto = dataDto;

@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window;
 
+import java.util.Objects;
 import java.util.Queue;
 
 import org.eclipse.swt.SWT;
@@ -28,7 +29,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventC
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.CollectionInspectorTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.IterableInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.InspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.MapInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -44,7 +45,7 @@ public class UniversalInspectorWindow {
 	private final CTabFolder tabFolder;
 
 	// вкладки
-	private CollectionInspectorTab collectionInspectorTab;
+	private IterableInspectorTab iterableInspectorTab;
 	private CTabItem collectionTabItem;
 
 	private MapInspectorTab mapInspectorTab;
@@ -99,8 +100,8 @@ public class UniversalInspectorWindow {
 	// =========================================================
 
 	private void hideAllTabs() {
-		if (collectionInspectorTab != null && !collectionInspectorTab.getControl().isDisposed())
-			collectionInspectorTab.getControl().setVisible(false);
+		if (iterableInspectorTab != null && !iterableInspectorTab.getControl().isDisposed())
+			iterableInspectorTab.getControl().setVisible(false);
 		if (mapInspectorTab != null && !mapInspectorTab.getControl().isDisposed())
 			mapInspectorTab.getControl().setVisible(false);
 //		if (userObjectTab != null && !userObjectTab.getControl().isDisposed())
@@ -114,14 +115,14 @@ public class UniversalInspectorWindow {
 		tabFolder.layout(true, true);
 	}
 
-	private CollectionInspectorTab createArrayTabIfNeeded() {
-		if (collectionInspectorTab == null || collectionTabItem == null) {
-			collectionInspectorTab = new CollectionInspectorTab(tabFolder);
+	private IterableInspectorTab createIterableTabIfNeeded() {
+		if (iterableInspectorTab == null || collectionTabItem == null) {
+			iterableInspectorTab = new IterableInspectorTab(tabFolder);
 			collectionTabItem = new CTabItem(tabFolder, SWT.NONE);
 			collectionTabItem.setText("Iterable");
-			collectionTabItem.setControl(collectionInspectorTab.getControl());
+			collectionTabItem.setControl(iterableInspectorTab.getControl());
 		}
-		return collectionInspectorTab;
+		return iterableInspectorTab;
 	}
 
 	private void createMapTabIfNeeded() {
@@ -147,10 +148,10 @@ public class UniversalInspectorWindow {
 			return;
 
 		Display.getDefault().asyncExec(() -> {
-			createArrayTabIfNeeded();
-			collectionInspectorTab.showPage(payload);
+			createIterableTabIfNeeded();
+			iterableInspectorTab.showPage(payload);
 			showBreadcrumbs(payload.getBreadcrumbs());
-			showTab(collectionTabItem, collectionInspectorTab.getControl());
+			showTab(collectionTabItem, iterableInspectorTab.getControl());
 			currentTab = CurrentTab.COLLECTION;
 		});
 	}
@@ -194,7 +195,8 @@ public class UniversalInspectorWindow {
 		}
 		case DISPLAY_ADDITIONAL_INFO -> {
 			DebugEvent<UserInstanceDetailsDTO> e = (DebugEvent<UserInstanceDetailsDTO>) event;
-			collectionInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
+			createIterableTabIfNeeded();
+			iterableInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
 			
 		}
 		default -> {
