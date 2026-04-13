@@ -48,7 +48,7 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 	private void provideAdditionalInfoAboutObject(UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo) {
 		InnerElementRepresentationDTO anchorElement = userRequestedAdditionalInfo.getPayload();
 		System.out.println("ANCHOR: " + anchorElement.toString());
-		TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(System.out::println);
+	//	TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(System.out::println);
 		Optional<UniversalElementRepresentation> topLevelElementOptional = Optional.empty();
 		if (anchorElement.getElementType().equals(UniversalElementType.FIELD)) {
 			topLevelElementOptional = TargetApplicationRepresentation.getInstance()
