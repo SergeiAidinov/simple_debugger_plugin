@@ -278,35 +278,27 @@ public class MapInspectorTab implements InspectorTab {
 	}
 
 	private void setupHoverInspectionListener() {
+
 	    Table table = viewer.getTable();
 
 	    table.addListener(SWT.MouseMove, event -> {
 
-	        Point point = new Point(event.x, event.y);
-	        TableItem item = table.getItem(point);
+	        TableItem item = table.getItem(new Point(event.x, event.y));
 
 	        InnerElementRepresentationDTO dto = null;
 
 	        if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
 
 	            Object value = pair.getSecond();
+
 	            if (value instanceof InnerElementRepresentationDTO dataDto) {
 
-	                int colIndex = getColumnIndexByBounds(table, item, event.x, event.y);
+	                // 🔥 ВАЖНО: проверяем реальную границу VALUE колонки
+	                int valueCol = 1;
+	                Rectangle rect = item.getBounds(valueCol);
 
-	                if (colIndex == 1) { // Value column
-
-	                    Image icon = getIcon(dataDto);
-
-	                    Image inspectIcon = SimpleDebugerWindowsManager.instance()
-	                            .icons.get("inspectIcon").getFirst();
-
-	                    Image lensIcon = SimpleDebugerWindowsManager.instance()
-	                            .icons.get("lens").getFirst();
-
-	                    if (icon == inspectIcon || icon == lensIcon) {
-	                        dto = dataDto;
-	                    }
+	                if (rect.contains(event.x, event.y)) {
+	                    dto = dataDto;
 	                }
 	            }
 	        }
@@ -314,9 +306,10 @@ public class MapInspectorTab implements InspectorTab {
 	        String currentId = dto != null ? dto.getAdditionalInfo() : null;
 
 	        if (!Objects.equals(currentId, lastInspectedElementId)) {
+
 	            lastInspectedElementId = currentId;
 
-	            closePopup();
+	           closePopup();
 
 	            if (dto == null) return;
 
@@ -518,4 +511,6 @@ public class MapInspectorTab implements InspectorTab {
 				() -> uiEventCollector.collectUiEvent(new UIEvent<>(
 						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, UiUtils.convertUserInstanceToInnerDTO(dto))));
 	}
+
+	
 }

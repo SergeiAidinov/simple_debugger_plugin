@@ -45,10 +45,10 @@ public class UniversalInspectorWindow {
 	private final CTabFolder tabFolder;
 
 	// вкладки
-	private IterableInspectorTab iterableInspectorTab;
+	private InspectorTab iterableInspectorTab;
 	private CTabItem collectionTabItem;
 
-	private MapInspectorTab mapInspectorTab;
+	private InspectorTab mapInspectorTab;
 	private CTabItem mapTabItem;
 
 //	private UserObjectStructureTab userObjectTab;
@@ -86,6 +86,15 @@ public class UniversalInspectorWindow {
 
 		shell.addListener(SWT.Close, e -> close());
 		shell.open();
+		display.asyncExec(() -> {
+		//	iterableInspectorTab = new IterableInspectorTab(rightPanel);
+			if (iterableInspectorTab == null || collectionTabItem == null) {
+				iterableInspectorTab = new IterableInspectorTab(tabFolder);
+				collectionTabItem = new CTabItem(tabFolder, SWT.NONE);
+				collectionTabItem.setText("Iterable");
+				collectionTabItem.setControl(iterableInspectorTab.getControl());
+			}
+		});
 	}
 
 	public static UniversalInspectorWindow getInstance() {
@@ -115,15 +124,15 @@ public class UniversalInspectorWindow {
 		tabFolder.layout(true, true);
 	}
 
-	private IterableInspectorTab createIterableTabIfNeeded() {
-		if (iterableInspectorTab == null || collectionTabItem == null) {
-			iterableInspectorTab = new IterableInspectorTab(tabFolder);
-			collectionTabItem = new CTabItem(tabFolder, SWT.NONE);
-			collectionTabItem.setText("Iterable");
-			collectionTabItem.setControl(iterableInspectorTab.getControl());
-		}
-		return iterableInspectorTab;
-	}
+//	private IterableInspectorTab createIterableTabIfNeeded() {
+//		if (iterableInspectorTab == null || collectionTabItem == null) {
+//			iterableInspectorTab = new IterableInspectorTab(tabFolder);
+//			collectionTabItem = new CTabItem(tabFolder, SWT.NONE);
+//			collectionTabItem.setText("Iterable");
+//			collectionTabItem.setControl(iterableInspectorTab.getControl());
+//		}
+//		return iterableInspectorTab;
+//	}
 
 	private void createMapTabIfNeeded() {
 		if (mapInspectorTab == null || mapTabItem == null) {
@@ -147,7 +156,7 @@ public class UniversalInspectorWindow {
 		if (tabFolder.isDisposed())
 			return;
 		Display.getDefault().asyncExec(() -> {
-			createIterableTabIfNeeded();
+			//createIterableTabIfNeeded();
 			iterableInspectorTab.showPage(payload);
 			showBreadcrumbs(payload.getBreadcrumbs());
 			showTab(collectionTabItem, iterableInspectorTab.getControl());
@@ -195,12 +204,15 @@ public class UniversalInspectorWindow {
 		case DISPLAY_ADDITIONAL_INFO -> {
 			DebugEvent<UserInstanceDetailsDTO> e = (DebugEvent<UserInstanceDetailsDTO>) event;
 			if (currentTab == InspectionTabs.COLLECTION) {
-			createIterableTabIfNeeded();
-			iterableInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
-			} else if (currentTab == InspectionTabs.MAP) {
-				createMapTabIfNeeded();
-				mapInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
+			//createIterableTabIfNeeded();
+		//	iterableInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
+				iterableInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
 			}
+			
+//			} else if (currentTab == InspectionTabs.MAP) {
+//				createMapTabIfNeeded();
+//				mapInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
+//			}
 
 		}
 		default -> {
