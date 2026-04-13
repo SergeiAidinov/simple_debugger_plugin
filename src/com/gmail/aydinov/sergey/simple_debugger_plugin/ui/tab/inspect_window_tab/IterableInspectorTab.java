@@ -300,9 +300,9 @@ public class IterableInspectorTab implements InspectorTab {
 	public void showTooltipForUserObject(UserInstanceDetailsDTO dto, Point location) {
 		if (Objects.isNull(dto) || Objects.isNull(location))
 			return;
-		if (dto.getInnerElementsByGroups().get(1).isEmpty() && dto.getInnerElementsByGroups().get(2).isEmpty()
-				&& dto.getInnerElementsByGroups().get(3).isEmpty())
-			return;
+//		if (dto.getInnerElementsByGroups().get(1).isEmpty() && dto.getInnerElementsByGroups().get(2).isEmpty()
+//				&& dto.getInnerElementsByGroups().get(3).isEmpty())
+//			return;
 		showPopup(dto, location, d -> UiUtils.buildUserObjectText((UserInstanceDetailsDTO) d), () -> // {}
 		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
 				UiUtils.convertUserInstanceToInnerDTO(dto)))
