@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -25,6 +26,8 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
@@ -46,10 +49,6 @@ public class IterableInspectorTab implements InspectorTab {
 
 	private final Composite root;
 	private final TableViewer viewer;
-//	private final TooltipManager tooltipManager;
-
-//	private String lastInspectedElementId;
-
 	private final Label collectionNameLabel;
 	private final Label collectionTypeLabel;
 	private final Label elementTypeLabel;
@@ -62,12 +61,11 @@ public class IterableInspectorTab implements InspectorTab {
 	private final Button nextButton;
 	private Shell currentPopup;
 	private TooltipManager tooltipManager;
-//	private InnerElementRepresentationDTO lastInspectedElement;
-	private String lastHoveredElementId = null;
-//	private boolean requestSent = false;
-//	private UserInstanceDetailsDTO dtoToDisplay = null;
-
-	
+	private long lastRequestTime = System.currentTimeMillis();
+//	private InnerElementRepresentationDTO lastHovered;
+	private InnerElementRepresentationDTO lastInspectedElement;
+	private UserInstanceDetailsDTO lastUserInstanceDetailsDTO;
+//	private String lastHoveredElementId = null;
 
 	private int currentPage = 0;
 
@@ -121,8 +119,6 @@ public class IterableInspectorTab implements InspectorTab {
 		viewer = new TableViewer(table);
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
 
-		// tooltipManager = new TooltipManager(table, root);
-		
 		setupTooltips(table);
 
 		createColumn("Index", 80, pair -> String.valueOf(pair.getFirst()));
@@ -130,21 +126,8 @@ public class IterableInspectorTab implements InspectorTab {
 		createColumn("Value", 600, pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
 				pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
 
-	//	setupClickListener();
 		setupHoverInspectionListener();
 	}
-	
-//	public UserInstanceDetailsDTO getDtoToDisplay() {
-//		return dtoToDisplay;
-//	}
-
-//	public void setDtoToDisplay(UserInstanceDetailsDTO dto) {
-//	    Display.getDefault().asyncExec(() -> {
-//	        if (root.isDisposed() || dto == null) return;
-//
-//	        showFieldInfoPopupFromBackend(dto);
-//	    });
-//	}
 
 	@Override
 	public Composite getControl() {
@@ -180,88 +163,42 @@ public class IterableInspectorTab implements InspectorTab {
 		});
 	}
 
-	
-
 	private void setupHoverInspectionListener() {
-	    Table table = viewer.getTable();
+		Table table = viewer.getTable();
+		table.addListener(SWT.MouseMove, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			InnerElementRepresentationDTO dto = null;
+			if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
+				@SuppressWarnings("unchecked")
+				PairDTO<Integer, InnerElementRepresentationDTO> typed = (PairDTO<Integer, InnerElementRepresentationDTO>) pair;
+				InnerElementRepresentationDTO dataDto = typed.getSecond();
+				int colIndex = getColumnIndexAtPoint(table, event.x);
+				if (colIndex == 1) {
+					Image icon = getIcon(dataDto);
+					if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
+							|| icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+						dto = dataDto;
+					}
+				}
+			}
+				if (!Objects.equals(dto, lastInspectedElement) 
+					&& (Math.abs(lastRequestTime - System.currentTimeMillis()) > 500)) {
+				lastInspectedElement = dto;
+				if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+					uiEventCollector.collectUiEvent(
+							new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
+				}
 
-	    table.addListener(SWT.MouseMove, event -> {
+			} else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+				Display display = root.getDisplay();
+				Point location = display.getCursorLocation();
+				tooltipManager.showTooltipForCollection(dto, location);
+			}
+			// }
 
-	        TableItem item = table.getItem(new Point(event.x, event.y));
-	        InnerElementRepresentationDTO dto = null;
-
-	        if (item != null) {
-	            Object data = item.getData();
-
-	            if (data instanceof PairDTO<?, ?> pair) {
-	                Object second = pair.getSecond();
-
-	                if (second instanceof InnerElementRepresentationDTO dataDto) {
-
-	                    int colIndex = getColumnIndexAtPoint(table, event.x);
-
-	                    if (colIndex == 1) {
-	                        ValueCategory category = dataDto.getValueCategory();
-
-	                        boolean isInspectable =
-	                                category == ValueCategory.USER_OBJECT
-	                                        || category == ValueCategory.COLLECTION
-	                                        || category == ValueCategory.MAP;
-
-	                        if (isInspectable) {
-	                            dto = dataDto;
-	                        }
-	                    }
-	                }
-	            }
-	        }
-
-	        String currentId = dto != null ? dto.getAdditionalInfo() : null;
-
-	        // 🔴 защита от лишних срабатываний
-	        if (Objects.equals(currentId, lastHoveredElementId)) {
-	            return;
-	        }
-
-	        lastHoveredElementId = currentId;
-
-	        // если ушли с элемента → закрываем tooltip
-	        if (dto == null) {
-	            tooltipManager.closePopup();
-	            return;
-	        }
-
-	        Display display = table.getDisplay();
-
-	        InnerElementRepresentationDTO finalDto = dto;
-
-	        display.asyncExec(() -> {
-	            if (table.isDisposed() || finalDto == null) {
-	                return;
-	            }
-
-	            Image icon = getIcon(finalDto);
-
-	            if (icon == SimpleDebugerWindowsManager.instance()
-	                    .icons.get("inspectIcon").getFirst()) {
-
-	                uiEventCollector.collectUiEvent(
-	                        new UIEvent<>(
-	                                SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
-	                                finalDto
-	                        )
-	                );
-
-	            } else if (icon == SimpleDebugerWindowsManager.instance()
-	                    .icons.get("lens").getFirst()) {
-
-	                Point location = display.getCursorLocation();
-	                tooltipManager.showTooltipForCollection(finalDto, location);
-	            }
-	        });
-	    });
+		});
 	}
-	
+
 	private int getColumnIndexAtPoint(Table table, int x) {
 		int offset = 0;
 		for (int i = 0; i < table.getColumnCount(); i++) {
@@ -273,90 +210,70 @@ public class IterableInspectorTab implements InspectorTab {
 	}
 
 	private String buildCollectionText(InnerElementRepresentationDTO dto) {
-	    if (dto == null) return "null";
+		if (dto == null)
+			return "null";
 
-	    StringBuilder info = new StringBuilder();
+		StringBuilder info = new StringBuilder();
 
-	    String name = safe(dto.getElementName());
-	    String id = safe(dto.getAdditionalInfo());
-	    String value = safe(dto.getValue());
+		String name = safe(dto.getElementName());
+		String id = safe(dto.getAdditionalInfo());
+		String value = safe(dto.getValue());
 
-	    info.append("Inspect element:\n")
-	        .append(GAP).append("name: ").append(name).append("\n")
-	        .append(GAP).append("id: ").append(id).append("\n");
+		info.append("Inspect element:\n").append(GAP).append("name: ").append(name).append("\n").append(GAP)
+				.append("id: ").append(id).append("\n");
+		// Попытка красиво распарсить тип коллекции
+		// Пример: List<String> (size=10)
+		try {
+			int comma = value.indexOf(',');
+			int gt = value.indexOf('>');
 
-	    // Попытка красиво распарсить тип коллекции
-	    // Пример: List<String> (size=10)
-	    try {
-	        int comma = value.indexOf(',');
-	        int gt = value.indexOf('>');
+			if (comma != -1 && gt != -1 && comma < gt) {
+				String typePart = value.substring(0, comma).trim();
+				String genericPart = value.substring(comma + 1, gt + 1).trim();
+				String instancePart = value.substring(gt + 1).trim();
 
-	        if (comma != -1 && gt != -1 && comma < gt) {
-	            String typePart = value.substring(0, comma).trim();
-	            String genericPart = value.substring(comma + 1, gt + 1).trim();
-	            String instancePart = value.substring(gt + 1).trim();
+				info.append(GAP).append(typePart).append("\n").append(GAP).append(genericPart).append("\n");
 
-	            info.append(GAP).append(typePart).append("\n")
-	                .append(GAP).append(genericPart).append("\n");
+				if (!instancePart.isEmpty()) {
+					info.append(GAP).append("instance: ").append(instancePart).append("\n");
+				}
+			} else {
+				// fallback — если формат неожиданный
+				info.append(GAP).append(value).append("\n");
+			}
+		} catch (Exception e) {
+			// если что-то пошло не так — просто выводим value
+			info.append(GAP).append(value).append("\n");
+		}
 
-	            if (!instancePart.isEmpty()) {
-	                info.append(GAP).append("instance: ").append(instancePart).append("\n");
-	            }
-	        } else {
-	            // fallback — если формат неожиданный
-	            info.append(GAP).append(value).append("\n");
-	        }
-	    } catch (Exception e) {
-	        // если что-то пошло не так — просто выводим value
-	        info.append(GAP).append(value).append("\n");
-	    }
-
-	    return info.toString();
+		return info.toString();
 	}
-	
-
-//	private void displyDetails() {
-//		Display.getDefault().asyncExec(() -> {
-//			while (true) {
-//				if (Objects.nonNull(dtoToDisplay)) {
-//					showFieldInfoPopupFromBackend(dtoToDisplay);
-//					break;
-//				}
-//				try {
-//					Thread.sleep(100);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//			}
-//			
-//		});  
-//		
-//	}
 
 	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO userInstanceInspectionDTO) {
+		if ((Objects.isNull(userInstanceInspectionDTO)))
+			return;
 		Display display = root.getDisplay();
 		display.asyncExec(() -> {
 			if (root.isDisposed())
 				return;
 			Point location = display.getCursorLocation();
-		//	showPopup(userInstanceInspectionDTO, location,  dto -> UiUtils.buildUserObjectText((UserInstanceDetailsDTO) dto), null);
+			// showPopup(userInstanceInspectionDTO, location, dto ->
+			// UiUtils.buildUserObjectText((UserInstanceDetailsDTO) dto), null);
 			showTooltipForUserObject(userInstanceInspectionDTO, location);
 		});
 	}
-	
-	public void showTooltipForUserObject(UserInstanceDetailsDTO dto, Point location) {
 
+	public void showTooltipForUserObject(UserInstanceDetailsDTO dto, Point location) {
+		if (Objects.isNull(dto) || Objects.isNull(location))
+			return;
 		if (dto.getInnerElementsByGroups().get(1).isEmpty() && dto.getInnerElementsByGroups().get(2).isEmpty()
 				&& dto.getInnerElementsByGroups().get(3).isEmpty())
 			return;
+		showPopup(dto, location, d -> UiUtils.buildUserObjectText((UserInstanceDetailsDTO) d), () -> // {}
+		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
+				UiUtils.convertUserInstanceToInnerDTO(dto)))
 
-		showPopup(dto, location, d -> UiUtils.buildUserObjectText((UserInstanceDetailsDTO) d),
-				() -> {}
-//		uiEventCollector.collectUiEvent(new UIEvent<>(
-//						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, UiUtils.convertUserInstanceToInnerDTO(dto)))
-				
-				);
+		);
 	}
 
 	private void setupTooltips(Table table) {
@@ -408,13 +325,13 @@ public class IterableInspectorTab implements InspectorTab {
 				Listener clickHandler = e -> {
 					onClick.run();
 					closePopup();
-					lastHoveredElementId = null;
+					// lastHoveredElementId = null;
 				};
 
-				popup.addListener(SWT.MouseDown, clickHandler);
-				content.addListener(SWT.MouseDown, clickHandler);
-				label.addListener(SWT.MouseDown, clickHandler);
-				scrolled.addListener(SWT.MouseDown, clickHandler);
+//				popup.addListener(SWT.MouseDown, clickHandler);
+//				content.addListener(SWT.MouseDown, clickHandler);
+//				label.addListener(SWT.MouseDown, clickHandler);
+//				scrolled.addListener(SWT.MouseDown, clickHandler);
 			}
 
 			popup.pack();
@@ -427,7 +344,7 @@ public class IterableInspectorTab implements InspectorTab {
 			currentPopup = popup;
 			popup.addListener(SWT.Dispose, e -> currentPopup = null);
 
-			display.timerExec(150, this::checkPopupCursor);
+			display.timerExec(300, this::checkPopupCursor);
 		});
 	}
 
@@ -448,13 +365,12 @@ public class IterableInspectorTab implements InspectorTab {
 		display.timerExec(150, this::checkPopupCursor);
 	}
 
-
 	public void closePopup() {
 		if (currentPopup != null && !currentPopup.isDisposed()) {
 			currentPopup.dispose();
 		}
 		currentPopup = null;
-	//	lastInspectedElementId = null;
+		lastInspectedElement = null;
 	}
 
 	private String formatValue(InnerElementRepresentationDTO dto) {
