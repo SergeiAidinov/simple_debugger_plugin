@@ -1,6 +1,9 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab;
 
 import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -67,6 +70,8 @@ public class IterableInspectorTab implements InspectorTab {
 	private UserInstanceDetailsDTO lastUserInstanceDetailsDTO;
 //	private String lastHoveredElementId = null;
 
+	private final BlockingQueue<InnerElementRepresentationDTO> queue = new LinkedBlockingDeque();
+
 	private int currentPage = 0;
 
 	public IterableInspectorTab(Composite parent) {
@@ -111,10 +116,11 @@ public class IterableInspectorTab implements InspectorTab {
 				new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, currentPage + 1)));
 
 		// ===== Table =====
-		Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+		Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
-		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		table.setLayoutData(new GridData(GridData.FILL_BOTH));
+		// table.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLUE));
 
 		viewer = new TableViewer(table);
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
@@ -127,6 +133,22 @@ public class IterableInspectorTab implements InspectorTab {
 				pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
 
 		setupHoverInspectionListener();
+//		new Thread(() -> {
+//
+//			while (true) {
+//				InnerElementRepresentationDTO dto = null;
+//				try {
+//					dto = queue.take();
+//				} catch (InterruptedException e1) {
+//					// TODO Auto-generated catch block
+//					e1.printStackTrace();
+//				}
+//				if (Objects.nonNull(dto)) {
+//					uiEventCollector.collectUiEvent(
+//							new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
+//				}
+//			}
+//		}).start();
 	}
 
 	@Override
@@ -178,23 +200,35 @@ public class IterableInspectorTab implements InspectorTab {
 					if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
 							|| icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
 						dto = dataDto;
+						// queue.add(dto);
+						if (Math.abs(lastRequestTime - System.currentTimeMillis()) < 300) return;
+						if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon")
+								.getFirst()) {
+							uiEventCollector.collectUiEvent(new UIEvent<>(
+									SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
+						}
+						else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+							Display display = root.getDisplay();
+							Point location = display.getCursorLocation();
+							tooltipManager.showTooltipForCollection(dto, location);
+						}
 					}
 				}
 			}
-				if (!Objects.equals(dto, lastInspectedElement) 
-					&& (Math.abs(lastRequestTime - System.currentTimeMillis()) > 500)) {
-				lastInspectedElement = dto;
-				if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-					uiEventCollector.collectUiEvent(
-							new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
-				}
-
-			} else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-				Display display = root.getDisplay();
-				Point location = display.getCursorLocation();
-				tooltipManager.showTooltipForCollection(dto, location);
-			}
-			// }
+//			if (!Objects.equals(dto, lastInspectedElement)
+//					&& (Math.abs(lastRequestTime - System.currentTimeMillis()) > 500)) {
+//				lastInspectedElement = dto;
+//				if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+//					uiEventCollector.collectUiEvent(
+//							new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
+//				}
+//
+//				else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+//					Display display = root.getDisplay();
+//					Point location = display.getCursorLocation();
+//					tooltipManager.showTooltipForCollection(dto, location);
+//				}
+//			}
 
 		});
 	}
