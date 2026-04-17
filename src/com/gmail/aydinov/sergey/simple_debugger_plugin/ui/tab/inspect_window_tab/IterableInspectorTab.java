@@ -62,7 +62,7 @@ public class IterableInspectorTab implements InspectorTab {
 	private final Text pageText;
 	private final Button goButton;
 	private final Button nextButton;
-	private Shell currentPopup;
+//	private Shell currentPopup;
 	private TooltipManager tooltipManager;
 	private long lastRequestTime = System.currentTimeMillis();
 //	private InnerElementRepresentationDTO lastHovered;
@@ -186,51 +186,52 @@ public class IterableInspectorTab implements InspectorTab {
 	}
 
 	private void setupHoverInspectionListener() {
-		Table table = viewer.getTable();
-		table.addListener(SWT.MouseMove, event -> {
-			TableItem item = table.getItem(new Point(event.x, event.y));
-			InnerElementRepresentationDTO dto = null;
-			if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
-				@SuppressWarnings("unchecked")
-				PairDTO<Integer, InnerElementRepresentationDTO> typed = (PairDTO<Integer, InnerElementRepresentationDTO>) pair;
-				InnerElementRepresentationDTO dataDto = typed.getSecond();
-				int colIndex = getColumnIndexAtPoint(table, event.x);
-				if (colIndex == 1) {
-					Image icon = getIcon(dataDto);
-					if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
-							|| icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-						dto = dataDto;
-						// queue.add(dto);
-						if (Math.abs(lastRequestTime - System.currentTimeMillis()) < 300) return;
-						if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon")
-								.getFirst()) {
-							uiEventCollector.collectUiEvent(new UIEvent<>(
-									SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
-						}
-						else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-							Display display = root.getDisplay();
-							Point location = display.getCursorLocation();
-							tooltipManager.showTooltipForCollection(dto, location);
-						}
-					}
-				}
-			}
-//			if (!Objects.equals(dto, lastInspectedElement)
-//					&& (Math.abs(lastRequestTime - System.currentTimeMillis()) > 500)) {
-//				lastInspectedElement = dto;
-//				if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-//					uiEventCollector.collectUiEvent(
-//							new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
-//				}
-//
-//				else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-//					Display display = root.getDisplay();
-//					Point location = display.getCursorLocation();
-//					tooltipManager.showTooltipForCollection(dto, location);
-//				}
-//			}
+	    Table table = viewer.getTable();
 
-		});
+	    table.addListener(SWT.MouseMove, event -> {
+	        TableItem item = table.getItem(new Point(event.x, event.y));
+	        InnerElementRepresentationDTO dto = null;
+
+	        if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
+	            @SuppressWarnings("unchecked")
+	            PairDTO<Integer, InnerElementRepresentationDTO> typed =
+	                    (PairDTO<Integer, InnerElementRepresentationDTO>) pair;
+
+	            InnerElementRepresentationDTO dataDto = typed.getSecond();
+
+	            int colIndex = getColumnIndexAtPoint(table, event.x);
+
+	            if (colIndex == 1) {
+	                Image icon = getIcon(dataDto);
+
+	                if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
+	                        || icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+	                    dto = dataDto;
+	                }
+	            }
+	        }
+
+	        if (!Objects.equals(dto, lastInspectedElement)) {
+	            lastInspectedElement = dto;
+
+	            tooltipManager.closePopup();
+
+	            if (dto != null) {
+	                Image icon = getIcon(dto);
+
+	                if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+	                    DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
+
+	                    uiEventCollector.collectUiEvent(new UIEvent<>(
+	                            SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
+
+	                } else if (icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+	                    Point location = root.getDisplay().getCursorLocation();
+	                    tooltipManager.showTooltipForCollection(dto, location);
+	                }
+	            }
+	        }
+	    });
 	}
 
 	private int getColumnIndexAtPoint(Table table, int x) {
@@ -243,45 +244,7 @@ public class IterableInspectorTab implements InspectorTab {
 		return table.getColumnCount() - 1;
 	}
 
-	private String buildCollectionText(InnerElementRepresentationDTO dto) {
-		if (dto == null)
-			return "null";
-
-		StringBuilder info = new StringBuilder();
-
-		String name = safe(dto.getElementName());
-		String id = safe(dto.getAdditionalInfo());
-		String value = safe(dto.getValue());
-
-		info.append("Inspect element:\n").append(GAP).append("name: ").append(name).append("\n").append(GAP)
-				.append("id: ").append(id).append("\n");
-		// Попытка красиво распарсить тип коллекции
-		// Пример: List<String> (size=10)
-		try {
-			int comma = value.indexOf(',');
-			int gt = value.indexOf('>');
-
-			if (comma != -1 && gt != -1 && comma < gt) {
-				String typePart = value.substring(0, comma).trim();
-				String genericPart = value.substring(comma + 1, gt + 1).trim();
-				String instancePart = value.substring(gt + 1).trim();
-
-				info.append(GAP).append(typePart).append("\n").append(GAP).append(genericPart).append("\n");
-
-				if (!instancePart.isEmpty()) {
-					info.append(GAP).append("instance: ").append(instancePart).append("\n");
-				}
-			} else {
-				// fallback — если формат неожиданный
-				info.append(GAP).append(value).append("\n");
-			}
-		} catch (Exception e) {
-			// если что-то пошло не так — просто выводим value
-			info.append(GAP).append(value).append("\n");
-		}
-
-		return info.toString();
-	}
+	
 
 	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO userInstanceInspectionDTO) {
 		if ((Objects.isNull(userInstanceInspectionDTO)))
@@ -293,22 +256,10 @@ public class IterableInspectorTab implements InspectorTab {
 			Point location = display.getCursorLocation();
 			// showPopup(userInstanceInspectionDTO, location, dto ->
 			// UiUtils.buildUserObjectText((UserInstanceDetailsDTO) dto), null);
-			showTooltipForUserObject(userInstanceInspectionDTO, location);
+			tooltipManager.showTooltipForUserObject(userInstanceInspectionDTO, location);
 		});
 	}
 
-	public void showTooltipForUserObject(UserInstanceDetailsDTO dto, Point location) {
-		if (Objects.isNull(dto) || Objects.isNull(location))
-			return;
-//		if (dto.getInnerElementsByGroups().get(1).isEmpty() && dto.getInnerElementsByGroups().get(2).isEmpty()
-//				&& dto.getInnerElementsByGroups().get(3).isEmpty())
-//			return;
-		showPopup(dto, location, d -> UiUtils.buildUserObjectText((UserInstanceDetailsDTO) d), () -> // {}
-		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
-				UiUtils.convertUserInstanceToInnerDTO(dto)))
-
-		);
-	}
 
 	private void setupTooltips(Table table) {
 		TooltipManager tooltipManager = new TooltipManager(table, root);
@@ -319,92 +270,6 @@ public class IterableInspectorTab implements InspectorTab {
 			return tip instanceof String ? (String) tip : null;
 		});
 		this.tooltipManager = tooltipManager;
-	}
-
-	private void showPopup(Object dto, Point location, Function<Object, String> textBuilder, Runnable onClick) {
-		Display display = root.getDisplay();
-		display.syncExec(() -> {
-			if (root.isDisposed() || dto == null)
-				return;
-			closePopup();
-			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
-			popup.setLayout(new GridLayout(1, false));
-//👉 курсор только если кликабельный
-			if (onClick != null) {
-				popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
-			}
-
-//UI
-			ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
-			scrolled.setLayoutData(new GridData(400, 200));
-
-			Composite content = new Composite(scrolled, SWT.NONE);
-			content.setLayout(new GridLayout(1, false));
-
-			Label label = new Label(content, SWT.WRAP);
-			label.setText(textBuilder.apply(dto));
-			label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
-			if (onClick != null) {
-				label.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
-			}
-
-			scrolled.setContent(content);
-			scrolled.setExpandHorizontal(true);
-			scrolled.setExpandVertical(true);
-			scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-
-//👉 обработчик только если есть действие
-			if (onClick != null) {
-				Listener clickHandler = e -> {
-					onClick.run();
-					closePopup();
-					// lastHoveredElementId = null;
-				};
-
-//				popup.addListener(SWT.MouseDown, clickHandler);
-//				content.addListener(SWT.MouseDown, clickHandler);
-//				label.addListener(SWT.MouseDown, clickHandler);
-//				scrolled.addListener(SWT.MouseDown, clickHandler);
-			}
-
-			popup.pack();
-			Point popupSize = popup.getSize();
-			Point adjustedLocation = UiUtils.adjustToScreen(root, location, popupSize);
-
-			popup.setLocation(adjustedLocation);
-			popup.open();
-
-			currentPopup = popup;
-			popup.addListener(SWT.Dispose, e -> currentPopup = null);
-
-			display.timerExec(300, this::checkPopupCursor);
-		});
-	}
-
-	private void checkPopupCursor() {
-		if (currentPopup == null || currentPopup.isDisposed())
-			return;
-		Display display = root.getDisplay();
-		Point cursor = display.getCursorLocation();
-		Rectangle popupBounds = currentPopup.getBounds();
-		Point rootLocation = root.toDisplay(0, 0);
-		Rectangle rootBounds = new Rectangle(rootLocation.x, rootLocation.y, root.getSize().x, root.getSize().y);
-		boolean cursorInsidePopup = popupBounds.contains(cursor);
-		boolean cursorInsideTable = rootBounds.contains(cursor);
-		if (!cursorInsidePopup && !cursorInsideTable) {
-			closePopup();
-			return;
-		}
-		display.timerExec(150, this::checkPopupCursor);
-	}
-
-	public void closePopup() {
-		if (currentPopup != null && !currentPopup.isDisposed()) {
-			currentPopup.dispose();
-		}
-		currentPopup = null;
-		lastInspectedElement = null;
 	}
 
 	private String formatValue(InnerElementRepresentationDTO dto) {
