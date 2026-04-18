@@ -1,9 +1,10 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import java.util.List;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import java.util.Objects;
+
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 
 public class UserObjectPageDTO extends AbstractInspectionDTO {
 
@@ -23,8 +24,33 @@ public class UserObjectPageDTO extends AbstractInspectionDTO {
 
     public String getClassType() { return classType; }
     public List<InnerElementRepresentationDTO> getEntries() { return entries; }
+    
 
-    public static Builder builder() { return new Builder(); }
+    @Override
+	public String toString() {
+		return "UserObjectPageDTO [classType=" + classType + ", entries=" + entries + "]";
+	}
+    
+    
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(classType, entries);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		UserObjectPageDTO other = (UserObjectPageDTO) obj;
+		return Objects.equals(classType, other.classType) && Objects.equals(entries, other.entries);
+	}
+
+	public static Builder builder() { return new Builder(); }
 
     public static class Builder {
         private String elementName;
