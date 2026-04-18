@@ -108,8 +108,9 @@ public final class SimpleDebuggerEventTypes {
 
 		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null), 
 	//	USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(UserInstanceInspectionDTO.class, new UserObjectInspectionHandler()), 
-	//	DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectPageDTO.class, null), 
-		USER_CONTINUES_INSPECTION_FOR_USER_OBJECT(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()),
+		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectPageDTO.class, null), 
+		USER_CONTINUES_INSPECTION_FOR_USER_OBJECT(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()), 
+		
 
 		
 		;

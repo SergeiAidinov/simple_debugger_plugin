@@ -132,7 +132,8 @@ public class IterableInspectorTab implements InspectorTab {
 		createColumn("Value", 600, pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
 				pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
 
-		setupHoverInspectionListener();
+//		setupHoverInspectionListener();
+		setupClickListener(table);
 //		new Thread(() -> {
 //
 //			while (true) {
@@ -212,10 +213,17 @@ public class IterableInspectorTab implements InspectorTab {
 	        }
 
 	        if (!Objects.equals(dto, lastInspectedElement)) {
+	        	if (dto == lastInspectedElement) {
+	        	    return;
+	        	}
 	            lastInspectedElement = dto;
 
-	            tooltipManager.closePopup();
-
+	            if (dto == null) {
+	                tooltipManager.closePopup();
+	                lastInspectedElement = null;
+	                return;
+	            }
+	            
 	            if (dto != null) {
 	                Image icon = getIcon(dto);
 
@@ -244,6 +252,31 @@ public class IterableInspectorTab implements InspectorTab {
 		return table.getColumnCount() - 1;
 	}
 
+	private void setupClickListener(Table table) {
+
+	    table.addListener(SWT.Selection, e -> {
+
+	        TableItem[] selection = table.getSelection();
+	        if (selection.length == 0) return;
+
+	        TableItem item = selection[0];
+
+	        Object data = item.getData();
+	        if (!(data instanceof PairDTO<?, ?> pair)) return;
+
+	        InnerElementRepresentationDTO dto =
+	                (InnerElementRepresentationDTO) pair.getSecond();
+
+	        if (dto == null) return;
+System.out.println(" SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT");
+	        uiEventCollector.collectUiEvent(
+	            new UIEvent<>(
+	                SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT,
+	                dto
+	            )
+	        );
+	    });
+	}
 	
 
 	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO userInstanceInspectionDTO) {
@@ -343,27 +376,6 @@ public class IterableInspectorTab implements InspectorTab {
 
 		return null;
 	}
-
-//	private void setupClickListener() {
-//		Table table = viewer.getTable();
-//
-//		table.addListener(SWT.MouseDown, event -> {
-//			TableItem item = table.getItem(new Point(event.x, event.y));
-//			if (item == null)
-//				return;
-//
-//			Object data = item.getData();
-//			if (!(data instanceof PairDTO<?, ?> pair))
-//				return;
-//
-//			Object second = pair.getSecond();
-//			if (!(second instanceof InnerElementRepresentationDTO dto))
-//				return;
-//
-//			uiEventCollector.collectUiEvent(
-//					new UIEvent<>(SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT, dto));
-//		});
-//	}
 
 	private void requestPage() {
 		int page;

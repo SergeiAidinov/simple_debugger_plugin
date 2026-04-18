@@ -122,7 +122,15 @@ public class TooltipManager {
 		Point rootLocation = root.toDisplay(0, 0);
 		Rectangle rootBounds = new Rectangle(rootLocation.x, rootLocation.y, root.getSize().x, root.getSize().y);
 		boolean cursorInsidePopup = popupBounds.contains(cursor);
-		boolean cursorInsideTable = rootBounds.contains(cursor);
+		Point tableLocation = table.toDisplay(0, 0);
+		Rectangle tableBounds = new Rectangle(
+		    tableLocation.x,
+		    tableLocation.y,
+		    table.getSize().x,
+		    table.getSize().y
+		);
+
+		boolean cursorInsideTable = tableBounds.contains(cursor);
 		if (!cursorInsidePopup && !cursorInsideTable) {
 			closePopup();
 			return;
@@ -198,7 +206,7 @@ public class TooltipManager {
 
 			closePopup();
 
-			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
+			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL | SWT.NO_FOCUS);
 			popup.setLayout(new GridLayout(1, false));
 
 // 👉 курсор только если кликабельный
