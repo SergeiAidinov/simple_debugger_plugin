@@ -28,7 +28,7 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
 		System.out.println("USER OBJECT. INSP. STARTED");
-		TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e -> System.out.println(e));
+	//	TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e -> System.out.println(e));
 		debugEventCollector
 				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
@@ -76,6 +76,8 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 			UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(userObject.getElementName())
 					.entries(subordinates).classType(userObject.getTypeOrReturnType()).anchorTag(userObject.getTag())
 					.build();
+			System.out.println(userObjectPageDTO);
+
 			debugEventCollector.collectDebugEvent(new DebugEvent<>(
 					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
 		}
