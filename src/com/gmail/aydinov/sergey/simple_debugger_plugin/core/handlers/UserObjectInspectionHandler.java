@@ -36,17 +36,15 @@ import com.sun.jdi.event.BreakpointEvent;
 
 public class UserObjectInspectionHandler implements UIEventHandler {
 
-	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 
 	@Override
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
 		System.out.println("USER OBJECT. INSP. STARTED");
-		 TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e -> System.out.println(e));
+		TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e -> System.out.println(e));
 		debugEventCollector
 				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-		// DebuggerContext.context().setStatus(SimpleDebuggerStatus.USER_OBJECT_INSPECTION_SEANCE_RUNNING);
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
 		try {
 			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
@@ -55,47 +53,39 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 		}
 		if (Objects.nonNull(uiEvent)) {
 			InnerElementRepresentationDTO userObject = uiEvent.getPayload();
-			
-			
-			Optional<UniversalElementRepresentation> qq = findUserObject(userObject);
-			if (qq.isEmpty())
+			Optional<UniversalElementRepresentation> inspectableObjectOptional = findUserObject(userObject);
+			if (inspectableObjectOptional.isEmpty())
 				return false;
-			
-					
-			
-			UniversalElementRepresentation inspectableObject = qq.get();
-			List<UniversalElementRepresentation> subordinates = TargetApplicationRepresentation.getInstance().getAllElements().stream()
-					.filter(e -> e instanceof UniversalElementRepresentation)
-					.map(e -> (UniversalElementRepresentation) e)
-					.filter(e -> Objects.equals(e.getTag().getParentId(), qq.get().getTag().getUniqueId())).toList();
-			InnerElementRepresentationDTO innerElement = InnerElementRepresentationDTOFactory.fromElement(inspectableObject);
-//			Collection<AbstractElementRepresentation> subordinates = new ArrayList();
-//
-//		    Map<Tag, InnerElementRepresentationDTO> result = new LinkedHashMap();
-//			List<InnerElementRepresentationDTO> ee = DebugUtils.collectAllChildrenDTO(userObject,subordinates, result);
-			Map<UniversalElementType, List<UniversalElementRepresentation>> ww = subordinates.stream().filter(e -> e instanceof UniversalElementRepresentation)
-			.map(e -> (UniversalElementRepresentation) e)
-			.collect(Collectors.groupingBy(e -> e.getElementType()));
-			List<InnerElementRepresentationDTO> sub = new ArrayList<InnerElementRepresentationDTO>();
-			
-			for (Entry<UniversalElementType, List<UniversalElementRepresentation>> entry : ww.entrySet()) {
-				for (UniversalElementRepresentation r : entry.getValue()) {
-					InnerElementRepresentationDTO e = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-							.fromElement(r);
-					sub.add(e);
-				}
-//				InnerElementRepresentationDTO e = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-//						.fromElement(entry.)
-			}
-			
-			UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(userObject.getElementName())
-					.entries(sub)
-					.classType(userObject.getTypeOrReturnType()).anchorTag(userObject.getTag()).build();
+			List<InnerElementRepresentationDTO> fields =  TargetApplicationRepresentation.getInstance()
+					.getAllElements().stream().filter(e -> e instanceof UniversalElementRepresentation)
+					.map(e -> (UniversalElementRepresentation) e).filter(e -> Objects.equals(e.getTag().getParentId(),
+							inspectableObjectOptional.get().getTag().getUniqueId()))
+					.toList().stream()
+					.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e))
+					.toList();
 
+			Optional<UniversalElementRepresentation> classElementOptional = TargetApplicationRepresentation
+					.getInstance().getAllElements().stream().filter(e -> e instanceof UniversalElementRepresentation)
+					.map(e -> (UniversalElementRepresentation) e)
+					.filter(e -> Objects.equals(e.getAdditionalInfo(), userObject.getElementName()))
+					.filter(e -> Objects.isNull(e.getTag().getParentId())).findAny();
+			List<InnerElementRepresentationDTO> methods = new ArrayList<InnerElementRepresentationDTO>();
+			if (classElementOptional.isPresent()) {
+				methods.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
+						.filter(e -> e instanceof UniversalElementRepresentation)
+						.map(e -> (UniversalElementRepresentation) e)
+						.filter(e -> e.getElementType() == UniversalElementType.METHOD).filter(e -> Objects
+								.equals(e.getTag().getParentId(), classElementOptional.get().getTag().getUniqueId()))
+						.toList().stream().map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e))
+						.toList());
+			}
+			List<InnerElementRepresentationDTO> subordinates = new ArrayList<InnerElementRepresentationDTO>(fields);
+			subordinates.addAll(methods);
+			UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(userObject.getElementName())
+					.entries(subordinates).classType(userObject.getTypeOrReturnType()).anchorTag(userObject.getTag()).build();
 			debugEventCollector.collectDebugEvent(new DebugEvent<>(
 					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
 		}
-
 		return true;
 	}
 
@@ -106,46 +96,4 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 						.equals(String.valueOf(e.getObjectReference().uniqueID()), anchor.getAdditionalInfo()))
 				.findFirst();
 	}
-
-	private class UserObjectInspectionSeance implements Runnable {
-
-		private final InnerElementRepresentationDTO inspectableElement;
-		private final BreakpointEvent breakpointEvent;
-
-		public UserObjectInspectionSeance(InnerElementRepresentationDTO inspectableElement,
-				BreakpointEvent breakpointEvent) {
-			this.inspectableElement = inspectableElement;
-			this.breakpointEvent = breakpointEvent;
-		}
-
-		@Override
-		public void run() {
-			if (inspectableElement == null || breakpointEvent == null) {
-				return;
-			}
-			innerElementInspection();
-		}
-
-		private void innerElementInspection() {
-			Optional<UniversalElementRepresentation> userObjectOptional = findUserObject(inspectableElement);
-			if (userObjectOptional.isEmpty())
-				return;
-			UniversalElementRepresentation userObject = userObjectOptional.get();
-			UserObjectInspectionDTO userObjectInspectionDTO = UserObjectInspectionDTO.builder().tag(userObject.getTag())
-					.className(userObject.getElementName()).build();
-
-			debugEventCollector.collectDebugEvent(new DebugEvent<>(
-					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectInspectionDTO));
-
-		}
-
-		private Optional<UniversalElementRepresentation> findUserObject(InnerElementRepresentationDTO anchor) {
-			return TargetApplicationRepresentation.getInstance().getAllElements().stream()
-					.filter(e -> e instanceof UniversalElementRepresentation)
-					.map(e -> (UniversalElementRepresentation) e)
-					.filter(e -> Objects.equals(e.getTag(), anchor.getTag())).findFirst();
-		}
-
-	}
-
 }
