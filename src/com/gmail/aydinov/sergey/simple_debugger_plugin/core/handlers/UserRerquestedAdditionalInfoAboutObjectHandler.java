@@ -40,10 +40,10 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 	@Override
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
-		UserObjectInspectionHandler userObjectInspectionHandler = new UserObjectInspectionHandler();
-		userObjectInspectionHandler.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-//		UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
-//		provideAdditionalInfoAboutObject(userRequestedAdditionalInfo);
+//		UserObjectInspectionHandler userObjectInspectionHandler = new UserObjectInspectionHandler();
+//		userObjectInspectionHandler.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
+		UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
+		provideAdditionalInfoAboutObject(userRequestedAdditionalInfo);
 		return false;
 	}
 

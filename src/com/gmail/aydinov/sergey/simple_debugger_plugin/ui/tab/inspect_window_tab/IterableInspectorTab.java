@@ -219,7 +219,7 @@ public class IterableInspectorTab implements InspectorTab {
 					Image icon = getIcon(dto);
 
 					if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-						DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
+					//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
 
 						uiEventCollector.collectUiEvent(new UIEvent<>(
 								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
