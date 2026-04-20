@@ -60,6 +60,7 @@ public class InspectionSeance {
 			StackFrame currentFrame, BreakpointEvent breakpointEvent) {
 		if (alreadyStarted)
 			return false;
+		DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
 		try {
 			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
@@ -96,16 +97,14 @@ public class InspectionSeance {
 
 	private class InspectionProcedure implements Runnable {
 
-		
-
 		@Override
 		public void run() {
-			try {
+	//		try {
 			inspectionProcedure();
-			} finally {
-				debugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-			}
+//			} finally {
+//				debugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+//				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
+//			}
 		}
 
 		@SuppressWarnings("unchecked")

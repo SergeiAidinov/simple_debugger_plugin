@@ -132,7 +132,7 @@ public class IterableInspectorTab implements InspectorTab {
 		createColumn("Value", 600, pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
 				pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
 
-//		setupHoverInspectionListener();
+		setupHoverInspectionListener();
 		setupClickListener(table);
 //		new Thread(() -> {
 //
@@ -187,59 +187,50 @@ public class IterableInspectorTab implements InspectorTab {
 	}
 
 	private void setupHoverInspectionListener() {
-	    Table table = viewer.getTable();
+		Table table = viewer.getTable();
 
-	    table.addListener(SWT.MouseMove, event -> {
-	        TableItem item = table.getItem(new Point(event.x, event.y));
-	        InnerElementRepresentationDTO dto = null;
+		table.addListener(SWT.MouseMove, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			if (item == null)
+				return;
+			int colIndex = getColumnIndexAtPoint(table, event.x);
+			if (colIndex != 1)
+				return; // только третья колонка
+			Object data = item.getData();
+			if (!(data instanceof PairDTO<?, ?> pair))
+				return;
+			if (!(pair.getSecond() instanceof InnerElementRepresentationDTO dto))
+				return;
+			
 
-	        if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
-	            @SuppressWarnings("unchecked")
-	            PairDTO<Integer, InnerElementRepresentationDTO> typed =
-	                    (PairDTO<Integer, InnerElementRepresentationDTO>) pair;
+//			if (!Objects.equals(dto, lastInspectedElement)) {
+//				if (dto == lastInspectedElement) {
+//					return;
+//				}
+				lastInspectedElement = dto;
 
-	            InnerElementRepresentationDTO dataDto = typed.getSecond();
+//				if (dto == null) {
+//					tooltipManager.closePopup();
+//					lastInspectedElement = null;
+//					return;
+//				}
 
-	            int colIndex = getColumnIndexAtPoint(table, event.x);
+				if (dto != null) {
+					Image icon = getIcon(dto);
 
-	            if (colIndex == 1) {
-	                Image icon = getIcon(dataDto);
+					if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
+						DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 
-	                if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()
-	                        || icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-	                    dto = dataDto;
-	                }
-	            }
-	        }
+						uiEventCollector.collectUiEvent(new UIEvent<>(
+								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
 
-	        if (!Objects.equals(dto, lastInspectedElement)) {
-	        	if (dto == lastInspectedElement) {
-	        	    return;
-	        	}
-	            lastInspectedElement = dto;
-
-	            if (dto == null) {
-	                tooltipManager.closePopup();
-	                lastInspectedElement = null;
-	                return;
-	            }
-	            
-	            if (dto != null) {
-	                Image icon = getIcon(dto);
-
-	                if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-	                    DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-
-	                    uiEventCollector.collectUiEvent(new UIEvent<>(
-	                            SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
-
-	                } else if (icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-	                    Point location = root.getDisplay().getCursorLocation();
-	                    tooltipManager.showTooltipForCollection(dto, location);
-	                }
-	            }
-	        }
-	    });
+					} else if (icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
+						Point location = root.getDisplay().getCursorLocation();
+						tooltipManager.showTooltipForCollection(dto, location);
+					}
+				}
+		//	}
+		});
 	}
 
 	private int getColumnIndexAtPoint(Table table, int x) {
@@ -254,30 +245,36 @@ public class IterableInspectorTab implements InspectorTab {
 
 	private void setupClickListener(Table table) {
 
-	    table.addListener(SWT.Selection, e -> {
+		table.addListener(SWT.MouseDown, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			if (item == null)
+				return;
+			int colIndex = getColumnIndexAtPoint(table, event.x);
+			if (colIndex != 1)
+				return; // только третья колонка
+			Object data = item.getData();
+			if (!(data instanceof PairDTO<?, ?> pair))
+				return;
+			if (!(pair.getSecond() instanceof InnerElementRepresentationDTO dto))
+				return;
 
-	        TableItem[] selection = table.getSelection();
-	        if (selection.length == 0) return;
+			// 🔹 Используем category вместо сравнения Image
+			ValueCategory category = dto.getValueCategory();
+			if (category != ValueCategory.MAP && category != ValueCategory.COLLECTION && category != ValueCategory.USER_OBJECT)
+				return;
+//			if (category != ValueCategory.MAP && category != ValueCategory.COLLECTION)
+//				return;
 
-	        TableItem item = selection[0];
 
-	        Object data = item.getData();
-	        if (!(data instanceof PairDTO<?, ?> pair)) return;
-
-	        InnerElementRepresentationDTO dto =
-	                (InnerElementRepresentationDTO) pair.getSecond();
-
-	        if (dto == null) return;
-System.out.println(" SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT");
-	        uiEventCollector.collectUiEvent(
-	            new UIEvent<>(
-	                SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT,
-	                dto
-	            )
-	        );
-	    });
+//			InnerElementRepresentationDTO dto = (InnerElementRepresentationDTO) pair.getSecond();
+//
+//			if (dto == null)
+//				return;
+			System.out.println(" SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT");
+			uiEventCollector.collectUiEvent(
+					new UIEvent<>(SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT, dto));
+		});
 	}
-	
 
 	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO userInstanceInspectionDTO) {
 		if ((Objects.isNull(userInstanceInspectionDTO)))
@@ -292,7 +289,6 @@ System.out.println(" SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_
 			tooltipManager.showTooltipForUserObject(userInstanceInspectionDTO, location);
 		});
 	}
-
 
 	private void setupTooltips(Table table) {
 		TooltipManager tooltipManager = new TooltipManager(table, root);
