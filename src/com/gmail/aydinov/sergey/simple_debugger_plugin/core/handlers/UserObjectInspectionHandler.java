@@ -29,8 +29,8 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 			BreakpointEvent breakpointEvent) {
 		System.out.println("USER OBJECT. INSP. STARTED");
 	//	TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e -> System.out.println(e));
-		debugEventCollector
-				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
+//		debugEventCollector
+//				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
 		try {
 			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;

@@ -16,6 +16,8 @@ import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
@@ -28,6 +30,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.IterableInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.InspectorTab;
@@ -86,7 +89,10 @@ public class UniversalInspectorWindow {
 
 		sash.setWeights(new int[] { 20, 80 });
 
-		shell.addListener(SWT.Close, e -> close());
+		shell.addListener(SWT.Close, e -> {
+		    e.doit = false; 
+		    close();        
+		});
 		shell.open();
 		display.asyncExec(() -> {
 		//	iterableInspectorTab = new IterableInspectorTab(rightPanel);
@@ -246,15 +252,15 @@ public class UniversalInspectorWindow {
 	}
 
 	public void close() {
-		if (!shell.isDisposed()) {
 			Display.getDefault().asyncExec(() -> {
 				if (!shell.isDisposed())
-					shell.close();
+					shell.dispose();
 				INSTANCE = null;
+				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 				uiEventCollector
 						.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE, null));
 			});
-		}
+		
 	}
 
 	public Shell getShell() {

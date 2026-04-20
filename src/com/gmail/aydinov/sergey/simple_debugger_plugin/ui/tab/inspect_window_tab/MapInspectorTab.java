@@ -351,8 +351,8 @@ public class MapInspectorTab implements InspectorTab {
 	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
 
 		showPopup(dto, location, d -> buildCollectionText((InnerElementRepresentationDTO) d), () -> {
-			debugEventCollector
-					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
+//			debugEventCollector
+//					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
 			switch (dto.getValueCategory()) {
 			case COLLECTION -> uiEventCollector
 					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
