@@ -1,33 +1,23 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab;
 
-import java.util.Objects;
 import java.util.function.Function;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
-
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
-
-// ...
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
@@ -36,19 +26,15 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserIn
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
 public class MapInspectorTab implements InspectorTab {
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
-	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 	private final Composite root;
 	private final TableViewer viewer;
 
@@ -61,13 +47,8 @@ public class MapInspectorTab implements InspectorTab {
 	private final Text pageText;
 	private final Button goButton;
 	private final Button nextButton;
-
-//	private TooltipManager tooltipManager;
-//	private InnerElementRepresentationDTO lastInspectedElement;
-	private String lastInspectedElementId;
 	private Shell currentPopup;
 	private int currentPage = 0;
-//	private String currentId;
 
 	public MapInspectorTab(Composite parent) {
 		root = new Composite(parent, SWT.NONE);
@@ -119,14 +100,9 @@ public class MapInspectorTab implements InspectorTab {
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-	//	setupTooltips(table);
 
 		viewer = new TableViewer(table);
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
-		// ColumnViewerToolTipSupport.enableFor(viewer,
-		// org.eclipse.jface.window.ToolTip.NO_RECREATE);
-		// setupColumns();
-		// setupTooltips(table);
 		setupClickListener(table);
 
 		// Колонки
@@ -298,12 +274,6 @@ public class MapInspectorTab implements InspectorTab {
 					return null;
 				return imageExtractor.apply((PairDTO<K, V>) pair);
 			}
-
-//            @Override
-//            public String getToolTipText(Object element) {
-//                if (!(element instanceof PairDTO<?, ?> pair)) return null;
-//                return tooltipExtractor.apply((PairDTO<K, V>) pair);
-//            }
 		});
 
 		return column;
@@ -313,132 +283,6 @@ public class MapInspectorTab implements InspectorTab {
 		return value == null ? "" : value;
 	}
 
-	private int getColumnIndexByBounds(Table table, TableItem item, int x, int y) {
-
-	    for (int i = 0; i < table.getColumnCount(); i++) {
-	        Rectangle rect = item.getBounds(i);
-	        if (rect.contains(x, y)) {
-	            return i;
-	        }
-	    }
-	    return -1;
-	}
-	
-	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
-
-		showPopup(dto, location, d -> buildCollectionText((InnerElementRepresentationDTO) d), () -> {
-//			debugEventCollector
-//					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-			switch (dto.getValueCategory()) {
-			case COLLECTION -> uiEventCollector
-					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
-			case MAP -> uiEventCollector
-					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
-			default -> debugEventCollector
-					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-			}
-		});
-	}
-
-	private String buildCollectionText(InnerElementRepresentationDTO dto) {
-		String value = dto.getValue();
-
-		int comma = value.indexOf(',');
-		int gt = value.indexOf('>');
-
-		StringBuilder info = new StringBuilder();
-
-		info.append("Inspect element:\n").append(UiUtils.GAP).append("name: ").append(dto.getElementName()).append("\n")
-				.append(UiUtils.GAP).append("id = ").append(dto.getAdditionalInfo()).append("\n");
-
-		if (comma != -1 && gt != -1) {
-			info.append(UiUtils.GAP).append(value.substring(0, comma)).append("\n").append(UiUtils.GAP)
-					.append(value.substring(comma + 2, gt + 1)).append("\n").append(UiUtils.GAP).append("instance: ")
-					.append(value.substring(gt + 2));
-		} else {
-			info.append(UiUtils.GAP).append(value);
-		}
-
-		return info.toString();
-	}
-
-	private void showPopup(Object dto, Point location, Function<Object, String> textBuilder, Runnable onClick) {
-		Display display = root.getDisplay();
-		display.asyncExec(() -> {
-			if (root.isDisposed() || dto == null)
-				return;
-			closePopup();
-			Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL);
-			popup.setLayout(new GridLayout(1, false));
-
-// 👉 курсор только если кликабельный
-			if (onClick != null) {
-				popup.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
-			}
-
-// UI
-			ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
-			scrolled.setLayoutData(new GridData(400, 200));
-
-			Composite content = new Composite(scrolled, SWT.NONE);
-			content.setLayout(new GridLayout(1, false));
-
-			Label label = new Label(content, SWT.WRAP);
-			label.setText(textBuilder.apply(dto));
-			label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
-			if (onClick != null) {
-				label.setCursor(display.getSystemCursor(SWT.CURSOR_HAND));
-			}
-
-			scrolled.setContent(content);
-			scrolled.setExpandHorizontal(true);
-			scrolled.setExpandVertical(true);
-			scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-
-// 👉 обработчик только если есть действие
-			if (onClick != null) {
-				Listener clickHandler = e -> {
-					onClick.run();
-					closePopup();
-				};
-
-				popup.addListener(SWT.MouseDown, clickHandler);
-				content.addListener(SWT.MouseDown, clickHandler);
-				label.addListener(SWT.MouseDown, clickHandler);
-				scrolled.addListener(SWT.MouseDown, clickHandler);
-			}
-
-			popup.pack();
-			Point popupSize = popup.getSize();
-			Point adjustedLocation = UiUtils.adjustToScreen(root, location, popupSize);
-
-			popup.setLocation(adjustedLocation);
-			popup.open();
-
-			currentPopup = popup;
-			popup.addListener(SWT.Dispose, e -> currentPopup = null);
-
-			display.timerExec(150, this::checkPopupCursor);
-		});
-	}
-	
-	private void checkPopupCursor() {
-		if (currentPopup == null || currentPopup.isDisposed())
-			return;
-		Display display = root.getDisplay();
-		Point cursor = display.getCursorLocation();
-		Rectangle popupBounds = currentPopup.getBounds();
-		Point rootLocation = root.toDisplay(0, 0);
-		Rectangle rootBounds = new Rectangle(rootLocation.x, rootLocation.y, root.getSize().x, root.getSize().y);
-		boolean cursorInsidePopup = popupBounds.contains(cursor);
-		boolean cursorInsideTable = rootBounds.contains(cursor);
-		if (!cursorInsidePopup && !cursorInsideTable) {
-			closePopup();
-			return;
-		}
-		display.timerExec(150, this::checkPopupCursor);
-	}
 
 	public void closePopup() {
 		if (currentPopup != null && !currentPopup.isDisposed()) {
@@ -447,46 +291,8 @@ public class MapInspectorTab implements InspectorTab {
 		currentPopup = null;
 	}
 
-	private Image getIcon(InnerElementRepresentationDTO dto) {
-		if (dto == null)
-			return null;
-		ValueCategory category = dto.getValueCategory();
-		if (category == null)
-			return null;
-		// коллекции и мапы
-		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
-			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
-		}
-		// Только поля пользовательского типа, которые реально инициализированы
-		if ((dto.getElementType() == UniversalElementType.MAP_ELEMENT) && category == ValueCategory.USER_OBJECT
-				&& dto.getValue() != null && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
-			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
-		}
-		return null;
+	@Override
+	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO userInstanceDetailsDTO) {
+		// Under construction
 	}
-
-	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO dto) {
-        Display display = root.getDisplay();
-
-        display.asyncExec(() -> {
-            if (root.isDisposed()) return;
-
-            Point location = display.getCursorLocation();
-         //  showTooltipForUserObject(dto, location);
-            showPopup(dto, location, d -> UiUtils.buildUserObjectText((UserInstanceDetailsDTO) d), null);
-        });
-    }
-
-	public void showTooltipForUserObject(UserInstanceDetailsDTO dto, Point location) {
-
-		if (dto.getInnerElementsByGroups().get(1).isEmpty() && dto.getInnerElementsByGroups().get(2).isEmpty()
-				&& dto.getInnerElementsByGroups().get(3).isEmpty())
-			return;
-
-		showPopup(dto, location, d -> UiUtils.buildUserObjectText((UserInstanceDetailsDTO) d),
-				() -> uiEventCollector.collectUiEvent(new UIEvent<>(
-						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, UiUtils.convertUserInstanceToInnerDTO(dto))));
-	}
-
-	
 }
