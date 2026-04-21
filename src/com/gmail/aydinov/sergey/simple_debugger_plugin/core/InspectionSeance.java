@@ -40,6 +40,7 @@ public class InspectionSeance {
 	private final AbstractInspectableElement anchorElement;
 	private final StackFrame currentFrame;
 	private final BreakpointEvent breakpointEvent;
+	private final AbstractUIEvent initialSimpleDebuggerUIEvent;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 
@@ -47,10 +48,11 @@ public class InspectionSeance {
 	private static boolean alreadyStarted = false;
 
 	private InspectionSeance(AbstractInspectableElement anchorElement, StackFrame currentFrame,
-			BreakpointEvent breakpointEvent) {
+			BreakpointEvent breakpointEvent, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
 		this.anchorElement = anchorElement;
 		this.currentFrame = currentFrame;
 		this.breakpointEvent = breakpointEvent;
+		this.initialSimpleDebuggerUIEvent = abstractSimpleDebuggerUIEvent;
 		// inspectableQueue.offer(anchorElement);
 		startInspectionProcedure();
 	}
@@ -74,7 +76,7 @@ public class InspectionSeance {
 		if (Objects.isNull(anchorElement))
 			return false;
 		
-		new InspectionSeance(anchorElement, currentFrame, breakpointEvent);
+		new InspectionSeance(anchorElement, currentFrame, breakpointEvent, abstractSimpleDebuggerUIEvent);
 		return true;
 	}
 
@@ -126,13 +128,16 @@ public class InspectionSeance {
 				page.setBreadcrumbs(qq);
 				debugEventCollector.collectDebugEvent(
 						new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
-				
+//				 UIEventHandler handler = SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_SEANCE_FOR_USER_OBJECT.getUiEventHandler();
+//				 handler.handle(uiEvent, currentFrame, breakpointEvent);
 			} else if (anchorElement instanceof InspectableInstanceElement inspectableInstanceElement) {
 				inspectableQueue.offer(inspectableInstanceElement);
 				 UserObjectPageDTO page = inspectableInstanceElement.inspectPage(inspectableInstanceElement);
 				 page.setBreadcrumbs(buildBreadcrumbs());
-				 debugEventCollector.collectDebugEvent(
-							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, page));
+				 UIEventHandler handler = SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_SEANCE_FOR_USER_OBJECT.getUiEventHandler();
+				 handler.handle(initialSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
+//				 debugEventCollector.collectDebugEvent(
+//							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, page));
 			}
 
 			while (true) {

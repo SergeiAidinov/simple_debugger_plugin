@@ -1,22 +1,27 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab;
 
 import java.util.List;
+import java.util.function.Function;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
 /**
- * Простая и стабильная вкладка инспектора объекта.
+ * Простая вкладка инспектора объекта с иконками.
  */
 public class UserObjectStructureTab {
 
@@ -35,10 +40,14 @@ public class UserObjectStructureTab {
         viewer = new TableViewer(table);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
 
+        // Колонки
         createColumn("Name", 250, InnerElementRepresentationDTO::getElementName);
 
-        createColumn("Value", 500, dto ->
-                dto.getValue() != null ? dto.getValue() : "null"
+        createColumn(
+                "Value",
+                500,
+                dto -> dto.getValue() != null ? dto.getValue() : "null",
+                this::getIcon
         );
     }
 
@@ -60,12 +69,24 @@ public class UserObjectStructureTab {
     }
 
     /**
-     * Универсальное создание колонки
+     * Колонка без иконок
      */
     private TableViewerColumn createColumn(
             String title,
             int width,
-            java.util.function.Function<InnerElementRepresentationDTO, String> extractor
+            Function<InnerElementRepresentationDTO, String> extractor
+    ) {
+        return createColumn(title, width, extractor, e -> null);
+    }
+
+    /**
+     * Колонка с иконками
+     */
+    private TableViewerColumn createColumn(
+            String title,
+            int width,
+            Function<InnerElementRepresentationDTO, String> textExtractor,
+            Function<InnerElementRepresentationDTO, Image> imageExtractor
     ) {
         TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
         column.getColumn().setText(title);
@@ -76,13 +97,45 @@ public class UserObjectStructureTab {
             @Override
             public String getText(Object element) {
                 if (element instanceof InnerElementRepresentationDTO dto) {
-                    String value = extractor.apply(dto);
+                    String value = textExtractor.apply(dto);
                     return value != null ? value : "";
                 }
                 return "";
             }
+
+            @Override
+            public Image getImage(Object element) {
+                if (element instanceof InnerElementRepresentationDTO dto) {
+                    return imageExtractor.apply(dto);
+                }
+                return null;
+            }
         });
 
         return column;
+    }
+
+    /**
+     * Логика выбора иконки (та же, что в основной вкладке)
+     */
+    private Image getIcon(InnerElementRepresentationDTO dto) {
+        if (dto == null) return null;
+
+        ValueCategory category = dto.getValueCategory();
+
+        // коллекции и map
+        if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
+            return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
+        }
+
+        // пользовательские объекты
+        if (category == ValueCategory.USER_OBJECT
+                && dto.getValue() != null
+                && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
+
+            return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
+        }
+
+        return null;
     }
 }
