@@ -1,10 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab;
 
 import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -12,25 +8,19 @@ import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
@@ -47,9 +37,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWi
 public class IterableInspectorTab implements InspectorTab {
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
-	private static String SEPARATOR = "---------------------------------------------- \n";
-	private static String GAP = "  ";
-
 	private final Composite root;
 	private final TableViewer viewer;
 	private final Label collectionNameLabel;
@@ -62,15 +49,7 @@ public class IterableInspectorTab implements InspectorTab {
 	private final Text pageText;
 	private final Button goButton;
 	private final Button nextButton;
-//	private Shell currentPopup;
 	private TooltipManager tooltipManager;
-	private long lastRequestTime = System.currentTimeMillis();
-//	private InnerElementRepresentationDTO lastHovered;
-	private InnerElementRepresentationDTO lastInspectedElement;
-	private UserInstanceDetailsDTO lastUserInstanceDetailsDTO;
-//	private String lastHoveredElementId = null;
-
-	private final BlockingQueue<InnerElementRepresentationDTO> queue = new LinkedBlockingDeque();
 
 	private int currentPage = 0;
 
@@ -120,7 +99,6 @@ public class IterableInspectorTab implements InspectorTab {
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		table.setLayoutData(new GridData(GridData.FILL_BOTH));
-		// table.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_BLUE));
 
 		viewer = new TableViewer(table);
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
@@ -132,24 +110,7 @@ public class IterableInspectorTab implements InspectorTab {
 		createColumn("Value", 600, pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
 				pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
 
-		setupHoverInspectionListener();
 		setupClickListener(table);
-//		new Thread(() -> {
-//
-//			while (true) {
-//				InnerElementRepresentationDTO dto = null;
-//				try {
-//					dto = queue.take();
-//				} catch (InterruptedException e1) {
-//					// TODO Auto-generated catch block
-//					e1.printStackTrace();
-//				}
-//				if (Objects.nonNull(dto)) {
-//					uiEventCollector.collectUiEvent(
-//							new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
-//				}
-//			}
-//		}).start();
 	}
 
 	@Override
@@ -186,52 +147,6 @@ public class IterableInspectorTab implements InspectorTab {
 		});
 	}
 
-	private void setupHoverInspectionListener() {
-		Table table = viewer.getTable();
-
-		table.addListener(SWT.MouseMove, event -> {
-			TableItem item = table.getItem(new Point(event.x, event.y));
-			if (item == null)
-				return;
-			int colIndex = getColumnIndexAtPoint(table, event.x);
-			if (colIndex != 1)
-				return; // только третья колонка
-			Object data = item.getData();
-			if (!(data instanceof PairDTO<?, ?> pair))
-				return;
-			if (!(pair.getSecond() instanceof InnerElementRepresentationDTO dto))
-				return;
-			
-
-//			if (!Objects.equals(dto, lastInspectedElement)) {
-//				if (dto == lastInspectedElement) {
-//					return;
-//				}
-				lastInspectedElement = dto;
-
-//				if (dto == null) {
-//					tooltipManager.closePopup();
-//					lastInspectedElement = null;
-//					return;
-//				}
-
-				if (dto != null) {
-					Image icon = getIcon(dto);
-
-					if (icon == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-					//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
-
-						uiEventCollector.collectUiEvent(new UIEvent<>(
-								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
-
-					} else if (icon == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
-						Point location = root.getDisplay().getCursorLocation();
-						tooltipManager.showTooltipForCollection(dto, location);
-					}
-				}
-		//	}
-		});
-	}
 
 	private int getColumnIndexAtPoint(Table table, int x) {
 		int offset = 0;
@@ -257,19 +172,9 @@ public class IterableInspectorTab implements InspectorTab {
 				return;
 			if (!(pair.getSecond() instanceof InnerElementRepresentationDTO dto))
 				return;
-
-			// 🔹 Используем category вместо сравнения Image
 			ValueCategory category = dto.getValueCategory();
 			if (category != ValueCategory.MAP && category != ValueCategory.COLLECTION && category != ValueCategory.USER_OBJECT)
 				return;
-//			if (category != ValueCategory.MAP && category != ValueCategory.COLLECTION)
-//				return;
-
-
-//			InnerElementRepresentationDTO dto = (InnerElementRepresentationDTO) pair.getSecond();
-//
-//			if (dto == null)
-//				return;
 			System.out.println(" SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT");
 			uiEventCollector.collectUiEvent(
 					new UIEvent<>(SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT, dto));
@@ -284,8 +189,6 @@ public class IterableInspectorTab implements InspectorTab {
 			if (root.isDisposed())
 				return;
 			Point location = display.getCursorLocation();
-			// showPopup(userInstanceInspectionDTO, location, dto ->
-			// UiUtils.buildUserObjectText((UserInstanceDetailsDTO) dto), null);
 			tooltipManager.showTooltipForUserObject(userInstanceInspectionDTO, location);
 		});
 	}
@@ -304,26 +207,21 @@ public class IterableInspectorTab implements InspectorTab {
 	private String formatValue(InnerElementRepresentationDTO dto) {
 		if (dto == null)
 			return "";
-
 		String value = dto.getValue();
 		if (value == null)
 			return "null";
-
 		String type = dto.getTypeOrReturnType();
 		if ("String".equals(type)) {
 			return "\"" + value + "\"";
 		}
-
 		return value + " (id=" + dto.getAdditionalInfo() + ")";
 	}
 
 	private <K, V> TableViewerColumn createColumn(String title, int width,
 			Function<PairDTO<K, V>, String> textExtractor, Function<PairDTO<K, V>, Image> imageExtractor) {
-
 		TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
 		column.getColumn().setText(title);
 		column.getColumn().setWidth(width);
-
 		column.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -360,16 +258,12 @@ public class IterableInspectorTab implements InspectorTab {
 			return null;
 
 		ValueCategory category = dto.getValueCategory();
-
-		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
+		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) 
 			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
-		}
-
+		
 		if (category == ValueCategory.USER_OBJECT && dto.getValue() != null
-				&& !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
+				&& !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) 
 			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
-		}
-
 		return null;
 	}
 
@@ -380,10 +274,8 @@ public class IterableInspectorTab implements InspectorTab {
 		} catch (Exception e) {
 			page = 0;
 		}
-
 		if (page < 0)
 			page = 0;
-
 		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, page));
 	}
 

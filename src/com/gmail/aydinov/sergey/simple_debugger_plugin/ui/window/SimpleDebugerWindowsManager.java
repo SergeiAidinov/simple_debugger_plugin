@@ -132,6 +132,8 @@ public class SimpleDebugerWindowsManager implements Runnable {
 					universalInspectorWindow.handleDebugEvent(eventReference.get());
 				});
 
+			} else {
+				System.out.println("Ignored!!!");
 			}
 		}
 	}
