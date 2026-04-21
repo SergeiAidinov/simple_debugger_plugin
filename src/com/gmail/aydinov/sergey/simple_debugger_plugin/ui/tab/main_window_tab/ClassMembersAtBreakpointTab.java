@@ -418,7 +418,7 @@ public class ClassMembersAtBreakpointTab {
 				tooltipManager.closePopup();
 				if (dto != null) {
 					if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
-						DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
+					//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 						uiEventCollector.collectUiEvent(new UIEvent<>(
 								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
 					} else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {

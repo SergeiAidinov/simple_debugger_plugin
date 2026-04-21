@@ -175,10 +175,10 @@ public class IterableInspectorTab implements InspectorTab {
 			ValueCategory category = dto.getValueCategory();
 			if (category == ValueCategory.USER_OBJECT)
 				uiEventCollector.collectUiEvent(
-					new UIEvent<>(SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_SEANCE_FOR_USER_OBJECT, dto));
+					new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
 			else if (category == ValueCategory.MAP)
 				uiEventCollector.collectUiEvent(
-						new UIEvent<>(SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_SEANCE_FOR_MAP, dto));
+						new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_MAP, dto));
 			else if (category == ValueCategory.COLLECTION )
 				return;
 			
