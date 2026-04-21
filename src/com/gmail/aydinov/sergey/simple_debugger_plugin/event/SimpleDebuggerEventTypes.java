@@ -4,6 +4,7 @@ import java.util.EnumSet;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IgnoreEverntHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.MapInspectionSeanceHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedFieldHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedVariableHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserClosedDebugWindowHandler;
@@ -99,8 +100,7 @@ public final class SimpleDebuggerEventTypes {
 		
 		// === MAP ===
 
-//		USER_STARTED_INSPECTION_SEANCE_FOR_MAP(InnerElementRepresentationDTO.class,
-//		        new MapInspectionSeanceHandler()),
+		
 //
 //		USER_CLOSED_INSPECTION_SEANCE_FOR_MAP(Void.class, new IgnoreEverntHandler()),
 
@@ -109,7 +109,9 @@ public final class SimpleDebuggerEventTypes {
 		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null), 
 	//	USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(UserInstanceInspectionDTO.class, new UserObjectInspectionHandler()), 
 		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectPageDTO.class, null), 
-		USER_CONTINUES_INSPECTION_FOR_USER_OBJECT(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()), 
+		USER_CONTINUES_INSPECTION_SEANCE_FOR_USER_OBJECT(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()),
+		USER_CONTINUES_INSPECTION_SEANCE_FOR_MAP(InnerElementRepresentationDTO.class,
+		        new MapInspectionSeanceHandler()),
 		
 
 		

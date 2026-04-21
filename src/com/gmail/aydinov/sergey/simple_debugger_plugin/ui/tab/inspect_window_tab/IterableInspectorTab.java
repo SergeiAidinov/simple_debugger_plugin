@@ -173,11 +173,15 @@ public class IterableInspectorTab implements InspectorTab {
 			if (!(pair.getSecond() instanceof InnerElementRepresentationDTO dto))
 				return;
 			ValueCategory category = dto.getValueCategory();
-			if (category != ValueCategory.MAP && category != ValueCategory.COLLECTION && category != ValueCategory.USER_OBJECT)
+			if (category == ValueCategory.USER_OBJECT)
+				uiEventCollector.collectUiEvent(
+					new UIEvent<>(SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_SEANCE_FOR_USER_OBJECT, dto));
+			else if (category == ValueCategory.MAP)
+				uiEventCollector.collectUiEvent(
+						new UIEvent<>(SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_SEANCE_FOR_MAP, dto));
+			else if (category == ValueCategory.COLLECTION )
 				return;
-			System.out.println(" SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT");
-			uiEventCollector.collectUiEvent(
-					new UIEvent<>(SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_FOR_USER_OBJECT, dto));
+			
 		});
 	}
 

@@ -124,6 +124,23 @@ public class UniversalInspectorWindow {
 //		if (userObjectTab != null && !userObjectTab.getControl().isDisposed())
 //			userObjectTab.getControl().setVisible(false);
 	}
+	
+	private void disposeAllTabs() {
+	    for (CTabItem item : tabFolder.getItems()) {
+	        if (!item.isDisposed()) {
+	            item.dispose();
+	        }
+	    }
+	    // обнуляем ссылки (важно!)
+	    iterableInspectorTab = null;
+	    collectionTabItem = null;
+
+	    mapInspectorTab = null;
+	    mapTabItem = null;
+
+	    userObjectTab = null;
+	    userObjectTabItem = null;
+	}
 
 	private void showTab(CTabItem tabItem, Composite content) {
 		hideAllTabs();
@@ -132,15 +149,15 @@ public class UniversalInspectorWindow {
 		tabFolder.layout(true, true);
 	}
 
-//	private IterableInspectorTab createIterableTabIfNeeded() {
-//		if (iterableInspectorTab == null || collectionTabItem == null) {
-//			iterableInspectorTab = new IterableInspectorTab(tabFolder);
-//			collectionTabItem = new CTabItem(tabFolder, SWT.NONE);
-//			collectionTabItem.setText("Iterable");
-//			collectionTabItem.setControl(iterableInspectorTab.getControl());
-//		}
-//		return iterableInspectorTab;
-//	}
+	private InspectorTab createIterableTabIfNeeded() {
+		if (iterableInspectorTab == null || collectionTabItem == null) {
+			iterableInspectorTab = new IterableInspectorTab(tabFolder);
+			collectionTabItem = new CTabItem(tabFolder, SWT.NONE);
+			collectionTabItem.setText("Iterable");
+			collectionTabItem.setControl(iterableInspectorTab.getControl());
+		}
+		return iterableInspectorTab;
+	}
 
 	private void createMapTabIfNeeded() {
 		if (mapInspectorTab == null || mapTabItem == null) {
@@ -164,7 +181,8 @@ public class UniversalInspectorWindow {
 		if (tabFolder.isDisposed())
 			return;
 		Display.getDefault().asyncExec(() -> {
-			//createIterableTabIfNeeded();
+			 disposeAllTabs();
+			createIterableTabIfNeeded();
 			iterableInspectorTab.showPage(payload);
 			showBreadcrumbs(payload.getBreadcrumbs());
 			showTab(collectionTabItem, iterableInspectorTab.getControl());
@@ -177,6 +195,7 @@ public class UniversalInspectorWindow {
 			return;
 
 		Display.getDefault().asyncExec(() -> {
+			 disposeAllTabs();
 			createMapTabIfNeeded();
 			mapInspectorTab.showPage(page);
 			showBreadcrumbs(page.getBreadcrumbs());
@@ -190,6 +209,7 @@ public class UniversalInspectorWindow {
 			return;
 
 		Display.getDefault().asyncExec(() -> {
+			disposeAllTabs();
 			createUserObjectTabIfNeeded("USER OBJ.");
 			userObjectTab.showUserObject(userObjectPageDTO);
 			showBreadcrumbs(userObjectPageDTO.getBreadcrumbs());
