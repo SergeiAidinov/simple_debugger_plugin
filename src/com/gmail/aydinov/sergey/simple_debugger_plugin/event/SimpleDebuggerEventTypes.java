@@ -71,17 +71,19 @@ public final class SimpleDebuggerEventTypes {
 		USER_CLOSED_DEBUG_WINDOW(Void.class, new UserClosedDebugWindowHandler()),
 
 		USER_INVOKED_METHOD(UserInvokedMethodEventDTO.class, new UserInvokedMethodHandler()),
+		
+		USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT(InnerElementRepresentationDTO.class,
+				new UserRerquestedAdditionalInfoAboutObjectHandler()),
+
+		USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class,
+				new UserRequestedAdditionalInfoAboutCollectionHandler()),
+
 
 		// ============= USER INTERFACE INSPECTION WINDOW EVENTS =============
 
 		SHOW_ANCHOR_ELEMENT(TopLevelElementRepresentationDTO.class, null),
 
-		USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT(InnerElementRepresentationDTO.class,
-				new UserRerquestedAdditionalInfoAboutObjectHandler()),
-//
-		USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION(InnerElementRepresentationDTO.class,
-				new UserRequestedAdditionalInfoAboutCollectionHandler()),
-
+		
 		//USER_STARTED_INSPECTION_SESSION_FOR_ELEMENT(InnerElementRepresentationDTO.class, null),
 
 		//USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class, null),
@@ -109,8 +111,8 @@ public final class SimpleDebuggerEventTypes {
 		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null), 
 	//	USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(UserInstanceInspectionDTO.class, new UserObjectInspectionHandler()), 
 		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectPageDTO.class, null), 
-		USER_CONTINUES_INSPECTION_SEANCE_FOR_USER_OBJECT(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()),
-		USER_CONTINUES_INSPECTION_SEANCE_FOR_MAP(InnerElementRepresentationDTO.class,
+		USER_INSPECTS_USER_OBJECT(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()),
+		USER_INSPECTS_MAP(InnerElementRepresentationDTO.class,
 		        new MapInspectionSeanceHandler()),
 		
 
@@ -144,8 +146,11 @@ public final class SimpleDebuggerEventTypes {
 			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE,
 			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE,
 			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP,
-			SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
-			SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION
+		//	SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
+		//	SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION,
+			SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
+			SimpleDebuggerEventType.USER_INSPECTS_MAP
+			
 
 	);
 

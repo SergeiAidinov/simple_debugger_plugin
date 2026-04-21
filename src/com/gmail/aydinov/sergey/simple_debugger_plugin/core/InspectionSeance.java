@@ -134,7 +134,7 @@ public class InspectionSeance {
 				inspectableQueue.offer(inspectableInstanceElement);
 				 UserObjectPageDTO page = inspectableInstanceElement.inspectPage(inspectableInstanceElement);
 				 page.setBreadcrumbs(buildBreadcrumbs());
-				 UIEventHandler handler = SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_SEANCE_FOR_USER_OBJECT.getUiEventHandler();
+				 UIEventHandler handler = SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT.getUiEventHandler();
 				 handler.handle(initialSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 //				 debugEventCollector.collectDebugEvent(
 //							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, page));
@@ -167,10 +167,10 @@ public class InspectionSeance {
 //					System.out.println("INSPECTION: " + uiEvent);
 //					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 //					handler.handle(uiEvent, currentFrame, breakpointEvent);
-				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_SEANCE_FOR_USER_OBJECT)) {
+				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT)) {
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
-				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_SEANCE_FOR_MAP)) {
+				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_MAP)) {
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
 				}
