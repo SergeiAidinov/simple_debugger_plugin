@@ -127,8 +127,7 @@ public class MapInspectorTab implements InspectorTab {
 		// org.eclipse.jface.window.ToolTip.NO_RECREATE);
 		// setupColumns();
 		// setupTooltips(table);
-		// setupColumnClickListeners();
-		setupHoverInspectionListener();
+		setupClickListener(table);
 
 		// Колонки
 		createColumn("Key", 80, pair -> {
@@ -161,6 +160,43 @@ public class MapInspectorTab implements InspectorTab {
 			}
 			return "default tooltip";
 		});
+	}
+
+	private void setupClickListener(Table table) {
+
+		table.addListener(SWT.MouseDown, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			if (item == null)
+				return;
+			int colIndex = getColumnIndexAtPoint(table, event.x);
+			if (colIndex != 1)
+				return; // только третья колонка
+			Object data = item.getData();
+			if (!(data instanceof PairDTO<?, ?> pair))
+				return;
+			if (!(pair.getSecond() instanceof InnerElementRepresentationDTO dto))
+				return;
+			ValueCategory category = dto.getValueCategory();
+			if (category == ValueCategory.USER_OBJECT)
+				uiEventCollector.collectUiEvent(
+					new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
+			else if (category == ValueCategory.MAP)
+				uiEventCollector.collectUiEvent(
+						new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_MAP, dto));
+			else if (category == ValueCategory.COLLECTION )
+				return;
+			
+		});
+	}
+
+	private int getColumnIndexAtPoint(Table table, int x) {
+		int offset = 0;
+		for (int i = 0; i < table.getColumnCount(); i++) {
+			offset += table.getColumn(i).getWidth();
+			if (x < offset)
+				return i;
+		}
+		return table.getColumnCount() - 1;
 	}
 
 	private Image getIconForValue(InnerElementRepresentationDTO dto) {
@@ -277,66 +313,6 @@ public class MapInspectorTab implements InspectorTab {
 		return value == null ? "" : value;
 	}
 
-	private void setupHoverInspectionListener() {
-
-	    Table table = viewer.getTable();
-
-	    table.addListener(SWT.MouseMove, event -> {
-
-	        TableItem item = table.getItem(new Point(event.x, event.y));
-
-	        InnerElementRepresentationDTO dto = null;
-
-	        if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
-
-	            Object value = pair.getSecond();
-
-	            if (value instanceof InnerElementRepresentationDTO dataDto) {
-
-	                // 🔥 ВАЖНО: проверяем реальную границу VALUE колонки
-	                int valueCol = 1;
-	                Rectangle rect = item.getBounds(valueCol);
-
-	                if (rect.contains(event.x, event.y)) {
-	                    dto = dataDto;
-	                }
-	            }
-	        }
-
-	        String currentId = dto != null ? dto.getAdditionalInfo() : null;
-
-	        if (!Objects.equals(currentId, lastInspectedElementId)) {
-
-	            lastInspectedElementId = currentId;
-
-	           closePopup();
-
-	            if (dto == null) return;
-
-	            Image icon = getIcon(dto);
-
-	            Image inspectIcon = SimpleDebugerWindowsManager.instance()
-	                    .icons.get("inspectIcon").getFirst();
-
-	            Image lensIcon = SimpleDebugerWindowsManager.instance()
-	                    .icons.get("lens").getFirst();
-
-	            if (icon == inspectIcon) {
-
-	                uiEventCollector.collectUiEvent(
-	                        new UIEvent<>(
-	                                SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
-	                                dto));
-
-	            } else if (icon == lensIcon) {
-
-	                Point location = table.toDisplay(event.x, event.y);
-	                showTooltipForCollection(dto, location);
-	            }
-	        }
-	    });
-	}
-	
 	private int getColumnIndexByBounds(Table table, TableItem item, int x, int y) {
 
 	    for (int i = 0; i < table.getColumnCount(); i++) {
