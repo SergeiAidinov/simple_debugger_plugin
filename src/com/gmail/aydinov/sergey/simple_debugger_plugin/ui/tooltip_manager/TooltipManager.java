@@ -145,8 +145,12 @@ public class TooltipManager {
 			return;
 
 		showPopup(dto, location, d -> buildUserObjectText((UserInstanceDetailsDTO) d),
+//				() -> uiEventCollector.collectUiEvent(new UIEvent<>(
+//						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, UiUtils.convertUserInstanceToInnerDTO(dto)))
 				() -> uiEventCollector.collectUiEvent(new UIEvent<>(
-						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, UiUtils.convertUserInstanceToInnerDTO(dto))));
+						SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_SEANCE_FOR_USER_OBJECT, UiUtils.convertUserInstanceToInnerDTO(dto)))
+				
+				);
 	}
 
 	public void closePopup() {

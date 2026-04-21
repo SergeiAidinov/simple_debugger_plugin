@@ -28,7 +28,8 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
 		System.out.println("USER OBJECT. INSP. STARTED");
-	//	TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e -> System.out.println(e));
+		// TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e
+		// -> System.out.println(e));
 //		debugEventCollector
 //				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
@@ -86,10 +87,18 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 	}
 
 	private List<UniversalElementRepresentation> findAllUserObjects(InnerElementRepresentationDTO anchor) {
-		return TargetApplicationRepresentation.getInstance().getAllElements().stream()
+		List<UniversalElementRepresentation> userObjects = new ArrayList<UniversalElementRepresentation>();
+		userObjects.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> Objects.nonNull(e.getObjectReference())).filter(e -> Objects
 						.equals(String.valueOf(e.getObjectReference().uniqueID()), anchor.getAdditionalInfo()))
+				.toList());
+		if (!userObjects.isEmpty())
+			return userObjects;
+		return TargetApplicationRepresentation.getInstance().getAllElements().stream()
+				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.nonNull(e.getObjectReference())).filter(e -> Objects
+						.equals(anchor.getTag(), e.getTag()))
 				.toList();
 	}
 }
