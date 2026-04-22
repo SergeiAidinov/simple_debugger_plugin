@@ -27,14 +27,14 @@ public class InspectableMapElement extends AbstractInspectableElement implements
 	// 🔥 ключ → значение
 	private final List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> entries = new ArrayList<>();
 
-	InspectableMapElement(InnerElementRepresentationDTO anchorElement, BreakpointEvent breakpointEvent) {
+	InspectableMapElement(InnerElementRepresentationDTO anchorElement, BreakpointEvent breakpointEvent, int offset, int limit) {
 		super(anchorElement.getTag(), anchorElement.getElementName(), UniversalElementType.MAP_ELEMENT,
 				anchorElement.getValueCategory(), true);
 
 		this.breakpointEvent = breakpointEvent;
 		this.anchorElement = anchorElement;
 
-		compileEntries();
+		compileEntries(offset, limit);
 	}
 
 	// ================= GETTERS =================
@@ -61,7 +61,7 @@ public class InspectableMapElement extends AbstractInspectableElement implements
 
 	// ================= CORE =================
 
-	private void compileEntries() {
+	private void compileEntries(int offset, int limit) {
 		Optional<UniversalElementRepresentation> mapOpt = TargetApplicationRepresentation.getInstance().getAllElements()
 				.stream().filter(e -> e instanceof UniversalElementRepresentation)
 				.map(e -> (UniversalElementRepresentation) e)
@@ -71,12 +71,11 @@ public class InspectableMapElement extends AbstractInspectableElement implements
 			return;
 
 		UniversalElementRepresentation mapRef = mapOpt.get();
-		List<Entry<Value, Value>> qq = DebugUtils.iterateThroughMap(mapRef.getObjectReference(), breakpointEvent);
 
 		mapType = mapRef.getReferenceType() != null ? mapRef.getReferenceType().name() : "Unknown";
 
 		List<Map.Entry<Value, Value>> rawEntries = DebugUtils.iterateThroughMap(mapRef.getObjectReference(),
-				breakpointEvent);
+				breakpointEvent, offset, limit);
 
 		for (int i = 0; i < rawEntries.size(); i++) {
 			Map.Entry<Value, Value> entry = rawEntries.get(i);
@@ -112,13 +111,13 @@ public class InspectableMapElement extends AbstractInspectableElement implements
 				InnerElementRepresentationDTO valueDto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
 						.fromElement(valueRepresentation);
 						
-						//DebugUtils.createInnerElementDTO(entry.getValue(), valueRepresentation, i);
+						
 
 				entries.add(PairDTO.of(keyDto, valueDto));
 			}
 		}
 		
-		System.out.println(entries);
+		System.out.println(entries.size());
 	}
 
 	private List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> getPage(int pageNumber) {

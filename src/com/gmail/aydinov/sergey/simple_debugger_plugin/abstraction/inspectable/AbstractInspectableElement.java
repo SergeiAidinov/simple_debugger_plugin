@@ -6,6 +6,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractEleme
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerPageableElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.BreadcrumbItemDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
@@ -74,17 +75,23 @@ public abstract class AbstractInspectableElement {
 				throw new IllegalArgumentException("Invalid event type: " + event);
 			}
 			Object payload = rawEvent.getPayload();
-			if (!(payload instanceof InnerElementRepresentationDTO dto)) {
-				throw new IllegalArgumentException("Invalid payload: " + payload);
-			}
-			if (dto.getValueCategory().equals(ValueCategory.COLLECTION))
-				return new InspectableIterableElement(dto, currentFrame, breakpointEvent);
-			else if (dto.getValueCategory().equals(ValueCategory.MAP))
-				return new InspectableMapElement(dto, breakpointEvent);
-			else if (dto.getValueCategory().equals(ValueCategory.USER_OBJECT))
-				return new InspectableInstanceElement(dto, breakpointEvent);
+			if (payload instanceof InnerPageableElementRepresentationDTO innerPageableElementRepresentationDTO)
+				return createPageableInspectableElement(innerPageableElementRepresentationDTO, currentFrame, breakpointEvent);
+			else if (payload instanceof InnerElementRepresentationDTO innerElementRepresentationDTO)
+				return new InspectableInstanceElement(innerElementRepresentationDTO, breakpointEvent);
 			else
-				throw new IllegalArgumentException("Invalid category: " + dto);
+				return null;
+		}
+
+		private AbstractInspectableElement createPageableInspectableElement(InnerPageableElementRepresentationDTO innerPageableElementRepresentationDTO,
+				StackFrame currentFrame, BreakpointEvent breakpointEvent) {
+			if (innerPageableElementRepresentationDTO.getValueCategory().equals(ValueCategory.COLLECTION))
+				return new InspectableIterableElement(innerPageableElementRepresentationDTO, currentFrame, breakpointEvent);
+			else if (innerPageableElementRepresentationDTO.getValueCategory().equals(ValueCategory.MAP))
+				return new InspectableMapElement(innerPageableElementRepresentationDTO, breakpointEvent, innerPageableElementRepresentationDTO.getOffset(), 
+						innerPageableElementRepresentationDTO.getLimit());
+			else
+				throw new IllegalArgumentException("Invalid category: " + innerPageableElementRepresentationDTO);
 		}
 	}
 }

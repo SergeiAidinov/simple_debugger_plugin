@@ -25,6 +25,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerPageableElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserElementDetailDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -123,12 +124,7 @@ public class TooltipManager {
 		Rectangle rootBounds = new Rectangle(rootLocation.x, rootLocation.y, root.getSize().x, root.getSize().y);
 		boolean cursorInsidePopup = popupBounds.contains(cursor);
 		Point tableLocation = table.toDisplay(0, 0);
-		Rectangle tableBounds = new Rectangle(
-		    tableLocation.x,
-		    tableLocation.y,
-		    table.getSize().x,
-		    table.getSize().y
-		);
+		Rectangle tableBounds = new Rectangle(tableLocation.x, tableLocation.y, table.getSize().x, table.getSize().y);
 
 		boolean cursorInsideTable = tableBounds.contains(cursor);
 		if (!cursorInsidePopup && !cursorInsideTable) {
@@ -147,10 +143,10 @@ public class TooltipManager {
 		showPopup(dto, location, d -> buildUserObjectText((UserInstanceDetailsDTO) d),
 //				() -> uiEventCollector.collectUiEvent(new UIEvent<>(
 //						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, UiUtils.convertUserInstanceToInnerDTO(dto)))
-				() -> uiEventCollector.collectUiEvent(new UIEvent<>(
-						SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, UiUtils.convertUserInstanceToInnerDTO(dto)))
-				
-				);
+				() -> uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
+						UiUtils.convertUserInstanceToInnerDTO(dto)))
+
+		);
 	}
 
 	public void closePopup() {
@@ -186,17 +182,29 @@ public class TooltipManager {
 
 	public void showTooltipForCollection(InnerElementRepresentationDTO dto, Point location) {
 
+		InnerPageableElementRepresentationDTO innerPageableElementRepresentationDTO = new InnerPageableElementRepresentationDTO(
+				dto.getTag(), dto.getElementName(), dto.getAdditionalInfo(), dto.getElementType(), dto.getValue(),
+				dto.isStatic(), dto.getValueCategory(), dto.getTypeOrReturnType(), dto.getLevel(), 0, 20);
+
+//		  ValueCategory category = dto.getValueCategory();
+//		if (category.equals(ValueCategory.COLLECTION) || category.equals(ValueCategory.MAP)) {
+//			uiEventCollector
+//			.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
+//		} 
+
 		showPopup(dto, location, d -> buildCollectionText((InnerElementRepresentationDTO) d), () -> {
 //			debugEventCollector
 //					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-			switch (dto.getValueCategory()) {
-			case COLLECTION -> uiEventCollector
-					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
-			case MAP -> uiEventCollector
-					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
-			default -> debugEventCollector
-					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-			}
+			uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
+					innerPageableElementRepresentationDTO));
+//			switch (dto.getValueCategory()) {
+//			case COLLECTION -> uiEventCollector
+//					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
+//			case MAP -> uiEventCollector
+//					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
+//			default -> debugEventCollector
+//					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+//			}
 		});
 	}
 

@@ -9,15 +9,22 @@ import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
@@ -28,6 +35,7 @@ public class UserObjectStructureTab {
 
 	private final Composite root;
 	private final TableViewer viewer;
+	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
 	public UserObjectStructureTab(Composite parent) {
 		root = new Composite(parent, SWT.NONE);
@@ -45,6 +53,7 @@ public class UserObjectStructureTab {
 		createColumn("Name", 250, InnerElementRepresentationDTO::getElementName);
 
 		createColumn("Value", 500, dto -> dto.getValue() != null ? dto.getValue() : "null", this::getIcon);
+		setupClickListener(table);
 	}
 
 	public Composite getControl() {
@@ -101,6 +110,42 @@ public class UserObjectStructureTab {
 		});
 
 		return column;
+	}
+	
+	private void setupClickListener(Table table) {
+
+		table.addListener(SWT.MouseDown, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			if (item == null)
+				return;
+			int colIndex = getColumnIndexAtPoint(table, event.x);
+			if (colIndex != 1)
+				return; // только третья колонка
+			Object data = item.getData();
+			if (!(data instanceof InnerElementRepresentationDTO dto))
+				return;
+			ValueCategory category = dto.getValueCategory();
+			if (category == ValueCategory.USER_OBJECT)
+				uiEventCollector.collectUiEvent(
+					new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
+			else if (category == ValueCategory.MAP)
+				uiEventCollector.collectUiEvent(
+						new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, dto));
+			else if (category == ValueCategory.COLLECTION )
+				uiEventCollector.collectUiEvent(
+						new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_ITERABLE, dto));
+			
+		});
+	}
+	
+	private int getColumnIndexAtPoint(Table table, int x) {
+		int offset = 0;
+		for (int i = 0; i < table.getColumnCount(); i++) {
+			offset += table.getColumn(i).getWidth();
+			if (x < offset)
+				return i;
+		}
+		return table.getColumnCount() - 1;
 	}
 
 	/**
