@@ -16,7 +16,8 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
-public class InspectableMapElement extends AbstractInspectableElement implements PageableInspectable<AbstractInspectionCollectionPage<?>> {
+public class InspectableMapElement extends AbstractInspectableElement
+		implements PageableInspectable<AbstractInspectionCollectionPage<?>> {
 
 	private final BreakpointEvent breakpointEvent;
 	private final InnerElementRepresentationDTO anchorElement;
@@ -27,7 +28,8 @@ public class InspectableMapElement extends AbstractInspectableElement implements
 	// 🔥 ключ → значение
 	private final List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> entries = new ArrayList<>();
 
-	InspectableMapElement(InnerElementRepresentationDTO anchorElement, BreakpointEvent breakpointEvent, int offset, int limit) {
+	InspectableMapElement(InnerElementRepresentationDTO anchorElement, BreakpointEvent breakpointEvent, int offset,
+			int limit) {
 		super(anchorElement.getTag(), anchorElement.getElementName(), UniversalElementType.MAP_ELEMENT,
 				anchorElement.getValueCategory(), true);
 
@@ -101,8 +103,7 @@ public class InspectableMapElement extends AbstractInspectableElement implements
 				UniversalElementRepresentation valueRepresentation = UniversalElementRepresentation.builder()
 						.referenceType(valueRef.referenceType()).objectReference(valueRef).elementName(valueText)
 						.elementType(UniversalElementType.MAP_ELEMENT)
-						.additionalInfo(String.valueOf(valueRef.uniqueID()))
-						.currentRole(CurrentRole.INNER)
+						.additionalInfo(String.valueOf(valueRef.uniqueID())).currentRole(CurrentRole.INNER)
 						.value(DebugUtils.getObjectReferenceValueAsString(valueRef))
 						.valueCategory(DebugUtils.determineValueCategory(entry.getValue())).uniqueId(UUID.randomUUID())
 						.parentUniqueId(anchorElement.getTag().getUniqueId()).level(anchorElement.getLevel() + 1)
@@ -110,13 +111,11 @@ public class InspectableMapElement extends AbstractInspectableElement implements
 
 				InnerElementRepresentationDTO valueDto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
 						.fromElement(valueRepresentation);
-						
-						
 
 				entries.add(PairDTO.of(keyDto, valueDto));
 			}
 		}
-		
+
 		System.out.println(entries.size());
 	}
 
@@ -137,8 +136,22 @@ public class InspectableMapElement extends AbstractInspectableElement implements
 			int pageNumber) {
 		if (!(inspectableElement instanceof InspectableMapElement map))
 			throw new IllegalArgumentException("Expected InspectableMapElement");
-
-		int totalEntries = map.entries.size();
+		Optional<UniversalElementRepresentation> ww = TargetApplicationRepresentation.getInstance().getAllElements()
+				.stream().filter(e -> Objects.equals(e.getTag(), anchorElement.getTag()))
+				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
+				.findAny();
+		int mapSize = 0;
+		if (ww.isPresent()) {
+			String mapSizeString = ww.get().getValue().substring(ww.get().getValue().indexOf(':') + 1,
+					ww.get().getValue().indexOf(','));
+			System.out.println(mapSizeString);
+			try {
+			mapSize = Integer.valueOf(mapSizeString);
+			} catch (NumberFormatException e) {
+				// TODO: handle exception
+			}
+		}
+		int totalEntries = mapSize;
 		int totalPages = (totalEntries + DebugUtils.PAGE_SIZE - 1) / DebugUtils.PAGE_SIZE;
 
 		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;

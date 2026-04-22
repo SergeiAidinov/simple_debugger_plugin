@@ -225,7 +225,7 @@ public class MapInspectorTab implements InspectorTab {
 
 			pageText.setText(String.valueOf(page.getCurrentPage()));
 			currentPage = page.getCurrentPage();
-			prevButton.setEnabled(page.getCurrentPage() > 0);
+			prevButton.setEnabled(page.getCurrentPage() >= 0);
 			nextButton.setEnabled(page.getCurrentPage() < page.getTotalPages() - 1);
 
 			viewer.setInput(page.getEntries());
