@@ -1222,6 +1222,106 @@ public class DebugUtils {
 		return result;
 	}
 
+	public static List<Map.Entry<Value, Value>> iterateThroughMap(ObjectReference instance,
+			BreakpointEvent breakpointEvent, int offset, int limit) {
+		List<Map.Entry<Value, Value>> result = new ArrayList<>();
+		if (instance == null || breakpointEvent == null || limit <= 0)
+			return result;
+
+		ReferenceType refType = instance.referenceType();
+		if (!(refType instanceof ClassType classType))
+			return result;
+
+		boolean isMap = classType.allInterfaces().stream().anyMatch(iface -> "java.util.Map".equals(iface.name()));
+
+		if (!isMap)
+			return result;
+
+		ThreadReference thread = breakpointEvent.thread();
+
+		try {
+			// 🔹 entrySet()
+			Method entrySetMethod = classType.concreteMethodByName("entrySet", "()Ljava/util/Set;");
+			if (entrySetMethod == null)
+				return result;
+
+			Value entrySetValue = instance.invokeMethod(thread, entrySetMethod, Collections.emptyList(),
+					ObjectReference.INVOKE_SINGLE_THREADED);
+
+			if (!(entrySetValue instanceof ObjectReference entrySetRef))
+				return result;
+
+			// 🔹 iterator()
+			ClassType entrySetType = (ClassType) entrySetRef.referenceType();
+			Method iteratorMethod = entrySetType.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
+			if (iteratorMethod == null)
+				return result;
+
+			ObjectReference iterator = (ObjectReference) entrySetRef.invokeMethod(thread, iteratorMethod,
+					Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+
+			ClassType iteratorType = (ClassType) iterator.referenceType();
+
+			// 🔹 методы итератора (вынесены из цикла)
+			Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
+			Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+			if (hasNextMethod == null || nextMethod == null)
+				return result;
+
+			int skipped = 0;
+			int collected = 0;
+
+			while (true) {
+				// hasNext()
+				Value hasNextVal = iterator.invokeMethod(thread, hasNextMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
+
+				if (!(hasNextVal instanceof BooleanValue bv) || !bv.value())
+					break;
+
+				// next()
+				Value entryVal = iterator.invokeMethod(thread, nextMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
+
+				if (!(entryVal instanceof ObjectReference entryRef))
+					continue;
+
+				// 🔹 skip offset
+				if (skipped < offset) {
+					skipped++;
+					continue;
+				}
+
+				// 🔹 limit
+				if (collected >= limit)
+					break;
+
+				ClassType entryType = (ClassType) entryRef.referenceType();
+
+				// 🔹 методы entry (можно ещё закэшировать при желании)
+				Method getKeyMethod = entryType.concreteMethodByName("getKey", "()Ljava/lang/Object;");
+				Method getValueMethod = entryType.concreteMethodByName("getValue", "()Ljava/lang/Object;");
+
+				if (getKeyMethod == null || getValueMethod == null)
+					continue;
+
+				Value key = entryRef.invokeMethod(thread, getKeyMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
+
+				Value value = entryRef.invokeMethod(thread, getValueMethod, Collections.emptyList(),
+						ObjectReference.INVOKE_SINGLE_THREADED);
+
+				result.add(new AbstractMap.SimpleEntry<>(key, value));
+				collected++;
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return result;
+	}
+
 	/**
 	 * Создаёт DTO для ключа или значения Map.
 	 * 
@@ -1288,7 +1388,7 @@ public class DebugUtils {
 			}
 		}
 	}
-	
+
 	public static String buildCollectionText(InnerElementRepresentationDTO dto) {
 		String value = dto.getValue();
 

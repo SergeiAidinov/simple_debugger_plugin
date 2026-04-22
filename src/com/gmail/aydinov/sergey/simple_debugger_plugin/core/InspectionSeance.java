@@ -1,6 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
-import java.lang.annotation.ElementType;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -9,15 +8,14 @@ import java.util.Objects;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.AbstractInspectableElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableInstanceElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableIterableElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableMapElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionCollectionPage;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.BreadcrumbItemDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
@@ -31,7 +29,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.event.BreakpointEvent;
 
@@ -71,11 +68,23 @@ public class InspectionSeance {
 		}
 		if (Objects.isNull(uiEvent))
 			return false;
-		AbstractInspectableElement anchorElement = AbstractInspectableElement.factory()
-				.createInspectableElement(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
+		if (!(uiEvent instanceof UIEvent<?> rawEvent)) {
+			throw new IllegalArgumentException("Invalid event type: " + uiEvent);
+		}
+		Object payload = rawEvent.getPayload();
+		if (!(payload instanceof InnerElementRepresentationDTO dto)) {
+			throw new IllegalArgumentException("Invalid payload: " + payload);
+		}
+		AbstractInspectableElement anchorElement = null;
+		if (dto.getValueCategory().equals(ValueCategory.COLLECTION) || dto.getValueCategory().equals(ValueCategory.MAP))
+			anchorElement = AbstractInspectableElement.factory().createInspectableElement(abstractSimpleDebuggerUIEvent,
+					currentFrame, breakpointEvent);
+		else if (dto.getValueCategory().equals(ValueCategory.USER_OBJECT))
+			anchorElement = AbstractInspectableElement.factory().createInspectableElement(abstractSimpleDebuggerUIEvent,
+					currentFrame, breakpointEvent);
 		if (Objects.isNull(anchorElement))
 			return false;
-		
+
 		new InspectionSeance(anchorElement, currentFrame, breakpointEvent, abstractSimpleDebuggerUIEvent);
 		return true;
 	}
@@ -91,7 +100,8 @@ public class InspectionSeance {
 			SimpleDebuggerLogger.error(e.getMessage(), e);
 		} finally {
 			DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-			debugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+			debugEventCollector
+					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 			alreadyStarted = false;
 		}
 
@@ -101,7 +111,7 @@ public class InspectionSeance {
 
 		@Override
 		public void run() {
-	//		try {
+			// try {
 			inspectionProcedure();
 //			} finally {
 //				debugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
@@ -111,8 +121,9 @@ public class InspectionSeance {
 
 		@SuppressWarnings("unchecked")
 		private boolean inspectionProcedure() {
-		//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
-			debugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
+			// DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
+			debugEventCollector
+					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
 			if (anchorElement instanceof InspectableIterableElement inspectableCollection) {
 				inspectableQueue.offer(inspectableCollection);
 				ArrayPageDTO page = (ArrayPageDTO) inspectableCollection.inspectPage(inspectableCollection, 0);
@@ -132,10 +143,10 @@ public class InspectionSeance {
 //				 handler.handle(uiEvent, currentFrame, breakpointEvent);
 			} else if (anchorElement instanceof InspectableInstanceElement inspectableInstanceElement) {
 				inspectableQueue.offer(inspectableInstanceElement);
-				 UserObjectPageDTO page = inspectableInstanceElement.inspectPage(inspectableInstanceElement);
-				 page.setBreadcrumbs(buildBreadcrumbs());
-				 UIEventHandler handler = SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT.getUiEventHandler();
-				 handler.handle(initialSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
+				UserObjectPageDTO page = inspectableInstanceElement.inspectPage(inspectableInstanceElement);
+				page.setBreadcrumbs(buildBreadcrumbs());
+				UIEventHandler handler = SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT.getUiEventHandler();
+				handler.handle(initialSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 //				 debugEventCollector.collectDebugEvent(
 //							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, page));
 			}
@@ -170,7 +181,7 @@ public class InspectionSeance {
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT)) {
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
-				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_MAP)) {
+				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE)) {
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
 				}

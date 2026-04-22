@@ -158,7 +158,7 @@ public class MapInspectorTab implements InspectorTab {
 					new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
 			else if (category == ValueCategory.MAP)
 				uiEventCollector.collectUiEvent(
-						new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_MAP, dto));
+						new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, dto));
 			else if (category == ValueCategory.COLLECTION )
 				return;
 			
