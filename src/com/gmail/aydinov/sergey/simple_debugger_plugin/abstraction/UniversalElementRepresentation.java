@@ -11,9 +11,17 @@ import com.sun.jdi.Value;
 
 public class UniversalElementRepresentation extends AbstractElementRepresentation implements Comparable<UniversalElementRepresentation> {
 
-    public enum UniversalElementType { INTERFACE, CLASS, ENUM, FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE, /*OBJECT_INSTANCE,*/ UNKNOWN, REFERENCE /*, COLLECTION, MAP*/, COLLECTION_ELEMENT, MAP_ELEMENT }
+    public enum UniversalElementType {
+        INTERFACE, CLASS, ENUM, FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE,
+        UNKNOWN, REFERENCE, COLLECTION_ELEMENT, MAP_ELEMENT
+    }
+
     public enum CurrentRole { OUTER, INNER, LOCAL }
-    public enum ValueCategory { PRIMITIVE, WRAPPER, STRING, COLLECTION, ARRAY, MAP, USER_OBJECT, NULL, NOT_SPECIFIED, AUXILIARY, UNKNOWN }
+
+    public enum ValueCategory {
+        PRIMITIVE, WRAPPER, STRING, COLLECTION, ARRAY, MAP,
+        USER_OBJECT, NULL, NOT_SPECIFIED, AUXILIARY, UNKNOWN
+    }
 
     private final ReferenceType referenceType;
     private final String elementName;
@@ -24,7 +32,9 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
     private final boolean isStatic;
     private final ValueCategory valueCategory;
     private final String typeOrReturnType;
-   // private final int level; // уровень вложенности
+
+    // 🔥 новое поле
+    private final Long objectReferenceId;
 
     private UniversalElementRepresentation(Tag tag,
                                            ReferenceType referenceType,
@@ -39,6 +49,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
                                            String typeOrReturnType,
                                            int level) {
         super(tag, objectReference, level);
+
         this.referenceType = referenceType;
         this.elementName = elementName;
         this.additionalInfo = additionalInfo;
@@ -48,7 +59,9 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
         this.isStatic = isStatic;
         this.valueCategory = valueCategory;
         this.typeOrReturnType = typeOrReturnType;
-       // this.level = level;
+
+        // 🔥 вычисляем ID один раз
+        this.objectReferenceId = objectReference != null ? objectReference.uniqueID() : null;
     }
 
     // ===================== Геттеры =====================
@@ -64,15 +77,20 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
     public String getTypeOrReturnType() { return typeOrReturnType; }
     public int getLevel() { return super.getLevel(); }
 
+    // 🔥 новый геттер
+    public Long getObjectReferenceId() { return objectReferenceId; }
+
     // ===================== compareTo =====================
     @Override
     public int compareTo(UniversalElementRepresentation other) {
         if (other == null) return 1;
+
         int cmp = Integer.compare(this.elementType.ordinal(), other.elementType.ordinal());
         if (cmp != 0) return cmp;
+
         return this.elementName.compareToIgnoreCase(other.elementName);
     }
-    
+
     // ===================== toString =====================
     @Override
     public String toString() {
@@ -90,12 +108,13 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
                 .append("\n").append(indent).append("  isStatic=").append(isStatic)
                 .append("\n").append(indent).append("  valueCategory=").append(valueCategory)
                 .append("\n").append(indent).append("  typeOrReturnType=").append(typeOrReturnType)
+                .append("\n").append(indent).append("  objectReferenceId=").append(objectReferenceId)
                 .append("\n").append(indent).append("  referenceType=").append(referenceType)
                 .append("\n").append(indent).append("  level=").append(getLevel())
                 .append("\n").append(indent).append("}")
                 .toString();
     }
-    
+
     // ===================== Builder =====================
     public static class Builder {
         private ReferenceType referenceType = null;
@@ -128,6 +147,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
 
         public UniversalElementRepresentation build() {
             Tag tag = new Tag(uniqueId, parentUniqueId);
+
             return new UniversalElementRepresentation(
                     tag,
                     referenceType,
@@ -162,7 +182,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
                 .typeOrReturnType(DebugUtils.valueToString(value))
                 .uniqueId(UUID.randomUUID())
                 .parentUniqueId(parentId)
-                .level(level) // по умолчанию 0, потом можно увеличивать рекурсивно
+                .level(level)
                 .build();
     }
 
@@ -183,6 +203,4 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
                 .level(level)
                 .build();
     }
-
-   
 }

@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
@@ -87,6 +88,7 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 	}
 
 	private List<UniversalElementRepresentation> findAllUserObjects(InnerElementRepresentationDTO anchor) {
+		TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e -> System.out.println(e));
 		List<UniversalElementRepresentation> userObjects = new ArrayList<UniversalElementRepresentation>();
 		userObjects.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
@@ -95,10 +97,32 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 				.toList());
 		if (!userObjects.isEmpty())
 			return userObjects;
-		return TargetApplicationRepresentation.getInstance().getAllElements().stream()
+		
+		userObjects.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> Objects.nonNull(e.getObjectReference())).filter(e -> Objects
 						.equals(anchor.getTag(), e.getTag()))
+				.toList());
+		if (!userObjects.isEmpty())
+			return userObjects;
+		
+		 Optional<UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance().getAllElements().stream()
+		.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
+		.filter(e -> Objects.nonNull(e.getObjectReference())).filter(e -> Objects
+				.equals(anchor.getTag().getParentId(), e.getTag().getUniqueId())).findAny();
+		 
+		 if (qq.isPresent()) {
+			 List<UniversalElementRepresentation> ww = TargetApplicationRepresentation.getInstance().getAllElements().stream()
+				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> Objects.equals(e.getTag().getParentId(), qq.get().getTag().getUniqueId()))
+//				.filter(e -> Objects.nonNull(e.getObjectReference())).filter(e -> Objects
+//						.equals(String.valueOf(e.getObjectReference().uniqueID()), anchor.getAdditionalInfo()))
 				.toList();
+			 userObjects.addAll(ww);
+		 }
+		 
+		 
+		
+		return userObjects;
 	}
 }
