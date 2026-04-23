@@ -31,7 +31,7 @@ public class InspectableMapElement extends AbstractInspectableElement
 	InspectableMapElement(InnerElementRepresentationDTO anchorElement, BreakpointEvent breakpointEvent, int offset,
 			int limit) {
 		super(anchorElement.getTag(), anchorElement.getElementName(), UniversalElementType.MAP_ELEMENT,
-				anchorElement.getValueCategory(), true);
+				anchorElement.getValueCategory(), true, anchorElement.getObjectId());
 
 		this.breakpointEvent = breakpointEvent;
 		this.anchorElement = anchorElement;

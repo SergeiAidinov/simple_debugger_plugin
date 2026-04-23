@@ -76,6 +76,8 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 			subordinates.addAll(methods);
 			subordinates = subordinates.stream().distinct().toList();
 			UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(userObject.getElementName())
+					.elementType(userObject.getTypeOrReturnType())
+					.objectId(userObject.getObjectId())
 					.entries(subordinates).classType(userObject.getTypeOrReturnType()).anchorTag(userObject.getTag())
 					.build();
 			System.out.println(userObjectPageDTO);
@@ -88,14 +90,14 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 	}
 
 	private List<UniversalElementRepresentation> findAllUserObjects(InnerElementRepresentationDTO anchor) {
-		TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e -> System.out.println(e));
+	//	TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e -> System.out.println(e));
 		List<UniversalElementRepresentation> userObjects = new ArrayList<UniversalElementRepresentation>();
 		userObjects.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> Objects.nonNull(e.getObjectReference())).filter(e -> Objects
-						.equals(String.valueOf(e.getObjectReference().uniqueID()), anchor.getAdditionalInfo()))
+						.equals(e.getObjectReference().uniqueID(), anchor.getObjectId()))
 				.toList());
-		if (!userObjects.isEmpty())
+	if (!userObjects.isEmpty())
 			return userObjects;
 		
 		userObjects.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
@@ -103,26 +105,6 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 				.filter(e -> Objects.nonNull(e.getObjectReference())).filter(e -> Objects
 						.equals(anchor.getTag(), e.getTag()))
 				.toList());
-		if (!userObjects.isEmpty())
 			return userObjects;
-		
-		 Optional<UniversalElementRepresentation> qq = TargetApplicationRepresentation.getInstance().getAllElements().stream()
-		.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
-		.filter(e -> Objects.nonNull(e.getObjectReference())).filter(e -> Objects
-				.equals(anchor.getTag().getParentId(), e.getTag().getUniqueId())).findAny();
-		 
-		 if (qq.isPresent()) {
-			 List<UniversalElementRepresentation> ww = TargetApplicationRepresentation.getInstance().getAllElements().stream()
-				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
-				.filter(e -> Objects.equals(e.getTag().getParentId(), qq.get().getTag().getUniqueId()))
-//				.filter(e -> Objects.nonNull(e.getObjectReference())).filter(e -> Objects
-//						.equals(String.valueOf(e.getObjectReference().uniqueID()), anchor.getAdditionalInfo()))
-				.toList();
-			 userObjects.addAll(ww);
 		 }
-		 
-		 
-		
-		return userObjects;
-	}
 }

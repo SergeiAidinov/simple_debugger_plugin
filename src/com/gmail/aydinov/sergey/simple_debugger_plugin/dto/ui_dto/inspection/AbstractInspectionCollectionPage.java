@@ -5,33 +5,41 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractEleme
 
 public abstract class AbstractInspectionCollectionPage<T> extends AbstractInspectionDTO {
 
-    private final int totalElements;
-    private final int currentPage;
-    private final int totalPages;
-    private final List<T> entries;
+	private final int totalElements;
+	private final int currentPage;
+	private final int totalPages;
+	private final List<T> entries;
 
-    protected AbstractInspectionCollectionPage(
-            Tag tag,
-            String elementName,
-            String elementType,
-            int totalElements,
-            int currentPage,
-            int totalPages,
-            List<T> entries, 
-            List<BreadcrumbItemDTO> breadcrumbs
-    ) {
-        super(tag, elementName, elementType, breadcrumbs);
-        this.totalElements = totalElements;
-        this.currentPage = currentPage;
-        this.totalPages = totalPages;
-        this.entries = List.copyOf(entries);
-    }
+	protected AbstractInspectionCollectionPage(Tag tag, String elementName, String elementType, int totalElements,
+			int currentPage, int totalPages, List<T> entries, List<BreadcrumbItemDTO> breadcrumbs, Long objectId) {
+		super(tag, elementName, elementType, breadcrumbs, objectId);
+		this.totalElements = totalElements;
+		this.currentPage = currentPage;
+		this.totalPages = totalPages;
+		this.entries = List.copyOf(entries);
+	}
 
-    public int getTotalElements() { return totalElements; }
-    public int getCurrentPage() { return currentPage; }
-    public int getTotalPages() { return totalPages; }
-    public List<T> getEntries() { return entries; }
+	public int getTotalElements() {
+		return totalElements;
+	}
 
-    public boolean hasNextPage() { return currentPage < totalPages - 1; }
-    public boolean hasPreviousPage() { return currentPage > 0; }
+	public int getCurrentPage() {
+		return currentPage;
+	}
+
+	public int getTotalPages() {
+		return totalPages;
+	}
+
+	public List<T> getEntries() {
+		return entries;
+	}
+
+	public boolean hasNextPage() {
+		return currentPage < totalPages - 1;
+	}
+
+	public boolean hasPreviousPage() {
+		return currentPage > 0;
+	}
 }
