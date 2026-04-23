@@ -136,17 +136,17 @@ public class InspectableMapElement extends AbstractInspectableElement
 			int pageNumber) {
 		if (!(inspectableElement instanceof InspectableMapElement map))
 			throw new IllegalArgumentException("Expected InspectableMapElement");
-		Optional<UniversalElementRepresentation> ww = TargetApplicationRepresentation.getInstance().getAllElements()
+		Optional<UniversalElementRepresentation> mapRepresentation = TargetApplicationRepresentation.getInstance().getAllElements()
 				.stream().filter(e -> Objects.equals(e.getTag(), anchorElement.getTag()))
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
 				.findAny();
 		int mapSize = 0;
-		if (ww.isPresent()) {
-			String mapSizeString = ww.get().getValue().substring(ww.get().getValue().indexOf(':') + 1,
-					ww.get().getValue().indexOf(','));
+		if (mapRepresentation.isPresent()) {
+			String mapSizeString = mapRepresentation.get().getValue().substring(mapRepresentation.get().getValue().indexOf(':') + 1,
+					mapRepresentation.get().getValue().indexOf(','));
 			System.out.println(mapSizeString);
 			try {
-			mapSize = Integer.valueOf(mapSizeString);
+				mapSize = Integer.valueOf(mapSizeString);
 			} catch (NumberFormatException e) {
 				// TODO: handle exception
 			}

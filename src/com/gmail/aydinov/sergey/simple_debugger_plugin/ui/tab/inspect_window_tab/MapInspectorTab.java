@@ -106,36 +106,45 @@ public class MapInspectorTab implements InspectorTab {
 		setupClickListener(table);
 
 		// Колонки
-		createColumn("Key", 80, pair -> {
-			if (pair.getFirst() instanceof InnerElementRepresentationDTO keyRepresentation) {
-				return keyRepresentation.getElementName();
-			}
-			return "";
-		}, pair -> {
-			if (pair.getFirst() instanceof InnerElementRepresentationDTO keyRepresentation) {
-				return UiUtils.getIcon(keyRepresentation);
-			} else
-				return null;
-		}, pair -> {
-			return null;
-		});
+		createColumn("Index", 80, pair -> formatValue((InnerElementRepresentationDTO) pair.getFirst()),
+				pair -> getIcon((InnerElementRepresentationDTO) pair.getFirst()));
 
-		createColumn("Value", 570, pair -> {
-			if (pair.getSecond() instanceof InnerElementRepresentationDTO valueRepresentation) {
-				return valueRepresentation.getValue() + " id=" + valueRepresentation.getAdditionalInfo() + ")";
-			}
-			return "";
-		}, pair -> {
-			if (pair.getSecond() instanceof InnerElementRepresentationDTO valueRepresentation) {
-				return getIconForValue(valueRepresentation);
-			}
+		createColumn("Value", 600, pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
+				pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
+	}
+	
+//	private <K, V> TableViewerColumn createColumn(String title, int width,
+//			Function<PairDTO<K, V>, String> textExtractor) {
+//		return createColumn(title, width, textExtractor, pair -> null);
+//	}
+	
+	private Image getIcon(InnerElementRepresentationDTO dto) {
+		if (dto == null)
 			return null;
-		}, pair -> {
-			if (pair.getSecond() instanceof InnerElementRepresentationDTO valueRepresentation) {
-				return getTooltipForValue(valueRepresentation);
-			}
-			return "default tooltip";
-		});
+
+		ValueCategory category = dto.getValueCategory();
+		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) 
+			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
+		
+		if (category == ValueCategory.USER_OBJECT && dto.getValue() != null
+				&& !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) 
+			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
+		return null;
+	}
+
+	
+
+	private String formatValue(InnerElementRepresentationDTO dto) {
+		if (dto == null)
+			return "";
+		String value = dto.getValue();
+		if (value == null)
+			return "null";
+		String type = dto.getTypeOrReturnType();
+		if ("String".equals(type)) {
+			return "\"" + value + "\"";
+		}
+		return value + " (id=" + dto.getAdditionalInfo() + ")";
 	}
 
 	private void setupClickListener(Table table) {
@@ -154,14 +163,12 @@ public class MapInspectorTab implements InspectorTab {
 				return;
 			ValueCategory category = dto.getValueCategory();
 			if (category == ValueCategory.USER_OBJECT)
-				uiEventCollector.collectUiEvent(
-					new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
+				uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
 			else if (category == ValueCategory.MAP)
-				uiEventCollector.collectUiEvent(
-						new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, dto));
-			else if (category == ValueCategory.COLLECTION )
+				uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, dto));
+			else if (category == ValueCategory.COLLECTION)
 				return;
-			
+
 		});
 	}
 
@@ -225,7 +232,7 @@ public class MapInspectorTab implements InspectorTab {
 
 			pageText.setText(String.valueOf(page.getCurrentPage()));
 			currentPage = page.getCurrentPage();
-			prevButton.setEnabled(page.getCurrentPage() >= 0);
+			prevButton.setEnabled(page.getCurrentPage() > 0);
 			nextButton.setEnabled(page.getCurrentPage() < page.getTotalPages() - 1);
 
 			viewer.setInput(page.getEntries());
@@ -249,21 +256,23 @@ public class MapInspectorTab implements InspectorTab {
 		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, page));
 	}
 
-	@SuppressWarnings("unchecked")
 	private <K, V> TableViewerColumn createColumn(String title, int width,
-			Function<PairDTO<K, V>, String> textExtractor, Function<PairDTO<K, V>, Image> imageExtractor,
-			Function<PairDTO<K, V>, String> tooltipExtractor) {
+			Function<PairDTO<K, V>, String> textExtractor) {
+		return createColumn(title, width, textExtractor, pair -> null);
+	}
 
+	private <K, V> TableViewerColumn createColumn(String title, int width,
+			Function<PairDTO<K, V>, String> textExtractor, Function<PairDTO<K, V>, Image> imageExtractor) {
 		TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
 		column.getColumn().setText(title);
 		column.getColumn().setWidth(width);
-
 		column.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
 				if (element instanceof PairDTO<?, ?> pair) {
-					String text = textExtractor.apply((PairDTO<K, V>) pair);
-					return text != null ? text : "";
+					@SuppressWarnings("unchecked")
+					PairDTO<K, V> typed = (PairDTO<K, V>) pair;
+					return textExtractor.apply(typed);
 				}
 				return "";
 			}
@@ -272,7 +281,11 @@ public class MapInspectorTab implements InspectorTab {
 			public Image getImage(Object element) {
 				if (!(element instanceof PairDTO<?, ?> pair))
 					return null;
-				return imageExtractor.apply((PairDTO<K, V>) pair);
+
+				@SuppressWarnings("unchecked")
+				PairDTO<K, V> typed = (PairDTO<K, V>) pair;
+
+				return imageExtractor.apply(typed);
 			}
 		});
 
@@ -282,7 +295,6 @@ public class MapInspectorTab implements InspectorTab {
 	private String safe(String value) {
 		return value == null ? "" : value;
 	}
-
 
 	public void closePopup() {
 		if (currentPopup != null && !currentPopup.isDisposed()) {
