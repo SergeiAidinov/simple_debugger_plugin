@@ -11,8 +11,8 @@ public class InnerPageableElementRepresentationDTO extends InnerElementRepresent
 
 	public InnerPageableElementRepresentationDTO(Tag tag, String elementName, String additionalInfo,
 			UniversalElementType elementType, String value, boolean isStatic, ValueCategory valueCategory,
-			String typeOrReturnType, int level, int offset, int limit) {
-		super(tag, elementName, additionalInfo, elementType, value, isStatic, valueCategory, typeOrReturnType, level);
+			String typeOrReturnType, int level, long objectId, int offset, int limit) {
+		super(tag, elementName, additionalInfo, elementType, value, isStatic, valueCategory, typeOrReturnType, level, objectId);
 		this.offset = offset;
 		this.limit = limit;
 	}

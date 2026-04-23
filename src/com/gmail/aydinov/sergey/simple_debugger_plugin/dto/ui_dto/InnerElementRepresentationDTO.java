@@ -1,9 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.ElementReference;
@@ -14,11 +11,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 
 /**
  * Представление внутреннего элемента (поле, метод, локальная переменная) для UI.
- * Адаптировано под новый Tag с parentId и uniqueId.
  */
 public class InnerElementRepresentationDTO implements Comparable<InnerElementRepresentationDTO> {
 
-    private final Tag tag;               // <- объект Tag, содержит uniqueId и parentId
+    private final Tag tag;
     private final String elementName;
     private final String additionalInfo;
     private final UniversalElementType elementType;
@@ -28,15 +24,21 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
     private final String typeOrReturnType;
     private final int level;
 
-    protected InnerElementRepresentationDTO(Tag tag,
-                                            String elementName,
-                                            String additionalInfo,
-                                            UniversalElementType elementType,
-                                            String value,
-                                            boolean isStatic,
-                                            ValueCategory valueCategory,
-                                            String typeOrReturnType,
-                                            int level) {
+    // ✅ НОВОЕ ПОЛЕ
+    private final Long objectId;
+
+    protected InnerElementRepresentationDTO(
+            Tag tag,
+            String elementName,
+            String additionalInfo,
+            UniversalElementType elementType,
+            String value,
+            boolean isStatic,
+            ValueCategory valueCategory,
+            String typeOrReturnType,
+            int level,
+            Long objectId
+    ) {
         this.tag = tag;
         this.elementName = elementName;
         this.additionalInfo = additionalInfo;
@@ -46,6 +48,7 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
         this.valueCategory = valueCategory;
         this.typeOrReturnType = typeOrReturnType;
         this.level = level;
+        this.objectId = objectId;
     }
 
     // =================== Геттеры ===================
@@ -58,9 +61,9 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
     public boolean isStatic() { return isStatic; }
     public String getTypeOrReturnType() { return typeOrReturnType; }
     public int getLevel() { return level; }
-    public void setValue(String value) { this.value = value; }
+    public Long getObjectId() { return objectId; }
 
-   
+    public void setValue(String value) { this.value = value; }
 
     @Override
     public String toString() {
@@ -74,62 +77,64 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
                 ", valueCategory=" + valueCategory +
                 ", typeOrReturnType='" + typeOrReturnType + '\'' +
                 ", level=" + level +
+                ", objectId=" + objectId +
                 '}';
     }
 
-	@Override
+    @Override
     public int hashCode() {
-        return Objects.hash(additionalInfo, elementName, elementType, typeOrReturnType, isStatic, value,
-                valueCategory);
+        return Objects.hash(
+                additionalInfo,
+                elementName,
+                elementType,
+                typeOrReturnType,
+                isStatic,
+                value,
+                valueCategory,
+                objectId // ✅ добавили
+        );
     }
 
-	@Override
+    @Override
     public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null || getClass() != obj.getClass())
-            return false;
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+
         InnerElementRepresentationDTO other = (InnerElementRepresentationDTO) obj;
+
         return Objects.equals(additionalInfo, other.additionalInfo)
                 && Objects.equals(elementName, other.elementName)
                 && elementType == other.elementType
                 && Objects.equals(typeOrReturnType, other.typeOrReturnType)
                 && isStatic == other.isStatic
                 && Objects.equals(value, other.value)
-                && valueCategory == other.valueCategory;
+                && valueCategory == other.valueCategory
+                && Objects.equals(objectId, other.objectId); // ✅ добавили
     }
 
     @Override
     public int compareTo(InnerElementRepresentationDTO other) {
-        if (other == null) {
-            return 1;
-        }
+        if (other == null) return 1;
 
-        // 1️⃣ По приоритету типа (через ordinal)
         int typeCompare = Integer.compare(
                 this.elementType.ordinal(),
                 other.elementType.ordinal()
         );
         if (typeCompare != 0) return typeCompare;
 
-        // 2️⃣ По имени (без учёта регистра)
         int nameCompare = this.elementName.compareToIgnoreCase(other.elementName);
         if (nameCompare != 0) return nameCompare;
 
-        // 3️⃣ Стабилизируем сортировку
         return this.typeOrReturnType.compareToIgnoreCase(other.typeOrReturnType);
     }
 
-    /**
-     * Универсальная фабрика для InnerElementRepresentationDTO.
-     * Позволяет создать DTO из любого AbstractElementRepresentation,
-     * включая UniversalElementRepresentation и ElementReference.
-     */
-    public final class InnerElementRepresentationDTOFactory {
+    // =========================================================
+    // Factory
+    // =========================================================
 
-        private InnerElementRepresentationDTOFactory() {
-            // private constructor to prevent instantiation
-        }
+    public static final class InnerElementRepresentationDTOFactory {
+
+        private InnerElementRepresentationDTOFactory() {}
 
         public static InnerElementRepresentationDTO fromElement(AbstractElementRepresentation element) {
             if (element == null) return null;
@@ -142,7 +147,6 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
                 return fromReference(ref);
             }
 
-            // fallback для любых других наследников
             return new InnerElementRepresentationDTO(
                     element.getTag(),
                     element.getElementName(),
@@ -151,13 +155,21 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
                     "",
                     false,
                     ValueCategory.UNKNOWN,
-                    "", 0
+                    "",
+                    0,
+                    null
             );
         }
 
         private static InnerElementRepresentationDTO fromUniversal(UniversalElementRepresentation element) {
-        	String additionalInfo = Objects.isNull(element.getObjectReference()) ? "<null>" 
-        			: String.valueOf(element.getObjectReference().uniqueID());
+
+            Long objectId = null;
+            if (element.getObjectReference() != null) {
+                objectId = element.getObjectReference().uniqueID();
+            }
+
+            String additionalInfo = objectId == null ? "<null>" : String.valueOf(objectId);
+
             return new InnerElementRepresentationDTO(
                     element.getTag(),
                     element.getElementName(),
@@ -167,21 +179,23 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
                     element.isStatic(),
                     element.getValueCategory(),
                     element.getTypeOrReturnType(),
-                    element.getLevel()
+                    element.getLevel(),
+                    objectId
             );
         }
 
         private static InnerElementRepresentationDTO fromReference(ElementReference ref) {
             return new InnerElementRepresentationDTO(
                     ref.getTag(),
-                    ref.getElementName(), // "<reference to ...>"
+                    ref.getElementName(),
                     "reference",
-                    UniversalElementType.REFERENCE, // новый тип REFERENCE
+                    UniversalElementType.REFERENCE,
                     "",
                     false,
                     ValueCategory.AUXILIARY,
-                    "", ref.getLevel()
-                    
+                    "",
+                    ref.getLevel(),
+                    null
             );
         }
     }

@@ -184,7 +184,7 @@ public class TooltipManager {
 
 		InnerPageableElementRepresentationDTO innerPageableElementRepresentationDTO = new InnerPageableElementRepresentationDTO(
 				dto.getTag(), dto.getElementName(), dto.getAdditionalInfo(), dto.getElementType(), dto.getValue(),
-				dto.isStatic(), dto.getValueCategory(), dto.getTypeOrReturnType(), dto.getLevel(), 0, 20);
+				dto.isStatic(), dto.getValueCategory(), dto.getTypeOrReturnType(), dto.getLevel(), dto.getObjectId(), 0, 20);
 
 //		  ValueCategory category = dto.getValueCategory();
 //		if (category.equals(ValueCategory.COLLECTION) || category.equals(ValueCategory.MAP)) {
