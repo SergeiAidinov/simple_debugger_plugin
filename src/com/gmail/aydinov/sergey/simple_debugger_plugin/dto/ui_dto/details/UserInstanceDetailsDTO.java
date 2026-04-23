@@ -11,13 +11,15 @@ public class UserInstanceDetailsDTO {
 	private final  String fieldName;
 	private final String typeName;
 	private final Map<Integer, ArrayList<UserElementDetailDTO>> innerElementsByGroups;
+	private final Long objectId;
 	
 	public UserInstanceDetailsDTO(Tag tag, String fieldName, String typeName,
-			Map<Integer, ArrayList<UserElementDetailDTO>> innerElementsByGroups) {
+			Map<Integer, ArrayList<UserElementDetailDTO>> innerElementsByGroups, Long objectId) {
 		this.tag = tag;
 		this.fieldName = fieldName;
 		this.typeName = typeName;
 		this.innerElementsByGroups = innerElementsByGroups;
+		this.objectId = objectId;
 	}
 	
 	public Tag getTag() {
@@ -34,5 +36,9 @@ public class UserInstanceDetailsDTO {
 
 	public Map<Integer, ArrayList<UserElementDetailDTO>> getInnerElementsByGroups() {
 		return innerElementsByGroups;
+	}
+
+	public Long getObjectId() {
+		return objectId;
 	}
 }

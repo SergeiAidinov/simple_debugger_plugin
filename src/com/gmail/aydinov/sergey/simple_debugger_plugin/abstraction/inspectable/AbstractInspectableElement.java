@@ -21,14 +21,16 @@ public abstract class AbstractInspectableElement {
 	private final ValueCategory valueCategory;
 	private final boolean inspectable;
 	private List<BreadcrumbItemDTO> breadcrumbs;
+	private final Long objectId;
 
 	public AbstractInspectableElement(Tag tag, String elementName, UniversalElementType elementType,
-			ValueCategory valueCategory, boolean inspectable) {
+			ValueCategory valueCategory, boolean inspectable, Long objectId) {
 		this.tag = tag;
 		this.elementName = elementName;
 		this.elementType = elementType;
 		this.valueCategory = valueCategory;
 		this.inspectable = inspectable;
+		this.objectId = objectId;
 	}
 
 	public Tag getTag() {
@@ -58,6 +60,10 @@ public abstract class AbstractInspectableElement {
 	public void setBreadcrumbs(List<BreadcrumbItemDTO> breadcrumbs) {
 		this.breadcrumbs = breadcrumbs;
 	}
+	
+	public Long getObjectId() {
+		return objectId;
+	}
 
 	// ================= Factory =================
 	public static Factory factory() {
@@ -86,7 +92,7 @@ public abstract class AbstractInspectableElement {
 		private AbstractInspectableElement createPageableInspectableElement(InnerPageableElementRepresentationDTO innerPageableElementRepresentationDTO,
 				StackFrame currentFrame, BreakpointEvent breakpointEvent) {
 			if (innerPageableElementRepresentationDTO.getValueCategory().equals(ValueCategory.COLLECTION))
-				return new InspectableIterableElement(innerPageableElementRepresentationDTO, currentFrame, breakpointEvent);
+				return new InspectableIterableElement(innerPageableElementRepresentationDTO, currentFrame, breakpointEvent, innerPageableElementRepresentationDTO.getObjectId());
 			else if (innerPageableElementRepresentationDTO.getValueCategory().equals(ValueCategory.MAP))
 				return new InspectableMapElement(innerPageableElementRepresentationDTO, breakpointEvent, innerPageableElementRepresentationDTO.getOffset(), 
 						innerPageableElementRepresentationDTO.getLimit());

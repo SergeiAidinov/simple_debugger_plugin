@@ -24,8 +24,9 @@ public class UserObjectInspectionDTO extends AbstractInspectionDTO {
                                    List<InnerElementRepresentationDTO> instanceFields,
                                    List<InnerElementRepresentationDTO> staticFields,
                                    List<InnerElementRepresentationDTO> instanceMethods,
-                                   List<InnerElementRepresentationDTO> staticMethods) {
-        super(tag, elementName, elementType, breadcrumbs);
+                                   List<InnerElementRepresentationDTO> staticMethods,
+                                   Long objectId) {
+        super(tag, elementName, elementType, breadcrumbs, objectId);
         this.className = className;
         this.stringValue = stringValue;
         this.instanceFields = List.copyOf(instanceFields);
@@ -54,6 +55,7 @@ public class UserObjectInspectionDTO extends AbstractInspectionDTO {
         private List<InnerElementRepresentationDTO> staticFields = List.of();
         private List<InnerElementRepresentationDTO> instanceMethods = List.of();
         private List<InnerElementRepresentationDTO> staticMethods = List.of();
+        private Long objectId;
 
         public Builder tag(Tag tag) { this.tag = tag; return this; }
         public Builder elementName(String elementName) { this.elementName = elementName; return this; }
@@ -70,7 +72,7 @@ public class UserObjectInspectionDTO extends AbstractInspectionDTO {
             return new UserObjectInspectionDTO(
                 tag, elementName, elementType, breadcrumbs,
                 className, stringValue, instanceFields, staticFields,
-                instanceMethods, staticMethods
+                instanceMethods, staticMethods, objectId
             );
         }
     }

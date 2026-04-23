@@ -28,7 +28,7 @@ public class InspectableInstanceElement extends AbstractInspectableElement {
 
 	public InspectableInstanceElement(InnerElementRepresentationDTO anchorElement, BreakpointEvent breakpointEvent) {
 		super(anchorElement.getTag(), anchorElement.getElementName(), anchorElement.getElementType(),
-				anchorElement.getValueCategory(), true);
+				anchorElement.getValueCategory(), true, anchorElement.getObjectId());
 		this.breakpointEvent = breakpointEvent;
 		this.anchorElement = anchorElement;
 
@@ -75,7 +75,8 @@ public class InspectableInstanceElement extends AbstractInspectableElement {
 	            .elementType(element.getElementType().name())
 	            .classType(classType)  // <-- сюда classType
 	            .entries(fields)
+	            .objectId(element.getObjectId())
 	            .build();
 	}
-	
+
 }

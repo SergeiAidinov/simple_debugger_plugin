@@ -34,12 +34,12 @@ public class InspectableIterableElement extends AbstractInspectableElement imple
 
     InspectableIterableElement(InnerElementRepresentationDTO anchorElement,
                                StackFrame currentFrame,
-                               BreakpointEvent breakpointEvent) {
+                               BreakpointEvent breakpointEvent, Long objectId) {
         super(anchorElement.getTag(),
               anchorElement.getElementName(),
               anchorElement.getElementType(),
               anchorElement.getValueCategory(),
-              true);
+              true, objectId);
         this.breakpointEvent = breakpointEvent;
         this.anchorElement = anchorElement;
 

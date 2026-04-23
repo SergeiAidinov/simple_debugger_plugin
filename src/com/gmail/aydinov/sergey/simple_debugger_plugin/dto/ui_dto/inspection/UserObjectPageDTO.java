@@ -16,7 +16,8 @@ public class UserObjectPageDTO extends AbstractInspectionDTO {
             builder.anchorTag,
             builder.elementName,
             builder.elementType,
-            builder.breadcrumbs
+            builder.breadcrumbs,
+            builder.objectId
         );
         this.classType = builder.classType;
         this.entries = builder.entries;
@@ -53,7 +54,8 @@ public class UserObjectPageDTO extends AbstractInspectionDTO {
 	public static Builder builder() { return new Builder(); }
 
     public static class Builder {
-        private String elementName;
+        private Long objectId;
+		private String elementName;
         private String elementType;
         private String classType;
         private List<InnerElementRepresentationDTO> entries;
@@ -66,6 +68,7 @@ public class UserObjectPageDTO extends AbstractInspectionDTO {
         public Builder entries(List<InnerElementRepresentationDTO> fields) { this.entries = fields; return this; }
         public Builder anchorTag(Tag tag) { this.anchorTag = tag; return this; }
         public Builder breadcrumbs(List<BreadcrumbItemDTO> breadcrumbs) { this.breadcrumbs = breadcrumbs; return this; }
+        public Builder objectId(Long objectId) {this.objectId = objectId; return this;}
 
         public UserObjectPageDTO build() {
             return new UserObjectPageDTO(this);

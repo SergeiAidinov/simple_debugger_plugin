@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import java.util.List;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO.Builder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 
 public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K, V>> {
@@ -18,7 +19,8 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
             builder.currentPage,
             builder.totalPages,
             builder.entries,
-            builder.breadcrumbs   // проброс breadcrumbs
+            builder.breadcrumbs,   // проброс breadcrumbs
+            builder.objectId
         );
         this.fromIndex = builder.fromIndex;
         this.toIndex = builder.toIndex;
@@ -30,7 +32,8 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
     public static <K,V> Builder<K,V> builder() { return new Builder<>(); }
 
     public static class Builder<K,V> {
-        private String elementName;
+        public Long objectId;
+		private String elementName;
         private String elementType;
         private int totalEntries;
         private int currentPage;
@@ -51,7 +54,8 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
         public Builder<K,V> entries(List<PairDTO<K,V>> list) { this.entries = list; return this; }
         public Builder<K,V> anchorTag(Tag tag) { this.anchorTag = tag; return this; }
         public Builder<K,V> breadcrumbs(List<BreadcrumbItemDTO> breadcrumbs) { this.breadcrumbs = breadcrumbs; return this; }
-
+        public Builder<K,V> objectId(Long objectId) { this.objectId = objectId; return this; }
+        
         public MapPageDTO<K,V> build() {
             return new MapPageDTO<>(this);
         }
