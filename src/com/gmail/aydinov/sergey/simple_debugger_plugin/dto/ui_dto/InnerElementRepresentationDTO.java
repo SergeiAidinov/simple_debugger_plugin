@@ -8,6 +8,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 
 /**
  * Представление внутреннего элемента (поле, метод, локальная переменная) для UI.
@@ -158,6 +159,27 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
                     "",
                     0,
                     null
+            );
+        }
+        
+        public static InnerElementRepresentationDTO fromUserInstanceDetails(UserInstanceDetailsDTO dto) {
+            if (dto == null) return null;
+
+            Long objectId = dto.getObjectId();
+
+            String additionalInfo = objectId == null ? "<null>" : String.valueOf(objectId);
+
+            return new InnerElementRepresentationDTO(
+                    dto.getTag(),
+                    dto.getFieldName(),
+                    additionalInfo,
+                    UniversalElementType.FIELD,                 // это поле-инстанс
+                    "instance of " + dto.getTypeName() + "(id=" + objectId + ")",
+                    false,                                      // обычно не static
+                    ValueCategory.USER_OBJECT,
+                    dto.getTypeName(),
+                    0,                                          // уровень — можно потом передавать
+                    objectId
             );
         }
 

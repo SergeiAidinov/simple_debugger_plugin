@@ -120,7 +120,7 @@ public class SimpleDebugerWindowsManager implements Runnable {
 
 			if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING)) {
 				mainWindow.handleDebugEvent(eventReference.get());
-			} else if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING)) {
+			} else if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING))  {
 				display.asyncExec(() -> {
 					// создаём новое окно только если его нет
 					if (universalInspectorWindow == null || universalInspectorWindow.getShell().isDisposed()) {
@@ -132,8 +132,8 @@ public class SimpleDebugerWindowsManager implements Runnable {
 					universalInspectorWindow.handleDebugEvent(eventReference.get());
 				});
 
-			} else {
-				System.out.println("Ignored!!!");
+//			} else {
+//				System.out.println("Ignored!!!");
 			}
 		}
 	}

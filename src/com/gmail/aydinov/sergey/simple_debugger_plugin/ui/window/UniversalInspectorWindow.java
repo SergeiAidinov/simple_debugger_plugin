@@ -276,7 +276,7 @@ public class UniversalInspectorWindow {
 				if (!shell.isDisposed())
 					shell.dispose();
 				INSTANCE = null;
-				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
+			//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 				uiEventCollector
 						.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE, null));
 			});

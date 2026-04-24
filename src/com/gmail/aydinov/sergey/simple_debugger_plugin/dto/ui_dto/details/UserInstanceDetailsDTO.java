@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 
@@ -41,4 +42,26 @@ public class UserInstanceDetailsDTO {
 	public Long getObjectId() {
 		return objectId;
 	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(fieldName, innerElementsByGroups, objectId, tag, typeName);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		UserInstanceDetailsDTO other = (UserInstanceDetailsDTO) obj;
+		return Objects.equals(fieldName, other.fieldName)
+				&& Objects.equals(innerElementsByGroups, other.innerElementsByGroups)
+				&& Objects.equals(objectId, other.objectId) && Objects.equals(tag, other.tag)
+				&& Objects.equals(typeName, other.typeName);
+	}
+	
+	
 }

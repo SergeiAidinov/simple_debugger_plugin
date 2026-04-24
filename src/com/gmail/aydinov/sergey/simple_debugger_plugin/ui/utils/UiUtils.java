@@ -214,6 +214,7 @@ public class UiUtils {
 						.elementType(UniversalElementType.FIELD).value(dto.toString())
 						.valueCategory(ValueCategory.USER_OBJECT).uniqueId(dto.getTag().getUniqueId())
 						.parentUniqueId(dto.getTag().getParentId())
+						.objectId(dto.getObjectId())
 						// .level(dto.)
 						.build());
 	}

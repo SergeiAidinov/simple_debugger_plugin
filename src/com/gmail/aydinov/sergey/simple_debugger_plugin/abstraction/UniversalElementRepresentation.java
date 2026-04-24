@@ -32,6 +32,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
     private final boolean isStatic;
     private final ValueCategory valueCategory;
     private final String typeOrReturnType;
+    private final Long objectId;
 
     // 🔥 новое поле
     private final Long objectReferenceId;
@@ -47,7 +48,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
                                            boolean isStatic,
                                            ValueCategory valueCategory,
                                            String typeOrReturnType,
-                                           int level) {
+                                           int level, Long objectId) {
         super(tag, objectReference, level);
 
         this.referenceType = referenceType;
@@ -59,6 +60,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
         this.isStatic = isStatic;
         this.valueCategory = valueCategory;
         this.typeOrReturnType = typeOrReturnType;
+        this.objectId = objectId;
 
         // 🔥 вычисляем ID один раз
         this.objectReferenceId = objectReference != null ? objectReference.uniqueID() : null;
@@ -76,6 +78,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
     public ValueCategory getValueCategory() { return valueCategory; }
     public String getTypeOrReturnType() { return typeOrReturnType; }
     public int getLevel() { return super.getLevel(); }
+    public Long objectId() {return objectId;}
 
     // 🔥 новый геттер
     public Long getObjectReferenceId() { return objectReferenceId; }
@@ -130,6 +133,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
         private UUID uniqueId = UUID.randomUUID();
         private UUID parentUniqueId = null;
         private int level;
+		private Long objectId;
 
         public Builder referenceType(ReferenceType referenceType) { this.referenceType = referenceType; return this; }
         public Builder objectReference(ObjectReference objectReference) { this.objectReference = objectReference; return this; }
@@ -144,6 +148,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
         public Builder uniqueId(UUID uniqueId) { this.uniqueId = uniqueId; return this; }
         public Builder parentUniqueId(UUID parentUniqueId) { this.parentUniqueId = parentUniqueId; return this; }
         public Builder level(int level) { this.level = level; return this; }
+        public Builder objectId(Long objectId) {this.objectId = objectId; return this; }
 
         public UniversalElementRepresentation build() {
             Tag tag = new Tag(uniqueId, parentUniqueId);
@@ -160,9 +165,10 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
                     isStatic,
                     valueCategory,
                     typeOrReturnType,
-                    level
+                    level, objectId
             );
         }
+		
     }
 
     public static Builder builder() { return new Builder(); }
