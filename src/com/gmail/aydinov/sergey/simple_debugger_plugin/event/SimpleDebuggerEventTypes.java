@@ -13,8 +13,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvoked
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserObjectInspectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressedResumeButtonHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedAdditionalInfoAboutCollectionHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedMapPageHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
@@ -107,7 +109,7 @@ public final class SimpleDebuggerEventTypes {
 //
 //		USER_CLOSED_INSPECTION_SEANCE_FOR_MAP(Void.class, new IgnoreEverntHandler()),
 
-		USER_REQUESTED_MAP_PAGE(Integer.class, null),
+		USER_REQUESTED_MAP_PAGE(PairDTO.class, new UserRequestedMapPageHandler()),
 
 		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null), 
 	//	USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(UserInstanceInspectionDTO.class, new UserObjectInspectionHandler()), 
@@ -145,9 +147,11 @@ public final class SimpleDebuggerEventTypes {
 			SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE,
 			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
 			SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
+			SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
 			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE,
 			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE,
 			SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP,
+			
 		//	SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
 		//	SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION,
 			SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,

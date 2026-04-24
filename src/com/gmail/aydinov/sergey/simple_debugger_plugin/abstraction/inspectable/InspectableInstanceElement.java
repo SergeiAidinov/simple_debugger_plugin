@@ -68,15 +68,15 @@ public class InspectableInstanceElement extends AbstractInspectableElement {
 		}
 	}
 
-	public UserObjectPageDTO inspectPage(InspectableInstanceElement element) {
-	    return UserObjectPageDTO.builder()
-	            .anchorTag(element.getTag())
-	            .elementName(element.getElementName())
-	            .elementType(element.getElementType().name())
-	            .classType(classType)  // <-- сюда classType
-	            .entries(fields)
-	            .objectId(element.getObjectId())
-	            .build();
-	}
+//	public UserObjectPageDTO inspectPage(InspectableInstanceElement element) {
+//	    return UserObjectPageDTO.builder()
+//	            .anchorTag(element.getTag())
+//	            .elementName(element.getElementName())
+//	            .elementType(element.getElementType().name())
+//	            .classType(classType)  // <-- сюда classType
+//	            .entries(fields)
+//	            .objectId(element.getObjectId())
+//	            .build();
+//	}
 
 }

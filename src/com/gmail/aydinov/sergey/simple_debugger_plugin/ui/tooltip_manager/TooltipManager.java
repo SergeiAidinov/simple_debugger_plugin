@@ -24,6 +24,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerPageableElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserElementDetailDTO;
@@ -144,7 +145,7 @@ public class TooltipManager {
 //				() -> uiEventCollector.collectUiEvent(new UIEvent<>(
 //						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, UiUtils.convertUserInstanceToInnerDTO(dto)))
 				() -> uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
-						UiUtils.convertUserInstanceToInnerDTO(dto)))
+						convertUserInstanceToInnerDTO(dto)))
 
 		);
 	}
@@ -195,8 +196,9 @@ public class TooltipManager {
 		showPopup(dto, location, d -> buildCollectionText((InnerElementRepresentationDTO) d), () -> {
 //			debugEventCollector
 //					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-			uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
-					innerPageableElementRepresentationDTO));
+//			uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
+//					innerPageableElementRepresentationDTO));
+			uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, PairDTO.of(dto, 0)));
 //			switch (dto.getValueCategory()) {
 //			case COLLECTION -> uiEventCollector
 //					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
@@ -313,13 +315,9 @@ public class TooltipManager {
 		return info.toString();
 	}
 
-//	private InnerElementRepresentationDTO convertUserInstanceToInnerDTO(UserInstanceDetailsDTO dto) {
-//		return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-//				.fromElement(UniversalElementRepresentation.builder().elementName(dto.getFieldName())
-//						.elementType(UniversalElementType.FIELD).value(dto.toString())
-//						.valueCategory(ValueCategory.USER_OBJECT).uniqueId(dto.getTag().getUniqueId())
-//						.parentUniqueId(dto.getTag().getParentId())
-//						// .level(dto.)
-//						.build());
-//	}
+	private InnerElementRepresentationDTO convertUserInstanceToInnerDTO(UserInstanceDetailsDTO dto) {
+	    return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+	            .fromUserInstanceDetails(dto);
+	}
+	
 }
