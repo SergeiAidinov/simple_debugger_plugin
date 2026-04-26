@@ -131,7 +131,7 @@ public class SimpleDebuggerWorkFlow {
 					TargetApplicationBreakpointRepresentation.getInstance()
 							.onClassPrepared(classPrepareEvent.referenceType());
 				} else if (event instanceof BreakpointEvent) {
-					DebugSession debugSession = new DebugSessionImpl(eventSet);
+					DebugSession debugSession = new DebugSessionImpl(event);
 					Thread sessionThread = new Thread(debugSession);
 					sessionThread.setDaemon(true);
 					sessionThread.start();
@@ -141,7 +141,7 @@ public class SimpleDebuggerWorkFlow {
 					}
 				}
 			}
-		//	eventSet.resume();
+			eventSet.resume();
 		}
 	}
 
