@@ -117,6 +117,10 @@ public class SimpleDebugerWindowsManager implements Runnable {
 				mainWindow.handleDebugEvent(eventReference.get());
 				continue;
 			}
+			if (eventReference.get().getType().equals(SimpleDebuggerEventType.REFRESH_CONSOLE)) {
+				mainWindow.handleDebugEvent(eventReference.get());
+				continue;
+			}
 
 			if (DebuggerContext.context().getStatus().equals(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING)) {
 				mainWindow.handleDebugEvent(eventReference.get());

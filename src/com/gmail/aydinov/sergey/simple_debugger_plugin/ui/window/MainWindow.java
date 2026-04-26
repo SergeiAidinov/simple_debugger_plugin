@@ -190,6 +190,7 @@ public class MainWindow {
 			} else if (Objects.equals(event.getType(),
 					SimpleDebuggerEventTypes.SimpleDebuggerEventType.REFRESH_CONSOLE)) {
 				DebugEvent<String> simpleDebugEvent = (DebugEvent<String>) event;
+				System.out.println("===> " + simpleDebugEvent.getPayload());
 				consoleTabContent.appendLine(simpleDebugEvent.getPayload());
 			} else if (Objects.equals(event.getType(),
 					SimpleDebuggerEventTypes.SimpleDebuggerEventType.METHOD_INVOKE)) {

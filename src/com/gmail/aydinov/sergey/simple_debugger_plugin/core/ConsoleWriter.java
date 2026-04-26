@@ -49,6 +49,7 @@ public class ConsoleWriter implements Runnable {
 			while (Objects.nonNull(line = bufferedReader.readLine())) {
 				if (DebuggerContext.context().isInTerminalState()) break;
 				String text = prefix + line;
+//				System.out.println("===> " + line);
 //				SimpleDebuggerEventQueue.instance().collectDebugEvent(new ConsoleUpdateDebugEvent(
 //						SimpleDebuggerEventTypes.EventType.REFRESH_CONSOLE, text));
 				SimpleDebuggerEventCollector.instance().collectDebugEvent(new DebugEvent<String>(SimpleDebuggerEventTypes.SimpleDebuggerEventType.REFRESH_CONSOLE, text));
