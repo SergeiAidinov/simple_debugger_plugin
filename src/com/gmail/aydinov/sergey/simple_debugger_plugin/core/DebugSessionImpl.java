@@ -65,14 +65,14 @@ import com.sun.jdi.event.VMDisconnectEvent;
 public class DebugSessionImpl implements DebugSession {
 
 	public static final AtomicReference<String> methodInvocationResult = new AtomicReference<>("");
-	private final EventSet eventSet;
+	private final Event event;
 	private final CurrentLineHighlighterImpl currentLineHighlighter;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector simpleDebugEventCollector = SimpleDebuggerEventCollector.instance();
 	public AtomicBoolean shouldRefreshSnapsotAndUi = new AtomicBoolean(true);
 
-	public DebugSessionImpl(EventSet eventSet) {
-		this.eventSet = eventSet;
+	public DebugSessionImpl(Event event) {
+		this.event = event;
 		this.currentLineHighlighter = new CurrentLineHighlighterImpl();
 	}
 
@@ -95,7 +95,7 @@ public class DebugSessionImpl implements DebugSession {
 	/** Processes all events in the EventSet */
 	private void processEvents() {
 		TargetApplicationBreakpointRepresentation.getInstance().refreshBreakpoints();
-		for (Event event : eventSet) {
+	//	for (Event event : event) {
 			if (!DebuggerContext.context().isRunning())
 				return;
 
@@ -109,13 +109,13 @@ public class DebugSessionImpl implements DebugSession {
 				simpleDebugEventCollector.collectDebugEvent(
 						new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 			}
-		}
+		//}
 	}
 
 	private void handleVmDisconnected() {
 		try {
 			TargetApplicationRepresentation.getInstance().detachDebugger();
-			eventSet.resume();
+		//	event.resume();
 		} catch (Exception ignored) {
 		}
 	}
@@ -155,7 +155,7 @@ public class DebugSessionImpl implements DebugSession {
 
 			}
 		}
-		 eventSet.resume();
+		// event.resume();
 	}
 
 	private void handleSingleUiEvent(AbstractUIEvent abstractSimpleDebuggerUIEvent, BreakpointEvent breakpointEvent) {
