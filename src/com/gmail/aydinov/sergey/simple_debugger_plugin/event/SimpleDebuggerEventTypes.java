@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.event;
 import java.util.EnumSet;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.EmptyHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IgnoreEverntHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IterableInspectionSeanceHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.MapInspectionSeanceHandler;
@@ -65,7 +66,7 @@ public final class SimpleDebuggerEventTypes {
 
 		// ============= USER INTERFACE DEBUG WINDOW EVENTS =============
 
-		USER_PRESSED_RESUME_BUTTON(Void.class, new UserPressedResumeButtonHandler()),
+		USER_PRESSED_RESUME_BUTTON(Void.class, new EmptyHandler()),
 
 		USER_CHANGED_FIELD(UserChangedFieldEventDTO.class, new UserChangedFieldHandler()),
 
