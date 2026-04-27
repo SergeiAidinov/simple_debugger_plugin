@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 
 public class UserObjectPageDTO extends AbstractInspectionDTO {
@@ -60,14 +61,14 @@ public class UserObjectPageDTO extends AbstractInspectionDTO {
         private String classType;
         private List<InnerElementRepresentationDTO> entries;
         private Tag anchorTag;
-        private List<BreadcrumbItemDTO> breadcrumbs = List.of(); // по умолчанию пустой список
+        private List<PairDTO<Integer, String>> breadcrumbs = List.of(); // по умолчанию пустой список
 
         public Builder elementName(String name) { this.elementName = name; return this; }
         public Builder elementType(String type) { this.elementType = type; return this; }
         public Builder classType(String classType) { this.classType = classType; return this; }
         public Builder entries(List<InnerElementRepresentationDTO> fields) { this.entries = fields; return this; }
         public Builder anchorTag(Tag tag) { this.anchorTag = tag; return this; }
-        public Builder breadcrumbs(List<BreadcrumbItemDTO> breadcrumbs) { this.breadcrumbs = breadcrumbs; return this; }
+        public Builder breadcrumbs(List<PairDTO<Integer, String>> breadcrumbs) { this.breadcrumbs = breadcrumbs; return this; }
         public Builder objectId(Long objectId) {this.objectId = objectId; return this;}
 
         public UserObjectPageDTO build() {

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -18,6 +19,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.I
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableMapElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
@@ -41,25 +43,31 @@ import com.sun.jdi.event.BreakpointEvent;
 
 public class InspectionSeance {
 
-	private final AbstractInspectableElement anchorElement;
+	private AbstractInspectableElement anchorElement;
 //	private final ObjectReference anchorElementObjectReference;
 	private final StackFrame currentFrame;
 	private final BreakpointEvent breakpointEvent;
-	private final AbstractUIEvent initialSimpleDebuggerUIEvent;
+//	private final AbstractUIEvent initialSimpleDebuggerUIEvent;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 
-	private final Deque<AbstractInspectableElement> inspectableQueue = new LinkedList<>();
+//	private final Deque<AbstractInspectableElement> inspectableQueue = new LinkedList<>();
+	private final EventSequence eventSequence = new EventSequence();
 	private static boolean alreadyStarted = false;
 	private boolean ancorElementHandled = false;
 
-	private InspectionSeance(AbstractInspectableElement anchorElement, StackFrame currentFrame,
-			BreakpointEvent breakpointEvent, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
-		this.anchorElement = anchorElement;
+	private InspectionSeance(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
+			BreakpointEvent breakpointEvent) {
 		this.currentFrame = currentFrame;
 		this.breakpointEvent = breakpointEvent;
-		this.initialSimpleDebuggerUIEvent = abstractSimpleDebuggerUIEvent;
-		// inspectableQueue.offer(anchorElement);
+		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
+		try {
+			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
+		} catch (ClassCastException castException) {
+
+		}
+		if (Objects.isNull(uiEvent)) return;
+		eventSequence.put(uiEvent);
 		startInspectionProcedure();
 	}
 
@@ -68,40 +76,41 @@ public class InspectionSeance {
 			StackFrame currentFrame, BreakpointEvent breakpointEvent) {
 		if (alreadyStarted)
 			return false;
-	//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
-		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
-		
-		try {
-			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
-		} catch (ClassCastException castException) {
+		// DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
+//		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
+//
+//		try {
+//			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
+//		} catch (ClassCastException castException) {
+//
+//		}
+//		final long id = uiEvent.getPayload().getObjectId();
+//		 Optional<UniversalElementRepresentation> i = TargetApplicationRepresentation.getInstance().getAllElements().stream()
+//		.filter(e -> e instanceof UniversalElementRepresentation)
+//		.map(e -> (UniversalElementRepresentation) e)
+//		.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
 
-		}
-		 final long id = uiEvent.getPayload().getObjectId();
-		 Optional<UniversalElementRepresentation> i = TargetApplicationRepresentation.getInstance().getAllElements().stream()
-		.filter(e -> e instanceof UniversalElementRepresentation)
-		.map(e -> (UniversalElementRepresentation) e)
-		.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
-		
-		if (Objects.isNull(uiEvent))
-			return false;
-		if (!(uiEvent instanceof UIEvent<?> rawEvent)) {
-			throw new IllegalArgumentException("Invalid event type: " + uiEvent);
-		}
-		Object payload = rawEvent.getPayload();
-		if (!(payload instanceof InnerElementRepresentationDTO dto)) {
-			throw new IllegalArgumentException("Invalid payload: " + payload);
-		}
-		AbstractInspectableElement anchorElement = null;
-		if (dto.getValueCategory().equals(ValueCategory.COLLECTION) || dto.getValueCategory().equals(ValueCategory.MAP))
-			anchorElement = AbstractInspectableElement.factory().createInspectableElement(abstractSimpleDebuggerUIEvent,
-					currentFrame, breakpointEvent);
-		else if (dto.getValueCategory().equals(ValueCategory.USER_OBJECT))
-			anchorElement = AbstractInspectableElement.factory().createInspectableElement(abstractSimpleDebuggerUIEvent,
-					currentFrame, breakpointEvent);
-		if (Objects.isNull(anchorElement))
-			return false;
+//		if (Objects.isNull(uiEvent))
+//			return false;
+//		if (!(uiEvent instanceof UIEvent<?> rawEvent)) {
+//			throw new IllegalArgumentException("Invalid event type: " + uiEvent);
+//		}
 
-		new InspectionSeance(anchorElement, currentFrame, breakpointEvent, abstractSimpleDebuggerUIEvent);
+//		Object payload = rawEvent.getPayload();
+//		if (!(payload instanceof InnerElementRepresentationDTO dto)) {
+//			throw new IllegalArgumentException("Invalid payload: " + payload);
+//		}
+//		AbstractInspectableElement anchorElement = null;
+//		if (dto.getValueCategory().equals(ValueCategory.COLLECTION) || dto.getValueCategory().equals(ValueCategory.MAP))
+//			anchorElement = AbstractInspectableElement.factory().createInspectableElement(abstractSimpleDebuggerUIEvent,
+//					currentFrame, breakpointEvent);
+//		else if (dto.getValueCategory().equals(ValueCategory.USER_OBJECT))
+//			anchorElement = AbstractInspectableElement.factory().createInspectableElement(abstractSimpleDebuggerUIEvent,
+//					currentFrame, breakpointEvent);
+//		if (Objects.isNull(anchorElement))
+//			return false;
+
+		new InspectionSeance(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 		return true;
 	}
 
@@ -115,7 +124,7 @@ public class InspectionSeance {
 		} catch (InterruptedException e) {
 			SimpleDebuggerLogger.error(e.getMessage(), e);
 		} finally {
-		//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
+			// DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 			debugEventCollector
 					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 			alreadyStarted = false;
@@ -170,13 +179,13 @@ public class InspectionSeance {
 			while (true) {
 				AbstractUIEvent uiEvent = null;
 				if (ancorElementHandled) {
-				try {
-					uiEvent = uiEventCollector.takeUiEvent();
-					System.out.println("EVENT IN SEANCE: " + uiEvent);
-				} catch (InterruptedException e) {
-				}
+					try {
+						uiEvent = uiEventCollector.takeUiEvent();
+						System.out.println("EVENT IN SEANCE: " + uiEvent);
+					} catch (InterruptedException e) {
+					}
 				} else {
-					uiEvent = initialSimpleDebuggerUIEvent;
+					uiEvent = eventSequence.getEventByOrder(0);
 					ancorElementHandled = true;
 				}
 				if (Objects.isNull(uiEvent))
@@ -191,7 +200,7 @@ public class InspectionSeance {
 					Integer pageNumber = userRequestetPage.getPayload();
 					InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
 					ArrayPageDTO page = (ArrayPageDTO) ic.inspectPage(ic, pageNumber);
-					List<BreadcrumbItemDTO> qq = buildBreadcrumbs();
+					List<PairDTO<Integer, String>> qq = buildBreadcrumbs();
 					page.setBreadcrumbs(qq);
 					debugEventCollector.collectDebugEvent(
 							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
@@ -214,19 +223,11 @@ public class InspectionSeance {
 			SimpleDebuggerLogger.info("Intentionally ignored: " + debugEvent);
 		}
 
-		private List<BreadcrumbItemDTO> buildBreadcrumbs() {
-			List<BreadcrumbItemDTO> result = new ArrayList<>();
-
-			for (AbstractInspectableElement element : inspectableQueue) {
-				if (element == null)
-					continue;
-
-				UniversalElementType type = element.getElementType();
-				boolean canInspect = element.isInspectable(); // или true, если метода нет
-				result.add(new BreadcrumbItemDTO(element.getElementName(), type, element.getValueCategory(), canInspect,
-						element.getTag()));
+		private List<PairDTO<Integer, String>> buildBreadcrumbs() {
+			List<PairDTO<Integer, String>> result = new ArrayList<>();
+			for (Entry<Integer, UIEvent<InnerElementRepresentationDTO>> entry : eventSequence.getSequence().entrySet()) {
+				result.add(PairDTO.of(entry.getKey(), entry.getValue().getPayload().getElementName()));
 			}
-
 			return result;
 		}
 

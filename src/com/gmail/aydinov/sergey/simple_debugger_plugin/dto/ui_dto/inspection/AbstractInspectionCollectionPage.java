@@ -2,6 +2,8 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import java.util.List;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 
 public abstract class AbstractInspectionCollectionPage<T> extends AbstractInspectionDTO {
 
@@ -11,13 +13,14 @@ public abstract class AbstractInspectionCollectionPage<T> extends AbstractInspec
 	private final List<T> entries;
 
 	protected AbstractInspectionCollectionPage(Tag tag, String elementName, String elementType, int totalElements,
-			int currentPage, int totalPages, List<T> entries, List<BreadcrumbItemDTO> breadcrumbs, Long objectId) {
+			int currentPage, int totalPages, List<T> entries, List<PairDTO<Integer, String>> breadcrumbs, Long objectId) {
 		super(tag, elementName, elementType, breadcrumbs, objectId);
 		this.totalElements = totalElements;
 		this.currentPage = currentPage;
 		this.totalPages = totalPages;
 		this.entries = List.copyOf(entries);
 	}
+
 
 	public int getTotalElements() {
 		return totalElements;

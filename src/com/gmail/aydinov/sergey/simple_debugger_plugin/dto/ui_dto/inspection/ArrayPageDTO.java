@@ -12,7 +12,7 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 
 	private ArrayPageDTO(Builder builder) {
 		super(builder.anchorTag, builder.elementName, builder.elementType, builder.totalElements, builder.currentPage,
-				builder.totalPages, builder.entries, builder.breadcrumbs != null ? builder.breadcrumbs : List.of(),
+				builder.totalPages, builder.entries, builder.breadcrumbs,
 				builder.objectId);
 		this.fromIndex = builder.fromIndex;
 		this.toIndex = builder.toIndex;
@@ -43,7 +43,7 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 		private int toIndex;
 		private List<PairDTO<Integer, InnerElementRepresentationDTO>> entries;
 		private Tag anchorTag;
-		private List<BreadcrumbItemDTO> breadcrumbs;
+		private List<PairDTO<Integer, String>> breadcrumbs;
 
 		public Builder elementName(String name) {
 			this.elementName = name;
@@ -90,7 +90,7 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 			return this;
 		}
 
-		public Builder breadcrumbs(List<BreadcrumbItemDTO> breadcrumbs) {
+		public Builder breadcrumbs(List<PairDTO<Integer, String>> breadcrumbs) {
 			this.breadcrumbs = breadcrumbs;
 			return this;
 		}
