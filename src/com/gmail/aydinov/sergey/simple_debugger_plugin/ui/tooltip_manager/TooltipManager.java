@@ -194,19 +194,12 @@ public class TooltipManager {
 //		} 
 
 		showPopup(dto, location, d -> buildCollectionText((InnerElementRepresentationDTO) d), () -> {
-//			debugEventCollector
-//					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-//			uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
-//					innerPageableElementRepresentationDTO));
-			uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, PairDTO.of(dto, 0)));
-//			switch (dto.getValueCategory()) {
-//			case COLLECTION -> uiEventCollector
-//					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
-//			case MAP -> uiEventCollector
-//					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, dto));
-//			default -> debugEventCollector
-//					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-//			}
+			switch (dto.getValueCategory()) {
+			case COLLECTION -> uiEventCollector
+					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, PairDTO.of(dto, 0)));
+			case MAP -> uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, PairDTO.of(dto, 0)));
+			default -> {}
+			}
 		});
 	}
 

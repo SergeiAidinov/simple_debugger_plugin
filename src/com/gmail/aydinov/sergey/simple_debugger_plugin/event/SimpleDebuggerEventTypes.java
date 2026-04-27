@@ -14,6 +14,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvoked
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserObjectInspectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressedResumeButtonHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedAdditionalInfoAboutCollectionHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedCollectionPageHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedMapPageHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
@@ -99,7 +100,7 @@ public final class SimpleDebuggerEventTypes {
 
 		SET_COLLECTION_INSPECT_WINDOW_STATE(Boolean.class, null), 
 		
-		USER_REQUESTED_COLLECTION_PAGE(Integer.class, null),
+		USER_REQUESTED_COLLECTION_PAGE(PairDTO.class, new UserRequestedCollectionPageHandler()),
 		
 		DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE(ArrayPageDTO.class, null), 
 		

@@ -42,7 +42,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
         private int toIndex;
         private List<PairDTO<K,V>> entries;
         private Tag anchorTag;
-        private List<BreadcrumbItemDTO> breadcrumbs = List.of(); // по умолчанию пустой список
+        private List<PairDTO<Integer, String>> breadcrumbs = List.of(); // по умолчанию пустой список
 
         public Builder<K,V> elementName(String name) { this.elementName = name; return this; }
         public Builder<K,V> elementType(String type) { this.elementType = type; return this; }
@@ -53,7 +53,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
         public Builder<K,V> toIndex(int to) { this.toIndex = to; return this; }
         public Builder<K,V> entries(List<PairDTO<K,V>> list) { this.entries = list; return this; }
         public Builder<K,V> anchorTag(Tag tag) { this.anchorTag = tag; return this; }
-        public Builder<K,V> breadcrumbs(List<BreadcrumbItemDTO> breadcrumbs) { this.breadcrumbs = breadcrumbs; return this; }
+        public Builder<K,V> breadcrumbs(List<PairDTO<Integer, String>> breadcrumbs) { this.breadcrumbs = breadcrumbs; return this; }
         public Builder<K,V> objectId(Long objectId) { this.objectId = objectId; return this; }
         
         public MapPageDTO<K,V> build() {

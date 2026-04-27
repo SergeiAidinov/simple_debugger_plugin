@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import java.util.List;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 
 public class UserObjectInspectionDTO extends AbstractInspectionDTO {
@@ -17,8 +18,8 @@ public class UserObjectInspectionDTO extends AbstractInspectionDTO {
 
     public UserObjectInspectionDTO(Tag tag,
                                    String elementName,
-                                   String elementType,
-                                   List<BreadcrumbItemDTO> breadcrumbs,
+                                   String elementType, 
+                                   List<PairDTO<Integer, String>> breadcrumbs,
                                    String className,
                                    String stringValue,
                                    List<InnerElementRepresentationDTO> instanceFields,
@@ -48,7 +49,7 @@ public class UserObjectInspectionDTO extends AbstractInspectionDTO {
         private Tag tag;
         private String elementName;
         private String elementType;
-        private List<BreadcrumbItemDTO> breadcrumbs = List.of(); // по умолчанию пустой
+        private List<PairDTO<Integer, String>> breadcrumbs = List.of(); // по умолчанию пустой
         private String className;
         private String stringValue;
         private List<InnerElementRepresentationDTO> instanceFields = List.of();
@@ -60,7 +61,7 @@ public class UserObjectInspectionDTO extends AbstractInspectionDTO {
         public Builder tag(Tag tag) { this.tag = tag; return this; }
         public Builder elementName(String elementName) { this.elementName = elementName; return this; }
         public Builder elementType(String elementType) { this.elementType = elementType; return this; }
-        public Builder breadcrumbs(List<BreadcrumbItemDTO> breadcrumbs) { this.breadcrumbs = breadcrumbs; return this; }
+        public Builder breadcrumbs(List<PairDTO<Integer, String>> breadcrumbs) { this.breadcrumbs = breadcrumbs; return this; }
         public Builder className(String className) { this.className = className; return this; }
         public Builder stringValue(String stringValue) { this.stringValue = stringValue; return this; }
         public Builder instanceFields(List<InnerElementRepresentationDTO> instanceFields) { this.instanceFields = instanceFields; return this; }

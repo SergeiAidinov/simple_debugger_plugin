@@ -165,7 +165,7 @@ public class DebugSessionImpl implements DebugSession {
 		try {
 			if (SimpleDebuggerEventTypes.isInspectionEvent(abstractSimpleDebuggerUIEvent.getType())) {
 				DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
-				while (DebuggerContext.context().getStatus() != SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING) {}
+			//	while (DebuggerContext.context().getStatus() != SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING) {}
 				//InspectionSeance inspectionSeance = InspectionSeanceImpl.;
 				InspectionSeance.startInspectionSeanceForAnchorElement(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 			}

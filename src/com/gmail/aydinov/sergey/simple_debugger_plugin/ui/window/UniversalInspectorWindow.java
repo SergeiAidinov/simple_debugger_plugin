@@ -184,7 +184,7 @@ public class UniversalInspectorWindow {
 			 disposeAllTabs();
 			createIterableTabIfNeeded();
 			iterableInspectorTab.showPage(payload);
-			showBreadcrumbs(payload.getBreadcrumbs());
+		//	showBreadcrumbs(payload.getBreadcrumbs());
 			showTab(collectionTabItem, iterableInspectorTab.getControl());
 			currentTab = InspectionTabs.COLLECTION;
 		});
@@ -198,7 +198,7 @@ public class UniversalInspectorWindow {
 			 disposeAllTabs();
 			createMapTabIfNeeded();
 			mapInspectorTab.showPage(page);
-			showBreadcrumbs(page.getBreadcrumbs());
+		//	showBreadcrumbs(page.getBreadcrumbs());
 			showTab(mapTabItem, mapInspectorTab.getControl());
 			currentTab = InspectionTabs.MAP;
 		});
@@ -212,7 +212,7 @@ public class UniversalInspectorWindow {
 			disposeAllTabs();
 			createUserObjectTabIfNeeded("USER OBJ.");
 			userObjectTab.showUserObject(userObjectPageDTO);
-			showBreadcrumbs(userObjectPageDTO.getBreadcrumbs());
+		//	showBreadcrumbs(userObjectPageDTO.getBreadcrumbs());
 			showTab(userObjectTabItem, userObjectTab.getControl());
 			currentTab = InspectionTabs.USER_OBJECT;
 		});
