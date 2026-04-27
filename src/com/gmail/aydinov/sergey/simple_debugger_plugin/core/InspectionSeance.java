@@ -196,14 +196,16 @@ public class InspectionSeance {
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE))
 					break;
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE)) {
-					UIEvent<Integer> userRequestetPage = (UIEvent<Integer>) uiEvent;
-					Integer pageNumber = userRequestetPage.getPayload();
-					InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
-					ArrayPageDTO page = (ArrayPageDTO) ic.inspectPage(ic, pageNumber);
-					List<PairDTO<Integer, String>> qq = buildBreadcrumbs();
-					page.setBreadcrumbs(qq);
-					debugEventCollector.collectDebugEvent(
-							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
+					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
+					handler.handle(uiEvent, currentFrame, breakpointEvent);
+//					UIEvent<Integer> userRequestetPage = (UIEvent<Integer>) uiEvent;
+//					Integer pageNumber = userRequestetPage.getPayload();
+//					InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
+//					ArrayPageDTO page = (ArrayPageDTO) ic.inspectPage(ic, pageNumber);
+//					List<PairDTO<Integer, String>> qq = buildBreadcrumbs();
+//					page.setBreadcrumbs(qq);
+//					debugEventCollector.collectDebugEvent(
+//							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 //				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT)){
 //					System.out.println("INSPECTION: " + uiEvent);
 //					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
