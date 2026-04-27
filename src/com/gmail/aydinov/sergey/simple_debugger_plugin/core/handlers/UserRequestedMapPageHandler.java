@@ -100,6 +100,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 		}
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = MapPageDTO
 				.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder()
+				.anchorMap(uiEvent.getPayload().getFirst())
 				.elementName(mapRepresentation.getElementName()).elementType(mapRepresentation.getAdditionalInfo())
 				.totalEntries(totalEntries).currentPage(uiEvent.getPayload().getSecond()).totalPages(totalPages)
 				.fromIndex(fromIndex).toIndex(toIndex).entries(list).anchorTag(mapRepresentation.getTag()).build();

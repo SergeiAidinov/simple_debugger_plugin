@@ -13,6 +13,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 
 	private final int fromIndex;
 	private final int toIndex;
+	private final InnerElementRepresentationDTO anchorMap;
 	private final List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> entries;
 
 	private MapPageDTO(Builder<K, V> builder) {
@@ -24,6 +25,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 		this.fromIndex = builder.fromIndex;
 		this.toIndex = builder.toIndex;
 		this.entries = builder.entries;
+		this.anchorMap = builder.anchorMap;
 	}
 
 	public int getFromIndex() {
@@ -37,12 +39,17 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 	public List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> getEntries() {
 		return entries;
 	}
+	
+	public InnerElementRepresentationDTO getAnchorMap() {
+		return anchorMap;
+	}
 
 	public static <K, V> Builder<K, V> builder() {
 		return new Builder<>();
 	}
 
 	public static class Builder<K, V> {
+		public InnerElementRepresentationDTO anchorMap;
 		public Long objectId;
 		private String elementName;
 		private String elementType;
@@ -55,6 +62,11 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 		private Tag anchorTag;
 		private List<PairDTO<Integer, String>> breadcrumbs = List.of(); // по умолчанию пустой список
 
+		public Builder<K, V> anchorMap(InnerElementRepresentationDTO anchorMap) {
+			this.anchorMap = anchorMap;
+			return this;
+		}
+		
 		public Builder<K, V> elementName(String name) {
 			this.elementName = name;
 			return this;

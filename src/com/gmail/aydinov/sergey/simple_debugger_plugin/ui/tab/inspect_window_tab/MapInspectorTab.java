@@ -107,7 +107,7 @@ public class MapInspectorTab implements InspectorTab {
 		setupClickListener(table);
 
 		// Колонки
-		createColumn("Index", 80, pair -> formatValue((InnerElementRepresentationDTO) pair.getFirst()),
+		createColumn("Key", 80, pair -> formatValue((InnerElementRepresentationDTO) pair.getFirst()),
 				pair -> getIcon((InnerElementRepresentationDTO) pair.getFirst()));
 
 		createColumn("Value", 600, pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
@@ -221,6 +221,7 @@ public class MapInspectorTab implements InspectorTab {
 		if (!(abstractInspectionDTO instanceof MapPageDTO))
 			return;
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = (MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>) abstractInspectionDTO;
+		anchorMap = page.getAnchorMap();
 		root.getDisplay().asyncExec(() -> {
 			if (root.isDisposed() || viewer.getTable().isDisposed())
 				return;
