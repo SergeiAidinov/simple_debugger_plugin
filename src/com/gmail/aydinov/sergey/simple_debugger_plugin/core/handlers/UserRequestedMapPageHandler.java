@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -47,8 +49,15 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 				.map(UniversalElementRepresentation.class::cast).filter(e -> e.getObjectReference() != null)
 				.collect(Collectors.toMap(e -> (Long) e.getObjectReference().uniqueID(), Function.identity(),
 						(existing, duplicate) -> existing));
-
-		UniversalElementRepresentation mapRepresentation = map.get(id);
+		Optional<UniversalElementRepresentation> i = TargetApplicationRepresentation.getInstance().getAllElements().stream()
+		.filter(e -> e instanceof UniversalElementRepresentation)
+		.map(e -> (UniversalElementRepresentation) e)
+		.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
+		
+		UniversalElementRepresentation mapRepresentation = i.get();
+				
+			//	map.get(id);
+		
 		int mapSize = 0;
 		if (Objects.nonNull(mapRepresentation)) {
 			String mapSizeString = mapRepresentation.getValue().substring(mapRepresentation.getValue().indexOf(':') + 1,
@@ -70,14 +79,18 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 		List<Entry<Value, Value>> pageEntries = DebugUtils.iterateThroughMap(mapRepresentation.getObjectReference(),
 				breakpointEvent, fromIndex, toIndex);
 		Map<UniversalElementRepresentation, UniversalElementRepresentation> qq = new HashMap<UniversalElementRepresentation, UniversalElementRepresentation>();
+		 Map<UniversalElementRepresentation, UniversalElementRepresentation> collectionElements = new HashMap<>();  
 		for (Entry<Value, Value> entry : pageEntries) {
-			UniversalElementRepresentation key = map.get(((ObjectReference) entry.getKey()).uniqueID());
-			UniversalElementRepresentation value = map.get(((ObjectReference) entry.getValue()).uniqueID());
-			qq.put(key, value);
-		}
+			  Value keyValue = entry.getKey();
+			  Value valueValue = entry.getValue();
+		      UniversalElementRepresentation keyElement = createUniversalElementRepresentationFromValue(keyValue, map);
+		      UniversalElementRepresentation valueElement = createUniversalElementRepresentationFromValue(valueValue, map);
+
+			  collectionElements.put(keyElement, valueElement);
+		  }
 
 		List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> list = new ArrayList<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>();
-		for (Entry<UniversalElementRepresentation, UniversalElementRepresentation> entry : qq.entrySet()) {
+		for (Entry<UniversalElementRepresentation, UniversalElementRepresentation> entry : collectionElements.entrySet()) {
 			PairDTO<UniversalElementRepresentation, UniversalElementRepresentation> e = PairDTO.of(entry.getKey(),
 					entry.getValue());
 			list.add(PairDTO.of(
@@ -94,6 +107,37 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
 
 		return false;
+	}
+	
+	private UniversalElementRepresentation createUniversalElementRepresentationFromValue(Value value, Map<Long, UniversalElementRepresentation> map) {
+		UniversalElementRepresentation element = null;
+		if (value instanceof ObjectReference objRef) {
+	          element = map.get(objRef.uniqueID());
+
+	          // 🔥 ВАЖНО: fallback
+	          if (element == null) {
+	              String type = objRef.referenceType().name();
+	              String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
+
+	              element = UniversalElementRepresentation.builder()
+	                      .referenceType(objRef.referenceType())
+	                      .objectReference(objRef)
+	                      .elementName(valueText)
+	                      .elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
+	                      .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+	                      .value(DebugUtils.getObjectReferenceValueAsString(objRef))
+	                      .valueCategory(DebugUtils.determineValueCategory(value))
+	                      .build();
+	          }
+	      } else {
+	          element = UniversalElementRepresentation.builder()
+	                  .elementName(value.toString())
+	                  .valueCategory(UniversalElementRepresentation.ValueCategory.PRIMITIVE)
+	                  .build();
+	      }
+		
+		return element;
+		
 	}
 
 //	public AbstractInspectionCollectionPage<?> inspectPage(AbstractInspectableElement inspectableElement,
