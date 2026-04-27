@@ -1,7 +1,10 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import java.util.List;
+import java.util.Map;
+
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 
@@ -9,13 +12,15 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 
 	private final int fromIndex;
 	private final int toIndex;
+	private final Map<Integer, UniversalElementRepresentation> entries;
 
 	private ArrayPageDTO(Builder builder) {
 		super(builder.anchorTag, builder.elementName, builder.elementType, builder.totalElements, builder.currentPage,
-				builder.totalPages, builder.entries, builder.breadcrumbs,
+				builder.totalPages, builder.breadcrumbs,
 				builder.objectId);
 		this.fromIndex = builder.fromIndex;
 		this.toIndex = builder.toIndex;
+		this.entries = builder.entries;
 	}
 
 	// ================= Геттеры =================
@@ -25,6 +30,12 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 
 	public int getToIndex() {
 		return toIndex;
+	}
+	
+	
+
+	public Map<Integer, UniversalElementRepresentation> getEntries() {
+		return entries;
 	}
 
 	public static Builder builder() {
@@ -41,7 +52,7 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 		private int totalPages;
 		private int fromIndex;
 		private int toIndex;
-		private List<PairDTO<Integer, InnerElementRepresentationDTO>> entries;
+		private Map<Integer, UniversalElementRepresentation> entries;
 		private Tag anchorTag;
 		private List<PairDTO<Integer, String>> breadcrumbs;
 
@@ -80,8 +91,8 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 			return this;
 		}
 
-		public Builder entries(List<PairDTO<Integer, InnerElementRepresentationDTO>> list) {
-			this.entries = list;
+		public Builder entries(Map<Integer, UniversalElementRepresentation> collectionElements) {
+			this.entries = collectionElements;
 			return this;
 		}
 

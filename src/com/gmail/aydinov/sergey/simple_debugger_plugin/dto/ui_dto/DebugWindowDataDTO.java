@@ -16,6 +16,7 @@ public class DebugWindowDataDTO {
 	private final String methodName;
 	private final List<MethodCallInStackDTO> compileStackInfo;
 	private final Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> topElementsWithSubordinates;
+	
 	public DebugWindowDataDTO(int lineNumber, String methodName, List<MethodCallInStackDTO> compileStackInfo,
 			Map<InnerElementRepresentationDTO, List<InnerElementRepresentationDTO>> innerElementDTOs) {
 		super();

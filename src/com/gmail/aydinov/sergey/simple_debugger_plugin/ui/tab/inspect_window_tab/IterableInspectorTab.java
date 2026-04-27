@@ -52,6 +52,7 @@ public class IterableInspectorTab implements InspectorTab {
 	private TooltipManager tooltipManager;
 
 	private int currentPage = 0;
+	private long inspectableCollectionId;
 
 	public IterableInspectorTab(Composite parent) {
 		root = new Composite(parent, SWT.NONE);
@@ -78,8 +79,12 @@ public class IterableInspectorTab implements InspectorTab {
 
 		prevButton = new Button(paginationComposite, SWT.PUSH);
 		prevButton.setText("Prev");
-		prevButton.addListener(SWT.Selection, e -> uiEventCollector.collectUiEvent(
-				new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, currentPage - 1)));
+		prevButton.addListener(SWT.Selection, e -> {
+			uiEventCollector.collectUiEvent(
+				new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, PairDTO.of(inspectableCollectionId, currentPage - 1)));
+		}
+				
+				);
 
 		pageText = new Text(paginationComposite, SWT.BORDER);
 		pageText.setLayoutData(new GridData(70, SWT.DEFAULT));
@@ -92,7 +97,7 @@ public class IterableInspectorTab implements InspectorTab {
 		nextButton = new Button(paginationComposite, SWT.PUSH);
 		nextButton.setText("Next");
 		nextButton.addListener(SWT.Selection, e -> uiEventCollector.collectUiEvent(
-				new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, currentPage + 1)));
+				new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, PairDTO.of(inspectableCollectionId, currentPage +1))));
 
 		// ===== Table =====
 		Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION);
@@ -124,6 +129,7 @@ public class IterableInspectorTab implements InspectorTab {
 			return;
 
 		ArrayPageDTO page = (ArrayPageDTO) abstractInspectionDTO;
+	//	inspectableCollectionId = page.getObjectId();
 
 		root.getDisplay().asyncExec(() -> {
 			if (root.isDisposed() || viewer.getTable().isDisposed())
@@ -142,7 +148,14 @@ public class IterableInspectorTab implements InspectorTab {
 			prevButton.setEnabled(page.hasPreviousPage());
 			nextButton.setEnabled(page.hasNextPage());
 
-			viewer.setInput(page.getEntries());
+			viewer.setInput(
+				    page.getEntries().entrySet().stream()
+				        .map(e -> PairDTO.of(
+				            e.getKey(),
+				            InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getValue())
+				        ))
+				        .toList()
+				);
 			root.layout(true, true);
 		});
 	}
@@ -272,15 +285,15 @@ public class IterableInspectorTab implements InspectorTab {
 	}
 
 	private void requestPage() {
-		int page;
+		int pageNumber;
 		try {
-			page = Integer.parseInt(pageText.getText().trim());
+			pageNumber = Integer.parseInt(pageText.getText().trim());
 		} catch (Exception e) {
-			page = 0;
+			pageNumber = 0;
 		}
-		if (page < 0)
-			page = 0;
-		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, page));
+		if (pageNumber < 0)
+			pageNumber = 0;
+		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, PairDTO.of(inspectableCollectionId, pageNumber)));
 	}
 
 	private String safe(String value) {

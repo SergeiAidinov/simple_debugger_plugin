@@ -196,7 +196,7 @@ public class TooltipManager {
 		showPopup(dto, location, d -> buildCollectionText((InnerElementRepresentationDTO) d), () -> {
 			switch (dto.getValueCategory()) {
 			case COLLECTION -> uiEventCollector
-					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, PairDTO.of(dto, 0)));
+					.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, PairDTO.of(dto.getObjectId(), 0)));
 			case MAP -> uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, PairDTO.of(dto, 0)));
 			default -> {}
 			}

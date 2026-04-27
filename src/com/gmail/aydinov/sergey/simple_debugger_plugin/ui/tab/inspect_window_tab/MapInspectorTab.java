@@ -49,6 +49,7 @@ public class MapInspectorTab implements InspectorTab {
 	private final Button nextButton;
 	private Shell currentPopup;
 	private int currentPage = 0;
+	private InnerElementRepresentationDTO anchorMap;
 
 	public MapInspectorTab(Composite parent) {
 		root = new Composite(parent, SWT.NONE);
@@ -252,8 +253,8 @@ public class MapInspectorTab implements InspectorTab {
 		requestPage(page);
 	}
 
-	private void requestPage(int page) {
-		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, page));
+	private void requestPage(int pageNumber) {
+		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, PairDTO.of(anchorMap, pageNumber)));
 	}
 
 	private <K, V> TableViewerColumn createColumn(String title, int width,

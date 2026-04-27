@@ -75,29 +75,29 @@ public abstract class AbstractInspectableElement {
 		private Factory() {
 		}
 
-		public AbstractInspectableElement createInspectableElement(AbstractUIEvent event, StackFrame currentFrame,
-				BreakpointEvent breakpointEvent) {
-			if (!(event instanceof UIEvent<?> rawEvent)) {
-				throw new IllegalArgumentException("Invalid event type: " + event);
-			}
-			Object payload = rawEvent.getPayload();
-			if (payload instanceof InnerPageableElementRepresentationDTO innerPageableElementRepresentationDTO)
-				return createPageableInspectableElement(innerPageableElementRepresentationDTO, currentFrame, breakpointEvent);
-			else if (payload instanceof InnerElementRepresentationDTO innerElementRepresentationDTO)
-				return new InspectableInstanceElement(innerElementRepresentationDTO, breakpointEvent);
-			else
-				return null;
-		}
+//		public AbstractInspectableElement createInspectableElement(AbstractUIEvent event, StackFrame currentFrame,
+//				BreakpointEvent breakpointEvent) {
+//			if (!(event instanceof UIEvent<?> rawEvent)) {
+//				throw new IllegalArgumentException("Invalid event type: " + event);
+//			}
+//			Object payload = rawEvent.getPayload();
+//			if (payload instanceof InnerPageableElementRepresentationDTO innerPageableElementRepresentationDTO)
+//				return createPageableInspectableElement(innerPageableElementRepresentationDTO, currentFrame, breakpointEvent);
+//			else if (payload instanceof InnerElementRepresentationDTO innerElementRepresentationDTO)
+//				return new InspectableInstanceElement(innerElementRepresentationDTO, breakpointEvent);
+//			else
+//				return null;
+//		}
 
-		private AbstractInspectableElement createPageableInspectableElement(InnerPageableElementRepresentationDTO innerPageableElementRepresentationDTO,
-				StackFrame currentFrame, BreakpointEvent breakpointEvent) {
-			if (innerPageableElementRepresentationDTO.getValueCategory().equals(ValueCategory.COLLECTION))
-				return new InspectableIterableElement(innerPageableElementRepresentationDTO, currentFrame, breakpointEvent, innerPageableElementRepresentationDTO.getObjectId());
-			else if (innerPageableElementRepresentationDTO.getValueCategory().equals(ValueCategory.MAP))
-				return new InspectableMapElement(innerPageableElementRepresentationDTO, breakpointEvent, innerPageableElementRepresentationDTO.getOffset(), 
-						innerPageableElementRepresentationDTO.getLimit());
-			else
-				throw new IllegalArgumentException("Invalid category: " + innerPageableElementRepresentationDTO);
-		}
+//		private AbstractInspectableElement createPageableInspectableElement(InnerPageableElementRepresentationDTO innerPageableElementRepresentationDTO,
+//				StackFrame currentFrame, BreakpointEvent breakpointEvent) {
+//			if (innerPageableElementRepresentationDTO.getValueCategory().equals(ValueCategory.COLLECTION))
+//				return new InspectableIterableElement(innerPageableElementRepresentationDTO, currentFrame, breakpointEvent, innerPageableElementRepresentationDTO.getObjectId());
+//			else if (innerPageableElementRepresentationDTO.getValueCategory().equals(ValueCategory.MAP))
+//				return new InspectableMapElement(innerPageableElementRepresentationDTO, breakpointEvent, innerPageableElementRepresentationDTO.getOffset(), 
+//						innerPageableElementRepresentationDTO.getLimit());
+//			else
+//				throw new IllegalArgumentException("Invalid category: " + innerPageableElementRepresentationDTO);
+//		}
 	}
 }

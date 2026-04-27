@@ -130,6 +130,7 @@ public class SimpleDebuggerWorkFlow {
 				if (event instanceof ClassPrepareEvent classPrepareEvent) {
 					TargetApplicationBreakpointRepresentation.getInstance()
 							.onClassPrepared(classPrepareEvent.referenceType());
+					TargetApplicationBreakpointRepresentation.getInstance().refreshBreakpoints();
 				} else if (event instanceof BreakpointEvent) {
 					DebugSession debugSession = new DebugSessionImpl(event);
 					Thread sessionThread = new Thread(debugSession);

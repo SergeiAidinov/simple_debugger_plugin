@@ -19,6 +19,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHa
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
@@ -30,6 +36,7 @@ import com.sun.jdi.event.BreakpointEvent;
 public class UserRequestedCollectionPageHandler implements UIEventHandler{
 	
 	 private final TreeMap<Integer, InnerElementRepresentationDTO> collectionElements = new TreeMap<>();
+	 private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 	 private BreakpointEvent breakpointEvent;
 	 private String collectionType;
 
@@ -37,13 +44,13 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler{
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
 		this.breakpointEvent = breakpointEvent;
-		UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> uiEvent = null;
+		UIEvent<PairDTO<Long, Integer>> uiEvent = null;
 		try {
-			uiEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) abstractSimpleDebuggerUIEvent;
+			uiEvent = (UIEvent<PairDTO<Long, Integer>>) abstractSimpleDebuggerUIEvent;
 		} catch (ClassCastException castException) {
 
 		}
-		final long id = uiEvent.getPayload().getFirst().getObjectId();
+		final long id = uiEvent.getPayload().getFirst();
 		Map<Long, UniversalElementRepresentation> map = TargetApplicationRepresentation.getInstance().getAllElements()
 				.stream().filter(UniversalElementRepresentation.class::isInstance)
 				.map(UniversalElementRepresentation.class::cast).filter(e -> e.getObjectReference() != null)
@@ -59,12 +66,6 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler{
 				.filter(e -> Objects.nonNull(e.getObjectReference()))
 				.filter(e -> Objects.equals(e.getObjectReference().uniqueID(), id)).findAny();
 		if (collectionrepresentationOptional.isEmpty()) return false;
-	
-		
-		
-		
-		
-		
 		int collectionSize = 0;
 		if (Objects.nonNull(collectionRepresentation)) {
 			String mapSizeString = collectionRepresentation.getValue().substring(collectionRepresentation.getValue().indexOf(':') + 1,
@@ -84,9 +85,10 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler{
 		int toIndex = fromIndex + DebugUtils.PAGE_SIZE - 1;
 		
 		  List<Value> qq = DebugUtils.iterateThroughCollection(collectionRepresentation.getObjectReference(), breakpointEvent);
-		  List<UniversalElementRepresentation> collectionElements = new ArrayList<>();
+		  Map<Integer, UniversalElementRepresentation> collectionElements = new TreeMap<Integer, UniversalElementRepresentation>();
 
-		  for (Value value : qq) {
+		  for (int i = 0; i < qq.size(); i++) {
+			  Value value = qq.get(i);
 		      if (value == null) continue;
 
 		      UniversalElementRepresentation element = null;
@@ -117,8 +119,23 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler{
 		                  .build();
 		      }
 
-		      collectionElements.add(element);
+		      collectionElements.put(i, element);
 		  }
+		  
+		 ArrayPageDTO page = ArrayPageDTO.builder()
+          .elementName(collectionRepresentation.getElementName())
+          .elementType(collectionRepresentation.getElementType().name()) // преобразуем enum в строку для DTO
+          .totalElements(collectionSize)
+          .currentPage(uiEvent.getPayload().getSecond())
+          .totalPages(totalPages)
+          .fromIndex(fromIndex)
+          .toIndex(toIndex)
+          .entries(collectionElements)
+          .anchorTag(collectionRepresentation.getTag())
+          .build();
+		 
+		 debugEventCollector.collectDebugEvent(
+					new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
 		
 //
 //		UniversalElementRepresentation mapRepresentation = map.get(id);	
