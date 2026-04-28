@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -85,7 +86,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 			  Value valueValue = entry.getValue();
 		      UniversalElementRepresentation keyElement = createUniversalElementRepresentationFromValue(keyValue, map);
 		      UniversalElementRepresentation valueElement = createUniversalElementRepresentationFromValue(valueValue, map);
-
+		      InspectionSeance.inspectionSeanceCache.put(valueElement.getObjectReference().uniqueID(), valueElement);
 			  collectionElements.put(keyElement, valueElement);
 		  }
 

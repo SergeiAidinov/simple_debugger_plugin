@@ -13,7 +13,7 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
 
     public enum UniversalElementType {
         INTERFACE, CLASS, ENUM, FIELD, METHOD, METHOD_PARAMETER, LOCAL_VARIABLE,
-        UNKNOWN, REFERENCE, COLLECTION_ELEMENT, MAP_ELEMENT
+        UNKNOWN, REFERENCE, COLLECTION_ELEMENT, MAP_ELEMENT, CACHED
     }
 
     public enum CurrentRole { OUTER, INNER, LOCAL }
