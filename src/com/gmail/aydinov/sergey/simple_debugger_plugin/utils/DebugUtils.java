@@ -1410,5 +1410,29 @@ public class DebugUtils {
 
 		return info.toString();
 	}
+	
+	public static boolean shouldSkipMethod(Method method) {
+		String name = method.name();
+		// конструкторы и статика
+		if ("<init>".equals(name) || "<clinit>".equals(name)) {
+			return true;
+		}
+		// lambda методы
+		if (name.startsWith("lambda$")) {
+			return true;
+		}
+		// synthetic / bridge
+		if (method.isSynthetic() || method.isBridge()) {
+			return true;
+		}
+		if (method.isSynthetic() || method.name().equals("<init>") || method.name().equals("<clinit>"))
+			return true;
+		if (method.declaringType().name().equals("java.lang.Object"))
+			return true;
+		if (method.declaringType().name().startsWith("java."))
+			return true;
+
+		return false;
+	}
 
 }

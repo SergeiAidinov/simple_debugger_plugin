@@ -1,11 +1,8 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
@@ -39,11 +36,6 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 	@Override
 	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
-		System.out.println("USER OBJECT. INSP. STARTED");
-		// TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e
-		// -> System.out.println(e));
-//		debugEventCollector
-//				.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
 		try {
 			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
@@ -112,10 +104,6 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 	}
 
 	private List<UniversalElementRepresentation> findAllUserObjects(InnerElementRepresentationDTO anchor) {
-		// TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e
-		// -> System.out.println(e));
-		System.out.println("ANCHOR ID: " + anchor.getObjectId());
-
 		TargetApplicationRepresentation.getInstance().getAllElements().stream()
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> e.getObjectReference() != null).forEach(e -> {
@@ -161,11 +149,6 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 						.valueCategory(DebugUtils.determineValueCategory(value)).typeOrReturnType(field.typeName())
 						.parentUniqueId(rootId).level(1).build();
 				entries.add(fieldElement);
-//	            InspectionSeance.inspectionSeanceCache.put(
-//	                    fieldElement.getTag().getUniqueId(),
-//	                    fieldElement
-//	            );
-
 			} catch (Exception ignored) {
 			}
 		}
@@ -174,30 +157,16 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 		// METHODS (class behavior)
 		// =========================================================
 		for (Method method : type.methods()) {
-			try {
-
+			if (DebugUtils.shouldSkipMethod(method)) continue;
+			String params = String.join(", ", method.argumentTypeNames());
 				UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
 						.objectReference(obj) // можно убрать, но иногда полезно для контекста
-						.elementName(method.name()).additionalInfo(method.signature())
-						.elementType(UniversalElementType.METHOD).value(method.returnTypeName())
+						.elementName(method.name() +"()").additionalInfo((method.name() + "(" + params + ")"))
+						.elementType(UniversalElementType.METHOD).value(method.toString())
 						.typeOrReturnType(method.returnTypeName()).isStatic(method.isStatic()).parentUniqueId(rootId)
 						.level(1).build();
-
-//	            InspectionSeance.inspectionSeanceCache.put(
-//	                    methodElement.getTag().getUniqueId(),
-//	                    methodElement
-//	            );
 				entries.add(methodElement);
-
-			} catch (Exception ignored) {
-			}
 		}
-
-		// сам root тоже кладём в кеш
-//	    InspectionSeance.inspectionSeanceCache.put(
-//	            root.getTag().getUniqueId(),
-//	            root
-//	    );
 		List<InnerElementRepresentationDTO> qq = entries.stream()
 				.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e)).toList();
 		UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(obj.type().name())
