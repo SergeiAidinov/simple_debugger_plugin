@@ -1222,106 +1222,124 @@ public class DebugUtils {
 		return result;
 	}
 
-	public static List<Map.Entry<Value, Value>> iterateThroughMap(ObjectReference instance,
-			BreakpointEvent breakpointEvent, int offset, int limit) {
-		List<Map.Entry<Value, Value>> result = new ArrayList<>();
-		if (instance == null || breakpointEvent == null || limit <= 0)
-			return result;
+	public static List<Map.Entry<Value, Value>> iterateThroughMap(
+	        ObjectReference instance,
+	        BreakpointEvent breakpointEvent,
+	        int offset,
+	        int limit) {
 
-		ReferenceType refType = instance.referenceType();
-		if (!(refType instanceof ClassType classType))
-			return result;
+	    List<Map.Entry<Value, Value>> result = new ArrayList<>();
 
-		boolean isMap = classType.allInterfaces().stream().anyMatch(iface -> "java.util.Map".equals(iface.name()));
+	    if (instance == null || breakpointEvent == null || limit <= 0)
+	        return result;
 
-		if (!isMap)
-			return result;
+	    ReferenceType refType = instance.referenceType();
+	    if (!(refType instanceof ClassType classType))
+	        return result;
 
-		ThreadReference thread = breakpointEvent.thread();
+	    boolean isMap = classType.allInterfaces().stream()
+	            .anyMatch(iface -> "java.util.Map".equals(iface.name()));
 
-		try {
-			// 🔹 entrySet()
-			Method entrySetMethod = classType.concreteMethodByName("entrySet", "()Ljava/util/Set;");
-			if (entrySetMethod == null)
-				return result;
+	    if (!isMap)
+	        return result;
 
-			Value entrySetValue = instance.invokeMethod(thread, entrySetMethod, Collections.emptyList(),
-					ObjectReference.INVOKE_SINGLE_THREADED);
+	    ThreadReference thread = breakpointEvent.thread();
 
-			if (!(entrySetValue instanceof ObjectReference entrySetRef))
-				return result;
+	    try {
+	        // =========================================================
+	        // 1. entrySet() — 1 invoke
+	        // =========================================================
+	        Method entrySetMethod =
+	                classType.concreteMethodByName("entrySet", "()Ljava/util/Set;");
 
-			// 🔹 iterator()
-			ClassType entrySetType = (ClassType) entrySetRef.referenceType();
-			Method iteratorMethod = entrySetType.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
-			if (iteratorMethod == null)
-				return result;
+	        if (entrySetMethod == null)
+	            return result;
 
-			ObjectReference iterator = (ObjectReference) entrySetRef.invokeMethod(thread, iteratorMethod,
-					Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
+	        Value entrySetValue = instance.invokeMethod(
+	                thread,
+	                entrySetMethod,
+	                Collections.emptyList(),
+	                ObjectReference.INVOKE_SINGLE_THREADED
+	        );
 
-			ClassType iteratorType = (ClassType) iterator.referenceType();
+	        if (!(entrySetValue instanceof ObjectReference entrySetRef))
+	            return result;
 
-			// 🔹 методы итератора (вынесены из цикла)
-			Method hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
-			Method nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
-			if (hasNextMethod == null || nextMethod == null)
-				return result;
+	        // =========================================================
+	        // 2. toArray() — 1 invoke (SNAPSHOT)
+	        // =========================================================
+	        ClassType setType = (ClassType) entrySetRef.referenceType();
 
-			int skipped = 0;
-			int collected = 0;
+	        Method toArrayMethod =
+	                setType.concreteMethodByName("toArray", "()[Ljava/lang/Object;");
 
-			while (true) {
-				// hasNext()
-				Value hasNextVal = iterator.invokeMethod(thread, hasNextMethod, Collections.emptyList(),
-						ObjectReference.INVOKE_SINGLE_THREADED);
+	        if (toArrayMethod == null)
+	            return result;
 
-				if (!(hasNextVal instanceof BooleanValue bv) || !bv.value())
-					break;
+	        ArrayReference array = (ArrayReference) entrySetRef.invokeMethod(
+	                thread,
+	                toArrayMethod,
+	                Collections.emptyList(),
+	                ObjectReference.INVOKE_SINGLE_THREADED
+	        );
 
-				// next()
-				Value entryVal = iterator.invokeMethod(thread, nextMethod, Collections.emptyList(),
-						ObjectReference.INVOKE_SINGLE_THREADED);
+	        List<Value> entries = array.getValues();
 
-				if (!(entryVal instanceof ObjectReference entryRef))
-					continue;
+	        if (entries == null || entries.isEmpty())
+	            return result;
 
-				// 🔹 skip offset
-				if (skipped < offset) {
-					skipped++;
-					continue;
-				}
+	        // =========================================================
+	        // 3. paging
+	        // =========================================================
+	        int start = Math.min(offset, entries.size());
+	        int end = Math.min(start + limit, entries.size());
 
-				// 🔹 limit
-				if (collected >= limit)
-					break;
+	        // =========================================================
+	        // 4. cache entry methods (ВАЖНО — один раз)
+	        // =========================================================
+	        Method getKeyMethod = null;
+	        Method getValueMethod = null;
 
-				ClassType entryType = (ClassType) entryRef.referenceType();
+	        // лениво берём из первого элемента
+	        for (int i = start; i < end; i++) {
+	            ObjectReference entryRef = (ObjectReference) entries.get(i);
+	            ClassType entryType = (ClassType) entryRef.referenceType();
 
-				// 🔹 методы entry (можно ещё закэшировать при желании)
-				Method getKeyMethod = entryType.concreteMethodByName("getKey", "()Ljava/lang/Object;");
-				Method getValueMethod = entryType.concreteMethodByName("getValue", "()Ljava/lang/Object;");
+	            if (getKeyMethod == null) {
+	                getKeyMethod = entryType.concreteMethodByName(
+	                        "getKey", "()Ljava/lang/Object;");
+	            }
+	            if (getValueMethod == null) {
+	                getValueMethod = entryType.concreteMethodByName(
+	                        "getValue", "()Ljava/lang/Object;");
+	            }
 
-				if (getKeyMethod == null || getValueMethod == null)
-					continue;
+	            if (getKeyMethod == null || getValueMethod == null)
+	                return result;
 
-				Value key = entryRef.invokeMethod(thread, getKeyMethod, Collections.emptyList(),
-						ObjectReference.INVOKE_SINGLE_THREADED);
+	            Value key = entryRef.invokeMethod(
+	                    thread,
+	                    getKeyMethod,
+	                    Collections.emptyList(),
+	                    ObjectReference.INVOKE_SINGLE_THREADED
+	            );
 
-				Value value = entryRef.invokeMethod(thread, getValueMethod, Collections.emptyList(),
-						ObjectReference.INVOKE_SINGLE_THREADED);
+	            Value value = entryRef.invokeMethod(
+	                    thread,
+	                    getValueMethod,
+	                    Collections.emptyList(),
+	                    ObjectReference.INVOKE_SINGLE_THREADED
+	            );
 
-				result.add(new AbstractMap.SimpleEntry<>(key, value));
-				collected++;
-			}
+	            result.add(new AbstractMap.SimpleEntry<>(key, value));
+	        }
 
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
 
-		return result;
+	    return result;
 	}
-
 	/**
 	 * Создаёт DTO для ключа или значения Map.
 	 * 
