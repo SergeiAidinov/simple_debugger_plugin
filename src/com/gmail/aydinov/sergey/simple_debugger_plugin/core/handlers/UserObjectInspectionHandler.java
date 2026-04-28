@@ -63,6 +63,7 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 					debugEventCollector.collectDebugEvent(new DebugEvent<>(
 							SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
 				}
+				return true;
 			}
 			List<InnerElementRepresentationDTO> fields = new ArrayList<InnerElementRepresentationDTO>();
 			List<InnerElementRepresentationDTO> methods = new ArrayList<InnerElementRepresentationDTO>();
