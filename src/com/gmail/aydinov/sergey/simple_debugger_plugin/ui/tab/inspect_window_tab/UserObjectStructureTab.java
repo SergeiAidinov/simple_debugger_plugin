@@ -22,6 +22,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
@@ -77,7 +78,11 @@ public class UserObjectStructureTab {
     }
 
     // ================= SHOW =================
-    public void showUserObject(UserObjectPageDTO dto) {
+    public void showUserObject(AbstractInspectionDTO abstractInspectionDTO) {
+    	
+    	if (!(abstractInspectionDTO instanceof UserObjectPageDTO)) return;
+    	
+    	UserObjectPageDTO dto = (UserObjectPageDTO) abstractInspectionDTO;
 
         List<InnerElementRepresentationDTO> entries =
                 (dto == null || dto.getEntries() == null) ? List.of() : dto.getEntries();

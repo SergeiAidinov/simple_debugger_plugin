@@ -10,6 +10,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
@@ -46,7 +47,7 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 			InnerElementRepresentationDTO userObject = uiEvent.getPayload();
 			List<UniversalElementRepresentation> uObjs = findAllUserObjects(userObject);
 			if (uObjs.isEmpty()) {
-				UniversalElementRepresentation inspectableUserObject = InspectionSeance.inspectionSeanceCache
+				DataProvider inspectableUserObject = InspectionSeance.inspectionSeanceCache
 						.get(uiEvent.getPayload().getObjectId());
 				if (Objects.nonNull(inspectableUserObject)
 						&& Objects.nonNull(inspectableUserObject.getObjectReferenceId())) {

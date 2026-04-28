@@ -15,6 +15,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.readers.FastMapReader;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
@@ -25,7 +26,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.FastMapReaderV3;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
@@ -83,7 +83,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 //		List<Entry<Value, Value>> pageEntries1 = DebugUtils.iterateThroughMap(mapRepresentation.getObjectReference(),
 //				breakpointEvent);
 		long l = System.currentTimeMillis();
-		 List<Entry<Value, Value>> qqq = FastMapReaderV3.iterateThroughMap(mapRepresentation.getObjectReference(), breakpointEvent, 0, 16000);
+		 List<Entry<Value, Value>> qqq = FastMapReader.iterateThroughMap(mapRepresentation.getObjectReference(), breakpointEvent, 0, 16000);
 		System.out.println("TINE: " + (System.currentTimeMillis() - l));
 		 Map<UniversalElementRepresentation, UniversalElementRepresentation> qq = new HashMap<UniversalElementRepresentation, UniversalElementRepresentation>();
 		 Map<UniversalElementRepresentation, UniversalElementRepresentation> collectionElements = new HashMap<>();  
@@ -92,7 +92,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 			  Value valueValue = entry.getValue();
 		      UniversalElementRepresentation keyElement = createUniversalElementRepresentationFromValue(keyValue, map);
 		      UniversalElementRepresentation valueElement = createUniversalElementRepresentationFromValue(valueValue, map);
-		      InspectionSeance.inspectionSeanceCache.put(valueElement.getObjectReference().uniqueID(), valueElement);
+		    //  InspectionSeance.inspectionSeanceCache.put(valueElement.getObjectReference().uniqueID(), valueElement);
 			  collectionElements.put(keyElement, valueElement);
 		  }
 

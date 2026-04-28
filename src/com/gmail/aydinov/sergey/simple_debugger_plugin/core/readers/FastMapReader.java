@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.utils;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.core.readers;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
@@ -15,7 +17,7 @@ import com.sun.jdi.Value;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.event.BreakpointEvent;
 
-public final class FastMapReaderV3 {
+public final class FastMapReader implements DataProvider{
 
     // ===== CACHE SNAPSHOT =====
     private static final Map<Long, List<Map.Entry<Value, Value>>> SNAPSHOT_CACHE = new HashMap<>();
@@ -161,4 +163,10 @@ public final class FastMapReaderV3 {
         SNAPSHOT_CACHE.clear();
         FIELD_CACHE.clear();
     }
+
+	@Override
+	public AbstractInspectionDTO getData(Integer pageNumber) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
