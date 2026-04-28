@@ -10,6 +10,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.ObjectDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -43,20 +44,28 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 		} catch (ClassCastException castException) {
 
 		}
+		DataProvider dataProvider = InspectionSeance.inspectionSeanceCache
+				.get(uiEvent.getPayload().getObjectId());
+		if (Objects.nonNull(dataProvider)) {
+			debugEventCollector.collectDebugEvent(new DebugEvent<>(
+					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, dataProvider.getData(null)));
+			return true;
+		}
 		if (Objects.nonNull(uiEvent)) {
 			InnerElementRepresentationDTO userObject = uiEvent.getPayload();
 			List<UniversalElementRepresentation> uObjs = findAllUserObjects(userObject);
 			if (uObjs.isEmpty()) {
-				DataProvider inspectableUserObject = InspectionSeance.inspectionSeanceCache
-						.get(uiEvent.getPayload().getObjectId());
-				if (Objects.nonNull(inspectableUserObject)
-						&& Objects.nonNull(inspectableUserObject.getObjectReferenceId())) {
-					UserObjectPageDTO userObjectPageDTO = build(inspectableUserObject.getObjectReference());
-					System.out.println(userObjectPageDTO);
-					debugEventCollector.collectDebugEvent(new DebugEvent<>(
-							SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
-				}
-				return true;
+				
+				
+				
+//				if (Objects.nonNull(inspectableUserObject)
+//						&& Objects.nonNull(inspectableUserObject.getObjectReferenceId())) {
+//					UserObjectPageDTO userObjectPageDTO = build(inspectableUserObject.getObjectReference());
+//					System.out.println(userObjectPageDTO);
+//					debugEventCollector.collectDebugEvent(new DebugEvent<>(
+//							SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
+//				}
+//				return true;
 			}
 			List<InnerElementRepresentationDTO> fields = new ArrayList<InnerElementRepresentationDTO>();
 			List<InnerElementRepresentationDTO> methods = new ArrayList<InnerElementRepresentationDTO>();
@@ -95,8 +104,7 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 					.elementType(userObject.getTypeOrReturnType()).objectId(userObject.getObjectId())
 					.entries(subordinates).classType(userObject.getTypeOrReturnType()).anchorTag(userObject.getTag())
 					.build();
-			System.out.println(userObjectPageDTO);
-
+			InspectionSeance.inspectionSeanceCache.put(userObjectPageDTO.getObjectId(), new ObjectDataProvider(userObjectPageDTO));
 			debugEventCollector.collectDebugEvent(new DebugEvent<>(
 					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
 		}

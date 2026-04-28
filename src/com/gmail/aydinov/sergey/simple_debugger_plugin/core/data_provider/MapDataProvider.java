@@ -1,4 +1,4 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.core.readers;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,7 +17,7 @@ import com.sun.jdi.Value;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.event.BreakpointEvent;
 
-public final class FastMapReader implements DataProvider{
+public final class MapDataProvider implements DataProvider{
 
     // ===== CACHE SNAPSHOT =====
     private static final Map<Long, List<Map.Entry<Value, Value>>> SNAPSHOT_CACHE = new HashMap<>();

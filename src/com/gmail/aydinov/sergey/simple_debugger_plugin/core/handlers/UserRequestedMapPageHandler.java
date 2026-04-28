@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.MapDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.readers.FastMapReader;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
@@ -83,7 +83,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 //		List<Entry<Value, Value>> pageEntries1 = DebugUtils.iterateThroughMap(mapRepresentation.getObjectReference(),
 //				breakpointEvent);
 		long l = System.currentTimeMillis();
-		 List<Entry<Value, Value>> qqq = FastMapReader.iterateThroughMap(mapRepresentation.getObjectReference(), breakpointEvent, 0, 16000);
+		 List<Entry<Value, Value>> qqq = MapDataProvider.iterateThroughMap(mapRepresentation.getObjectReference(), breakpointEvent, 0, 16000);
 		System.out.println("TINE: " + (System.currentTimeMillis() - l));
 		 Map<UniversalElementRepresentation, UniversalElementRepresentation> qq = new HashMap<UniversalElementRepresentation, UniversalElementRepresentation>();
 		 Map<UniversalElementRepresentation, UniversalElementRepresentation> collectionElements = new HashMap<>();  
