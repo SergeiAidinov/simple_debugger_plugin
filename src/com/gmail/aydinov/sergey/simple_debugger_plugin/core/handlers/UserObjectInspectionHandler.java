@@ -1,13 +1,18 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
@@ -17,7 +22,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
+import com.sun.jdi.Field;
+import com.sun.jdi.Method;
+import com.sun.jdi.ObjectReference;
+import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
+import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
 public class UserObjectInspectionHandler implements UIEventHandler {
@@ -42,6 +53,17 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 		if (Objects.nonNull(uiEvent)) {
 			InnerElementRepresentationDTO userObject = uiEvent.getPayload();
 			List<UniversalElementRepresentation> uObjs = findAllUserObjects(userObject);
+			if (uObjs.isEmpty()) {
+				UniversalElementRepresentation inspectableUserObject = InspectionSeance.inspectionSeanceCache
+						.get(uiEvent.getPayload().getObjectId());
+				if (Objects.nonNull(inspectableUserObject)
+						&& Objects.nonNull(inspectableUserObject.getObjectReferenceId())) {
+					UserObjectPageDTO userObjectPageDTO = build(inspectableUserObject.getObjectReference());
+					System.out.println(userObjectPageDTO);
+					debugEventCollector.collectDebugEvent(new DebugEvent<>(
+							SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
+				}
+			}
 			List<InnerElementRepresentationDTO> fields = new ArrayList<InnerElementRepresentationDTO>();
 			List<InnerElementRepresentationDTO> methods = new ArrayList<InnerElementRepresentationDTO>();
 			List<UniversalElementRepresentation> classElementList = new ArrayList<UniversalElementRepresentation>();
@@ -76,8 +98,7 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 			subordinates.addAll(methods);
 			subordinates = subordinates.stream().distinct().toList();
 			UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(userObject.getElementName())
-					.elementType(userObject.getTypeOrReturnType())
-					.objectId(userObject.getObjectId())
+					.elementType(userObject.getTypeOrReturnType()).objectId(userObject.getObjectId())
 					.entries(subordinates).classType(userObject.getTypeOrReturnType()).anchorTag(userObject.getTag())
 					.build();
 			System.out.println(userObjectPageDTO);
@@ -90,21 +111,98 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 	}
 
 	private List<UniversalElementRepresentation> findAllUserObjects(InnerElementRepresentationDTO anchor) {
-	//	TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e -> System.out.println(e));
+		// TargetApplicationRepresentation.getInstance().getAllElements().stream().forEach(e
+		// -> System.out.println(e));
+		System.out.println("ANCHOR ID: " + anchor.getObjectId());
+
+		TargetApplicationRepresentation.getInstance().getAllElements().stream()
+				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
+				.filter(e -> e.getObjectReference() != null).forEach(e -> {
+					if (Objects.equals(e.getObjectReference().uniqueID(), anchor.getObjectId())) {
+						System.out.println("FOUND MATCH: " + e);
+					}
+				});
 		List<UniversalElementRepresentation> userObjects = new ArrayList<UniversalElementRepresentation>();
 		userObjects.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
-				.filter(e -> Objects.nonNull(e.getObjectReference())).filter(e -> Objects
-						.equals(e.getObjectReference().uniqueID(), anchor.getObjectId()))
-				.toList());
-	if (!userObjects.isEmpty())
+				.filter(e -> Objects.nonNull(e.getObjectReference()))
+				.filter(e -> Objects.equals(e.getObjectReference().uniqueID(), anchor.getObjectId())).toList());
+		if (!userObjects.isEmpty())
 			return userObjects;
-		
+
 		userObjects.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
-				.filter(e -> Objects.nonNull(e.getObjectReference())).filter(e -> Objects
-						.equals(anchor.getTag(), e.getTag()))
-				.toList());
-			return userObjects;
-		 }
+				.filter(e -> Objects.nonNull(e.getObjectReference()))
+				.filter(e -> Objects.equals(anchor.getTag(), e.getTag())).toList());
+
+		return userObjects;
+	}
+
+	private UserObjectPageDTO build(ObjectReference obj) {
+
+		ReferenceType type = obj.referenceType();
+
+		// ===== ROOT OBJECT =====
+
+		UUID rootId = UUID.randomUUID();
+		List<UniversalElementRepresentation> entries = new ArrayList<UniversalElementRepresentation>();
+
+		// =========================================================
+		// FIELDS (instance data)
+		// =========================================================
+		for (Field field : type.allFields()) {
+			try {
+				Value value = obj.getValue(field);
+
+				UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
+						.objectReference(obj).elementName(field.name()).additionalInfo(field.typeName())
+						.elementType(UniversalElementType.FIELD).value(String.valueOf(value)).isStatic(field.isStatic())
+						.valueCategory(DebugUtils.determineValueCategory(value)).typeOrReturnType(field.typeName())
+						.parentUniqueId(rootId).level(1).build();
+				entries.add(fieldElement);
+//	            InspectionSeance.inspectionSeanceCache.put(
+//	                    fieldElement.getTag().getUniqueId(),
+//	                    fieldElement
+//	            );
+
+			} catch (Exception ignored) {
+			}
+		}
+
+		// =========================================================
+		// METHODS (class behavior)
+		// =========================================================
+		for (Method method : type.methods()) {
+			try {
+
+				UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
+						.objectReference(obj) // можно убрать, но иногда полезно для контекста
+						.elementName(method.name()).additionalInfo(method.signature())
+						.elementType(UniversalElementType.METHOD).value(method.returnTypeName())
+						.typeOrReturnType(method.returnTypeName()).isStatic(method.isStatic()).parentUniqueId(rootId)
+						.level(1).build();
+
+//	            InspectionSeance.inspectionSeanceCache.put(
+//	                    methodElement.getTag().getUniqueId(),
+//	                    methodElement
+//	            );
+				entries.add(methodElement);
+
+			} catch (Exception ignored) {
+			}
+		}
+
+		// сам root тоже кладём в кеш
+//	    InspectionSeance.inspectionSeanceCache.put(
+//	            root.getTag().getUniqueId(),
+//	            root
+//	    );
+		List<InnerElementRepresentationDTO> qq = entries.stream()
+				.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e)).toList();
+		UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(obj.type().name())
+				.elementType(obj.type().name()).classType(type.name()).entries(qq).anchorTag(new Tag(rootId, null))
+				.objectId(obj.uniqueID()).build();
+
+		return userObjectPageDTO;
+	}
 }

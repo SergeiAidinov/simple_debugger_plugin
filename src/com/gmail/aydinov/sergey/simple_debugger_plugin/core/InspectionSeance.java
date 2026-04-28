@@ -2,8 +2,10 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
@@ -55,6 +57,7 @@ public class InspectionSeance {
 	private final EventSequence eventSequence = new EventSequence();
 	private static boolean alreadyStarted = false;
 	private boolean ancorElementHandled = false;
+	public final static Map<Long, UniversalElementRepresentation> inspectionSeanceCache = new HashMap<>();
 
 	private InspectionSeance(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
@@ -76,39 +79,6 @@ public class InspectionSeance {
 			StackFrame currentFrame, BreakpointEvent breakpointEvent) {
 		if (alreadyStarted)
 			return false;
-		// DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
-//		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
-//
-//		try {
-//			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
-//		} catch (ClassCastException castException) {
-//
-//		}
-//		final long id = uiEvent.getPayload().getObjectId();
-//		 Optional<UniversalElementRepresentation> i = TargetApplicationRepresentation.getInstance().getAllElements().stream()
-//		.filter(e -> e instanceof UniversalElementRepresentation)
-//		.map(e -> (UniversalElementRepresentation) e)
-//		.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
-
-//		if (Objects.isNull(uiEvent))
-//			return false;
-//		if (!(uiEvent instanceof UIEvent<?> rawEvent)) {
-//			throw new IllegalArgumentException("Invalid event type: " + uiEvent);
-//		}
-
-//		Object payload = rawEvent.getPayload();
-//		if (!(payload instanceof InnerElementRepresentationDTO dto)) {
-//			throw new IllegalArgumentException("Invalid payload: " + payload);
-//		}
-//		AbstractInspectableElement anchorElement = null;
-//		if (dto.getValueCategory().equals(ValueCategory.COLLECTION) || dto.getValueCategory().equals(ValueCategory.MAP))
-//			anchorElement = AbstractInspectableElement.factory().createInspectableElement(abstractSimpleDebuggerUIEvent,
-//					currentFrame, breakpointEvent);
-//		else if (dto.getValueCategory().equals(ValueCategory.USER_OBJECT))
-//			anchorElement = AbstractInspectableElement.factory().createInspectableElement(abstractSimpleDebuggerUIEvent,
-//					currentFrame, breakpointEvent);
-//		if (Objects.isNull(anchorElement))
-//			return false;
 
 		new InspectionSeance(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 		return true;
