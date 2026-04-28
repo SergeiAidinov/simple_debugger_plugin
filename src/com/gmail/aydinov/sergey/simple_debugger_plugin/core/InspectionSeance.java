@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
@@ -20,6 +21,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.I
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableIterableElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableMapElement;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -57,7 +59,7 @@ public class InspectionSeance {
 	private final EventSequence eventSequence = new EventSequence();
 	private static boolean alreadyStarted = false;
 	private boolean ancorElementHandled = false;
-	public final static Map<Long, UniversalElementRepresentation> inspectionSeanceCache = new HashMap<>();
+	public final static Map<Long, DataProvider> inspectionSeanceCache = new ConcurrentHashMap<Long, DataProvider>();
 
 	private InspectionSeance(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
