@@ -1,172 +1,250 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.Objects;
+import java.util.SortedMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ArrayReference;
+import com.sun.jdi.BooleanValue;
+import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
+import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.InvalidTypeException;
+import com.sun.jdi.InvocationException;
+import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.Value;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.event.BreakpointEvent;
 
-public final class MapDataProvider implements DataProvider{
+public final class MapDataProvider implements DataProvider {
 
-    // ===== CACHE SNAPSHOT =====
-    private static final Map<Long, List<Map.Entry<Value, Value>>> SNAPSHOT_CACHE = new HashMap<>();
+	private final ObjectReference instance;
+	private final BreakpointEvent breakpointEvent;
 
-    // ===== FIELD CACHE (🔥 NEW) =====
-    private static final Map<String, Field> FIELD_CACHE = new HashMap<>();
+	private final NavigableMap<Integer, Map.Entry<Value, Value>> mapElements = new ConcurrentSkipListMap<>();
+	private final AtomicInteger order = new AtomicInteger(0);
+	ThreadReference thread = null;
+	private ObjectReference iterator;
+	private Method hasNextMethod = null;
+	private Method nextMethod = null;
+	private Method getMethod = null;
+	private ClassType iteratorType = null;
+	private ClassType classType = null;
+//	private final AtomicBoolean initializationStarted = new AtomicBoolean(false);
+//	private final AtomicBoolean initialized = new AtomicBoolean(false);
 
-    public static List<Map.Entry<Value, Value>> iterateThroughMap(
-            ObjectReference instance,
-            BreakpointEvent breakpointEvent,
-            int offset,
-            int limit) {
+	private InitializationState initState = InitializationState.NOT_STARTED;
+	private final AtomicBoolean allElementsLoaded = new AtomicBoolean(false);
+	private final AtomicBoolean readingStarted = new AtomicBoolean(false);
 
-        if (instance == null || breakpointEvent == null || limit <= 0)
-            return List.of();
+	public MapDataProvider(ObjectReference instance, BreakpointEvent breakpointEvent) {
+		this.instance = instance;
+		this.breakpointEvent = breakpointEvent;
+	}
 
-        ThreadReference thread = breakpointEvent.thread();
+	private enum InitializationState {
+		NOT_STARTED, IN_PROGRESS, SUCCESS, FAILED
+	}
 
-        try {
-            long mapId = instance.uniqueID();
+	private void iterateThroughMap() {
 
-            // =========================================================
-            // 1. SNAPSHOT CACHE
-            // =========================================================
-            List<Map.Entry<Value, Value>> cached = SNAPSHOT_CACHE.get(mapId);
+		new Thread(() -> {
+			readingStarted.set(true);
+			while (true) {
+				Value hasNextVal = null;
+				DataProvider.jdiAccessLock.lock();
+				try {
+					hasNextVal = iterator.invokeMethod(thread, hasNextMethod, Collections.emptyList(),
+							ObjectReference.INVOKE_SINGLE_THREADED);
+					if (!(hasNextVal instanceof BooleanValue bv) || !bv.value())
+						break;
+					Value key = iterator.invokeMethod(thread, nextMethod, Collections.emptyList(),
+							ObjectReference.INVOKE_SINGLE_THREADED);
+					Value value = instance.invokeMethod(thread, getMethod, List.of(key),
+							ObjectReference.INVOKE_SINGLE_THREADED);
+					final int index = order.getAndIncrement();
+					mapElements.put(index, new AbstractMap.SimpleEntry<>(key, value));
+				} catch (Exception e) {
+					// TODO: handle exception
+				} finally {
+					DataProvider.jdiAccessLock.unlock();
+				}
+			}
+			allElementsLoaded.compareAndSet(false, true);
+		}).start();
+	//	return true;
+	}
 
-            if (cached == null) {
-                cached = loadSnapshot(instance, thread);
-                SNAPSHOT_CACHE.put(mapId, cached);
-            }
+	private boolean initiate() {
+		ReferenceType refType = instance.referenceType();
+		if (!(refType instanceof ClassType classType))
+			return false;
+		this.classType = classType;
+		boolean isMap = classType.allInterfaces().stream().anyMatch(iface -> "java.util.Map".equals(iface.name()));
 
-            if (cached.isEmpty())
-                return List.of();
+		if (!isMap)
+			return false;
+		Method getMethod = classType.concreteMethodByName("get", "(Ljava/lang/Object;)Ljava/lang/Object;");
+		if (getMethod == null)
+			return false;
+		this.getMethod = getMethod;
+		thread = breakpointEvent.thread();
+		// try {
+		// получаем keySet()
+		Method keySetMethod = classType.concreteMethodByName("keySet", "()Ljava/util/Set;");
+		if (keySetMethod == null)
+			return false;
 
-            // =========================================================
-            // 2. PAGING (LOCAL FAST)
-            // =========================================================
-            int start = Math.min(offset, cached.size());
-            int end = Math.min(start + limit, cached.size());
+		Value keySetValue = null;
+		try {
+			keySetValue = instance.invokeMethod(thread, keySetMethod, Collections.emptyList(),
+					ObjectReference.INVOKE_SINGLE_THREADED);
+		} catch (InvalidTypeException | ClassNotLoadedException | IncompatibleThreadStateException
+				| InvocationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (!(keySetValue instanceof ObjectReference keySetRef))
+			return false;
 
-            return cached.subList(start, end);
+		// iterator() для ключей
+		ReferenceType keySetType = keySetRef.referenceType();
+		if (!(keySetType instanceof ClassType keySetClass))
+			return false;
+		Method iteratorMethod = keySetClass.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
+		if (iteratorMethod == null)
+			return false;
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            return List.of();
-        }
-    }
+		Value iteratorValue = null;
+		try {
+			iteratorValue = keySetRef.invokeMethod(thread, iteratorMethod, Collections.emptyList(),
+					ObjectReference.INVOKE_SINGLE_THREADED);
+		} catch (InvalidTypeException | ClassNotLoadedException | IncompatibleThreadStateException
+				| InvocationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (!(iteratorValue instanceof ObjectReference iterator))
+			return false;
+		this.iterator = iterator;
 
-    // =============================================================
-    // SNAPSHOT LOADING (1–2 JDI CALLS TOTAL)
-    // =============================================================
-    private static List<Map.Entry<Value, Value>> loadSnapshot(
-            ObjectReference instance,
-            ThreadReference thread) throws Exception {
-
-        ReferenceType refType = instance.referenceType();
-        if (!(refType instanceof ClassType classType))
-            return List.of();
-
-        boolean isMap = classType.allInterfaces().stream()
-                .anyMatch(i -> "java.util.Map".equals(i.name()));
-
-        if (!isMap)
-            return List.of();
-
-        // 1️⃣ entrySet()
-        Value entrySetValue = instance.invokeMethod(
-                thread,
-                classType.concreteMethodByName("entrySet", "()Ljava/util/Set;"),
-                Collections.emptyList(),
-                ObjectReference.INVOKE_SINGLE_THREADED
-        );
-
-        if (!(entrySetValue instanceof ObjectReference entrySetRef))
-            return List.of();
-
-        // 2️⃣ toArray()
-        ClassType setType = (ClassType) entrySetRef.referenceType();
-
-        ArrayReference array = (ArrayReference) entrySetRef.invokeMethod(
-                thread,
-                setType.concreteMethodByName("toArray", "()[Ljava/lang/Object;"),
-                Collections.emptyList(),
-                ObjectReference.INVOKE_SINGLE_THREADED
-        );
-
-        List<Value> values = array.getValues();
-
-        if (values == null || values.isEmpty())
-            return List.of();
-
-        // =========================================================
-        // 3. BUILD LOCAL STRUCTURE (NO invokeMethod HERE)
-        // =========================================================
-        List<Map.Entry<Value, Value>> result = new ArrayList<>(values.size());
-
-        for (Value v : values) {
-
-            ObjectReference entryRef = (ObjectReference) v;
-            ClassType entryType = (ClassType) entryRef.referenceType();
-
-            Value key = getField(entryRef, entryType, "key");
-            Value value = getField(entryRef, entryType, "value");
-
-            result.add(Map.entry(key, value));
-        }
-
-        return result;
-    }
-
-    // =============================================================
-    // FIELD ACCESS (FAST PATH)
-    // =============================================================
-    private static Value getField(
-            ObjectReference obj,
-            ClassType type,
-            String fieldName) {
-
-        try {
-            String key = type.name() + ":" + fieldName;
-
-            Field field = FIELD_CACHE.get(key);
-
-            if (field == null) {
-                field = type.fieldByName(fieldName);
-                FIELD_CACHE.put(key, field);
-            }
-
-            if (field == null)
-                return null;
-
-            return obj.getValue(field);
-
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    // =============================================================
-    // CACHE CLEAR
-    // =============================================================
-    public static void clearCache() {
-        SNAPSHOT_CACHE.clear();
-        FIELD_CACHE.clear();
-    }
+		iteratorType = (ClassType) this.iterator.referenceType();
+		hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
+		nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+		if (hasNextMethod == null || nextMethod == null)
+			return false;
+//	}
+		return true;
+	}
 
 	@Override
 	public AbstractInspectionDTO getData(Integer pageNumber) {
-		// TODO Auto-generated method stub
+		DataProvider.jdiAccessLock.lock();
+		try {
+			if (initState == InitializationState.NOT_STARTED) {
+				initState = InitializationState.IN_PROGRESS;
+				if (initiate())
+					initState = InitializationState.SUCCESS;
+				else
+					initState = InitializationState.FAILED;
+			}
+		} finally {
+			DataProvider.jdiAccessLock.unlock();
+		}
+		DataProvider.jdiAccessLock.lock();
+		try {
+			if (readingStarted.compareAndSet(false, true))
+				iterateThroughMap();
+		} finally {
+			DataProvider.jdiAccessLock.unlock();
+		}
+		NavigableMap<Integer, Entry<Value, Value>> selectedItems = waitForPageLoading(pageNumber);
+		
+		return createPageOfMap(selectedItems);
+	}
+
+	private AbstractInspectionDTO createPageOfMap(NavigableMap<Integer, Entry<Value, Value>> selectedItems) {
+		List<Integer> sortedIndexes = selectedItems.keySet().stream().sorted().toList();
+		Map<UniversalElementRepresentation, UniversalElementRepresentation> collectionElements = new LinkedHashMap<UniversalElementRepresentation, UniversalElementRepresentation>();
+		for (Integer order : sortedIndexes) {
+			Value keyValue = selectedItems.get(order).getKey();
+			Value valueValue = selectedItems.get(order).getValue();
+			UniversalElementRepresentation keyElement = createUniversalElementRepresentationFromValue(keyValue);
+			UniversalElementRepresentation valueElement = createUniversalElementRepresentationFromValue(valueValue);
+			// InspectionSeance.inspectionSeanceCache.put(valueElement.getObjectReference().uniqueID(),
+			// valueElement);
+			collectionElements.put(keyElement, valueElement);
+		}
 		return null;
+	}
+	
+	private UniversalElementRepresentation createUniversalElementRepresentationFromValue(Value value) {
+		UniversalElementRepresentation element = null;
+		if (value instanceof ObjectReference objRef) {
+//			element = map.get(objRef.uniqueID());
+//
+//			// 🔥 ВАЖНО: fallback
+//			if (element == null) {
+				String type = objRef.referenceType().name();
+				String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
+
+				element = UniversalElementRepresentation.builder().referenceType(objRef.referenceType())
+						.objectReference(objRef).elementName(valueText)
+						.elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
+						.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+						.value(DebugUtils.getObjectReferenceValueAsString(objRef))
+						.valueCategory(DebugUtils.determineValueCategory(value)).build();
+			}
+		
+//	else {
+//			element = UniversalElementRepresentation.builder().elementName(value.toString())
+//					.valueCategory(UniversalElementRepresentation.ValueCategory.PRIMITIVE).build();
+//		}
+
+		return element;
+
+	}
+
+	private NavigableMap<Integer, Entry<Value, Value>> waitForPageLoading(Integer pageNumber) {
+	//	long start = System.currentTimeMillis();
+		if (Objects.isNull(pageNumber)) pageNumber = 1;
+		 NavigableMap<Integer, Entry<Value, Value>> selectedItems = Collections.emptyNavigableMap();
+
+		    while (true) {
+		    	 selectedItems = mapElements.subMap(pageNumber * DebugUtils.PAGE_SIZE,
+							true, pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE, false);
+		        if (selectedItems.size() == DebugUtils.PAGE_SIZE) return selectedItems;
+
+		        if (allElementsLoaded.get())
+		        	return selectedItems;
+		        try {
+		            Thread.sleep(100);
+		        } catch (InterruptedException ignored) {}
+		        
+//		        // защита от вечного ожидания
+//		        if (System.currentTimeMillis() - start > 2000)
+//		            break;
+		    }
+		
 	}
 }

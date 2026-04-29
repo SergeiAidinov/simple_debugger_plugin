@@ -15,9 +15,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.MapDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
@@ -46,20 +48,38 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 
 		}
 		final long id = uiEvent.getPayload().getFirst().getObjectId();
+		DataProvider dataProvider = InspectionSeance.inspectionSeanceCache.get(id);
+		if (Objects.nonNull(dataProvider)) {
+			AbstractInspectionDTO q = dataProvider.getData(uiEvent.getPayload().getSecond());
+			System.out.println(q);
+		} else {
+			Optional<UniversalElementRepresentation> i = TargetApplicationRepresentation.getInstance().getAllElements()
+					.stream().filter(e -> e instanceof UniversalElementRepresentation)
+					.map(e -> (UniversalElementRepresentation) e).filter(e -> Objects.equals(e.getObjectReferenceId(), id))
+					.findAny();
+
+			UniversalElementRepresentation mapRepresentation = i.get();
+			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation.getObjectReference(), breakpointEvent);
+			InspectionSeance.inspectionSeanceCache.put(id, mapDataProvider);
+			AbstractInspectionDTO q = InspectionSeance.inspectionSeanceCache.get(id)
+					.getData(uiEvent.getPayload().getSecond());
+			System.out.println(q);
+		}
+
 		Map<Long, UniversalElementRepresentation> map = TargetApplicationRepresentation.getInstance().getAllElements()
 				.stream().filter(UniversalElementRepresentation.class::isInstance)
 				.map(UniversalElementRepresentation.class::cast).filter(e -> e.getObjectReference() != null)
 				.collect(Collectors.toMap(e -> (Long) e.getObjectReference().uniqueID(), Function.identity(),
 						(existing, duplicate) -> existing));
-		Optional<UniversalElementRepresentation> i = TargetApplicationRepresentation.getInstance().getAllElements().stream()
-		.filter(e -> e instanceof UniversalElementRepresentation)
-		.map(e -> (UniversalElementRepresentation) e)
-		.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
-		
+		Optional<UniversalElementRepresentation> i = TargetApplicationRepresentation.getInstance().getAllElements()
+				.stream().filter(e -> e instanceof UniversalElementRepresentation)
+				.map(e -> (UniversalElementRepresentation) e).filter(e -> Objects.equals(e.getObjectReferenceId(), id))
+				.findAny();
+
 		UniversalElementRepresentation mapRepresentation = i.get();
-				
-			//	map.get(id);
-		
+
+		// map.get(id);
+
 		int mapSize = 0;
 		if (Objects.nonNull(mapRepresentation)) {
 			String mapSizeString = mapRepresentation.getValue().substring(mapRepresentation.getValue().indexOf(':') + 1,
@@ -83,21 +103,25 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 //		List<Entry<Value, Value>> pageEntries1 = DebugUtils.iterateThroughMap(mapRepresentation.getObjectReference(),
 //				breakpointEvent);
 		long l = System.currentTimeMillis();
-		 List<Entry<Value, Value>> qqq = MapDataProvider.iterateThroughMap(mapRepresentation.getObjectReference(), breakpointEvent, 0, 16000);
+//		List<Entry<Value, Value>> qqq = MapDataProvider.iterateThroughMap(mapRepresentation.getObjectReference(),
+//				breakpointEvent, 0, 16000);
 		System.out.println("TINE: " + (System.currentTimeMillis() - l));
-		 Map<UniversalElementRepresentation, UniversalElementRepresentation> qq = new HashMap<UniversalElementRepresentation, UniversalElementRepresentation>();
-		 Map<UniversalElementRepresentation, UniversalElementRepresentation> collectionElements = new HashMap<>();  
+		Map<UniversalElementRepresentation, UniversalElementRepresentation> qq = new HashMap<UniversalElementRepresentation, UniversalElementRepresentation>();
+		Map<UniversalElementRepresentation, UniversalElementRepresentation> collectionElements = new HashMap<>();
 		for (Entry<Value, Value> entry : pageEntries) {
-			  Value keyValue = entry.getKey();
-			  Value valueValue = entry.getValue();
-		      UniversalElementRepresentation keyElement = createUniversalElementRepresentationFromValue(keyValue, map);
-		      UniversalElementRepresentation valueElement = createUniversalElementRepresentationFromValue(valueValue, map);
-		    //  InspectionSeance.inspectionSeanceCache.put(valueElement.getObjectReference().uniqueID(), valueElement);
-			  collectionElements.put(keyElement, valueElement);
-		  }
+			Value keyValue = entry.getKey();
+			Value valueValue = entry.getValue();
+			UniversalElementRepresentation keyElement = createUniversalElementRepresentationFromValue(keyValue, map);
+			UniversalElementRepresentation valueElement = createUniversalElementRepresentationFromValue(valueValue,
+					map);
+			// InspectionSeance.inspectionSeanceCache.put(valueElement.getObjectReference().uniqueID(),
+			// valueElement);
+			collectionElements.put(keyElement, valueElement);
+		}
 
 		List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> list = new ArrayList<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>();
-		for (Entry<UniversalElementRepresentation, UniversalElementRepresentation> entry : collectionElements.entrySet()) {
+		for (Entry<UniversalElementRepresentation, UniversalElementRepresentation> entry : collectionElements
+				.entrySet()) {
 			PairDTO<UniversalElementRepresentation, UniversalElementRepresentation> e = PairDTO.of(entry.getKey(),
 					entry.getValue());
 			list.add(PairDTO.of(
@@ -107,79 +131,40 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 		}
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = MapPageDTO
 				.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder()
-				.anchorMap(uiEvent.getPayload().getFirst())
-				.elementName(mapRepresentation.getElementName()).elementType(mapRepresentation.getAdditionalInfo())
-				.totalEntries(totalEntries).currentPage(uiEvent.getPayload().getSecond()).totalPages(totalPages)
-				.fromIndex(fromIndex).toIndex(toIndex).entries(list).anchorTag(mapRepresentation.getTag()).build();
+				.anchorMap(uiEvent.getPayload().getFirst()).elementName(mapRepresentation.getElementName())
+				.elementType(mapRepresentation.getAdditionalInfo()).totalEntries(totalEntries)
+				.currentPage(uiEvent.getPayload().getSecond()).totalPages(totalPages).fromIndex(fromIndex)
+				.toIndex(toIndex).entries(list).anchorTag(mapRepresentation.getTag()).build();
 		debugEventCollector.collectDebugEvent(new DebugEvent<>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
 
 		return false;
 	}
-	
-	private UniversalElementRepresentation createUniversalElementRepresentationFromValue(Value value, Map<Long, UniversalElementRepresentation> map) {
+
+	private UniversalElementRepresentation createUniversalElementRepresentationFromValue(Value value,
+			Map<Long, UniversalElementRepresentation> map) {
 		UniversalElementRepresentation element = null;
 		if (value instanceof ObjectReference objRef) {
-	          element = map.get(objRef.uniqueID());
+			element = map.get(objRef.uniqueID());
 
-	          // 🔥 ВАЖНО: fallback
-	          if (element == null) {
-	              String type = objRef.referenceType().name();
-	              String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
+			// 🔥 ВАЖНО: fallback
+			if (element == null) {
+				String type = objRef.referenceType().name();
+				String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
 
-	              element = UniversalElementRepresentation.builder()
-	                      .referenceType(objRef.referenceType())
-	                      .objectReference(objRef)
-	                      .elementName(valueText)
-	                      .elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
-	                      .currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-	                      .value(DebugUtils.getObjectReferenceValueAsString(objRef))
-	                      .valueCategory(DebugUtils.determineValueCategory(value))
-	                      .build();
-	          }
-	      } else {
-	          element = UniversalElementRepresentation.builder()
-	                  .elementName(value.toString())
-	                  .valueCategory(UniversalElementRepresentation.ValueCategory.PRIMITIVE)
-	                  .build();
-	      }
-		
+				element = UniversalElementRepresentation.builder().referenceType(objRef.referenceType())
+						.objectReference(objRef).elementName(valueText)
+						.elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
+						.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+						.value(DebugUtils.getObjectReferenceValueAsString(objRef))
+						.valueCategory(DebugUtils.determineValueCategory(value)).build();
+			}
+		} else {
+			element = UniversalElementRepresentation.builder().elementName(value.toString())
+					.valueCategory(UniversalElementRepresentation.ValueCategory.PRIMITIVE).build();
+		}
+
 		return element;
-		
+
 	}
-
-//	public AbstractInspectionCollectionPage<?> inspectPage(AbstractInspectableElement inspectableElement,
-//			int pageNumber) {
-//		if (!(inspectableElement instanceof InspectableMapElement map))
-//			throw new IllegalArgumentException("Expected InspectableMapElement");
-//		Optional<UniversalElementRepresentation> mapRepresentation = TargetApplicationRepresentation.getInstance().getAllElements()
-//				.stream().filter(e -> Objects.equals(e.getTag(), anchorElement.getTag()))
-//				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
-//				.findAny();
-//		int mapSize = 0;
-//		if (mapRepresentation.isPresent()) {
-//			String mapSizeString = mapRepresentation.get().getValue().substring(mapRepresentation.get().getValue().indexOf(':') + 1,
-//					mapRepresentation.get().getValue().indexOf(','));
-//			System.out.println(mapSizeString);
-//			try {
-//				mapSize = Integer.valueOf(mapSizeString);
-//			} catch (NumberFormatException e) {
-//				// TODO: handle exception
-//			}
-//		}
-//		int totalEntries = mapSize;
-//		int totalPages = (totalEntries + DebugUtils.PAGE_SIZE - 1) / DebugUtils.PAGE_SIZE;
-//
-//		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
-//		int toIndex = Math.min(fromIndex + DebugUtils.PAGE_SIZE - 1, totalEntries - 1);
-//
-//		List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> pageEntries = map
-//				.getPage(pageNumber);
-//
-//		return MapPageDTO.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder()
-//				.elementName(map.getAnchorElement().getElementName()).elementType(map.getMapType())
-//				.totalEntries(totalEntries).currentPage(pageNumber).totalPages(totalPages).fromIndex(fromIndex)
-//				.toIndex(toIndex).entries(pageEntries).anchorTag(map.getAnchorElement().getTag()).build();
-//	}
-
 }
