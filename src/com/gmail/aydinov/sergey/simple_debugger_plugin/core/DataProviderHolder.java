@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
@@ -30,7 +31,7 @@ public class DataProviderHolder {
 		while(DebuggerContext.context().isInspectionSeanceActive()) {
 			AbstractSimpleDebuggerEvent abstractSimpleDebuggerUIEvent= null;
 			try {
-				abstractSimpleDebuggerUIEvent = eventsForProvider.take();
+				abstractSimpleDebuggerUIEvent = eventsForProvider.poll(1, TimeUnit.SECONDS);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
