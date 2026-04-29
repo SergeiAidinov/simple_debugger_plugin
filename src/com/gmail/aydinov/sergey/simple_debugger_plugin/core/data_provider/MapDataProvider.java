@@ -19,7 +19,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.BooleanValue;
@@ -38,7 +41,7 @@ import com.sun.jdi.event.BreakpointEvent;
 
 public final class MapDataProvider implements DataProvider {
 
-	private final ObjectReference instance;
+	private final UniversalElementRepresentation mapRepresentation;
 	private final BreakpointEvent breakpointEvent;
 
 	private final NavigableMap<Integer, Map.Entry<Value, Value>> mapElements = new ConcurrentSkipListMap<>();
@@ -50,6 +53,7 @@ public final class MapDataProvider implements DataProvider {
 	private Method getMethod = null;
 	private ClassType iteratorType = null;
 	private ClassType classType = null;
+	private Integer pageNumber = null;
 //	private final AtomicBoolean initializationStarted = new AtomicBoolean(false);
 //	private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -57,13 +61,41 @@ public final class MapDataProvider implements DataProvider {
 	private final AtomicBoolean allElementsLoaded = new AtomicBoolean(false);
 	private final AtomicBoolean readingStarted = new AtomicBoolean(false);
 
-	public MapDataProvider(ObjectReference instance, BreakpointEvent breakpointEvent) {
-		this.instance = instance;
+	public MapDataProvider(UniversalElementRepresentation mapRepresentation, BreakpointEvent breakpointEvent) {
+		this.mapRepresentation = mapRepresentation;
 		this.breakpointEvent = breakpointEvent;
 	}
 
 	private enum InitializationState {
 		NOT_STARTED, IN_PROGRESS, SUCCESS, FAILED
+	}
+	
+	@Override
+	public MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> getData(Integer pageNumber) {
+		if (Objects.isNull(pageNumber)) this.pageNumber = 0;
+		else this.pageNumber = pageNumber;
+		DataProvider.jdiAccessLock.lock();
+		try {
+			if (initState == InitializationState.NOT_STARTED) {
+				initState = InitializationState.IN_PROGRESS;
+				if (initiate())
+					initState = InitializationState.SUCCESS;
+				else
+					initState = InitializationState.FAILED;
+			}
+		} finally {
+			DataProvider.jdiAccessLock.unlock();
+		}
+		DataProvider.jdiAccessLock.lock();
+		try {
+			if (readingStarted.compareAndSet(false, true))
+				iterateThroughMap();
+		} finally {
+			DataProvider.jdiAccessLock.unlock();
+		}
+		NavigableMap<Integer, Entry<Value, Value>> selectedItems = waitForPageLoading();
+		
+		return createPageOfMap(selectedItems);
 	}
 
 	private void iterateThroughMap() {
@@ -80,7 +112,7 @@ public final class MapDataProvider implements DataProvider {
 						break;
 					Value key = iterator.invokeMethod(thread, nextMethod, Collections.emptyList(),
 							ObjectReference.INVOKE_SINGLE_THREADED);
-					Value value = instance.invokeMethod(thread, getMethod, List.of(key),
+					Value value = mapRepresentation.getObjectReference().invokeMethod(thread, getMethod, List.of(key),
 							ObjectReference.INVOKE_SINGLE_THREADED);
 					final int index = order.getAndIncrement();
 					mapElements.put(index, new AbstractMap.SimpleEntry<>(key, value));
@@ -96,7 +128,7 @@ public final class MapDataProvider implements DataProvider {
 	}
 
 	private boolean initiate() {
-		ReferenceType refType = instance.referenceType();
+		ReferenceType refType = mapRepresentation.getObjectReference().referenceType();
 		if (!(refType instanceof ClassType classType))
 			return false;
 		this.classType = classType;
@@ -117,7 +149,7 @@ public final class MapDataProvider implements DataProvider {
 
 		Value keySetValue = null;
 		try {
-			keySetValue = instance.invokeMethod(thread, keySetMethod, Collections.emptyList(),
+			keySetValue = mapRepresentation.getObjectReference().invokeMethod(thread, keySetMethod, Collections.emptyList(),
 					ObjectReference.INVOKE_SINGLE_THREADED);
 		} catch (InvalidTypeException | ClassNotLoadedException | IncompatibleThreadStateException
 				| InvocationException e) {
@@ -157,33 +189,9 @@ public final class MapDataProvider implements DataProvider {
 		return true;
 	}
 
-	@Override
-	public AbstractInspectionDTO getData(Integer pageNumber) {
-		DataProvider.jdiAccessLock.lock();
-		try {
-			if (initState == InitializationState.NOT_STARTED) {
-				initState = InitializationState.IN_PROGRESS;
-				if (initiate())
-					initState = InitializationState.SUCCESS;
-				else
-					initState = InitializationState.FAILED;
-			}
-		} finally {
-			DataProvider.jdiAccessLock.unlock();
-		}
-		DataProvider.jdiAccessLock.lock();
-		try {
-			if (readingStarted.compareAndSet(false, true))
-				iterateThroughMap();
-		} finally {
-			DataProvider.jdiAccessLock.unlock();
-		}
-		NavigableMap<Integer, Entry<Value, Value>> selectedItems = waitForPageLoading(pageNumber);
-		
-		return createPageOfMap(selectedItems);
-	}
+	
 
-	private AbstractInspectionDTO createPageOfMap(NavigableMap<Integer, Entry<Value, Value>> selectedItems) {
+	private MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> createPageOfMap(NavigableMap<Integer, Entry<Value, Value>> selectedItems) {
 		List<Integer> sortedIndexes = selectedItems.keySet().stream().sorted().toList();
 		Map<UniversalElementRepresentation, UniversalElementRepresentation> collectionElements = new LinkedHashMap<UniversalElementRepresentation, UniversalElementRepresentation>();
 		for (Integer order : sortedIndexes) {
@@ -195,7 +203,28 @@ public final class MapDataProvider implements DataProvider {
 			// valueElement);
 			collectionElements.put(keyElement, valueElement);
 		}
-		return null;
+		List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> list = new ArrayList<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>();
+		for (Entry<UniversalElementRepresentation, UniversalElementRepresentation> entry : collectionElements
+				.entrySet()) {
+			PairDTO<UniversalElementRepresentation, UniversalElementRepresentation> e = PairDTO.of(entry.getKey(),
+					entry.getValue());
+			list.add(PairDTO.of(
+					InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getFirst()),
+					InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getSecond())));
+
+		}
+		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = MapPageDTO
+				.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder()
+			//	.anchorMap(mapRepresentation)
+				.elementName(mapRepresentation.getElementName())
+				.elementType(mapRepresentation.getAdditionalInfo())
+				//.totalEntries(totalEntries)
+				.currentPage(pageNumber)
+				//.totalPages(totalPages)
+				//.fromIndex(fromIndex)
+				//.toIndex(toIndex)
+				.entries(list).anchorTag(mapRepresentation.getTag()).build();
+		return page;
 	}
 	
 	private UniversalElementRepresentation createUniversalElementRepresentationFromValue(Value value) {
@@ -225,7 +254,7 @@ public final class MapDataProvider implements DataProvider {
 
 	}
 
-	private NavigableMap<Integer, Entry<Value, Value>> waitForPageLoading(Integer pageNumber) {
+	private NavigableMap<Integer, Entry<Value, Value>> waitForPageLoading() {
 	//	long start = System.currentTimeMillis();
 		if (Objects.isNull(pageNumber)) pageNumber = 1;
 		 NavigableMap<Integer, Entry<Value, Value>> selectedItems = Collections.emptyNavigableMap();
