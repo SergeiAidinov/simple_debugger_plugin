@@ -135,6 +135,8 @@ public final class MapDataProvider implements DataProvider {
 				}
 			}
 			allElementsLoaded.compareAndSet(false, true);
+			totalEntries = String.valueOf(mapElements.size());
+			totalPages = String.valueOf(Integer.parseInt(totalEntries) / DebugUtils.PAGE_SIZE + 1);
 		}).start();
 	}
 
