@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.MapDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
@@ -48,10 +49,10 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 
 		}
 		final long id = uiEvent.getPayload().getFirst().getObjectId();
-		DataProvider dataProvider = InspectionSeance.inspectionSeanceCache.get(id);
-		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = null;
-		if (Objects.nonNull(dataProvider)) {
-			page = (MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>) dataProvider.getData(uiEvent.getPayload().getSecond());
+		DataProviderHolder dataProviderHolder = InspectionSeance.inspectionSeanceCache.get(id);
+	//	MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = null;
+		if (Objects.nonNull(dataProviderHolder)) {
+			dataProviderHolder.handleEvent(uiEvent);
 			System.out.println();
 		} else {
 			Optional<UniversalElementRepresentation> i = TargetApplicationRepresentation.getInstance().getAllElements()
@@ -61,13 +62,14 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 
 			UniversalElementRepresentation mapRepresentation = i.get();
 			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, breakpointEvent);
-			InspectionSeance.inspectionSeanceCache.put(id, mapDataProvider);
-			page = (MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>) InspectionSeance.inspectionSeanceCache.get(id)
-					.getData(uiEvent.getPayload().getSecond());
-			System.out.println();
+			dataProviderHolder = new DataProviderHolder(mapDataProvider);
+			InspectionSeance.inspectionSeanceCache.put(id, dataProviderHolder);
+			System.out.println(uiEvent);
+			InspectionSeance.inspectionSeanceCache.get(id).handleEvent(uiEvent);
+			
 		}
-		debugEventCollector.collectDebugEvent(new DebugEvent<>(
-				SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
+//		debugEventCollector.collectDebugEvent(new DebugEvent<>(
+//				SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
 		return false;
 	}
 }

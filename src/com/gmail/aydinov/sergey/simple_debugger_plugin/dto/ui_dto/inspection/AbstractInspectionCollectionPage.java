@@ -10,13 +10,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRe
 
 public abstract class AbstractInspectionCollectionPage<T> extends AbstractInspectionDTO {
 
-	private final int totalElements;
+	private final String totalElements;
 	private final int currentPage;
-	private final int totalPages;
+	private final String totalPages;
 //	private final Map<Integer, UniversalElementRepresentation> entries;
 
-	protected AbstractInspectionCollectionPage(Tag tag, String elementName, String elementType, int totalElements,
-			int currentPage, int totalPages,  List<PairDTO<Integer, String>> breadcrumbs, Long objectId) {
+	protected AbstractInspectionCollectionPage(Tag tag, String elementName, String elementType, String totalElements,
+			int currentPage, String totalPages,  List<PairDTO<Integer, String>> breadcrumbs, Long objectId) {
 		super(tag, elementName, elementType, breadcrumbs, objectId);
 		this.totalElements = totalElements;
 		this.currentPage = currentPage;
@@ -25,7 +25,7 @@ public abstract class AbstractInspectionCollectionPage<T> extends AbstractInspec
 	}
 
 
-	public int getTotalElements() {
+	public String getTotalElements() {
 		return totalElements;
 	}
 
@@ -33,7 +33,7 @@ public abstract class AbstractInspectionCollectionPage<T> extends AbstractInspec
 		return currentPage;
 	}
 
-	public int getTotalPages() {
+	public String getTotalPages() {
 		return totalPages;
 	}
 
@@ -42,7 +42,7 @@ public abstract class AbstractInspectionCollectionPage<T> extends AbstractInspec
 //	}
 
 	public boolean hasNextPage() {
-		return currentPage < totalPages - 1;
+		return currentPage < Integer.valueOf(totalPages) - 1;
 	}
 
 	public boolean hasPreviousPage() {

@@ -6,7 +6,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.Abs
 
 public interface DataProvider {
 	
-	AbstractInspectionDTO getData(Integer pageNumber);
+	void getData(Integer pageNumber);
 	
 	public static ReentrantLock jdiAccessLock = new ReentrantLock(true);
 

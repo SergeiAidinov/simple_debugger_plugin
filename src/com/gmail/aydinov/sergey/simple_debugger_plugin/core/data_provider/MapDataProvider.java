@@ -23,6 +23,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.BooleanValue;
@@ -45,15 +49,20 @@ public final class MapDataProvider implements DataProvider {
 	private final BreakpointEvent breakpointEvent;
 
 	private final NavigableMap<Integer, Map.Entry<Value, Value>> mapElements = new ConcurrentSkipListMap<>();
+	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 	private final AtomicInteger order = new AtomicInteger(0);
-	ThreadReference thread = null;
+	private ThreadReference thread = null;
 	private ObjectReference iterator;
 	private Method hasNextMethod = null;
 	private Method nextMethod = null;
 	private Method getMethod = null;
 	private ClassType iteratorType = null;
-	private ClassType classType = null;
+//	private ClassType classType = null;
 	private Integer pageNumber = null;
+	private String totalPages = "calculating...";
+	private String totalEntries = "calculating...";
+//	private int fromIndex = 0;
+//	private int toIndex = 0;
 //	private final AtomicBoolean initializationStarted = new AtomicBoolean(false);
 //	private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -69,11 +78,13 @@ public final class MapDataProvider implements DataProvider {
 	private enum InitializationState {
 		NOT_STARTED, IN_PROGRESS, SUCCESS, FAILED
 	}
-	
+
 	@Override
-	public MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> getData(Integer pageNumber) {
-		if (Objects.isNull(pageNumber)) this.pageNumber = 0;
-		else this.pageNumber = pageNumber;
+	public void getData(Integer pageNumber) {
+		if (Objects.isNull(pageNumber))
+			this.pageNumber = 0;
+		else
+			this.pageNumber = pageNumber;
 		DataProvider.jdiAccessLock.lock();
 		try {
 			if (initState == InitializationState.NOT_STARTED) {
@@ -94,12 +105,13 @@ public final class MapDataProvider implements DataProvider {
 			DataProvider.jdiAccessLock.unlock();
 		}
 		NavigableMap<Integer, Entry<Value, Value>> selectedItems = waitForPageLoading();
-		
-		return createPageOfMap(selectedItems);
+
+		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(selectedItems);
+		debugEventCollector.collectDebugEvent(new DebugEvent<>(
+				SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
 	}
 
 	private void iterateThroughMap() {
-
 		new Thread(() -> {
 			readingStarted.set(true);
 			while (true) {
@@ -124,14 +136,13 @@ public final class MapDataProvider implements DataProvider {
 			}
 			allElementsLoaded.compareAndSet(false, true);
 		}).start();
-	//	return true;
 	}
 
 	private boolean initiate() {
 		ReferenceType refType = mapRepresentation.getObjectReference().referenceType();
 		if (!(refType instanceof ClassType classType))
 			return false;
-		this.classType = classType;
+		// this.classType = classType;
 		boolean isMap = classType.allInterfaces().stream().anyMatch(iface -> "java.util.Map".equals(iface.name()));
 
 		if (!isMap)
@@ -149,8 +160,8 @@ public final class MapDataProvider implements DataProvider {
 
 		Value keySetValue = null;
 		try {
-			keySetValue = mapRepresentation.getObjectReference().invokeMethod(thread, keySetMethod, Collections.emptyList(),
-					ObjectReference.INVOKE_SINGLE_THREADED);
+			keySetValue = mapRepresentation.getObjectReference().invokeMethod(thread, keySetMethod,
+					Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
 		} catch (InvalidTypeException | ClassNotLoadedException | IncompatibleThreadStateException
 				| InvocationException e) {
 			// TODO Auto-generated catch block
@@ -189,9 +200,8 @@ public final class MapDataProvider implements DataProvider {
 		return true;
 	}
 
-	
-
-	private MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> createPageOfMap(NavigableMap<Integer, Entry<Value, Value>> selectedItems) {
+	private MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> createPageOfMap(
+			NavigableMap<Integer, Entry<Value, Value>> selectedItems) {
 		List<Integer> sortedIndexes = selectedItems.keySet().stream().sorted().toList();
 		Map<UniversalElementRepresentation, UniversalElementRepresentation> collectionElements = new LinkedHashMap<UniversalElementRepresentation, UniversalElementRepresentation>();
 		for (Integer order : sortedIndexes) {
@@ -213,20 +223,19 @@ public final class MapDataProvider implements DataProvider {
 					InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getSecond())));
 
 		}
+		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
+		final int mapSize = mapElements.size();
+		int toIndex = (mapSize >= fromIndex + DebugUtils.PAGE_SIZE) ? (fromIndex + DebugUtils.PAGE_SIZE) : mapSize;
+		InnerElementRepresentationDTO mapRepresentationDto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+				.fromElement(mapRepresentation);
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = MapPageDTO
-				.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder()
-			//	.anchorMap(mapRepresentation)
-				.elementName(mapRepresentation.getElementName())
-				.elementType(mapRepresentation.getAdditionalInfo())
-				//.totalEntries(totalEntries)
-				.currentPage(pageNumber)
-				//.totalPages(totalPages)
-				//.fromIndex(fromIndex)
-				//.toIndex(toIndex)
-				.entries(list).anchorTag(mapRepresentation.getTag()).build();
+				.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder().anchorMap(mapRepresentationDto)
+				.elementName(mapRepresentation.getElementName()).elementType(mapRepresentation.getAdditionalInfo())
+				.totalEntries(totalEntries).currentPage(pageNumber).totalPages(totalPages).fromIndex(fromIndex)
+				.toIndex(toIndex).entries(list).anchorTag(mapRepresentation.getTag()).build();
 		return page;
 	}
-	
+
 	private UniversalElementRepresentation createUniversalElementRepresentationFromValue(Value value) {
 		UniversalElementRepresentation element = null;
 		if (value instanceof ObjectReference objRef) {
@@ -234,17 +243,17 @@ public final class MapDataProvider implements DataProvider {
 //
 //			// 🔥 ВАЖНО: fallback
 //			if (element == null) {
-				String type = objRef.referenceType().name();
-				String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
+			String type = objRef.referenceType().name();
+			String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
 
-				element = UniversalElementRepresentation.builder().referenceType(objRef.referenceType())
-						.objectReference(objRef).elementName(valueText)
-						.elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
-						.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-						.value(DebugUtils.getObjectReferenceValueAsString(objRef))
-						.valueCategory(DebugUtils.determineValueCategory(value)).build();
-			}
-		
+			element = UniversalElementRepresentation.builder().referenceType(objRef.referenceType())
+					.objectReference(objRef).elementName(valueText)
+					.elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
+					.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+					.value(DebugUtils.getObjectReferenceValueAsString(objRef))
+					.valueCategory(DebugUtils.determineValueCategory(value)).build();
+		}
+
 //	else {
 //			element = UniversalElementRepresentation.builder().elementName(value.toString())
 //					.valueCategory(UniversalElementRepresentation.ValueCategory.PRIMITIVE).build();
@@ -255,25 +264,28 @@ public final class MapDataProvider implements DataProvider {
 	}
 
 	private NavigableMap<Integer, Entry<Value, Value>> waitForPageLoading() {
-	//	long start = System.currentTimeMillis();
-		if (Objects.isNull(pageNumber)) pageNumber = 1;
-		 NavigableMap<Integer, Entry<Value, Value>> selectedItems = Collections.emptyNavigableMap();
+		// long start = System.currentTimeMillis();
+		if (Objects.isNull(pageNumber))
+			pageNumber = 0;
+		NavigableMap<Integer, Entry<Value, Value>> selectedItems = Collections.emptyNavigableMap();
 
-		    while (true) {
-		    	 selectedItems = mapElements.subMap(pageNumber * DebugUtils.PAGE_SIZE,
-							true, pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE, false);
-		        if (selectedItems.size() == DebugUtils.PAGE_SIZE) return selectedItems;
+		while (true) {
+			selectedItems = mapElements.subMap(pageNumber * DebugUtils.PAGE_SIZE, true,
+					pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE, false);
+			if (selectedItems.size() == DebugUtils.PAGE_SIZE)
+				return selectedItems;
 
-		        if (allElementsLoaded.get())
-		        	return selectedItems;
-		        try {
-		            Thread.sleep(100);
-		        } catch (InterruptedException ignored) {}
-		        
+			if (allElementsLoaded.get())
+				return selectedItems;
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException ignored) {
+			}
+
 //		        // защита от вечного ожидания
 //		        if (System.currentTimeMillis() - start > 2000)
 //		            break;
-		    }
-		
+		}
+
 	}
 }

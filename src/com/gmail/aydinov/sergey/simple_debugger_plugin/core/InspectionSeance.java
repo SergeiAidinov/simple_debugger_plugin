@@ -59,7 +59,7 @@ public class InspectionSeance {
 	private final EventSequence eventSequence = new EventSequence();
 	private static boolean alreadyStarted = false;
 	private boolean ancorElementHandled = false;
-	public final static Map<Long, DataProvider> inspectionSeanceCache = new ConcurrentHashMap<Long, DataProvider>();
+	public final static Map<Long, DataProviderHolder> inspectionSeanceCache = new ConcurrentHashMap<Long, DataProviderHolder>();
 
 	private InspectionSeance(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {

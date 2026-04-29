@@ -53,9 +53,9 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 		public Long objectId;
 		private String elementName;
 		private String elementType;
-		private int totalEntries;
+		private String totalEntries;
 		private int currentPage;
-		private int totalPages;
+		private String totalPages;
 		private int fromIndex;
 		private int toIndex;
 		private List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> entries;
@@ -77,7 +77,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 			return this;
 		}
 
-		public Builder<K, V> totalEntries(int total) {
+		public Builder<K, V> totalEntries(String total) {
 			this.totalEntries = total;
 			return this;
 		}
@@ -87,7 +87,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 			return this;
 		}
 
-		public Builder<K, V> totalPages(int pages) {
+		public Builder<K, V> totalPages(String pages) {
 			this.totalPages = pages;
 			return this;
 		}
