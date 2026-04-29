@@ -125,9 +125,9 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler{
 		 ArrayPageDTO page = ArrayPageDTO.builder()
           .elementName(collectionRepresentation.getElementName())
           .elementType(collectionRepresentation.getElementType().name()) // преобразуем enum в строку для DTO
-          .totalElements(collectionSize)
+          .totalElements(String.valueOf(collectionSize))
           .currentPage(uiEvent.getPayload().getSecond())
-          .totalPages(totalPages)
+          .totalPages(String.valueOf(totalPages))
           .fromIndex(fromIndex)
           .toIndex(toIndex)
           .entries(collectionElements)

@@ -44,28 +44,10 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 		} catch (ClassCastException castException) {
 
 		}
-		DataProvider dataProvider = InspectionSeance.inspectionSeanceCache
-				.get(uiEvent.getPayload().getObjectId());
-		if (Objects.nonNull(dataProvider)) {
-			debugEventCollector.collectDebugEvent(new DebugEvent<>(
-					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, dataProvider.getData(null)));
-			return true;
-		}
 		if (Objects.nonNull(uiEvent)) {
 			InnerElementRepresentationDTO userObject = uiEvent.getPayload();
 			List<UniversalElementRepresentation> uObjs = findAllUserObjects(userObject);
 			if (uObjs.isEmpty()) {
-				
-				
-				
-//				if (Objects.nonNull(inspectableUserObject)
-//						&& Objects.nonNull(inspectableUserObject.getObjectReferenceId())) {
-//					UserObjectPageDTO userObjectPageDTO = build(inspectableUserObject.getObjectReference());
-//					System.out.println(userObjectPageDTO);
-//					debugEventCollector.collectDebugEvent(new DebugEvent<>(
-//							SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
-//				}
-//				return true;
 			}
 			List<InnerElementRepresentationDTO> fields = new ArrayList<InnerElementRepresentationDTO>();
 			List<InnerElementRepresentationDTO> methods = new ArrayList<InnerElementRepresentationDTO>();
@@ -104,7 +86,7 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 					.elementType(userObject.getTypeOrReturnType()).objectId(userObject.getObjectId())
 					.entries(subordinates).classType(userObject.getTypeOrReturnType()).anchorTag(userObject.getTag())
 					.build();
-			InspectionSeance.inspectionSeanceCache.put(userObjectPageDTO.getObjectId(), new ObjectDataProvider(userObjectPageDTO));
+		//	InspectionSeance.inspectionSeanceCache.put(userObjectPageDTO.getObjectId(), new ObjectDataProvider(userObjectPageDTO));
 			debugEventCollector.collectDebugEvent(new DebugEvent<>(
 					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
 		}

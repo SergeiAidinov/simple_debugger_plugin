@@ -47,9 +47,9 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 		public Long objectId;
 		private String elementName;
 		private String elementType;
-		private int totalElements;
+		private String totalElements;
 		private int currentPage;
-		private int totalPages;
+		private String totalPages;
 		private int fromIndex;
 		private int toIndex;
 		private Map<Integer, UniversalElementRepresentation> entries;
@@ -66,7 +66,7 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 			return this;
 		}
 
-		public Builder totalElements(int total) {
+		public Builder totalElements(String total) {
 			this.totalElements = total;
 			return this;
 		}
@@ -76,7 +76,7 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 			return this;
 		}
 
-		public Builder totalPages(int pages) {
+		public Builder totalPages(String pages) {
 			this.totalPages = pages;
 			return this;
 		}

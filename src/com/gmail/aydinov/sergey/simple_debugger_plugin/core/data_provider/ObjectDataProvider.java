@@ -16,9 +16,9 @@ public class ObjectDataProvider implements DataProvider{
 	}
 
 	@Override
-	public AbstractInspectionDTO getData(Integer pageNumber) {
+	public void getData(Integer pageNumber) {
 		// TODO Auto-generated method stub
-		return userObjectPageDTO;
+		//return userObjectPageDTO;
 	}
 	
 
