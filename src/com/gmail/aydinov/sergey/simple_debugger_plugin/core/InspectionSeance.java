@@ -3,13 +3,18 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
@@ -60,7 +65,10 @@ public class InspectionSeance {
 	private static boolean alreadyStarted = false;
 	private boolean ancorElementHandled = false;
 	public final static Map<Long, DataProviderHolder> inspectionSeanceCache = new ConcurrentHashMap<Long, DataProviderHolder>();
-
+	public final static SortedMap<Integer, BreadCrumb> breadcrumbs = new TreeMap<Integer, BreadCrumb>();
+	private final AtomicInteger breadCrumbOrder = new AtomicInteger(0);
+	
+	@SuppressWarnings("unchecked")
 	private InspectionSeance(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
 		this.currentFrame = currentFrame;
@@ -99,6 +107,7 @@ public class InspectionSeance {
 			// DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 			debugEventCollector
 					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+			inspectionSeanceCache.clear();
 			alreadyStarted = false;
 		}
 
@@ -168,6 +177,7 @@ public class InspectionSeance {
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE))
 					break;
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE)) {
+					
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
 //					UIEvent<Integer> userRequestetPage = (UIEvent<Integer>) uiEvent;
@@ -186,8 +196,10 @@ public class InspectionSeance {
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE)) {
+					UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> userReqeustedMapPageEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) uiEvent;
+					Integer orderBreadCrumb = userReqeustedMapPageEvent.getPayload().getSecond();
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
-					handler.handle(uiEvent, currentFrame, breakpointEvent);
+					handler.handle(userReqeustedMapPageEvent, currentFrame, breakpointEvent);
 				}
 			}
 			return true;
@@ -197,13 +209,13 @@ public class InspectionSeance {
 			SimpleDebuggerLogger.info("Intentionally ignored: " + debugEvent);
 		}
 
-		private List<PairDTO<Integer, String>> buildBreadcrumbs() {
-			List<PairDTO<Integer, String>> result = new ArrayList<>();
-			for (Entry<Integer, UIEvent<InnerElementRepresentationDTO>> entry : eventSequence.getSequence().entrySet()) {
-				result.add(PairDTO.of(entry.getKey(), entry.getValue().getPayload().getElementName()));
-			}
-			return result;
-		}
+//		private List<PairDTO<Integer, String>> buildBreadcrumbs() {
+//			List<PairDTO<Integer, String>> result = new ArrayList<>();
+//			for (Entry<Integer, UIEvent<InnerElementRepresentationDTO>> entry : eventSequence.getSequence().entrySet()) {
+//				result.add(PairDTO.of(entry.getKey(), entry.getValue().getPayload().getElementName()));
+//			}
+//			return result;
+//		}
 
 	}
 }
