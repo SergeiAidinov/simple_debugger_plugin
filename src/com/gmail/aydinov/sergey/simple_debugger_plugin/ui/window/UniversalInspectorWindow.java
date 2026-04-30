@@ -18,6 +18,7 @@ import org.eclipse.swt.widgets.Shell;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
@@ -236,6 +237,7 @@ public class UniversalInspectorWindow {
 		}
 		case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
 			DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e = (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
+			showBreadcrumbs(e.getPayload().getBreadcrumbs());
 			showMapTab(e.getPayload());
 		}
 		case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
@@ -304,18 +306,18 @@ public class UniversalInspectorWindow {
 		});
 	}
 
-	private void showBreadcrumbs(java.util.List<BreadcrumbItemDTO> breadcrumbs) {
+	private void showBreadcrumbs(java.util.List<PairDTO<Integer, String>> list) {
 		if (navigationList.isDisposed())
 			return;
 
 		Display.getDefault().asyncExec(() -> {
 			navigationList.removeAll();
 
-			for (int i = 0; i < breadcrumbs.size(); i++) {
-				BreadcrumbItemDTO item = breadcrumbs.get(i);
+			for (int i = 0; i < list.size(); i++) {
+				Integer item = list.get(i).getFirst();
 
-				String prefix = (i == breadcrumbs.size() - 1) ? "➤ " : "  ";
-				String text = prefix + item.getDisplayName();
+				String prefix = (i == list.size() - 1) ? "➤ " : "  ";
+				String text =  item + " " + prefix + list.get(i).getSecond();
 
 				navigationList.add(text);
 			}

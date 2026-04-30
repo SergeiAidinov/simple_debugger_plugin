@@ -1,40 +1,17 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Queue;
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.AbstractInspectableElement;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableInstanceElement;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableIterableElement;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.inspectable.InspectableMapElement;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.BreadcrumbItemDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
@@ -44,50 +21,43 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
-import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StackFrame;
-import com.sun.jdi.Value;
 import com.sun.jdi.event.BreakpointEvent;
 
 public class InspectionSeance {
 
-	private AbstractInspectableElement anchorElement;
-//	private final ObjectReference anchorElementObjectReference;
 	private final StackFrame currentFrame;
 	private final BreakpointEvent breakpointEvent;
-//	private final AbstractUIEvent initialSimpleDebuggerUIEvent;
+	private final AbstractUIEvent initialSimpleDebuggerUIEvent;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
-
-//	private final Deque<AbstractInspectableElement> inspectableQueue = new LinkedList<>();
-	private final EventSequence eventSequence = new EventSequence();
-	private static boolean alreadyStarted = false;
-	private boolean ancorElementHandled = false;
+	private static final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
+	private boolean initialEventHandled = false;
 	public final static Map<Long, DataProviderHolder> inspectionSeanceCache = new ConcurrentHashMap<Long, DataProviderHolder>();
-	public final static SortedMap<Integer, BreadCrumb> breadcrumbs = new TreeMap<Integer, BreadCrumb>();
+	public final static SortedMap<Integer, BreadCrumb> breadcrumbs = new java.util.concurrent.ConcurrentSkipListMap<>();
 	private final AtomicInteger breadCrumbOrder = new AtomicInteger(0);
 	
-	@SuppressWarnings("unchecked")
 	private InspectionSeance(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
 		this.currentFrame = currentFrame;
 		this.breakpointEvent = breakpointEvent;
-		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
-		try {
-			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
-		} catch (ClassCastException castException) {
-
-		}
-		if (Objects.isNull(uiEvent)) return;
-		eventSequence.put(uiEvent);
+		this.initialSimpleDebuggerUIEvent = abstractSimpleDebuggerUIEvent;
+		if (Objects.isNull(initialSimpleDebuggerUIEvent)) return;
+		DebuggerContext.context().defineInspectionSeanceId();
 		startInspectionProcedure();
 	}
+	
+	public static List<PairDTO<Integer, String>> getBreadCrumbs() {
+		List<PairDTO<Integer, String>> result = new ArrayList<PairDTO<Integer,String>>();
+		for (BreadCrumb breadCrumb : breadcrumbs.values()) {
+			result.add(PairDTO.of(breadCrumb.getBreadCrumbOrder(), breadCrumb.getDescription()));
+		}
+		return result;
+	}
 
-	@SuppressWarnings("unchecked")
 	public static boolean startInspectionSeanceForAnchorElement(AbstractUIEvent abstractSimpleDebuggerUIEvent,
 			StackFrame currentFrame, BreakpointEvent breakpointEvent) {
-		if (alreadyStarted)
+		if (!alreadyStarted.compareAndSet(false, true))
 			return false;
 
 		new InspectionSeance(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
@@ -95,7 +65,6 @@ public class InspectionSeance {
 	}
 
 	private void startInspectionProcedure() {
-		alreadyStarted = true;
 		InspectionProcedure inspectionProcedure = new InspectionProcedure();
 		Thread inspectionThread = new Thread(inspectionProcedure);
 		try {
@@ -104,11 +73,14 @@ public class InspectionSeance {
 		} catch (InterruptedException e) {
 			SimpleDebuggerLogger.error(e.getMessage(), e);
 		} finally {
-			// DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 			debugEventCollector
 					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
+			for(DataProviderHolder dataProviderHolder : inspectionSeanceCache.values()) {
+				dataProviderHolder.getThread().interrupt();
+			}
 			inspectionSeanceCache.clear();
-			alreadyStarted = false;
+			breadcrumbs.clear();
+			alreadyStarted.set(false);
 		}
 
 	}
@@ -117,87 +89,43 @@ public class InspectionSeance {
 
 		@Override
 		public void run() {
-			// try {
 			inspectionProcedure();
-//			} finally {
-//				debugEventCollector.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-//				DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-//			}
 		}
 
 		@SuppressWarnings("unchecked")
 		private boolean inspectionProcedure() {
-			// DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
 			debugEventCollector
 					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, false));
-//			if (anchorElement instanceof InspectableIterableElement inspectableCollection) {
-//				inspectableQueue.offer(inspectableCollection);
-//				ArrayPageDTO page = (ArrayPageDTO) inspectableCollection.inspectPage(inspectableCollection, 0);
-//				List<BreadcrumbItemDTO> qq = buildBreadcrumbs();
-//				page.setBreadcrumbs(qq);
-//				debugEventCollector.collectDebugEvent(
-//						new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
-//			} else if (anchorElement instanceof InspectableMapElement inspectableMapElement) {
-//				MapPageDTO<UniversalElementRepresentation, UniversalElementRepresentation> page = (MapPageDTO<UniversalElementRepresentation, UniversalElementRepresentation>) inspectableMapElement
-//						.inspectPage(inspectableMapElement, 0);
-//				inspectableQueue.offer(inspectableMapElement);
-//				List<BreadcrumbItemDTO> qq = buildBreadcrumbs();
-//				page.setBreadcrumbs(qq);
-//				debugEventCollector.collectDebugEvent(
-//						new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
-////				 UIEventHandler handler = SimpleDebuggerEventType.USER_CONTINUES_INSPECTION_SEANCE_FOR_USER_OBJECT.getUiEventHandler();
-////				 handler.handle(uiEvent, currentFrame, breakpointEvent);
-//			} else if (anchorElement instanceof InspectableInstanceElement inspectableInstanceElement) {
-//				inspectableQueue.offer(inspectableInstanceElement);
-//				UserObjectPageDTO page = inspectableInstanceElement.inspectPage(inspectableInstanceElement);
-//				page.setBreadcrumbs(buildBreadcrumbs());
-//				UIEventHandler handler = SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT.getUiEventHandler();
-//				handler.handle(initialSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-////				 debugEventCollector.collectDebugEvent(
-////							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, page));
-//			}
-
 			while (true) {
 				AbstractUIEvent uiEvent = null;
-				if (ancorElementHandled) {
+				if (initialEventHandled) {
 					try {
 						uiEvent = uiEventCollector.takeUiEvent();
 						System.out.println("EVENT IN SEANCE: " + uiEvent);
 					} catch (InterruptedException e) {
 					}
 				} else {
-					uiEvent = eventSequence.getEventByOrder(0);
-					ancorElementHandled = true;
+					uiEvent = initialSimpleDebuggerUIEvent;
+					initialEventHandled = true;
 				}
 				if (Objects.isNull(uiEvent))
 					continue;
-				if (!SimpleDebuggerEventTypes.isInspectionEvent(uiEvent.getType()))
+				if (!SimpleDebuggerEventTypes.isInspectionEvent(uiEvent.getType())) {
 					ignoreEvent(uiEvent);
-
+					continue;
+				}
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE))
 					break;
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE)) {
-					
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
-//					UIEvent<Integer> userRequestetPage = (UIEvent<Integer>) uiEvent;
-//					Integer pageNumber = userRequestetPage.getPayload();
-//					InspectableIterableElement ic = (InspectableIterableElement) anchorElement;
-//					ArrayPageDTO page = (ArrayPageDTO) ic.inspectPage(ic, pageNumber);
-//					List<PairDTO<Integer, String>> qq = buildBreadcrumbs();
-//					page.setBreadcrumbs(qq);
-//					debugEventCollector.collectDebugEvent(
-//							new DebugEvent<>(SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
-//				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT)){
-//					System.out.println("INSPECTION: " + uiEvent);
-//					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
-//					handler.handle(uiEvent, currentFrame, breakpointEvent);
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT)) {
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE)) {
 					UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> userReqeustedMapPageEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) uiEvent;
-					Integer orderBreadCrumb = userReqeustedMapPageEvent.getPayload().getSecond();
+					String descriprion = userReqeustedMapPageEvent.getPayload().getFirst().getElementName() + " page: " + userReqeustedMapPageEvent.getPayload().getSecond();
+					addBreadCrumbIfNecessary(userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(), userReqeustedMapPageEvent, descriprion);
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(userReqeustedMapPageEvent, currentFrame, breakpointEvent);
 				}
@@ -205,17 +133,15 @@ public class InspectionSeance {
 			return true;
 		}
 
+		private void addBreadCrumbIfNecessary(Long objectId, AbstractUIEvent abstractUIEvent, String description) {
+			final int order = breadCrumbOrder.getAndIncrement();
+			BreadCrumb breadCrumb = new BreadCrumb(order, objectId, abstractUIEvent, description);
+			breadcrumbs.put(order, breadCrumb);
+			
+		}
+
 		private void ignoreEvent(AbstractUIEvent debugEvent) {
 			SimpleDebuggerLogger.info("Intentionally ignored: " + debugEvent);
 		}
-
-//		private List<PairDTO<Integer, String>> buildBreadcrumbs() {
-//			List<PairDTO<Integer, String>> result = new ArrayList<>();
-//			for (Entry<Integer, UIEvent<InnerElementRepresentationDTO>> entry : eventSequence.getSequence().entrySet()) {
-//				result.add(PairDTO.of(entry.getKey(), entry.getValue().getPayload().getElementName()));
-//			}
-//			return result;
-//		}
-
 	}
 }

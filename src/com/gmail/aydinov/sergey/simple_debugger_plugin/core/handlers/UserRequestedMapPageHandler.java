@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DataProviderHolder;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.MapDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
@@ -62,7 +63,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 
 			UniversalElementRepresentation mapRepresentation = i.get();
 			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, breakpointEvent);
-			dataProviderHolder = new DataProviderHolder(mapDataProvider);
+			dataProviderHolder = new DataProviderHolder(mapDataProvider, DebuggerContext.context().getInspectionSeanceId());
 			InspectionSeance.inspectionSeanceCache.put(id, dataProviderHolder);
 			System.out.println(uiEvent);
 			InspectionSeance.inspectionSeanceCache.get(id).handleEvent(uiEvent);

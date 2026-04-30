@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreadCrumb;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -102,6 +104,8 @@ public final class MapDataProvider implements DataProvider {
 		NavigableMap<Integer, Entry<Value, Value>> selectedItems = waitForPageLoading();
 
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(selectedItems);
+		List<PairDTO<Integer, String>> breadCrumbs = InspectionSeance.getBreadCrumbs();
+		page.setBreadcrumbs(breadCrumbs);
 		debugEventCollector.collectDebugEvent(new DebugEvent<>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
 	}
