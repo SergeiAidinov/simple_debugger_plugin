@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core;
 
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
@@ -40,6 +41,7 @@ public class DebuggerContext {
     private static final DebuggerContext INSTANCE = new DebuggerContext();
     private final ReentrantLock lock = new ReentrantLock(true); // fair lock
     private volatile SimpleDebuggerStatus status;
+    private final AtomicInteger inspectionSeanceId = new AtomicInteger(0);
     private static final Set<SimpleDebuggerStatus> DEBUGGER_RUNNING_STATES = EnumSet.of(
     		SimpleDebuggerStatus.DEBUGGER_STARTED,
     		SimpleDebuggerStatus.DEBUG_SESSION_RUNNING,
@@ -171,5 +173,13 @@ public class DebuggerContext {
         } finally {
             lock.unlock();
         }
+    }
+    
+    public int getInspectionSeanceId() {
+    	return inspectionSeanceId.get();
+    }
+    
+    public int defineInspectionSeanceId() {
+    	return inspectionSeanceId.incrementAndGet();
     }
 }

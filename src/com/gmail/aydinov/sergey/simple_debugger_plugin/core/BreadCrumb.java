@@ -4,18 +4,20 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
 
 public class BreadCrumb {
 	
-	private final int BreadCrumbOrder;
+	private final int breadCrumbOrder;
 	private final long objectId;
 	private final AbstractUIEvent abstractUIEvent;
+	private final String description;
 	
-	public BreadCrumb(int breadCrumbOrder, long objectId, AbstractUIEvent abstractUIEvent) {
-		BreadCrumbOrder = breadCrumbOrder;
+	public BreadCrumb(int breadCrumbOrder, long objectId, AbstractUIEvent abstractUIEvent, String description) {
+		this.breadCrumbOrder = breadCrumbOrder;
 		this.objectId = objectId;
 		this.abstractUIEvent = abstractUIEvent;
+		this.description = description;
 	}
 
 	public int getBreadCrumbOrder() {
-		return BreadCrumbOrder;
+		return breadCrumbOrder;
 	}
 
 	public long getObjectId() {
@@ -24,5 +26,9 @@ public class BreadCrumb {
 
 	public AbstractUIEvent getAbstractUIEvent() {
 		return abstractUIEvent;
+	}
+
+	public String getDescription() {
+		return description;
 	}
 }

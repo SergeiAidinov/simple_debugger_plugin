@@ -14,21 +14,37 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 
 public class DataProviderHolder {
 	
+	private final int inspectionSeanceId;
+	private final Thread thread;
 	private final DataProvider dataProvider;
 	private final BlockingQueue<AbstractSimpleDebuggerEvent> eventsForProvider = new LinkedBlockingQueue<>();
 	
-	public DataProviderHolder(DataProvider dataProvider) {
+	public DataProviderHolder(DataProvider dataProvider, int inspectionSeanceId) {
 		this.dataProvider = dataProvider;
-		new Thread(this::starter).start();
+		this.inspectionSeanceId = inspectionSeanceId;
+		this.thread = new Thread(this::starter);
+		this.thread.start();
 	}
 
 	public void handleEvent(AbstractSimpleDebuggerEvent abstractSimpleDebuggerEvent) {
 		eventsForProvider.add(abstractSimpleDebuggerEvent);
 	}
 	
+	public Thread getThread() {
+		return thread;
+	}
+
+	public DataProvider getDataProvider() {
+		return dataProvider;
+	}
+
+	public BlockingQueue<AbstractSimpleDebuggerEvent> getEventsForProvider() {
+		return eventsForProvider;
+	}
+
 	@SuppressWarnings("unchecked")
 	private void starter() {
-		while(DebuggerContext.context().isInspectionSeanceActive()) {
+		while(DebuggerContext.context().isInspectionSeanceActive() && DebuggerContext.context().getInspectionSeanceId() == inspectionSeanceId) {
 			AbstractSimpleDebuggerEvent abstractSimpleDebuggerUIEvent= null;
 			try {
 				abstractSimpleDebuggerUIEvent = eventsForProvider.poll(1, TimeUnit.SECONDS);
