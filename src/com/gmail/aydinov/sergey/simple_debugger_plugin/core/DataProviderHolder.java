@@ -60,7 +60,7 @@ public class DataProviderHolder {
 
 			}
 			if (Objects.isNull(uiEvent)) continue;
-			dataProvider.getData(uiEvent.getPayload().getSecond());
+			dataProvider.requestPage(uiEvent.getPayload().getSecond());
 			
 		}
 	}

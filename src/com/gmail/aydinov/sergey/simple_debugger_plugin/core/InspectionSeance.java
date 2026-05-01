@@ -4,14 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
@@ -31,24 +35,26 @@ public class InspectionSeance {
 	private final AbstractUIEvent initialSimpleDebuggerUIEvent;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
-	private static final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
 	private boolean initialEventHandled = false;
+	private final AtomicInteger breadCrumbOrder = new AtomicInteger(0);
+	private static final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
+	public static AbstractInspectionDTO lastInspectedAbstractInspectionDTO = null;
 	public final static Map<Long, DataProviderHolder> inspectionSeanceCache = new ConcurrentHashMap<Long, DataProviderHolder>();
 	public final static SortedMap<Integer, BreadCrumb> breadcrumbs = new java.util.concurrent.ConcurrentSkipListMap<>();
-	private final AtomicInteger breadCrumbOrder = new AtomicInteger(0);
-	
+
 	private InspectionSeance(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
 			BreakpointEvent breakpointEvent) {
 		this.currentFrame = currentFrame;
 		this.breakpointEvent = breakpointEvent;
 		this.initialSimpleDebuggerUIEvent = abstractSimpleDebuggerUIEvent;
-		if (Objects.isNull(initialSimpleDebuggerUIEvent)) return;
+		if (Objects.isNull(initialSimpleDebuggerUIEvent))
+			return;
 		DebuggerContext.context().defineInspectionSeanceId();
 		startInspectionProcedure();
 	}
-	
+
 	public static List<PairDTO<Integer, String>> getBreadCrumbs() {
-		List<PairDTO<Integer, String>> result = new ArrayList<PairDTO<Integer,String>>();
+		List<PairDTO<Integer, String>> result = new ArrayList<PairDTO<Integer, String>>();
 		for (BreadCrumb breadCrumb : breadcrumbs.values()) {
 			result.add(PairDTO.of(breadCrumb.getBreadCrumbOrder(), breadCrumb.getDescription()));
 		}
@@ -75,7 +81,7 @@ public class InspectionSeance {
 		} finally {
 			debugEventCollector
 					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-			for(DataProviderHolder dataProviderHolder : inspectionSeanceCache.values()) {
+			for (DataProviderHolder dataProviderHolder : inspectionSeanceCache.values()) {
 				dataProviderHolder.getThread().interrupt();
 			}
 			inspectionSeanceCache.clear();
@@ -120,12 +126,26 @@ public class InspectionSeance {
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT)) {
+					UIEvent<InnerElementRepresentationDTO> userInspectsUserObjectEvent = (UIEvent<InnerElementRepresentationDTO>) uiEvent;
+					if (lastInspectedAbstractInspectionDTO instanceof MapPageDTO mapPageDTO) {
+						List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> l = mapPageDTO
+								.getEntries();
+						System.out.println(l);
+						Optional<InnerElementRepresentationDTO> w = l.stream().map(e -> e.getSecond()).filter(e -> e instanceof InnerElementRepresentationDTO)
+								.map(e -> (InnerElementRepresentationDTO) e)
+								.filter(e -> Objects.equals(e.getObjectId(), userInspectsUserObjectEvent.getPayload().getObjectId())).findAny();
+						System.out.println(w);
+						w.get().getObjectId();
+					}
+					
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE)) {
 					UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> userReqeustedMapPageEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) uiEvent;
-					String descriprion = userReqeustedMapPageEvent.getPayload().getFirst().getElementName() + " page: " + userReqeustedMapPageEvent.getPayload().getSecond();
-					addBreadCrumbIfNecessary(userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(), userReqeustedMapPageEvent, descriprion);
+					String descriprion = userReqeustedMapPageEvent.getPayload().getFirst().getElementName() + " page: "
+							+ userReqeustedMapPageEvent.getPayload().getSecond();
+					addBreadCrumbIfNecessary(userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(),
+							userReqeustedMapPageEvent, descriprion);
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(userReqeustedMapPageEvent, currentFrame, breakpointEvent);
 				}
@@ -137,7 +157,7 @@ public class InspectionSeance {
 			final int order = breadCrumbOrder.getAndIncrement();
 			BreadCrumb breadCrumb = new BreadCrumb(order, objectId, abstractUIEvent, description);
 			breadcrumbs.put(order, breadCrumb);
-			
+
 		}
 
 		private void ignoreEvent(AbstractUIEvent debugEvent) {
