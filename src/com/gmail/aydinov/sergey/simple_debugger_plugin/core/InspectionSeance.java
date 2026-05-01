@@ -14,6 +14,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapEntryDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
@@ -126,7 +127,7 @@ public class InspectionSeance {
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(uiEvent, currentFrame, breakpointEvent);
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT)) {
-					UIEvent<InnerElementRepresentationDTO> userInspectsUserObjectEvent = (UIEvent<InnerElementRepresentationDTO>) uiEvent;
+					UIEvent<MapEntryDTO> userInspectsUserObjectEvent = (UIEvent<MapEntryDTO>) uiEvent;
 					if (lastInspectedAbstractInspectionDTO instanceof MapPageDTO mapPageDTO) {
 //						List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> l = mapPageDTO
 //								.getEntries();

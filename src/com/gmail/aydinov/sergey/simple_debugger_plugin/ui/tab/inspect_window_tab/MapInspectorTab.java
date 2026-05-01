@@ -1,5 +1,9 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Function;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -19,9 +23,11 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapEntryDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
@@ -107,11 +113,30 @@ public class MapInspectorTab implements InspectorTab {
 		setupClickListener(table);
 
 		// Колонки
-		createColumn("Key", 80, pair -> formatValue((InnerElementRepresentationDTO) pair.getFirst()),
-				pair -> getIcon((InnerElementRepresentationDTO) pair.getFirst()));
+		createColumn("Key", 200,
+			    pair -> ((MapEntryDTO) pair.getFirst()).getValue(),
+			    pair -> getIcon((MapEntryDTO) pair.getFirst())
+			);
 
-		createColumn("Value", 600, pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
-				pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
+			createColumn("Value", 600,
+			    pair -> ((MapEntryDTO) pair.getSecond()).getValue(),
+			    pair -> getIcon((MapEntryDTO) pair.getSecond())
+			);
+	}
+	
+	private Image getIcon(MapEntryDTO dto) {
+	    if (dto == null)
+	        return null;
+
+	    ValueCategory category = dto.getValueCategory();
+
+	    if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP)
+	        return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
+
+	    if (category == ValueCategory.USER_OBJECT)
+	        return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
+
+	    return null;
 	}
 	
 //	private <K, V> TableViewerColumn createColumn(String title, int width,
@@ -150,27 +175,60 @@ public class MapInspectorTab implements InspectorTab {
 
 	private void setupClickListener(Table table) {
 
-		table.addListener(SWT.MouseDown, event -> {
-			TableItem item = table.getItem(new Point(event.x, event.y));
-			if (item == null)
-				return;
-			int colIndex = getColumnIndexAtPoint(table, event.x);
-			if (colIndex != 1)
-				return; // только третья колонка
-			Object data = item.getData();
-			if (!(data instanceof PairDTO<?, ?> pair))
-				return;
-			if (!(pair.getSecond() instanceof InnerElementRepresentationDTO dto))
-				return;
-			ValueCategory category = dto.getValueCategory();
-			if (category == ValueCategory.USER_OBJECT)
-				uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
-			else if (category == ValueCategory.MAP)
-				uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, dto));
-			else if (category == ValueCategory.COLLECTION)
-				return;
+	    table.addListener(SWT.MouseDown, event -> {
+	        TableItem item = table.getItem(new Point(event.x, event.y));
+	        if (item == null)
+	            return;
 
-		});
+	        int colIndex = getColumnIndexAtPoint(table, event.x);
+
+	        Object data = item.getData();
+	        if (!(data instanceof PairDTO<?, ?> pair))
+	            return;
+
+	        MapEntryDTO dto = null;
+
+	        // 👉 определяем, по какой колонке клик
+	        if (colIndex == 0 && pair.getFirst() instanceof MapEntryDTO keyDto) {
+	            dto = keyDto;
+	        } else if (colIndex == 1 && pair.getSecond() instanceof MapEntryDTO valueDto) {
+	            dto = valueDto;
+	        } else {
+	            return;
+	        }
+
+	        if (dto == null)
+	            return;
+
+	        ValueCategory category = dto.getValueCategory();
+
+	        // 👉 MAP
+//	        if (category == ValueCategory.MAP) {
+//	            uiEventCollector.collectUiEvent(
+//	                new UIEvent<>(
+//	                    SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
+//	                    dto // или dto целиком, зависит от backend
+//	                )
+//	            );
+//	            return;
+//	        }
+
+	        // 👉 USER OBJECT
+	        if (category == ValueCategory.USER_OBJECT) {
+	            uiEventCollector.collectUiEvent(
+	                new UIEvent<>(
+	                    SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
+	                    dto
+	                )
+	            );
+	            return;
+	        }
+
+	        // 👉 COLLECTION (можно потом добавить поддержку)
+	        if (category == ValueCategory.COLLECTION) {
+	            return;
+	        }
+	    });
 	}
 
 	private int getColumnIndexAtPoint(Table table, int x) {
@@ -238,9 +296,19 @@ public class MapInspectorTab implements InspectorTab {
 		//	nextButton.setEnabled(page.getCurrentPage() < Integer.valueOf(page.getTotalPages()) - 1);
 			nextButton.setEnabled(true);
 
-			viewer.setInput(page.getEntries());
+			viewer.setInput(toPairs(page.getEntries()));
 			root.layout(true, true);
 		});
+	}
+	
+	private List<PairDTO<MapEntryDTO, MapEntryDTO>> toPairs(Map<MapEntryDTO, MapEntryDTO> map) {
+	    List<PairDTO<MapEntryDTO, MapEntryDTO>> lines = new ArrayList<>();
+
+	    for (Entry<MapEntryDTO, MapEntryDTO> entry : map.entrySet()) {
+	        lines.add(PairDTO.of(entry.getKey(), entry.getValue()));
+	    }
+
+	    return lines;
 	}
 
 	private void requestPageFromText() {
