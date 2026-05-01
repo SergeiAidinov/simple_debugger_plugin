@@ -154,22 +154,24 @@ public class MapInspectorTab implements InspectorTab {
 	    popup.setLayout(new FillLayout());
 	    popup.setBackground(bg);
 	    popup.setBackgroundMode(SWT.INHERIT_FORCE);
-	    display.addFilter(SWT.MouseDown, e -> {
-	        if (elementsPopup == null || elementsPopup.isDisposed()) {
-	            return;
-	        }
-	        Point p = display.map(null, elementsPopup, new Point(e.x, e.y));
-	    //    if (elementsPopup.getBounds().contains(p)) {
-	            uiEventCollector.collectUiEvent(
-	                    new UIEvent<>(
-	                            SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
-	                            dto   // ⚠️ важно: dto должен быть effectively final
-	                    )
-	            );
-	            closeElementsPopup();
-	            return;
-	     //   }
-	    });
+//	    display.addFilter(SWT.MouseDown, e -> {
+//	        if (elementsPopup == null || elementsPopup.isDisposed()) {
+//	            return;
+//	        }
+//	        Point click = display.map(null, elementsPopup, new Point(e.x, e.y));
+//	        Rectangle bounds = elementsPopup.getBounds();
+//	        boolean inside = bounds.contains(click);
+//	        if (inside) {
+//	            uiEventCollector.collectUiEvent(
+//	                    new UIEvent<>(
+//	                            SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
+//	                            dto
+//	                    )
+//	            );
+//	        }
+//	        // всегда закрываем при любом клике
+//	        closeElementsPopup();
+//	    });
 //	    popup.addListener(SWT.MouseDown, e -> {
 //	    	System.out.println("CLICK EVENT: " + dto.getValueCategory());
 //	        uiEventCollector.collectUiEvent(
