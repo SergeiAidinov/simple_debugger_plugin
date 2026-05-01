@@ -77,7 +77,7 @@ public final class MapDataProvider implements DataProvider {
 	}
 
 	@Override
-	public void getData(Integer pageNumber) {
+	public void requestPage(Integer pageNumber) {
 		if (Objects.isNull(pageNumber))
 			this.pageNumber = 0;
 		else
@@ -106,6 +106,7 @@ public final class MapDataProvider implements DataProvider {
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(selectedItems);
 		List<PairDTO<Integer, String>> breadCrumbs = InspectionSeance.getBreadCrumbs();
 		page.setBreadcrumbs(breadCrumbs);
+		InspectionSeance.lastInspectedAbstractInspectionDTO = page;
 		debugEventCollector.collectDebugEvent(new DebugEvent<>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
 	}

@@ -16,7 +16,7 @@ public class ObjectDataProvider implements DataProvider{
 	}
 
 	@Override
-	public void getData(Integer pageNumber) {
+	public void requestPage(Integer pageNumber) {
 		// TODO Auto-generated method stub
 		//return userObjectPageDTO;
 	}
