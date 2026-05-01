@@ -7,6 +7,7 @@ import java.util.function.Function;
 
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.*;
+import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.layout.*;
 import org.eclipse.swt.widgets.*;
@@ -152,26 +153,27 @@ public class MapInspectorTab implements InspectorTab {
 
 	    Display display = root.getDisplay();
 
-	    // 💡 более стабильные системные цвета (не INFO_*)
 	    Color bg = display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
 	    Color fg = display.getSystemColor(SWT.COLOR_WIDGET_FOREGROUND);
 
 	    Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL | SWT.NO_FOCUS);
-
-	    popup.setLayout(new GridLayout(1, false));
+	    popup.setLayout(new FillLayout());
 	    popup.setBackground(bg);
-
-	    // 💡 важно для нормального наследования цветов
 	    popup.setBackgroundMode(SWT.INHERIT_FORCE);
 
-	    Composite content = new Composite(popup, SWT.NONE);
+	    // ================= SCROLLABLE AREA =================
+	    ScrolledComposite scrolled = new ScrolledComposite(popup,
+	            SWT.V_SCROLL | SWT.H_SCROLL);
+
+	    scrolled.setExpandHorizontal(true);
+	    scrolled.setExpandVertical(true);
+
+	    Composite content = new Composite(scrolled, SWT.NONE);
 	    content.setLayout(new GridLayout(1, false));
 	    content.setBackground(bg);
 	    content.setForeground(fg);
 
-	    GridData contentData = new GridData(450, 300);
-	    content.setLayoutData(contentData);
-
+	    // ================= CONTENT =================
 	    for (InnerElementRepresentationDTO el : dto.getElements()) {
 	        Label row = new Label(content, SWT.NONE);
 	        row.setText(formatElement(el));
@@ -180,9 +182,14 @@ public class MapInspectorTab implements InspectorTab {
 	    }
 
 	    content.pack();
-	    popup.pack();
 
-	    popup.setSize(450, 300);
+	    scrolled.setContent(content);
+
+	    // 🔥 ВАЖНО: это включает реальные scrollbars
+	    scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+
+	    // ================= SIZE / POSITION =================
+	    popup.setSize(500, 350);
 
 	    Point loc = display.getCursorLocation();
 	    popup.setLocation(loc.x + 15, loc.y + 15);
