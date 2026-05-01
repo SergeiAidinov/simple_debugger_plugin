@@ -54,6 +54,7 @@ public class MapInspectorTab implements InspectorTab {
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		table.addListener(SWT.MouseHover, e -> {});
 
 		viewer = new TableViewer(table);
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
@@ -102,20 +103,16 @@ public class MapInspectorTab implements InspectorTab {
 	        } else {
 	            return;
 	        }
-
 	        if (!(dto instanceof MapEntryDTO mapDto)) {
 	            return;
 	        }
-
 	        ValueCategory category = mapDto.getValueCategory();
-
 	        if (category == null) {
 	            return;
 	        }
-
 	        switch (category) {
-
 	            case USER_OBJECT -> {
+	            	closeElementsPopup();
 	                uiEventCollector.collectUiEvent(
 	                        new UIEvent<>(
 	                                SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
@@ -123,7 +120,6 @@ public class MapInspectorTab implements InspectorTab {
 	                        )
 	                );
 	            }
-
 	            case MAP -> {
 	                uiEventCollector.collectUiEvent(
 	                        new UIEvent<>(
@@ -132,11 +128,9 @@ public class MapInspectorTab implements InspectorTab {
 	                        )
 	                );
 	            }
-
 	            case COLLECTION -> {
 	                // пока ничего или можно открыть инспектор
 	            }
-
 	            default -> {
 	                // no-op
 	            }
@@ -160,6 +154,31 @@ public class MapInspectorTab implements InspectorTab {
 	    popup.setLayout(new FillLayout());
 	    popup.setBackground(bg);
 	    popup.setBackgroundMode(SWT.INHERIT_FORCE);
+	    display.addFilter(SWT.MouseDown, e -> {
+	        if (elementsPopup == null || elementsPopup.isDisposed()) {
+	            return;
+	        }
+	        Point p = display.map(null, elementsPopup, new Point(e.x, e.y));
+	    //    if (elementsPopup.getBounds().contains(p)) {
+	            uiEventCollector.collectUiEvent(
+	                    new UIEvent<>(
+	                            SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
+	                            dto   // ⚠️ важно: dto должен быть effectively final
+	                    )
+	            );
+	            closeElementsPopup();
+	            return;
+	     //   }
+	    });
+//	    popup.addListener(SWT.MouseDown, e -> {
+//	    	System.out.println("CLICK EVENT: " + dto.getValueCategory());
+//	        uiEventCollector.collectUiEvent(
+//	                new UIEvent<>(
+//	                        SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
+//	                        dto
+//	                )
+//	        );
+//	    });
 
 	    // ================= SCROLLABLE AREA =================
 	    ScrolledComposite scrolled = new ScrolledComposite(popup,
@@ -172,6 +191,7 @@ public class MapInspectorTab implements InspectorTab {
 	    content.setLayout(new GridLayout(1, false));
 	    content.setBackground(bg);
 	    content.setForeground(fg);
+	    
 
 	    // ================= CONTENT =================
 	    for (InnerElementRepresentationDTO el : dto.getElements()) {
@@ -179,6 +199,15 @@ public class MapInspectorTab implements InspectorTab {
 	        row.setText(formatElement(el));
 	        row.setBackground(bg);
 	        row.setForeground(fg);
+	        row.addListener(SWT.MouseDown, e -> {
+	        	System.out.println("CLICK EVENT: " + dto.getValueCategory());
+	            uiEventCollector.collectUiEvent(
+	                    new UIEvent<>(
+	                            SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
+	                            dto
+	                    )
+	            );
+	        });
 	    }
 
 	    content.pack();
@@ -326,8 +355,8 @@ public class MapInspectorTab implements InspectorTab {
 
 				TableItem item = findItem(p);
 				if (item != null && p.getFirst() instanceof MapEntryDTO dto) {
-					item.setData("tooltip_col_" + colIndex,
-							dto.getObjectId() + " / " + dto.getValueCategory());
+//					item.setData("tooltip_col_" + colIndex,
+//							dto.getObjectId() + " / " + dto.getValueCategory());
 				}
 
 				return img;
