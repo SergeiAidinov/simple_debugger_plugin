@@ -152,27 +152,35 @@ public class MapInspectorTab implements InspectorTab {
 
 	    Display display = root.getDisplay();
 
-	    Color bg = display.getSystemColor(SWT.COLOR_INFO_BACKGROUND);
-	    Color fg = display.getSystemColor(SWT.COLOR_INFO_FOREGROUND);
+	    // 💡 более стабильные системные цвета (не INFO_*)
+	    Color bg = display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
+	    Color fg = display.getSystemColor(SWT.COLOR_WIDGET_FOREGROUND);
 
 	    Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL | SWT.NO_FOCUS);
+
+	    popup.setLayout(new GridLayout(1, false));
 	    popup.setBackground(bg);
 
-	    // ❗ ВАЖНО: без layout вообще
-	    popup.setLayout(null);
+	    // 💡 важно для нормального наследования цветов
+	    popup.setBackgroundMode(SWT.INHERIT_FORCE);
 
-	    org.eclipse.swt.widgets.List list =
-	            new org.eclipse.swt.widgets.List(popup, SWT.V_SCROLL | SWT.H_SCROLL);
+	    Composite content = new Composite(popup, SWT.NONE);
+	    content.setLayout(new GridLayout(1, false));
+	    content.setBackground(bg);
+	    content.setForeground(fg);
 
-	    list.setBackground(bg);
-	    list.setForeground(fg);
-
-	    // ❗ ВАЖНО: manual sizing
-	    list.setBounds(0, 0, 450, 300);
+	    GridData contentData = new GridData(450, 300);
+	    content.setLayoutData(contentData);
 
 	    for (InnerElementRepresentationDTO el : dto.getElements()) {
-	        list.add(formatElement(el));
+	        Label row = new Label(content, SWT.NONE);
+	        row.setText(formatElement(el));
+	        row.setBackground(bg);
+	        row.setForeground(fg);
 	    }
+
+	    content.pack();
+	    popup.pack();
 
 	    popup.setSize(450, 300);
 
