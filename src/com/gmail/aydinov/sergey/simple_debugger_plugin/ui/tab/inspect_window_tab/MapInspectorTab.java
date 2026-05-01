@@ -60,70 +60,65 @@ public class MapInspectorTab implements InspectorTab {
 	private InnerElementRepresentationDTO anchorMap;
 	private TooltipManager tooltipManager;
 	private MapEntryDTO lastInspected;
+	private Shell elementsPopup;
 
 	public MapInspectorTab(Composite parent) {
-	    root = new Composite(parent, SWT.NONE);
-	    root.setLayout(new GridLayout(1, false));
+		root = new Composite(parent, SWT.NONE);
+		root.setLayout(new GridLayout(1, false));
 
-	    // ================= HEADER =================
-	    Composite header = new Composite(root, SWT.NONE);
-	    header.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-	    header.setLayout(new GridLayout(2, false));
+		// ================= HEADER =================
+		Composite header = new Composite(root, SWT.NONE);
+		header.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+		header.setLayout(new GridLayout(2, false));
 
-	    Composite info = new Composite(header, SWT.NONE);
-	    info.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-	    info.setLayout(new GridLayout(1, false));
+		Composite info = new Composite(header, SWT.NONE);
+		info.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		info.setLayout(new GridLayout(1, false));
 
-	    mapNameLabel = new Label(info, SWT.NONE);
-	    mapTypeLabel = new Label(info, SWT.NONE);
-	    sizeLabel = new Label(info, SWT.NONE);
-	    pageInfoLabel = new Label(info, SWT.NONE);
+		mapNameLabel = new Label(info, SWT.NONE);
+		mapTypeLabel = new Label(info, SWT.NONE);
+		sizeLabel = new Label(info, SWT.NONE);
+		pageInfoLabel = new Label(info, SWT.NONE);
 
-	    Composite pagination = new Composite(header, SWT.NONE);
-	    pagination.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
-	    pagination.setLayout(new GridLayout(4, false));
+		Composite pagination = new Composite(header, SWT.NONE);
+		pagination.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
+		pagination.setLayout(new GridLayout(4, false));
 
-	    prevButton = new Button(pagination, SWT.PUSH);
-	    prevButton.setText("Prev");
+		prevButton = new Button(pagination, SWT.PUSH);
+		prevButton.setText("Prev");
 
-	    pageText = new Text(pagination, SWT.BORDER);
-	    pageText.setLayoutData(new GridData(70, SWT.DEFAULT));
+		pageText = new Text(pagination, SWT.BORDER);
+		pageText.setLayoutData(new GridData(70, SWT.DEFAULT));
 
-	    goButton = new Button(pagination, SWT.PUSH);
-	    goButton.setText("Go");
+		goButton = new Button(pagination, SWT.PUSH);
+		goButton.setText("Go");
 
-	    nextButton = new Button(pagination, SWT.PUSH);
-	    nextButton.setText("Next");
+		nextButton = new Button(pagination, SWT.PUSH);
+		nextButton.setText("Next");
 
-	    // ================= TABLE =================
-	    Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
-	    table.setHeaderVisible(true);
-	    table.setLinesVisible(true);
-	    table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		// ================= TABLE =================
+		Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+		table.setHeaderVisible(true);
+		table.setLinesVisible(true);
+		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-	    // ⚠️ ВАЖНО: viewer создаётся ДО любых методов, где он используется
-	    viewer = new TableViewer(table);
-	    viewer.setContentProvider(ArrayContentProvider.getInstance());
+		// ⚠️ ВАЖНО: viewer создаётся ДО любых методов, где он используется
+		viewer = new TableViewer(table);
+		viewer.setContentProvider(ArrayContentProvider.getInstance());
 
-	    // ================= TOOLING =================
-	    setupTooltips(table);
+		// ================= TOOLING =================
+		setupTooltips(table);
 
-	    // теперь viewer уже НЕ null
-	    setupHoverInspectionListener();
-	    setupClickListener(table);
+		// теперь viewer уже НЕ null
+		setupHoverInspectionListener();
+		setupClickListener(table);
 
-	    // ================= COLUMNS =================
-	    createColumn("Key", 200,
-	        pair -> ((MapEntryDTO) pair.getFirst()).getValue(),
-	        pair -> getIcon((MapEntryDTO) pair.getFirst()),
-	        0
-	    );
+		// ================= COLUMNS =================
+		createColumn("Key", 200, pair -> ((MapEntryDTO) pair.getFirst()).getValue(),
+				pair -> getIcon((MapEntryDTO) pair.getFirst()), 0);
 
-	    createColumn("Value", 600,
-	        pair -> ((MapEntryDTO) pair.getSecond()).getValue(),
-	        pair -> getIcon((MapEntryDTO) pair.getSecond()),
-	        1
-	    );
+		createColumn("Value", 600, pair -> ((MapEntryDTO) pair.getSecond()).getValue(),
+				pair -> getIcon((MapEntryDTO) pair.getSecond()), 1);
 	}
 
 	private void setupHoverInspectionListener() {
@@ -161,11 +156,60 @@ public class MapInspectorTab implements InspectorTab {
 					}
 				}
 			}
+
+			if (dto != null && dto.getElements() != null && !dto.getElements().isEmpty()) {
+
+				Display display = root.getDisplay();
+				Point location = display.getCursorLocation();
+
+				showElementsPopup(dto, location);
+			}
 		});
 	}
 
 	private InnerElementRepresentationDTO convertToInner(MapEntryDTO dto) {
 		return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromMapEntry(dto);
+	}
+
+	private void showElementsPopup(MapEntryDTO dto, Point location) {
+		closeElementsPopup();
+
+		if (dto == null || dto.getElements() == null)
+			return;
+
+		Display display = root.getDisplay();
+
+		elementsPopup = new Shell(display, SWT.ON_TOP | SWT.TOOL | SWT.BORDER);
+		elementsPopup.setLayout(new GridLayout(1, false));
+
+		org.eclipse.swt.widgets.List list = new org.eclipse.swt.widgets.List(elementsPopup, SWT.BORDER | SWT.V_SCROLL);
+
+		list.setLayoutData(new GridData(450, 300));
+
+		for (InnerElementRepresentationDTO el : dto.getElements()) {
+			list.add(formatElement(el));
+		}
+
+		elementsPopup.pack();
+		elementsPopup.setLocation(location.x + 15, location.y + 15);
+		elementsPopup.open();
+
+		// автозакрытие по клику вне
+		display.addFilter(SWT.MouseDown, e -> closeElementsPopup());
+	}
+
+	private String formatElement(InnerElementRepresentationDTO el) {
+		if (el == null)
+			return "null";
+
+		String name = el.getElementName();
+		String type = el.getTypeOrReturnType();
+		String value = el.getValue();
+
+		if (value == null)
+			value = "null";
+
+		return name + " : " + type + " = " + value;
 	}
 
 	private void setupTooltips(Table table) {
@@ -447,11 +491,11 @@ public class MapInspectorTab implements InspectorTab {
 		return value == null ? "" : value;
 	}
 
-	public void closePopup() {
-		if (currentPopup != null && !currentPopup.isDisposed()) {
-			currentPopup.dispose();
+	private void closeElementsPopup() {
+		if (elementsPopup != null && !elementsPopup.isDisposed()) {
+			elementsPopup.dispose();
 		}
-		currentPopup = null;
+		elementsPopup = null;
 	}
 
 	@Override
