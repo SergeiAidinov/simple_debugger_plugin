@@ -17,6 +17,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
@@ -35,6 +36,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
@@ -56,109 +58,163 @@ public class MapInspectorTab implements InspectorTab {
 	private Shell currentPopup;
 	private int currentPage = 0;
 	private InnerElementRepresentationDTO anchorMap;
+	private TooltipManager tooltipManager;
+	private MapEntryDTO lastInspected;
 
 	public MapInspectorTab(Composite parent) {
-		root = new Composite(parent, SWT.NONE);
-		root.setLayout(new GridLayout(1, false));
+	    root = new Composite(parent, SWT.NONE);
+	    root.setLayout(new GridLayout(1, false));
 
-		// Header
-		Composite header = new Composite(root, SWT.NONE);
-		header.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-		header.setLayout(new GridLayout(2, false));
+	    // ================= HEADER =================
+	    Composite header = new Composite(root, SWT.NONE);
+	    header.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+	    header.setLayout(new GridLayout(2, false));
 
-		Composite info = new Composite(header, SWT.NONE);
-		info.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		info.setLayout(new GridLayout(1, false));
+	    Composite info = new Composite(header, SWT.NONE);
+	    info.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+	    info.setLayout(new GridLayout(1, false));
 
-		mapNameLabel = new Label(info, SWT.NONE);
-		mapNameLabel.setText("Map: ");
+	    mapNameLabel = new Label(info, SWT.NONE);
+	    mapTypeLabel = new Label(info, SWT.NONE);
+	    sizeLabel = new Label(info, SWT.NONE);
+	    pageInfoLabel = new Label(info, SWT.NONE);
 
-		mapTypeLabel = new Label(info, SWT.NONE);
-		mapTypeLabel.setText("Map type: ");
+	    Composite pagination = new Composite(header, SWT.NONE);
+	    pagination.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
+	    pagination.setLayout(new GridLayout(4, false));
 
-		sizeLabel = new Label(info, SWT.NONE);
-		sizeLabel.setText("Size: ");
+	    prevButton = new Button(pagination, SWT.PUSH);
+	    prevButton.setText("Prev");
 
-		pageInfoLabel = new Label(info, SWT.NONE);
-		pageInfoLabel.setText("Page: ");
+	    pageText = new Text(pagination, SWT.BORDER);
+	    pageText.setLayoutData(new GridData(70, SWT.DEFAULT));
 
-		Composite pagination = new Composite(header, SWT.NONE);
-		pagination.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
-		pagination.setLayout(new GridLayout(4, false));
+	    goButton = new Button(pagination, SWT.PUSH);
+	    goButton.setText("Go");
 
-		prevButton = new Button(pagination, SWT.PUSH);
-		prevButton.setText("Prev");
-		prevButton.addListener(SWT.Selection, e -> requestPage(currentPage - 1));
+	    nextButton = new Button(pagination, SWT.PUSH);
+	    nextButton.setText("Next");
 
-		pageText = new Text(pagination, SWT.BORDER);
-		pageText.setLayoutData(new GridData(70, SWT.DEFAULT));
+	    // ================= TABLE =================
+	    Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+	    table.setHeaderVisible(true);
+	    table.setLinesVisible(true);
+	    table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-		goButton = new Button(pagination, SWT.PUSH);
-		goButton.setText("Go");
-		goButton.addListener(SWT.Selection, e -> requestPageFromText());
-		pageText.addListener(SWT.DefaultSelection, e -> requestPageFromText());
+	    // ⚠️ ВАЖНО: viewer создаётся ДО любых методов, где он используется
+	    viewer = new TableViewer(table);
+	    viewer.setContentProvider(ArrayContentProvider.getInstance());
 
-		nextButton = new Button(pagination, SWT.PUSH);
-		nextButton.setText("Next");
-		nextButton.addListener(SWT.Selection, e -> requestPage(currentPage + 1));
+	    // ================= TOOLING =================
+	    setupTooltips(table);
 
-		// Table
-		Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
-		table.setHeaderVisible(true);
-		table.setLinesVisible(true);
-		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+	    // теперь viewer уже НЕ null
+	    setupHoverInspectionListener();
+	    setupClickListener(table);
 
-		viewer = new TableViewer(table);
-		viewer.setContentProvider(ArrayContentProvider.getInstance());
-		setupClickListener(table);
+	    // ================= COLUMNS =================
+	    createColumn("Key", 200,
+	        pair -> ((MapEntryDTO) pair.getFirst()).getValue(),
+	        pair -> getIcon((MapEntryDTO) pair.getFirst()),
+	        0
+	    );
 
-		// Колонки
-		createColumn("Key", 200,
-			    pair -> ((MapEntryDTO) pair.getFirst()).getValue(),
-			    pair -> getIcon((MapEntryDTO) pair.getFirst())
-			);
-
-			createColumn("Value", 600,
-			    pair -> ((MapEntryDTO) pair.getSecond()).getValue(),
-			    pair -> getIcon((MapEntryDTO) pair.getSecond())
-			);
+	    createColumn("Value", 600,
+	        pair -> ((MapEntryDTO) pair.getSecond()).getValue(),
+	        pair -> getIcon((MapEntryDTO) pair.getSecond()),
+	        1
+	    );
 	}
-	
+
+	private void setupHoverInspectionListener() {
+		Table table = viewer.getTable();
+
+		table.addListener(SWT.MouseMove, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+
+			MapEntryDTO dto = null;
+
+			if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
+
+				int colIndex = getColumnIndexAtPoint(table, event.x);
+
+				if (colIndex == 0 && pair.getFirst() instanceof MapEntryDTO key) {
+					dto = key;
+				} else if (colIndex == 1 && pair.getSecond() instanceof MapEntryDTO value) {
+					dto = value;
+				}
+			}
+
+			if (!java.util.Objects.equals(dto, lastInspected)) {
+				lastInspected = dto;
+				tooltipManager.closePopup();
+
+				if (dto != null) {
+					ValueCategory category = dto.getValueCategory();
+
+					if (category == ValueCategory.MAP || category == ValueCategory.COLLECTION) {
+						Display display = root.getDisplay();
+						Point location = display.getCursorLocation();
+
+						// 👉 нужно обернуть в InnerElementRepresentationDTO если хочешь reuse
+						tooltipManager.showTooltipForCollection(convertToInner(dto), location);
+					}
+				}
+			}
+		});
+	}
+
+	private InnerElementRepresentationDTO convertToInner(MapEntryDTO dto) {
+		return InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromMapEntry(dto);
+	}
+
+	private void setupTooltips(Table table) {
+		TooltipManager tooltipManager = new TooltipManager(table, root);
+
+		tooltipManager.setTooltipProvider(item -> {
+			int col = TooltipManager.getColumnIndexAtPoint(table,
+					table.getDisplay().getCursorLocation().x - table.toDisplay(0, 0).x);
+
+			Object tip = item.getData("tooltip_col_" + col);
+			return tip instanceof String ? (String) tip : null;
+		});
+
+		this.tooltipManager = tooltipManager;
+	}
+
 	private Image getIcon(MapEntryDTO dto) {
-	    if (dto == null)
-	        return null;
+		if (dto == null)
+			return null;
 
-	    ValueCategory category = dto.getValueCategory();
+		ValueCategory category = dto.getValueCategory();
 
-	    if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP)
-	        return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
+		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP)
+			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
 
-	    if (category == ValueCategory.USER_OBJECT)
-	        return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
+		if (category == ValueCategory.USER_OBJECT)
+			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
 
-	    return null;
+		return null;
 	}
-	
+
 //	private <K, V> TableViewerColumn createColumn(String title, int width,
 //			Function<PairDTO<K, V>, String> textExtractor) {
 //		return createColumn(title, width, textExtractor, pair -> null);
 //	}
-	
+
 	private Image getIcon(InnerElementRepresentationDTO dto) {
 		if (dto == null)
 			return null;
 
 		ValueCategory category = dto.getValueCategory();
-		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) 
+		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP)
 			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
-		
+
 		if (category == ValueCategory.USER_OBJECT && dto.getValue() != null
-				&& !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) 
+				&& !UiUtils.isStandartJavaType(dto.getTypeOrReturnType()))
 			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
 		return null;
 	}
-
-	
 
 	private String formatValue(InnerElementRepresentationDTO dto) {
 		if (dto == null)
@@ -175,34 +231,34 @@ public class MapInspectorTab implements InspectorTab {
 
 	private void setupClickListener(Table table) {
 
-	    table.addListener(SWT.MouseDown, event -> {
-	        TableItem item = table.getItem(new Point(event.x, event.y));
-	        if (item == null)
-	            return;
+		table.addListener(SWT.MouseDown, event -> {
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			if (item == null)
+				return;
 
-	        int colIndex = getColumnIndexAtPoint(table, event.x);
+			int colIndex = getColumnIndexAtPoint(table, event.x);
 
-	        Object data = item.getData();
-	        if (!(data instanceof PairDTO<?, ?> pair))
-	            return;
+			Object data = item.getData();
+			if (!(data instanceof PairDTO<?, ?> pair))
+				return;
 
-	        MapEntryDTO dto = null;
+			MapEntryDTO dto = null;
 
-	        // 👉 определяем, по какой колонке клик
-	        if (colIndex == 0 && pair.getFirst() instanceof MapEntryDTO keyDto) {
-	            dto = keyDto;
-	        } else if (colIndex == 1 && pair.getSecond() instanceof MapEntryDTO valueDto) {
-	            dto = valueDto;
-	        } else {
-	            return;
-	        }
+			// 👉 определяем, по какой колонке клик
+			if (colIndex == 0 && pair.getFirst() instanceof MapEntryDTO keyDto) {
+				dto = keyDto;
+			} else if (colIndex == 1 && pair.getSecond() instanceof MapEntryDTO valueDto) {
+				dto = valueDto;
+			} else {
+				return;
+			}
 
-	        if (dto == null)
-	            return;
+			if (dto == null)
+				return;
 
-	        ValueCategory category = dto.getValueCategory();
+			ValueCategory category = dto.getValueCategory();
 
-	        // 👉 MAP
+			// 👉 MAP
 //	        if (category == ValueCategory.MAP) {
 //	            uiEventCollector.collectUiEvent(
 //	                new UIEvent<>(
@@ -213,22 +269,17 @@ public class MapInspectorTab implements InspectorTab {
 //	            return;
 //	        }
 
-	        // 👉 USER OBJECT
-	        if (category == ValueCategory.USER_OBJECT) {
-	            uiEventCollector.collectUiEvent(
-	                new UIEvent<>(
-	                    SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
-	                    dto
-	                )
-	            );
-	            return;
-	        }
+			// 👉 USER OBJECT
+			if (category == ValueCategory.USER_OBJECT) {
+				uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
+				return;
+			}
 
-	        // 👉 COLLECTION (можно потом добавить поддержку)
-	        if (category == ValueCategory.COLLECTION) {
-	            return;
-	        }
-	    });
+			// 👉 COLLECTION (можно потом добавить поддержку)
+			if (category == ValueCategory.COLLECTION) {
+				return;
+			}
+		});
 	}
 
 	private int getColumnIndexAtPoint(Table table, int x) {
@@ -293,22 +344,23 @@ public class MapInspectorTab implements InspectorTab {
 			pageText.setText(String.valueOf(page.getCurrentPage()));
 			currentPage = page.getCurrentPage();
 			prevButton.setEnabled(page.getCurrentPage() > 0);
-		//	nextButton.setEnabled(page.getCurrentPage() < Integer.valueOf(page.getTotalPages()) - 1);
+			// nextButton.setEnabled(page.getCurrentPage() <
+			// Integer.valueOf(page.getTotalPages()) - 1);
 			nextButton.setEnabled(true);
 
 			viewer.setInput(toPairs(page.getEntries()));
 			root.layout(true, true);
 		});
 	}
-	
+
 	private List<PairDTO<MapEntryDTO, MapEntryDTO>> toPairs(Map<MapEntryDTO, MapEntryDTO> map) {
-	    List<PairDTO<MapEntryDTO, MapEntryDTO>> lines = new ArrayList<>();
+		List<PairDTO<MapEntryDTO, MapEntryDTO>> lines = new ArrayList<>();
 
-	    for (Entry<MapEntryDTO, MapEntryDTO> entry : map.entrySet()) {
-	        lines.add(PairDTO.of(entry.getKey(), entry.getValue()));
-	    }
+		for (Entry<MapEntryDTO, MapEntryDTO> entry : map.entrySet()) {
+			lines.add(PairDTO.of(entry.getKey(), entry.getValue()));
+		}
 
-	    return lines;
+		return lines;
 	}
 
 	private void requestPageFromText() {
@@ -324,20 +376,25 @@ public class MapInspectorTab implements InspectorTab {
 	}
 
 	private void requestPage(int pageNumber) {
-		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, PairDTO.of(anchorMap, pageNumber)));
+		uiEventCollector.collectUiEvent(
+				new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, PairDTO.of(anchorMap, pageNumber)));
 	}
 
-	private <K, V> TableViewerColumn createColumn(String title, int width,
-			Function<PairDTO<K, V>, String> textExtractor) {
-		return createColumn(title, width, textExtractor, pair -> null);
-	}
+//	private <K, V> TableViewerColumn createColumn(String title, int width,
+//			Function<PairDTO<K, V>, String> textExtractor) {
+//		return createColumn(title, width, textExtractor, pair -> null);
+//	}
 
 	private <K, V> TableViewerColumn createColumn(String title, int width,
-			Function<PairDTO<K, V>, String> textExtractor, Function<PairDTO<K, V>, Image> imageExtractor) {
+			Function<PairDTO<K, V>, String> textExtractor, Function<PairDTO<K, V>, Image> imageExtractor,
+			int columnIndex // 👈 добавляем индекс явно
+	) {
 		TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
 		column.getColumn().setText(title);
 		column.getColumn().setWidth(width);
+
 		column.setLabelProvider(new ColumnLabelProvider() {
+
 			@Override
 			public String getText(Object element) {
 				if (element instanceof PairDTO<?, ?> pair) {
@@ -356,7 +413,30 @@ public class MapInspectorTab implements InspectorTab {
 				@SuppressWarnings("unchecked")
 				PairDTO<K, V> typed = (PairDTO<K, V>) pair;
 
-				return imageExtractor.apply(typed);
+				Image img = imageExtractor.apply(typed);
+				if (img == null)
+					return null;
+
+				TableItem item = findItem(pair);
+				if (item == null)
+					return img;
+
+				Object dto = (columnIndex == 0) ? typed.getFirst() : typed.getSecond();
+
+				if (dto instanceof MapEntryDTO mapDto) {
+					item.setData("tooltip_col_" + columnIndex,
+							"id = " + mapDto.getObjectId() + "\ncategory = " + mapDto.getValueCategory());
+				}
+
+				return img;
+			}
+
+			private TableItem findItem(Object data) {
+				for (TableItem item : viewer.getTable().getItems()) {
+					if (item.getData() == data)
+						return item;
+				}
+				return null;
 			}
 		});
 
