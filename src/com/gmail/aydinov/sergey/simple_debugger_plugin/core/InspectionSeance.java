@@ -128,14 +128,14 @@ public class InspectionSeance {
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT)) {
 					UIEvent<InnerElementRepresentationDTO> userInspectsUserObjectEvent = (UIEvent<InnerElementRepresentationDTO>) uiEvent;
 					if (lastInspectedAbstractInspectionDTO instanceof MapPageDTO mapPageDTO) {
-						List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> l = mapPageDTO
-								.getEntries();
-						System.out.println(l);
-						Optional<InnerElementRepresentationDTO> w = l.stream().map(e -> e.getSecond()).filter(e -> e instanceof InnerElementRepresentationDTO)
-								.map(e -> (InnerElementRepresentationDTO) e)
-								.filter(e -> Objects.equals(e.getObjectId(), userInspectsUserObjectEvent.getPayload().getObjectId())).findAny();
-						System.out.println(w);
-						w.get().getObjectId();
+//						List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> l = mapPageDTO
+//								.getEntries();
+//						System.out.println(l);
+//						Optional<InnerElementRepresentationDTO> w = l.stream().map(e -> e.getSecond()).filter(e -> e instanceof InnerElementRepresentationDTO)
+//								.map(e -> (InnerElementRepresentationDTO) e)
+//								.filter(e -> Objects.equals(e.getObjectId(), userInspectsUserObjectEvent.getPayload().getObjectId())).findAny();
+//						System.out.println(w);
+//						w.get().getObjectId();
 					}
 					
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();

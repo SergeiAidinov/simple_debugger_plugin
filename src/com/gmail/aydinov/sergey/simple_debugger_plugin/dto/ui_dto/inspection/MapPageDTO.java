@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapEntryDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO.Builder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
@@ -14,7 +15,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 	private final int fromIndex;
 	private final int toIndex;
 	private final InnerElementRepresentationDTO anchorMap;
-	private final List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> entries;
+	private final Map<MapEntryDTO, MapEntryDTO> entries;
 
 	private MapPageDTO(Builder<K, V> builder) {
 		super(builder.anchorTag, builder.elementName, builder.elementType, builder.totalEntries, builder.currentPage,
@@ -36,7 +37,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 		return toIndex;
 	}
 
-	public List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> getEntries() {
+	public Map<MapEntryDTO, MapEntryDTO> getEntries() {
 		return entries;
 	}
 	
@@ -58,7 +59,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 		private String totalPages;
 		private int fromIndex;
 		private int toIndex;
-		private List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> entries;
+		private Map<MapEntryDTO, MapEntryDTO> entries;
 		private Tag anchorTag;
 		private List<PairDTO<Integer, String>> breadcrumbs = List.of(); // по умолчанию пустой список
 
@@ -102,8 +103,8 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 			return this;
 		}
 
-		public Builder<K, V> entries(List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> entries) {
-			this.entries = entries;
+		public Builder<K, V> entries(Map<MapEntryDTO, MapEntryDTO> collectionElements) {
+			this.entries = collectionElements;
 			return this;
 		}
 

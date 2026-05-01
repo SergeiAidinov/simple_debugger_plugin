@@ -30,6 +30,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvi
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapEntryDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
@@ -203,24 +204,31 @@ public final class MapDataProvider implements DataProvider {
 	private MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> createPageOfMap(
 			NavigableMap<Integer, Entry<Value, Value>> selectedItems) {
 		List<Integer> sortedIndexes = selectedItems.keySet().stream().sorted().toList();
-		Map<UniversalElementRepresentation, UniversalElementRepresentation> collectionElements = new LinkedHashMap<UniversalElementRepresentation, UniversalElementRepresentation>();
+		Map<MapEntryDTO, MapEntryDTO> collectionElements = new LinkedHashMap<>();
 		for (Integer order : sortedIndexes) {
 			Value keyValue = selectedItems.get(order).getKey();
 			Value valueValue = selectedItems.get(order).getValue();
-			UniversalElementRepresentation keyElement = createUniversalElementRepresentationFromValue(keyValue);
-			UniversalElementRepresentation valueElement = createUniversalElementRepresentationFromValue(valueValue);
-			collectionElements.put(keyElement, valueElement);
+			if ((keyValue instanceof ObjectReference keyReference) && (valueValue instanceof ObjectReference valueReference)) {
+				List<UniversalElementRepresentation> keySubordinates = populateSubordinatesElements(keyReference);
+				List<UniversalElementRepresentation> valueSubordinates = populateSubordinatesElements(valueReference);
+			List<InnerElementRepresentationDTO> keyEntries = keySubordinates.stream().map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e)).toList();
+			List<InnerElementRepresentationDTO> valueEntries = valueSubordinates.stream().map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e)).toList();	
+			collectionElements.put(new MapEntryDTO(keyEntries),new MapEntryDTO(valueEntries));
+			}
+			
+		//	List<UniversalElementRepresentation> valueElement = createUniversalElementRepresentationFromValue(valueValue);
+			
 		}
-		List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> list = new ArrayList<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>();
-		for (Entry<UniversalElementRepresentation, UniversalElementRepresentation> entry : collectionElements
-				.entrySet()) {
-			PairDTO<UniversalElementRepresentation, UniversalElementRepresentation> e = PairDTO.of(entry.getKey(),
-					entry.getValue());
-			list.add(PairDTO.of(
-					InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getFirst()),
-					InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getSecond())));
-
-		}
+//		List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> list = new ArrayList<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>();
+//		for (Entry<UniversalElementRepresentation, UniversalElementRepresentation> entry : collectionElements
+//				.entrySet()) {
+//			PairDTO<UniversalElementRepresentation, UniversalElementRepresentation> e = PairDTO.of(entry.getKey(),
+//					entry.getValue());
+//			list.add(PairDTO.of(
+//					InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getFirst()),
+//					InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getSecond())));
+//
+//		}
 		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
 		final int mapSize = mapElements.size();
 		int toIndex = (mapSize >= fromIndex + DebugUtils.PAGE_SIZE) ? (fromIndex + DebugUtils.PAGE_SIZE - 1)
@@ -231,27 +239,24 @@ public final class MapDataProvider implements DataProvider {
 				.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder().anchorMap(mapRepresentationDto)
 				.elementName(mapRepresentation.getElementName()).elementType(mapRepresentation.getAdditionalInfo())
 				.totalEntries(totalEntries).currentPage(pageNumber).totalPages(totalPages).fromIndex(fromIndex)
-				.toIndex(toIndex).entries(list).anchorTag(mapRepresentation.getTag()).build();
+				.toIndex(toIndex).entries(collectionElements).anchorTag(mapRepresentation.getTag()).build();
 		return page;
 	}
 
-	private UniversalElementRepresentation createUniversalElementRepresentationFromValue(Value value) {
-		UniversalElementRepresentation element = null;
-		if (value instanceof ObjectReference objRef) {
-			String type = objRef.referenceType().name();
-			String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
-			element = UniversalElementRepresentation.builder().referenceType(objRef.referenceType())
-					.objectReference(objRef).elementName(valueText)
-					.elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
-					.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-					.value(DebugUtils.getObjectReferenceValueAsString(objRef))
-					.valueCategory(DebugUtils.determineValueCategory(value)).build();
-			Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> qq = populateSubordinatesElements(
-					objRef);
-			System.out.println(qq);
-		}
-		return element;
-	}
+//	private UniversalElementRepresentation createUniversalElementRepresentationFromValue(Value value) {
+//		UniversalElementRepresentation element = null;
+//		if (value instanceof ObjectReference objRef) {
+//			String type = objRef.referenceType().name();
+//			String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
+//			element = UniversalElementRepresentation.builder().referenceType(objRef.referenceType())
+//					.objectReference(objRef).elementName(valueText)
+//					.elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
+//					.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+//					.value(DebugUtils.getObjectReferenceValueAsString(objRef))
+//					.valueCategory(DebugUtils.determineValueCategory(value)).build();
+//		}
+//		return element;
+//	}
 
 	private NavigableMap<Integer, Entry<Value, Value>> waitForPageLoading() {
 		if (Objects.isNull(pageNumber))
@@ -273,13 +278,12 @@ public final class MapDataProvider implements DataProvider {
 		}
 	}
 
-	public Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> populateSubordinatesElements(
-			ObjectReference objRef) {
+	public List<UniversalElementRepresentation> populateSubordinatesElements(ObjectReference objRef) {
 
 		if (objRef != null) {
 			long uniqueId = objRef.uniqueID();
 		}
-		Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates = new HashMap<AbstractElementRepresentation.Tag, AbstractElementRepresentation>();
+		List<UniversalElementRepresentation> subordinates = new ArrayList<>();
 
 		for (Method method : objRef.referenceType().allMethods()) {
 
@@ -302,23 +306,25 @@ public final class MapDataProvider implements DataProvider {
 					.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID()).parentUniqueId(null)
 					.level(-1).build();
 			// System.out.println("METhOD FOUND: " + methodElement.toString());
-			subordinates.put(methodElement.getTag(), methodElement);
+			subordinates.add(methodElement);
 
 		}
 
 		for (Field field : objRef.referenceType().allFields()) {
+			Value value = getFieldValue(field, objRef);
+			String valueText = DebugUtils.getLocalVariableValueAsString(value);
 			UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
 					.referenceType(objRef.referenceType()).objectReference(objRef).elementName(field.name())
-					.additionalInfo(field.genericSignature())
+					.additionalInfo(field.typeName())
 					.elementType(UniversalElementRepresentation.UniversalElementType.FIELD)
 					.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-					.value(getFieldValue(field, objRef).toString())
+					.value(valueText)
 					.isStatic(field.isStatic())
-					.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-					.typeOrReturnType(field.genericSignature()).uniqueId(UUID.randomUUID()).parentUniqueId(null)
+					.valueCategory(DebugUtils.determineValueCategory(value))
+					.typeOrReturnType(field.typeName()).uniqueId(UUID.randomUUID()).parentUniqueId(null)
 					.level(-1).build();
 			// System.out.println("METhOD FOUND: " + methodElement.toString());
-			subordinates.put(methodElement.getTag(), methodElement);
+			subordinates.add(methodElement);
 		}
 
 		return subordinates;
