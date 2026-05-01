@@ -12,16 +12,23 @@ import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.SortedMap;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.CurrentRole;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.BreadCrumb;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TripletDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
@@ -29,8 +36,10 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.logging.SimpleDebuggerLogger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.ArrayReference;
+import com.sun.jdi.ArrayType;
 import com.sun.jdi.BooleanValue;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -214,7 +223,8 @@ public final class MapDataProvider implements DataProvider {
 		}
 		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
 		final int mapSize = mapElements.size();
-		int toIndex = (mapSize >= fromIndex + DebugUtils.PAGE_SIZE) ? (fromIndex + DebugUtils.PAGE_SIZE - 1) : mapSize - 1;
+		int toIndex = (mapSize >= fromIndex + DebugUtils.PAGE_SIZE) ? (fromIndex + DebugUtils.PAGE_SIZE - 1)
+				: mapSize - 1;
 		InnerElementRepresentationDTO mapRepresentationDto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
 				.fromElement(mapRepresentation);
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = MapPageDTO
@@ -236,6 +246,9 @@ public final class MapDataProvider implements DataProvider {
 					.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
 					.value(DebugUtils.getObjectReferenceValueAsString(objRef))
 					.valueCategory(DebugUtils.determineValueCategory(value)).build();
+			Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> qq = populateSubordinatesElements(
+					objRef);
+			System.out.println(qq);
 		}
 		return element;
 	}
@@ -259,4 +272,70 @@ public final class MapDataProvider implements DataProvider {
 			}
 		}
 	}
+
+	public Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> populateSubordinatesElements(
+			ObjectReference objRef) {
+
+		if (objRef != null) {
+			long uniqueId = objRef.uniqueID();
+		}
+		Map<AbstractElementRepresentation.Tag, AbstractElementRepresentation> subordinates = new HashMap<AbstractElementRepresentation.Tag, AbstractElementRepresentation>();
+
+		for (Method method : objRef.referenceType().allMethods()) {
+
+			if (DebugUtils.shouldSkipMethod(method))
+				continue;
+//			if (!method.declaringType().equals(parentElement.getReferenceType()))
+//				continue;
+
+			List<String> args = method.argumentTypeNames();
+			String methodArgs = String.join(", ", args);
+
+			UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
+					.referenceType(objRef.referenceType()).objectReference(objRef).elementName(method.name() + "()")
+					.additionalInfo(method.returnTypeName())
+					.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
+					.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+					.value(objRef.referenceType().name() + "." + method.name() + "(" + methodArgs + ")")
+					.isStatic(method.isStatic())
+					.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
+					.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID()).parentUniqueId(null)
+					.level(-1).build();
+			// System.out.println("METhOD FOUND: " + methodElement.toString());
+			subordinates.put(methodElement.getTag(), methodElement);
+
+		}
+
+		for (Field field : objRef.referenceType().allFields()) {
+			UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
+					.referenceType(objRef.referenceType()).objectReference(objRef).elementName(field.name())
+					.additionalInfo(field.genericSignature())
+					.elementType(UniversalElementRepresentation.UniversalElementType.FIELD)
+					.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+					.value(getFieldValue(field, objRef).toString())
+					.isStatic(field.isStatic())
+					.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
+					.typeOrReturnType(field.genericSignature()).uniqueId(UUID.randomUUID()).parentUniqueId(null)
+					.level(-1).build();
+			// System.out.println("METhOD FOUND: " + methodElement.toString());
+			subordinates.put(methodElement.getTag(), methodElement);
+		}
+
+		return subordinates;
+	}
+	
+	private Value getFieldValue(Field field, ObjectReference instance) {
+	    try {
+	        if (field.isStatic()) {
+	            return field.declaringType().getValue(field);
+	        }
+	        if (instance != null) {
+	            return instance.getValue(field);
+	        }
+	        return null;
+	    } catch (Exception e) {
+	        return null;
+	    }
+	}
+
 }
