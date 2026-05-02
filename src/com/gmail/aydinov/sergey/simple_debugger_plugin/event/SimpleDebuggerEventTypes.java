@@ -120,7 +120,8 @@ public final class SimpleDebuggerEventTypes {
 		USER_INSPECTS_USER_OBJECT(MapEntryDTO.class, new UserObjectInspectionHandler()),
 //		USER_INSPECTS_MAP(InnerElementRepresentationDTO.class,
 //		        new MapInspectionSeanceHandler()), 
-		USER_INSPECTS_ITERABLE(InnerElementRepresentationDTO.class, null),
+		USER_INSPECTS_ITERABLE(InnerElementRepresentationDTO.class, null), 
+		USER_CLICKED_BREADCRUMB(PairDTO.class, null),
 		
 
 		
