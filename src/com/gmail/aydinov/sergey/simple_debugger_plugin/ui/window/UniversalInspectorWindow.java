@@ -1,8 +1,5 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window;
 
-import java.util.Objects;
-import java.util.Queue;
-
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
@@ -15,35 +12,29 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.BreadcrumbItemDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.IterableInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.InspectorTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.IterableInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.MapInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.UserObjectStructureTab;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 
 public class UniversalInspectorWindow {
 
 	private static UniversalInspectorWindow INSTANCE;
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+	private java.util.List<PairDTO<Integer, String>> currentBreadcrumbs = java.util.Collections.emptyList();
 
 	private final Shell shell;
 	private final List navigationList;
@@ -82,6 +73,21 @@ public class UniversalInspectorWindow {
 		leftPanel.setLayoutData(new GridData(150, SWT.FILL, false, true));
 		navigationList = new List(leftPanel, SWT.BORDER | SWT.V_SCROLL);
 		navigationList.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		navigationList.addListener(SWT.Selection, e -> {
+			int index = navigationList.getSelectionIndex();
+			if (index < 0 || index >= currentBreadcrumbs.size()) {
+				return;
+			}
+
+			PairDTO<Integer, String> breadcrumb = currentBreadcrumbs.get(index);
+
+			uiEventCollector.collectUiEvent(
+				new UIEvent<>(
+					SimpleDebuggerEventType.USER_CLICKED_BREADCRUMB,
+					breadcrumb
+				)
+			);
+		});
 
 		// правая панель вкладок
 		Composite rightPanel = new Composite(sash, SWT.BORDER);
@@ -313,11 +319,12 @@ public class UniversalInspectorWindow {
 		Display.getDefault().asyncExec(() -> {
 			navigationList.removeAll();
 
+			currentBreadcrumbs = list;
+
 			for (int i = 0; i < list.size(); i++) {
 				Integer item = list.get(i).getFirst();
-
 				String prefix = (i == list.size() - 1) ? "➤ " : "  ";
-				String text =  item + " " + prefix + list.get(i).getSecond();
+				String text = item + " " + prefix + list.get(i).getSecond();
 
 				navigationList.add(text);
 			}
