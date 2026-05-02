@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionHandlerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeanceCache;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -40,9 +40,10 @@ public class InspectionSeance {
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 	private boolean initialEventHandled = false;
 	private final AtomicInteger breadCrumbOrder = new AtomicInteger(0);
+	private final InspectionSeanceCache inspectionSeanceCache = new InspectionSeanceCacheImpl();
 	private static final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
 	public static AbstractInspectionDTO lastInspectedAbstractInspectionDTO = null;
-	public final static Map<Long, DataProviderHolder> inspectionSeanceCache = new ConcurrentHashMap<Long, DataProviderHolder>();
+//	public final static Map<Long, DataProviderHolder> inspectionSeanceCache = new ConcurrentHashMap<Long, DataProviderHolder>();
 	public final static SortedMap<Integer, BreadCrumb> breadcrumbs = new java.util.concurrent.ConcurrentSkipListMap<>();
 
 	private InspectionSeance(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
@@ -84,10 +85,10 @@ public class InspectionSeance {
 		} finally {
 			debugEventCollector
 					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
-			for (DataProviderHolder dataProviderHolder : inspectionSeanceCache.values()) {
+			for (DataProviderHolder dataProviderHolder : inspectionSeanceCache.getDataProviderHolders().values()) {
 				dataProviderHolder.getThread().interrupt();
 			}
-			inspectionSeanceCache.clear();
+			inspectionSeanceCache.getDataProviderHolders();
 			breadcrumbs.clear();
 			alreadyStarted.set(false);
 		}
@@ -127,7 +128,7 @@ public class InspectionSeance {
 					break;
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE)) {
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
-					handler.handle(new InspectionHandlerContext(currentFrame, breakpointEvent, null),  uiEvent);
+					handler.handle(new InspectionHandlerContext(currentFrame, breakpointEvent, inspectionSeanceCache),  uiEvent);
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT)) {
 					UIEvent<MapEntryDTO> userInspectsUserObjectEvent = (UIEvent<MapEntryDTO>) uiEvent;
 					if (lastInspectedAbstractInspectionDTO instanceof MapPageDTO mapPageDTO) {
@@ -152,7 +153,7 @@ public class InspectionSeance {
 					addBreadCrumbIfNecessary(userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(),
 							userReqeustedMapPageEvent, descriprion);
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
-					handler.handle(new InspectionSeanceUIEventContext(currentFrame, breakpointEvent, null), userReqeustedMapPageEvent);
+					handler.handle(new InspectionSeanceUIEventContext(currentFrame, breakpointEvent, inspectionSeanceCache), userReqeustedMapPageEvent);
 				}
 			}
 			return true;

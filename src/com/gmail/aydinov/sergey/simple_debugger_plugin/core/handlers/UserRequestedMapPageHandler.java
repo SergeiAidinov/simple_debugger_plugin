@@ -54,7 +54,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 			System.out.println(castException);
 		}
 		final long id = uiEvent.getPayload().getFirst().getObjectId();
-		DataProviderHolder dataProviderHolder = InspectionSeance.inspectionSeanceCache.get(id);
+		DataProviderHolder dataProviderHolder = inspectionSeanceUIEventContext.getInspectionSeanceCache().getDataProviderHolders().get(id);
 		// MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page
 		// = null;
 		if (Objects.nonNull(dataProviderHolder)) {
@@ -70,9 +70,9 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, inspectionSeanceUIEventContext.getBreakpointEvent());
 			dataProviderHolder = new DataProviderHolder(mapDataProvider,
 					DebuggerContext.context().getInspectionSeanceId());
-			InspectionSeance.inspectionSeanceCache.put(id, dataProviderHolder);
+			inspectionSeanceUIEventContext.getInspectionSeanceCache().getDataProviderHolders().put(id, dataProviderHolder);
 			System.out.println(uiEvent);
-			InspectionSeance.inspectionSeanceCache.get(id).handleEvent(uiEvent);
+			inspectionSeanceUIEventContext.getInspectionSeanceCache().getDataProviderHolders().get(id).handleEvent(uiEvent);
 
 		}
 //		debugEventCollector.collectDebugEvent(new DebugEvent<>(
