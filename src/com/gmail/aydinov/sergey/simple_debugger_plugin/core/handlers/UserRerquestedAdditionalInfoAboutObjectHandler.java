@@ -15,6 +15,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.AbstractUIEventContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserElementDetailDTO;
@@ -38,8 +39,7 @@ public class UserRerquestedAdditionalInfoAboutObjectHandler implements UIEventHa
 	private static final EnumSet<UniversalElementType> secondGroup = EnumSet.of(UniversalElementType.METHOD);
 
 	@Override
-	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
-			BreakpointEvent breakpointEvent) {
+	public boolean handle(AbstractUIEventContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
 //		UserObjectInspectionHandler userObjectInspectionHandler = new UserObjectInspectionHandler();
 //		userObjectInspectionHandler.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
 		UIEvent<InnerElementRepresentationDTO> userRequestedAdditionalInfo = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;

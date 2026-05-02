@@ -1,16 +1,17 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces;
 
-import java.util.SortedMap;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DebugSessionUIEventContext;
+import com.sun.jdi.StackFrame;
+import com.sun.jdi.event.BreakpointEvent;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.BreadCrumb;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProviderHolder;
-
-public interface InspectionSeanceContex {
-	DataProviderHolder getDataProviderHolderByInspectableObjectId(Long objectId);
+public class InspectionSeanceContex extends DebugSessionUIEventContext{
 	
-	void addDataProviderHolder(Long objectId, DataProviderHolder DataProviderHolder);
-	
-	void addBreadCrumb(BreadCrumb breadCrumb);
-	
-	SortedMap<Integer, BreadCrumb> getBreadCrumbs();
+	private final InspectionSeanceCache inspectionSeanceCache;
+	  public InspectionSeanceContex(StackFrame frame, BreakpointEvent breakpointEvent, InspectionSeanceCache inspectionSeanceCache) {
+		super(frame, breakpointEvent);
+		this.inspectionSeanceCache = inspectionSeanceCache;
+	}
+	  public InspectionSeanceCache getInspectionSeanceCache() {
+		  return inspectionSeanceCache;
+	  }
 }

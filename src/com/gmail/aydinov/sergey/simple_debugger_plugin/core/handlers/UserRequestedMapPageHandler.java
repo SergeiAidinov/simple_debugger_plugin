@@ -15,9 +15,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.MapDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.AbstractUIEventContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionSeance;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionSeanceUIEventContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeanceContex;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -42,8 +45,9 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
-			BreakpointEvent breakpointEvent) {
+	public boolean handle(AbstractUIEventContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
+		InspectionSeanceUIEventContext inspectionSeanceUIEventContext = (InspectionSeanceUIEventContext) abstractUIEventContext;
+	//	UIEvent<T> uiEvent = (UIEvent<T>) abstractSimpleDebuggerUIEvent;
 		UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> uiEvent = null;
 		try {
 			uiEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) abstractSimpleDebuggerUIEvent;
@@ -64,7 +68,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 					.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
 
 			UniversalElementRepresentation mapRepresentation = i.get();
-			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, breakpointEvent);
+			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, inspectionSeanceUIEventContext.getBreakpointEvent());
 			dataProviderHolder = new DataProviderHolder(mapDataProvider,
 					DebuggerContext.context().getInspectionSeanceId());
 			InspectionSeance.inspectionSeanceCache.put(id, dataProviderHolder);

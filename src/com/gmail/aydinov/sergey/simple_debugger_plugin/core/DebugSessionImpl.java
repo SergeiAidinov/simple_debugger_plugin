@@ -27,6 +27,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtual
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext.SimpleDebuggerStatus;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DebugSessionUIEventContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DebugSession;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
@@ -174,8 +175,9 @@ public class DebugSessionImpl implements DebugSession {
 			UIEventHandler qq = abstractSimpleDebuggerUIEvent.getType().getUiEventHandler();
 			System.out.println(abstractSimpleDebuggerUIEvent.getType() + " handler: " + qq);
 			if (Objects.isNull(qq)) return;
+			
 			shouldRefreshSnapsotAndUi.set(abstractSimpleDebuggerUIEvent.getType().getUiEventHandler()
-					.handle(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent));
+					.handle(new DebugSessionUIEventContext(currentFrame, breakpointEvent), abstractSimpleDebuggerUIEvent));
 			System.out.println(shouldRefreshSnapsotAndUi);
 		} catch (Exception exception) {
 			SimpleDebuggerLogger.error(exception.getMessage(), exception);
