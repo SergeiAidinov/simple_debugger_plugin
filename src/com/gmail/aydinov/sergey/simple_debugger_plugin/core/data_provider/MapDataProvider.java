@@ -204,10 +204,10 @@ public final class MapDataProvider implements DataProvider {
 				List<InnerElementRepresentationDTO> valueEntries = valueSubordinates.stream()
 						.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e))
 						.toList();
-				String keyValueText = DebugUtils.getObjectReferenceValueAsString(keyReference);
+				String keyValueText = DebugUtils.getObjectReferenceValueAsString(keyReference) + " (" + keyReference.type().name() + ", id=" + keyReference.uniqueID() + ")";
 				ValueCategory keyCategory = DebugUtils.determineValueCategory(keyValue);
 				ValueCategory valueCategory = DebugUtils.determineValueCategory(valueValue);
-				String valueValueText = DebugUtils.getObjectReferenceValueAsString(valueReference);
+				String valueValueText = DebugUtils.getObjectReferenceValueAsString(valueReference) + " (id=" + valueReference.uniqueID() + ")";
 				collectionElements.put(new MapEntryDTO(keyValueText, keyReference.uniqueID(), keyCategory, keyEntries), new MapEntryDTO(valueValueText, valueReference.uniqueID(), valueCategory, valueEntries));
 			}
 

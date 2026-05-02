@@ -28,6 +28,16 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 
 public class MapInspectorTab implements InspectorTab {
+	
+	private Label mapNameLabel;
+	private Label mapTypeLabel;
+	private Label sizeLabel;
+	private Label pageInfoLabel;
+
+	private Button prevButton;
+	private Text pageText;
+	private Button goButton;
+	private Button nextButton;
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
@@ -49,6 +59,50 @@ public class MapInspectorTab implements InspectorTab {
 
 		root = new Composite(parent, SWT.NONE);
 		root.setLayout(new GridLayout(1, false));
+		
+		// ================= HEADER =================
+
+		Composite header = new Composite(root, SWT.NONE);
+		header.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+		header.setLayout(new GridLayout(2, false));
+
+		// ---- левая часть (инфа) ----
+		Composite info = new Composite(header, SWT.NONE);
+		info.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		info.setLayout(new GridLayout(1, false));
+
+		mapNameLabel = new Label(info, SWT.NONE);
+		mapNameLabel.setText("Map: ");
+
+		mapTypeLabel = new Label(info, SWT.NONE);
+		mapTypeLabel.setText("Map type: ");
+
+		sizeLabel = new Label(info, SWT.NONE);
+		sizeLabel.setText("Size: ");
+
+		pageInfoLabel = new Label(info, SWT.NONE);
+		pageInfoLabel.setText("Page: ");
+
+		// ---- правая часть (pagination) ----
+		Composite pagination = new Composite(header, SWT.NONE);
+		pagination.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
+		pagination.setLayout(new GridLayout(4, false));
+
+		prevButton = new Button(pagination, SWT.PUSH);
+		prevButton.setText("Prev");
+		prevButton.addListener(SWT.Selection, e -> requestPage(currentPage - 1));
+
+		pageText = new Text(pagination, SWT.BORDER);
+		pageText.setLayoutData(new GridData(70, SWT.DEFAULT));
+
+		goButton = new Button(pagination, SWT.PUSH);
+		goButton.setText("Go");
+		goButton.addListener(SWT.Selection, e -> requestPageFromText());
+		pageText.addListener(SWT.DefaultSelection, e -> requestPageFromText());
+
+		nextButton = new Button(pagination, SWT.PUSH);
+		nextButton.setText("Next");
+		nextButton.addListener(SWT.Selection, e -> requestPage(currentPage + 1));
 
 		Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
 		table.setHeaderVisible(true);
@@ -71,6 +125,27 @@ public class MapInspectorTab implements InspectorTab {
 	}
 
 	// ================= POPUP =================
+
+	private void requestPageFromText() {
+	    int page;
+	    try {
+	        page = Integer.parseInt(pageText.getText().trim());
+	    } catch (Exception e) {
+	        page = 0;
+	    }
+	    if (page < 0) page = 0;
+
+	    requestPage(page);
+	}
+
+	private void requestPage(int page) {
+	    uiEventCollector.collectUiEvent(
+	        new UIEvent<>(
+	            SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
+	            PairDTO.of(anchorMap, page)
+	        )
+	    );
+	}
 
 	private void setupClickListener(Table table) {
 
@@ -124,7 +199,7 @@ public class MapInspectorTab implements InspectorTab {
 	                uiEventCollector.collectUiEvent(
 	                        new UIEvent<>(
 	                                SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
-	                                PairDTO.of(mapDto, 0)
+	                                PairDTO.of(InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromMapEntry(mapDto), 0)
 	                        )
 	                );
 	            }
@@ -233,11 +308,17 @@ public class MapInspectorTab implements InspectorTab {
 	}
 
 	private void closeElementsPopup() {
-		if (elementsPopup != null && !elementsPopup.isDisposed()) {
-			elementsPopup.dispose();
-		}
-		elementsPopup = null;
-		root.getDisplay().removeFilter(SWT.MouseDown, popupCloseFilter);
+
+	    if (elementsPopup != null && !elementsPopup.isDisposed()) {
+	        Display display = elementsPopup.getDisplay(); // безопаснее, чем root
+	        elementsPopup.dispose();
+
+	        if (display != null && !display.isDisposed()) {
+	            display.removeFilter(SWT.MouseDown, popupCloseFilter);
+	        }
+	    }
+
+	    elementsPopup = null;
 	}
 
 	// ================= HOVER =================
@@ -388,9 +469,32 @@ public class MapInspectorTab implements InspectorTab {
 		root.getDisplay().asyncExec(() -> {
 			if (root.isDisposed()) return;
 
+			anchorMap = page.getAnchorMap();
+
+			mapNameLabel.setText("Map name: " + safe(page.getElementName()));
+			mapTypeLabel.setText("Map type: " + safe(page.getElementType()));
+			sizeLabel.setText("Size: " + page.getTotalElements());
+
+			pageInfoLabel.setText(
+			    "Page (0-based): " + page.getCurrentPage() +
+			    " of " + page.getTotalPages() +
+			    "   Showing: " + page.getFromIndex() + "–" + page.getToIndex()
+			);
+
+			pageText.setText(String.valueOf(page.getCurrentPage()));
+
+			currentPage = page.getCurrentPage();
+
+			prevButton.setEnabled(true);
+			nextButton.setEnabled(true);
+
 			viewer.setInput(toPairs(page.getEntries()));
 			root.layout(true, true);
 		});
+	}
+
+	private String safe(String value) {
+	    return value == null ? "" : value;
 	}
 
 	private List<PairDTO<MapEntryDTO, MapEntryDTO>> toPairs(Map<MapEntryDTO, MapEntryDTO> map) {
