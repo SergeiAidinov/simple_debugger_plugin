@@ -3,7 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.event.BreakpointEvent;
 
-public class InspectionSeanceUIEventContext extends DebugSessionUIEventContext {
+public class InspectionSeanceUIEventContext extends DebugHandlerContext {
 
     private final InspectionSeance inspectionSeance;
 

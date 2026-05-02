@@ -12,8 +12,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractEleme
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.AbstractUIEventContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DebugSessionUIEventContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DebugHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
@@ -35,8 +35,8 @@ public class UserChangedFieldHandler implements UIEventHandler {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public boolean handle(AbstractUIEventContext abstractUIEventContext, AbstractUIEvent abstractUIEvent) {
-		DebugSessionUIEventContext debugSessionUIEventContext = (DebugSessionUIEventContext) abstractUIEventContext;
+	public boolean handle(HandlerContext abstractUIEventContext, AbstractUIEvent abstractUIEvent) {
+		DebugHandlerContext debugSessionUIEventContext = (DebugHandlerContext) abstractUIEventContext;
 		UIEvent<UserChangedFieldEventDTO> event = (UIEvent<UserChangedFieldEventDTO>) abstractUIEvent;
 		UserChangedFieldEventDTO payload = event.getPayload();
 		boolean shouldUpdateUi = false;

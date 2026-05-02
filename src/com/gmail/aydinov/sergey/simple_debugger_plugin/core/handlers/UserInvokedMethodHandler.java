@@ -6,7 +6,7 @@ import java.util.Objects;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebugSessionImpl;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.AbstractUIEventContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserInvokedMethodEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
@@ -25,7 +25,7 @@ import com.sun.jdi.event.BreakpointEvent;
 public class UserInvokedMethodHandler implements UIEventHandler {
 
 	@Override
-	public boolean handle(AbstractUIEventContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
+	public boolean handle(HandlerContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
 		UIEvent<UserInvokedMethodEventDTO> userInvokedMethodEventDTO = (UIEvent<UserInvokedMethodEventDTO>) abstractSimpleDebuggerUIEvent;
 		return false;
 	}
