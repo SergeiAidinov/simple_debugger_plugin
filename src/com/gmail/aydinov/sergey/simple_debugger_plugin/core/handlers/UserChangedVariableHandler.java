@@ -3,6 +3,8 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 import java.util.Objects;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.AbstractUIEventContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DebugSessionUIEventContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedVariableEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
@@ -17,10 +19,10 @@ public class UserChangedVariableHandler implements UIEventHandler{
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
-			BreakpointEvent breakpointEvent) {
-		UIEvent<UserChangedVariableEventDTO> userChangedVariableEvent = (UIEvent<UserChangedVariableEventDTO>) abstractSimpleDebuggerUIEvent;
-		updateLocalVariable(userChangedVariableEvent, currentFrame);
+	public boolean handle(AbstractUIEventContext abstractUIEventContext, AbstractUIEvent abstractUIEvent) {
+		DebugSessionUIEventContext debugSessionUIEventContext = (DebugSessionUIEventContext) abstractUIEventContext;
+		UIEvent<UserChangedVariableEventDTO> userChangedVariableEvent = (UIEvent<UserChangedVariableEventDTO>) abstractUIEvent;
+		updateLocalVariable(userChangedVariableEvent, debugSessionUIEventContext.getFrame());
 		return true;
 	}
 	

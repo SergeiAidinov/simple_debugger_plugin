@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeanceContex;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -126,7 +127,7 @@ public class InspectionSeance {
 					break;
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE)) {
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
-					handler.handle(uiEvent, currentFrame, breakpointEvent);
+					handler.handle(new InspectionSeanceContex(currentFrame, breakpointEvent, null),  uiEvent);
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT)) {
 					UIEvent<MapEntryDTO> userInspectsUserObjectEvent = (UIEvent<MapEntryDTO>) uiEvent;
 					if (lastInspectedAbstractInspectionDTO instanceof MapPageDTO mapPageDTO) {
@@ -141,7 +142,7 @@ public class InspectionSeance {
 					}
 					
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
-					handler.handle(uiEvent, currentFrame, breakpointEvent);
+					handler.handle(new InspectionSeanceUIEventContext(currentFrame, breakpointEvent, null),  uiEvent);
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE)) {
 					UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> userReqeustedMapPageEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) uiEvent;
 					System.out.println(userReqeustedMapPageEvent);
@@ -151,7 +152,7 @@ public class InspectionSeance {
 					addBreadCrumbIfNecessary(userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(),
 							userReqeustedMapPageEvent, descriprion);
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
-					handler.handle(userReqeustedMapPageEvent, currentFrame, breakpointEvent);
+					handler.handle(new InspectionSeanceUIEventContext(currentFrame, breakpointEvent, null), userReqeustedMapPageEvent);
 				}
 			}
 			return true;

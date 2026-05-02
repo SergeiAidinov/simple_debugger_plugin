@@ -10,6 +10,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.ObjectDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.AbstractUIEventContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
@@ -36,8 +37,7 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
-			BreakpointEvent breakpointEvent) {
+	public boolean handle(AbstractUIEventContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
 		try {
 			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
