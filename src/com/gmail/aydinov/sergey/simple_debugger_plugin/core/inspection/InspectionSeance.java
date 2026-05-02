@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeanceContex;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -127,7 +127,7 @@ public class InspectionSeance {
 					break;
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE)) {
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
-					handler.handle(new InspectionSeanceContex(currentFrame, breakpointEvent, null),  uiEvent);
+					handler.handle(new InspectionHandlerContext(currentFrame, breakpointEvent, null),  uiEvent);
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT)) {
 					UIEvent<MapEntryDTO> userInspectsUserObjectEvent = (UIEvent<MapEntryDTO>) uiEvent;
 					if (lastInspectedAbstractInspectionDTO instanceof MapPageDTO mapPageDTO) {
