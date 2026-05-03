@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionSeance;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionSeanceUIEventContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -39,12 +39,11 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Value;
-import com.sun.jdi.event.BreakpointEvent;
 
 public final class MapDataProvider implements DataProvider {
 
 	private final UniversalElementRepresentation mapRepresentation;
-	private final BreakpointEvent breakpointEvent;
+	private final InspectionSeanceUIEventContext inspectionSeanceUIEventContext;
 
 	private final NavigableMap<Integer, Map.Entry<Value, Value>> mapElements = new ConcurrentSkipListMap<>();
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
@@ -63,9 +62,10 @@ public final class MapDataProvider implements DataProvider {
 	private final AtomicBoolean allElementsLoaded = new AtomicBoolean(false);
 	private final AtomicBoolean readingStarted = new AtomicBoolean(false);
 
-	public MapDataProvider(UniversalElementRepresentation mapRepresentation, BreakpointEvent breakpointEvent) {
+	public MapDataProvider(UniversalElementRepresentation mapRepresentation,
+			InspectionSeanceUIEventContext inspectionSeanceUIEventContext) {
 		this.mapRepresentation = mapRepresentation;
-		this.breakpointEvent = breakpointEvent;
+		this.inspectionSeanceUIEventContext = inspectionSeanceUIEventContext;
 	}
 
 	private enum InitializationState {
@@ -100,9 +100,10 @@ public final class MapDataProvider implements DataProvider {
 		NavigableMap<Integer, Entry<Value, Value>> selectedItems = waitForPageLoading();
 
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(selectedItems);
-		List<PairDTO<Integer, String>> breadCrumbs = InspectionSeance.getBreadCrumbs();
+		List<PairDTO<Integer, String>> breadCrumbs = inspectionSeanceUIEventContext.getInspectionSeanceCache()
+				.groupBreadCrumbsintoPairs();
 		page.setBreadcrumbs(breadCrumbs);
-		InspectionSeance.lastInspectedAbstractInspectionDTO = page;
+		// InspectionSeance.lastInspectedAbstractInspectionDTO = page;
 		debugEventCollector.collectDebugEvent(new DebugEvent<>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
 	}
@@ -147,7 +148,7 @@ public final class MapDataProvider implements DataProvider {
 		if (getMethod == null)
 			return false;
 		this.getMethod = getMethod;
-		thread = breakpointEvent.thread();
+		thread = inspectionSeanceUIEventContext.getBreakpointEvent().thread();
 		Method keySetMethod = classType.concreteMethodByName("keySet", "()Ljava/util/Set;");
 		if (keySetMethod == null)
 			return false;
@@ -204,11 +205,14 @@ public final class MapDataProvider implements DataProvider {
 				List<InnerElementRepresentationDTO> valueEntries = valueSubordinates.stream()
 						.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e))
 						.toList();
-				String keyValueText = DebugUtils.getObjectReferenceValueAsString(keyReference) + " (" + keyReference.type().name() + ", id=" + keyReference.uniqueID() + ")";
+				String keyValueText = DebugUtils.getObjectReferenceValueAsString(keyReference) + " ("
+						+ keyReference.type().name() + ", id=" + keyReference.uniqueID() + ")";
 				ValueCategory keyCategory = DebugUtils.determineValueCategory(keyValue);
 				ValueCategory valueCategory = DebugUtils.determineValueCategory(valueValue);
-				String valueValueText = DebugUtils.getObjectReferenceValueAsString(valueReference) + " (id=" + valueReference.uniqueID() + ")";
-				collectionElements.put(new MapEntryDTO(keyValueText, keyReference.uniqueID(), keyCategory, keyEntries), new MapEntryDTO(valueValueText, valueReference.uniqueID(), valueCategory, valueEntries));
+				String valueValueText = DebugUtils.getObjectReferenceValueAsString(valueReference) + " (id="
+						+ valueReference.uniqueID() + ")";
+				collectionElements.put(new MapEntryDTO(keyValueText, keyReference.uniqueID(), keyCategory, keyEntries),
+						new MapEntryDTO(valueValueText, valueReference.uniqueID(), valueCategory, valueEntries));
 			}
 
 			// List<UniversalElementRepresentation> valueElement =
@@ -288,44 +292,26 @@ public final class MapDataProvider implements DataProvider {
 					continue;
 				List<String> args = method.argumentTypeNames();
 				String methodArgs = String.join(", ", args);
-				subordinates.add(
-						UniversalElementRepresentation.builder()
-								.referenceType(refType)
-								.objectReference(objRef)
-								.elementName(method.name() + "()")
-								.additionalInfo(method.returnTypeName())
-								.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
-								.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-								.value(refType.name() + "." + method.name() + "(" + methodArgs + ")")
-								.isStatic(method.isStatic())
-								.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
-								.typeOrReturnType(method.returnTypeName())
-								.uniqueId(UUID.randomUUID())
-								.parentUniqueId(null)
-								.level(-1)
-								.build()
-				);
+				subordinates.add(UniversalElementRepresentation.builder().referenceType(refType).objectReference(objRef)
+						.elementName(method.name() + "()").additionalInfo(method.returnTypeName())
+						.elementType(UniversalElementRepresentation.UniversalElementType.METHOD)
+						.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
+						.value(refType.name() + "." + method.name() + "(" + methodArgs + ")")
+						.isStatic(method.isStatic())
+						.valueCategory(UniversalElementRepresentation.ValueCategory.NOT_SPECIFIED)
+						.typeOrReturnType(method.returnTypeName()).uniqueId(UUID.randomUUID()).parentUniqueId(null)
+						.level(-1).build());
 			}
 			for (Field field : refType.allFields()) {
 				Value value = getFieldValue(field, objRef);
 				String valueText = DebugUtils.getLocalVariableValueAsString(value);
-				subordinates.add(
-						UniversalElementRepresentation.builder()
-								.referenceType(refType)
-								.objectReference(objRef)
-								.elementName(field.name())
-								.additionalInfo(field.typeName())
-								.elementType(UniversalElementRepresentation.UniversalElementType.FIELD)
-								.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-								.value(valueText)
-								.isStatic(field.isStatic())
-								.valueCategory(DebugUtils.determineValueCategory(value))
-								.typeOrReturnType(field.typeName())
-								.uniqueId(UUID.randomUUID())
-								.parentUniqueId(null)
-								.level(-1)
-								.build()
-				);
+				subordinates.add(UniversalElementRepresentation.builder().referenceType(refType).objectReference(objRef)
+						.elementName(field.name()).additionalInfo(field.typeName())
+						.elementType(UniversalElementRepresentation.UniversalElementType.FIELD)
+						.currentRole(UniversalElementRepresentation.CurrentRole.INNER).value(valueText)
+						.isStatic(field.isStatic()).valueCategory(DebugUtils.determineValueCategory(value))
+						.typeOrReturnType(field.typeName()).uniqueId(UUID.randomUUID()).parentUniqueId(null).level(-1)
+						.build());
 			}
 		} finally {
 			DataProvider.jdiAccessLock.unlock();
