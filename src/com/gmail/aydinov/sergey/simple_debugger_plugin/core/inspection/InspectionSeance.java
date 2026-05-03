@@ -133,13 +133,15 @@ public class InspectionSeance {
 				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE)) {
 					UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> userReqeustedMapPageEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) uiEvent;
 					System.out.println(userReqeustedMapPageEvent);
-					String descriprion = userReqeustedMapPageEvent.getPayload().getFirst().getElementName() + " page: "
-							+ userReqeustedMapPageEvent.getPayload().getSecond();
-					System.out.println(descriprion);
-					inspectionSeanceCache.addBreadCrumbIfNecessary(userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(),
-							userReqeustedMapPageEvent, descriprion);
 					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 					handler.handle(new InspectionSeanceUIEventContext(currentFrame, breakpointEvent, inspectionSeanceCache), userReqeustedMapPageEvent);
+//					String descriprion = userReqeustedMapPageEvent.getPayload().getFirst().getElementName() + " page: "
+//							+ userReqeustedMapPageEvent.getPayload().getSecond();
+//					System.out.println(descriprion);
+//					inspectionSeanceCache.addBreadCrumbIfNecessary(userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(),
+//							userReqeustedMapPageEvent, descriprion);
+					
+					
 				}
 			}
 			return true;
