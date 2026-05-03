@@ -1,61 +1,49 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.MapDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProviderHolder;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapEntryDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
-import com.sun.jdi.ObjectReference;
-import com.sun.jdi.StackFrame;
-import com.sun.jdi.Value;
-import com.sun.jdi.event.BreakpointEvent;
 
 public class UserRequestedMapPageHandler implements UIEventHandler {
 
-	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
-
 	@SuppressWarnings("unchecked")
 	@Override
-	public boolean handle(AbstractUIEvent abstractSimpleDebuggerUIEvent, StackFrame currentFrame,
-			BreakpointEvent breakpointEvent) {
-		UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> uiEvent = null;
+	public boolean handle(HandlerContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
+		InspectionHandlerContext inspectionHandlerContext =  (InspectionHandlerContext) abstractUIEventContext;
+		// UIEvent<T> uiEvent = (UIEvent<T>) abstractSimpleDebuggerUIEvent;
+		UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> userReqeustedMapPageEvent = null;
 		try {
-			uiEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) abstractSimpleDebuggerUIEvent;
+			userReqeustedMapPageEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) abstractSimpleDebuggerUIEvent;
 		} catch (ClassCastException castException) {
 			System.out.println(castException);
 		}
-		final long id = uiEvent.getPayload().getFirst().getObjectId();
-		DataProviderHolder dataProviderHolder = InspectionSeance.inspectionSeanceCache.get(id);
+
+		final long id = userReqeustedMapPageEvent.getPayload().getFirst().getObjectId();
+		String descriprion = userReqeustedMapPageEvent.getPayload().getFirst().getElementName() + " page: "
+				+ userReqeustedMapPageEvent.getPayload().getSecond();
+		System.out.println(descriprion);
+		inspectionHandlerContext.getInspectionSeanceCache().addBreadCrumbIfNecessary(
+				userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(), userReqeustedMapPageEvent,
+				descriprion);
+		DataProviderHolder dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()
+				.getDataProviderHolders().get(id);
 		// MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page
 		// = null;
 		if (Objects.nonNull(dataProviderHolder)) {
-			dataProviderHolder.handleEvent(uiEvent);
+			dataProviderHolder.handleEvent(userReqeustedMapPageEvent);
 			System.out.println();
 		} else {
 			Optional<UniversalElementRepresentation> i = TargetApplicationRepresentation.getInstance().getAllElements()
@@ -64,12 +52,14 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 					.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
 
 			UniversalElementRepresentation mapRepresentation = i.get();
-			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, breakpointEvent);
+			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, inspectionHandlerContext);
 			dataProviderHolder = new DataProviderHolder(mapDataProvider,
 					DebuggerContext.context().getInspectionSeanceId());
-			InspectionSeance.inspectionSeanceCache.put(id, dataProviderHolder);
-			System.out.println(uiEvent);
-			InspectionSeance.inspectionSeanceCache.get(id).handleEvent(uiEvent);
+			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id,
+					dataProviderHolder);
+			System.out.println(userReqeustedMapPageEvent);
+			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id)
+					.handleEvent(userReqeustedMapPageEvent);
 
 		}
 //		debugEventCollector.collectDebugEvent(new DebugEvent<>(
