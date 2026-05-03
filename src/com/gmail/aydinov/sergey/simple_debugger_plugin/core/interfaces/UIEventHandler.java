@@ -14,5 +14,5 @@ public interface UIEventHandler {
      * @param event событие UI
      * @return true, если после обработки нужно обновить snapshot и UI
      */
-    boolean handle(HandlerContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent);
+	boolean handle(HandlerContext context, AbstractUIEvent event);
 }

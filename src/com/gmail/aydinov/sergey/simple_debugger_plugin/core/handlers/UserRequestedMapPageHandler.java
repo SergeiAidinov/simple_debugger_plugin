@@ -9,9 +9,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.MapDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionSeanceUIEventContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeanceCache;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -23,7 +22,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean handle(HandlerContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
-		InspectionSeanceUIEventContext inspectionSeanceUIEventContext = (InspectionSeanceUIEventContext) abstractUIEventContext;
+		InspectionHandlerContext inspectionHandlerContext =  (InspectionHandlerContext) abstractUIEventContext;
 		// UIEvent<T> uiEvent = (UIEvent<T>) abstractSimpleDebuggerUIEvent;
 		UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> userReqeustedMapPageEvent = null;
 		try {
@@ -36,10 +35,10 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 		String descriprion = userReqeustedMapPageEvent.getPayload().getFirst().getElementName() + " page: "
 				+ userReqeustedMapPageEvent.getPayload().getSecond();
 		System.out.println(descriprion);
-		inspectionSeanceUIEventContext.getInspectionSeanceCache().addBreadCrumbIfNecessary(
+		inspectionHandlerContext.getInspectionSeanceCache().addBreadCrumbIfNecessary(
 				userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(), userReqeustedMapPageEvent,
 				descriprion);
-		DataProviderHolder dataProviderHolder = inspectionSeanceUIEventContext.getInspectionSeanceCache()
+		DataProviderHolder dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()
 				.getDataProviderHolders().get(id);
 		// MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page
 		// = null;
@@ -53,13 +52,13 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 					.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
 
 			UniversalElementRepresentation mapRepresentation = i.get();
-			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, inspectionSeanceUIEventContext);
+			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, inspectionHandlerContext);
 			dataProviderHolder = new DataProviderHolder(mapDataProvider,
 					DebuggerContext.context().getInspectionSeanceId());
-			inspectionSeanceUIEventContext.getInspectionSeanceCache().getDataProviderHolders().put(id,
+			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id,
 					dataProviderHolder);
 			System.out.println(userReqeustedMapPageEvent);
-			inspectionSeanceUIEventContext.getInspectionSeanceCache().getDataProviderHolders().get(id)
+			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id)
 					.handleEvent(userReqeustedMapPageEvent);
 
 		}

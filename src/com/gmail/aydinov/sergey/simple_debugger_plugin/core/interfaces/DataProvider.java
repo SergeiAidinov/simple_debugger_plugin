@@ -4,7 +4,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public interface DataProvider {
 	
-	void requestPage(Integer pageNumber);
+	void handlePageRequest(Integer pageNumber);
 	
 	public static ReentrantLock jdiAccessLock = new ReentrantLock(true);
 

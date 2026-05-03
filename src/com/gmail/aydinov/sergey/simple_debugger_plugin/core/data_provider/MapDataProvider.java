@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionSeanceUIEventContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -43,7 +43,7 @@ import com.sun.jdi.Value;
 public final class MapDataProvider implements DataProvider {
 
 	private final UniversalElementRepresentation mapRepresentation;
-	private final InspectionSeanceUIEventContext inspectionSeanceUIEventContext;
+	private final InspectionHandlerContext inspectionHandlerContext;
 
 	private final NavigableMap<Integer, Map.Entry<Value, Value>> mapElements = new ConcurrentSkipListMap<>();
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
@@ -63,9 +63,9 @@ public final class MapDataProvider implements DataProvider {
 	private final AtomicBoolean readingStarted = new AtomicBoolean(false);
 
 	public MapDataProvider(UniversalElementRepresentation mapRepresentation,
-			InspectionSeanceUIEventContext inspectionSeanceUIEventContext) {
+			InspectionHandlerContext inspectionHandlerContext) {
 		this.mapRepresentation = mapRepresentation;
-		this.inspectionSeanceUIEventContext = inspectionSeanceUIEventContext;
+		this.inspectionHandlerContext = inspectionHandlerContext;
 	}
 
 	private enum InitializationState {
@@ -73,7 +73,7 @@ public final class MapDataProvider implements DataProvider {
 	}
 
 	@Override
-	public void requestPage(Integer pageNumber) {
+	public void handlePageRequest(Integer pageNumber) {
 		if (Objects.isNull(pageNumber))
 			this.pageNumber = 0;
 		else
@@ -100,7 +100,7 @@ public final class MapDataProvider implements DataProvider {
 		NavigableMap<Integer, Entry<Value, Value>> selectedItems = waitForPageLoading();
 
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(selectedItems);
-		List<PairDTO<Integer, String>> breadCrumbs = inspectionSeanceUIEventContext.getInspectionSeanceCache()
+		List<PairDTO<Integer, String>> breadCrumbs = inspectionHandlerContext.getInspectionSeanceCache()
 				.groupBreadCrumbsintoPairs();
 		
 		page.setBreadcrumbs(breadCrumbs);
@@ -149,7 +149,7 @@ public final class MapDataProvider implements DataProvider {
 		if (getMethod == null)
 			return false;
 		this.getMethod = getMethod;
-		thread = inspectionSeanceUIEventContext.getBreakpointEvent().thread();
+		thread = inspectionHandlerContext.getBreakpointEvent().thread();
 		Method keySetMethod = classType.concreteMethodByName("keySet", "()Ljava/util/Set;");
 		if (keySetMethod == null)
 			return false;
