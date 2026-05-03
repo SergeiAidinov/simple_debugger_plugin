@@ -102,6 +102,7 @@ public final class MapDataProvider implements DataProvider {
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(selectedItems);
 		List<PairDTO<Integer, String>> breadCrumbs = inspectionSeanceUIEventContext.getInspectionSeanceCache()
 				.groupBreadCrumbsintoPairs();
+		
 		page.setBreadcrumbs(breadCrumbs);
 		// InspectionSeance.lastInspectedAbstractInspectionDTO = page;
 		debugEventCollector.collectDebugEvent(new DebugEvent<>(
