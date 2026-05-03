@@ -112,37 +112,13 @@ public class InspectionSeance {
 				}
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE))
 					break;
-				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE)) {
-					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
-					handler.handle(new InspectionHandlerContext(currentFrame, breakpointEvent, inspectionSeanceCache),  uiEvent);
-				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT)) {
-					UIEvent<MapEntryDTO> userInspectsUserObjectEvent = (UIEvent<MapEntryDTO>) uiEvent;
-//					if (lastInspectedAbstractInspectionDTO instanceof MapPageDTO mapPageDTO) {
-//						List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> l = mapPageDTO
-//								.getEntries();
-//						System.out.println(l);
-//						Optional<InnerElementRepresentationDTO> w = l.stream().map(e -> e.getSecond()).filter(e -> e instanceof InnerElementRepresentationDTO)
-//								.map(e -> (InnerElementRepresentationDTO) e)
-//								.filter(e -> Objects.equals(e.getObjectId(), userInspectsUserObjectEvent.getPayload().getObjectId())).findAny();
-//						System.out.println(w);
-//						w.get().getObjectId();
-//					}
-					
-					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
-					handler.handle(new InspectionSeanceUIEventContext(currentFrame, breakpointEvent, null),  uiEvent);
-				} else if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE)) {
-					UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> userReqeustedMapPageEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) uiEvent;
-					System.out.println(userReqeustedMapPageEvent);
-					UIEventHandler handler = uiEvent.getType().getUiEventHandler();
-					handler.handle(new InspectionSeanceUIEventContext(currentFrame, breakpointEvent, inspectionSeanceCache), userReqeustedMapPageEvent);
-//					String descriprion = userReqeustedMapPageEvent.getPayload().getFirst().getElementName() + " page: "
-//							+ userReqeustedMapPageEvent.getPayload().getSecond();
-//					System.out.println(descriprion);
-//					inspectionSeanceCache.addBreadCrumbIfNecessary(userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(),
-//							userReqeustedMapPageEvent, descriprion);
-					
-					
-				}
+				HandlerContext context = new InspectionHandlerContext(
+				        currentFrame,
+				        breakpointEvent,
+				        inspectionSeanceCache
+				);
+				UIEventHandler handler = uiEvent.getType().getUiEventHandler();
+				handler.handle(context, uiEvent);
 			}
 			return true;
 		}

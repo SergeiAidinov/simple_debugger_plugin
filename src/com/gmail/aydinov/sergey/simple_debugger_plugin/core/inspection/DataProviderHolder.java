@@ -14,17 +14,18 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebug
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 
 public class DataProviderHolder {
-	
+
 	private final DataProvider dataProvider;
 //	private final InspectionSeanceUIEventContext inspectionSeanceUIEventContext;
 	private final int inspectionSeanceId;
 	private final Thread thread;
-	
+
 	private final BlockingQueue<AbstractSimpleDebuggerEvent> eventsForProvider = new LinkedBlockingQueue<>();
-	
-	public DataProviderHolder(DataProvider dataProvider, /*InspectionSeanceUIEventContext inspectionSeanceUIEventContext, */ int inspectionSeanceId) {
+
+	public DataProviderHolder(DataProvider dataProvider,
+			/* InspectionSeanceUIEventContext inspectionSeanceUIEventContext, */ int inspectionSeanceId) {
 		this.dataProvider = dataProvider;
-	//	this.inspectionSeanceUIEventContext = inspectionSeanceUIEventContext;
+		// this.inspectionSeanceUIEventContext = inspectionSeanceUIEventContext;
 		this.inspectionSeanceId = inspectionSeanceId;
 		this.thread = new Thread(this::starter);
 		this.thread.start();
@@ -33,7 +34,7 @@ public class DataProviderHolder {
 	public void handleEvent(AbstractSimpleDebuggerEvent abstractSimpleDebuggerEvent) {
 		eventsForProvider.add(abstractSimpleDebuggerEvent);
 	}
-	
+
 	public Thread getThread() {
 		return thread;
 	}
@@ -46,26 +47,30 @@ public class DataProviderHolder {
 		return eventsForProvider;
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "unused" })
 	private void starter() {
-		while(DebuggerContext.context().isInspectionSeanceActive() && DebuggerContext.context().getInspectionSeanceId() == inspectionSeanceId) {
-			AbstractSimpleDebuggerEvent abstractSimpleDebuggerUIEvent= null;
+		while (DebuggerContext.context().isInspectionSeanceActive()
+				&& DebuggerContext.context().getInspectionSeanceId() == inspectionSeanceId) {
+			AbstractSimpleDebuggerEvent abstractSimpleDebuggerUIEvent = null;
 			try {
-				abstractSimpleDebuggerUIEvent = eventsForProvider.poll(1, TimeUnit.SECONDS);
+				abstractSimpleDebuggerUIEvent = eventsForProvider.poll(1, TimeUnit.SECONDS);;
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				Thread.currentThread().interrupt();
+				break;
 			}
-			if (Objects.isNull(abstractSimpleDebuggerUIEvent)) continue;
+			if (Objects.isNull(abstractSimpleDebuggerUIEvent))
+				continue;
 			UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> uiEvent = null;
 			try {
 				if (abstractSimpleDebuggerUIEvent instanceof UIEvent)
-				uiEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) abstractSimpleDebuggerUIEvent;
+					uiEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) abstractSimpleDebuggerUIEvent;
 			} catch (ClassCastException castException) {
 
 			}
-			if (Objects.isNull(uiEvent)) continue;
-			dataProvider.requestPage(uiEvent.getPayload().getSecond());
-			
+			if (Objects.isNull(uiEvent))
+				continue;
+			dataProvider.handlePageRequest(uiEvent.getPayload().getSecond());
+
 		}
 	}
 
