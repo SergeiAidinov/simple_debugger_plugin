@@ -17,7 +17,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
 public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 
 	private final Map<Long, DataProviderHolderImpl> dataProviderHolders = new ConcurrentHashMap<Long, DataProviderHolderImpl>();
-	private final SortedMap<Integer, NavigationHistoryStep> breadCrumbs = new java.util.concurrent.ConcurrentSkipListMap<>();
+	private final SortedMap<Integer, NavigationHistoryStep> navigationHistory = new java.util.concurrent.ConcurrentSkipListMap<>();
 	private final AtomicInteger breadCrumbOrder = new AtomicInteger(0);
 	private final AtomicInteger headPosition = new AtomicInteger(0);
 
@@ -28,15 +28,17 @@ public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 
 	@Override
 	public SortedMap<Integer, NavigationHistoryStep> getBreadcrumbs() {
-		return breadCrumbs;
+		return navigationHistory;
 	}
 
 	@Override
-	public void addOrModifyBreadCrumb(Long objectId, AbstractUIEvent abstractUIEvent, String description, Integer pageNumber) {
+	public void addOrModifyBreadCrumb(Long objectId, AbstractUIEvent abstractUIEvent, String description,
+			Integer pageNumber) {
 		NavigationHistoryStep desiredNavigationHistoryStep = null;
-		for (Entry<Integer, NavigationHistoryStep> entry : breadCrumbs.entrySet()) {
-			if (Objects.equals(entry.getValue().getPageNumber().get(), pageNumber)) {
-				desiredNavigationHistoryStep = breadCrumbs.get(entry.getKey());
+		for (Entry<Integer, NavigationHistoryStep> entry : navigationHistory.entrySet()) {
+			if (Objects.equals(entry.getValue().getPageNumber().orElse(null), pageNumber)
+					&& Objects.equals(entry.getValue().getObjectId(), objectId)) {
+				desiredNavigationHistoryStep = entry.getValue();
 				break;
 			}
 		}
@@ -45,8 +47,8 @@ public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 		} else {
 			int order = breadCrumbOrder.getAndIncrement();
 			NavigationHistoryStep breadCrumb = new NavigationHistoryStep(order, objectId, abstractUIEvent, description,
-					false, pageNumber);
-			breadCrumbs.put(order, breadCrumb);
+					pageNumber);
+			navigationHistory.put(order, breadCrumb);
 			headPosition.set(order);
 		}
 
@@ -55,14 +57,13 @@ public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 	@Override
 	public List<PairDTO<Integer, BreadCrumbDTO>> groupBreadCrumbsintoPairs() {
 		List<PairDTO<Integer, BreadCrumbDTO>> result = new ArrayList<PairDTO<Integer, BreadCrumbDTO>>();
-		for (Entry<Integer, NavigationHistoryStep> orderAndBreadCrumb : breadCrumbs.entrySet()) {
-			final int order = orderAndBreadCrumb.getKey();
+		for (Entry<Integer, NavigationHistoryStep> orderAndNavigationStep : navigationHistory.entrySet()) {
+			final int order = orderAndNavigationStep.getKey();
 			final int currentHeadPosition = headPosition.get();
-			orderAndBreadCrumb.getValue().setHoldsHead(order == currentHeadPosition);
-			result.add(PairDTO.of(order,
-					new BreadCrumbDTO(order, orderAndBreadCrumb.getValue().getDescription(),
-							orderAndBreadCrumb.getValue().getPageNumber().get(),
-							orderAndBreadCrumb.getValue().doesHoldHead())));
+			NavigationHistoryStep step = orderAndNavigationStep.getValue();
+			boolean isHead = (order == currentHeadPosition);
+			result.add(PairDTO.of(order, new BreadCrumbDTO(order, step.getDescription(), step.getObjectId(),
+					step.getPageNumber().orElse(null), isHead)));
 		}
 		return result;
 	}
