@@ -7,7 +7,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.MapDataProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProviderHolder;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProviderHolderImpl;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
@@ -38,7 +38,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 		inspectionHandlerContext.getInspectionSeanceCache().addBreadCrumbIfNecessary(
 				userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(), userReqeustedMapPageEvent,
 				descriprion);
-		DataProviderHolder dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()
+		DataProviderHolderImpl dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()
 				.getDataProviderHolders().get(id);
 		// MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page
 		// = null;
@@ -53,8 +53,9 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 
 			UniversalElementRepresentation mapRepresentation = i.get();
 			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, inspectionHandlerContext);
-			dataProviderHolder = new DataProviderHolder(mapDataProvider,
+			dataProviderHolder = new DataProviderHolderImpl(mapDataProvider,
 					DebuggerContext.context().getInspectionSeanceId());
+			dataProviderHolder.start();
 			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id,
 					dataProviderHolder);
 			System.out.println(userReqeustedMapPageEvent);

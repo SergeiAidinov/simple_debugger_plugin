@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeanceCache;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
@@ -72,7 +73,7 @@ public class InspectionSeance {
 			debugEventCollector
 					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 			for (DataProviderHolder dataProviderHolder : inspectionSeanceCache.getDataProviderHolders().values()) {
-				dataProviderHolder.getThread().interrupt();
+				dataProviderHolder.stop();
 			}
 			inspectionSeanceCache.getDataProviderHolders().clear();
 			inspectionSeanceCache.getBreadcrumbs().clear();

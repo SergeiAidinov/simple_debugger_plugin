@@ -13,12 +13,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
 
 public class InspectionSeanceCacheImpl implements InspectionSeanceCache{
 	
-	private final Map<Long, DataProviderHolder> dataProviderHolders = new ConcurrentHashMap<Long, DataProviderHolder>();
+	private final Map<Long, DataProviderHolderImpl> dataProviderHolders = new ConcurrentHashMap<Long, DataProviderHolderImpl>();
 	private final SortedMap<Integer, BreadCrumb> breadCrumbs = new java.util.concurrent.ConcurrentSkipListMap<>();
 	private final AtomicInteger breadCrumbOrder = new AtomicInteger(0);
 
 	@Override
-	public Map<Long, DataProviderHolder> getDataProviderHolders() {
+	public Map<Long, DataProviderHolderImpl> getDataProviderHolders() {
 		return dataProviderHolders;
 	}
 
