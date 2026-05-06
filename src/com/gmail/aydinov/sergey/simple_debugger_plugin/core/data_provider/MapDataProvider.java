@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.BreadCrumb;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
@@ -100,7 +101,7 @@ public final class MapDataProvider implements DataProvider {
 		NavigableMap<Integer, Entry<Value, Value>> selectedItems = waitForPageLoading();
 
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(selectedItems);
-		List<PairDTO<Integer, String>> breadCrumbs = inspectionHandlerContext.getInspectionSeanceCache()
+		List<PairDTO<Integer, BreadCrumb>> breadCrumbs = inspectionHandlerContext.getInspectionSeanceCache()
 				.groupBreadCrumbsintoPairs();
 		
 		page.setBreadcrumbs(breadCrumbs);

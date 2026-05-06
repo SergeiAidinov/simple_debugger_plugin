@@ -12,6 +12,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.BreadCrumb;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
@@ -32,9 +33,11 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab
 public class UniversalInspectorWindow {
 
 	private static UniversalInspectorWindow INSTANCE;
+	private static final String HEAD_SIGN = "➤ ";
+	private static final String EMPTY_SIGN = "  ";
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
-	private java.util.List<PairDTO<Integer, String>> currentBreadcrumbs = java.util.Collections.emptyList();
+	private java.util.List<PairDTO<Integer, BreadCrumb>> currentBreadcrumbs = java.util.Collections.emptyList();
 
 	private final Shell shell;
 	private final List navigationList;
@@ -79,7 +82,7 @@ public class UniversalInspectorWindow {
 				return;
 			}
 
-			PairDTO<Integer, String> breadcrumb = currentBreadcrumbs.get(index);
+			PairDTO<Integer, BreadCrumb> breadcrumb = currentBreadcrumbs.get(index);
 
 			uiEventCollector.collectUiEvent(
 				new UIEvent<>(
@@ -312,7 +315,7 @@ public class UniversalInspectorWindow {
 		});
 	}
 
-	private void showBreadcrumbs(java.util.List<PairDTO<Integer, String>> list) {
+	private void showBreadcrumbs(java.util.List<PairDTO<Integer, BreadCrumb>> list) {
 		if (navigationList.isDisposed())
 			return;
 
@@ -323,8 +326,8 @@ public class UniversalInspectorWindow {
 
 			for (int i = 0; i < list.size(); i++) {
 				Integer item = list.get(i).getFirst();
-				String prefix = (i == list.size() - 1) ? "➤ " : "  ";
-				String text = item + " " + prefix + list.get(i).getSecond();
+				String prefix = list.get(i).getSecond().doesHoldHead() ? HEAD_SIGN : EMPTY_SIGN;
+				String text = item + " " + prefix + list.get(i).getSecond().getDescription();
 
 				navigationList.add(text);
 			}

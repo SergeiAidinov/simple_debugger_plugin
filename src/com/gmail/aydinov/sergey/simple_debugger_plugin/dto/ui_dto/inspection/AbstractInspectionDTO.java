@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.BreadCrumb;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 
 import java.util.Collections;
@@ -15,7 +16,7 @@ public abstract class AbstractInspectionDTO {
     private final Tag tag;
     private final String elementName;
     private final String elementType;
-    private List<PairDTO<Integer, String>> breadcrumbs; // breadcrumb path for UI
+    private List<PairDTO<Integer, BreadCrumb>> breadcrumbs; // breadcrumb path for UI
     private final Long objectId;
 
     /**
@@ -24,7 +25,7 @@ public abstract class AbstractInspectionDTO {
      * @param elementType  type of this element
      * @param breadcrumbs2  list of breadcrumb items representing the path from root
      */
-    protected AbstractInspectionDTO(Tag tag, String elementName, String elementType, List<PairDTO<Integer, String>> breadcrumbs, Long objectId) {
+    protected AbstractInspectionDTO(Tag tag, String elementName, String elementType, List<PairDTO<Integer, BreadCrumb>> breadcrumbs, Long objectId) {
         if (tag == null) throw new IllegalArgumentException("Tag must not be null");
         this.tag = tag;
         this.elementName = elementName;
@@ -48,12 +49,12 @@ public abstract class AbstractInspectionDTO {
     /**
      * Returns the breadcrumb path from root to this element for UI display.
      */
-    public List<PairDTO<Integer, String>> getBreadcrumbs() {
+    public List<PairDTO<Integer, BreadCrumb>> getBreadcrumbs() {
         return breadcrumbs;
     }
 
-	public void setBreadcrumbs(List<PairDTO<Integer, String>> breadcrumbs) {
-		this.breadcrumbs = breadcrumbs;
+	public void setBreadcrumbs(List<PairDTO<Integer, BreadCrumb>> breadCrumbs) {
+		this.breadcrumbs = breadCrumbs;
 	}
 
 	public Long getObjectId() {

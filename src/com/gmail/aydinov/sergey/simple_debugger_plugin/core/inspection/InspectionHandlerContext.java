@@ -18,4 +18,8 @@ public class InspectionHandlerContext extends DebugHandlerContext {
     public InspectionSeanceCache getInspectionSeanceCache() {
         return inspectionSeanceCache;
     }
+
+	public void setHeaderOrder(int order) {
+		inspectionSeanceCache.setHeadPosition(order);
+	}
 }

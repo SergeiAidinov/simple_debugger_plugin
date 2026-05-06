@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.BreadCrumb;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 
@@ -54,7 +55,7 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 		private int toIndex;
 		private Map<Integer, UniversalElementRepresentation> entries;
 		private Tag anchorTag;
-		private List<PairDTO<Integer, String>> breadcrumbs;
+		private List<PairDTO<Integer, BreadCrumb>> breadcrumbs;
 
 		public Builder elementName(String name) {
 			this.elementName = name;
@@ -101,7 +102,7 @@ public class ArrayPageDTO extends AbstractInspectionCollectionPage<PairDTO<Integ
 			return this;
 		}
 
-		public Builder breadcrumbs(List<PairDTO<Integer, String>> breadcrumbs) {
+		public Builder breadcrumbs(List<PairDTO<Integer, BreadCrumb>> breadcrumbs) {
 			this.breadcrumbs = breadcrumbs;
 			return this;
 		}

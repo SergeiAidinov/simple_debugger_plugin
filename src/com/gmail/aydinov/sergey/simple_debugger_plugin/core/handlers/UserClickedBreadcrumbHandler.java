@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -15,18 +16,20 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 
 public class UserClickedBreadcrumbHandler implements UIEventHandler {
-	
+
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public boolean handle(HandlerContext context, AbstractUIEvent event) {
-		UIEvent<PairDTO> uiEvent = (UIEvent<PairDTO>) event;
+		UIEvent<PairDTO<Integer, ?>> uiEvent = (UIEvent<PairDTO<Integer, ?>>) event;
 		InspectionHandlerContext inspectionHandlerContext = (InspectionHandlerContext) context;
-		 Optional<Entry<Integer, BreadCrumb>> entryOpt = inspectionHandlerContext.getInspectionSeanceCache().getBreadcrumbs().entrySet().stream()
-		.filter(e -> e.getKey().equals(uiEvent.getPayload().getFirst())).findAny();
-		 if (entryOpt.isPresent()) {
-			 uiEventCollector.submitPriorityEvent(entryOpt.get().getValue().getAbstractUIEvent());
-		 }
+		BreadCrumb breadCrumb = inspectionHandlerContext.getInspectionSeanceCache().getBreadcrumbs()
+				.get(uiEvent.getPayload().getFirst());
+		if (Objects.nonNull(breadCrumb)) {
+			inspectionHandlerContext.setHeaderOrder(uiEvent.getPayload().getFirst());
+			uiEventCollector.submitPriorityEvent(breadCrumb.getAbstractUIEvent());
+		}
 		return false;
 	}
 

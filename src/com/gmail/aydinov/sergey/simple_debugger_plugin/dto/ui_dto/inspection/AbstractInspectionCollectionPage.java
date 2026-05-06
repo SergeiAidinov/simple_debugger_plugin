@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.BreadCrumb;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 
@@ -16,7 +17,7 @@ public abstract class AbstractInspectionCollectionPage<T> extends AbstractInspec
 //	private final Map<Integer, UniversalElementRepresentation> entries;
 
 	protected AbstractInspectionCollectionPage(Tag tag, String elementName, String elementType, String totalElements,
-			int currentPage, String totalPages,  List<PairDTO<Integer, String>> breadcrumbs, Long objectId) {
+			int currentPage, String totalPages,  List<PairDTO<Integer, BreadCrumb>> breadcrumbs, Long objectId) {
 		super(tag, elementName, elementType, breadcrumbs, objectId);
 		this.totalElements = totalElements;
 		this.currentPage = currentPage;

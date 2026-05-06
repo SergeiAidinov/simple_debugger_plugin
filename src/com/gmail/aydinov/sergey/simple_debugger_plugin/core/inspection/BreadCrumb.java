@@ -8,12 +8,14 @@ public class BreadCrumb {
 	private final long objectId;
 	private final AbstractUIEvent abstractUIEvent;
 	private final String description;
+	private boolean holdsHead;
 	
-	public BreadCrumb(int breadCrumbOrder, long objectId, AbstractUIEvent abstractUIEvent, String description) {
+	public BreadCrumb(int breadCrumbOrder, long objectId, AbstractUIEvent abstractUIEvent, String description, boolean holdsHead) {
 		this.breadCrumbOrder = breadCrumbOrder;
 		this.objectId = objectId;
 		this.abstractUIEvent = abstractUIEvent;
 		this.description = description;
+		this.holdsHead = holdsHead;
 	}
 
 	public int getBreadCrumbOrder() {
@@ -31,4 +33,13 @@ public class BreadCrumb {
 	public String getDescription() {
 		return description;
 	}
+
+	public boolean doesHoldHead() {
+		return holdsHead;
+	}
+	
+	public void setHoldsHead(boolean helds) {
+		holdsHead = helds;
+	}
+	
 }
