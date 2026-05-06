@@ -20,7 +20,9 @@ public interface UiEventCollector {
      * @param event the UI event to collect
      */
     void collectUiEvent(AbstractUIEvent event);
-
+    
+    void submitPriorityEvent(AbstractUIEvent event);
+    
     /**
      * Retrieves and removes the next UI event from the queue.
      * If the queue is empty, this method may return null or wait, depending on implementation.

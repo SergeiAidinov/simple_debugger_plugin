@@ -1,7 +1,9 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors;
 
 import java.util.Objects;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.AbstractDebugEvent;
@@ -34,8 +36,8 @@ public class SimpleDebuggerEventCollector implements UiEventCollector, DebugEven
         }
         return INSTANCE;
     }
-
-    private final BlockingQueue<AbstractUIEvent> uiEventQueue = new LinkedBlockingQueue<>();
+    
+    private final BlockingDeque<AbstractUIEvent> uiEventQueue = new LinkedBlockingDeque<>();
     private final BlockingQueue<AbstractDebugEvent> debugEventQueue = new LinkedBlockingQueue<>();
 
     /**
@@ -83,4 +85,10 @@ public class SimpleDebuggerEventCollector implements UiEventCollector, DebugEven
     public AbstractUIEvent takeUiEvent() throws InterruptedException {
         return uiEventQueue.take();
     }
+
+	@Override
+	public void submitPriorityEvent(AbstractUIEvent event) {
+		uiEventQueue.offerFirst(event);
+		
+	}
 }

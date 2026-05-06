@@ -9,6 +9,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IterableIns
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.MapInspectionSeanceHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedFieldHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedVariableHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserClickedBreadcrumbHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserClosedDebugWindowHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvokedMethodHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserObjectInspectionHandler;
@@ -31,6 +32,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.Arr
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 
 /**
  * Types of events emitted by the simple debugger.
@@ -121,7 +123,7 @@ public final class SimpleDebuggerEventTypes {
 //		USER_INSPECTS_MAP(InnerElementRepresentationDTO.class,
 //		        new MapInspectionSeanceHandler()), 
 		USER_INSPECTS_ITERABLE(InnerElementRepresentationDTO.class, null), 
-		USER_CLICKED_BREADCRUMB(PairDTO.class, null),
+		USER_CLICKED_BREADCRUMB(PairDTO.class, new UserClickedBreadcrumbHandler()),
 		
 
 		
@@ -160,7 +162,8 @@ public final class SimpleDebuggerEventTypes {
 		//	SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION,
 			SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
 		//	SimpleDebuggerEventType.USER_INSPECTS_MAP,
-			SimpleDebuggerEventType.USER_INSPECTS_ITERABLE
+			SimpleDebuggerEventType.USER_INSPECTS_ITERABLE,
+			SimpleDebuggerEventType.USER_CLICKED_BREADCRUMB
 
 	);
 

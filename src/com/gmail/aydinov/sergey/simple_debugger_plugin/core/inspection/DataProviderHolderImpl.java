@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
@@ -19,6 +20,8 @@ public class DataProviderHolderImpl implements DataProviderHolder {
 	private final DataProvider dataProvider;
 	private final int inspectionSeanceId;
 	private final Thread thread;
+	private final AtomicBoolean started = new AtomicBoolean(false);
+	private final AtomicBoolean stopped = new AtomicBoolean(false);
 
 	private final BlockingQueue<AbstractSimpleDebuggerEvent> eventsForProvider = new LinkedBlockingQueue<>();
 
@@ -36,11 +39,14 @@ public class DataProviderHolderImpl implements DataProviderHolder {
 	
 	@Override
 	public void start() {
-		thread.start();
+		 if (started.compareAndSet(false, true)) {
+		        thread.start();
+		    }
 	}
 	
 	@Override
 	public void stop() {
+		stopped.set(true);
 		thread.interrupt();
 	}
 
@@ -53,13 +59,13 @@ public class DataProviderHolderImpl implements DataProviderHolder {
 		return dataProvider;
 	}
 
-	public BlockingQueue<AbstractSimpleDebuggerEvent> getEventsForProvider() {
-		return eventsForProvider;
-	}
+//	public BlockingQueue<AbstractSimpleDebuggerEvent> getEventsForProvider() {
+//		return eventsForProvider;
+//	}
 
 	@SuppressWarnings({ "unchecked", "unused" })
 	private void starter() {
-		while (DebuggerContext.context().isInspectionSeanceActive()
+		while (!stopped.get() && DebuggerContext.context().isInspectionSeanceActive()
 				&& DebuggerContext.context().getInspectionSeanceId() == inspectionSeanceId) {
 			AbstractSimpleDebuggerEvent abstractSimpleDebuggerUIEvent = null;
 			try {
