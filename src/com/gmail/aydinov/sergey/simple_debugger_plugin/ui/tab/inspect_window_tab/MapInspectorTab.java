@@ -323,12 +323,22 @@ public class MapInspectorTab implements InspectorTab {
 
 				tooltipManager.closePopup();
 
-				if (dto != null && dto.getElements() != null && !dto.getElements().isEmpty()) {
-					Point loc = display().getCursorLocation();
-					showElementsPopup(dto, loc);
+				if (dto != null
+				        && dto.getElements() != null
+				        && !dto.getElements().isEmpty()
+				        && isInspectable(dto.getValueCategory())) {
+
+				    Point loc = display().getCursorLocation();
+				    showElementsPopup(dto, loc);
 				}
 			}
 		});
+	}
+
+	private boolean isInspectable(ValueCategory category) {
+	    return category == ValueCategory.USER_OBJECT
+	        || category == ValueCategory.MAP
+	        || category == ValueCategory.COLLECTION;
 	}
 
 	// ================= UTILS =================
