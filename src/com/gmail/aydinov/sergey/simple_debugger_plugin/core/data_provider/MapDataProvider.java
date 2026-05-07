@@ -61,6 +61,7 @@ public final class MapDataProvider implements DataProvider {
 	private Integer pageNumber = null;
 	private volatile String totalPages = "calculating...";
 	private volatile String totalEntries = "calculating...";
+	// private AtomicBoolean pageSent = new AtomicBoolean(false);
 
 	private InitializationState initState = InitializationState.NOT_STARTED;
 	private final AtomicBoolean allElementsLoaded = new AtomicBoolean(false);
@@ -106,11 +107,12 @@ public final class MapDataProvider implements DataProvider {
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(selectedItems);
 		List<PairDTO<Integer, BreadCrumbDTO>> breadCrumbs = inspectionHandlerContext.getInspectionSeanceCache()
 				.groupBreadCrumbsintoPairs();
-		
+
 		page.setBreadcrumbs(breadCrumbs);
-		// InspectionSeance.lastInspectedAbstractInspectionDTO = page;
 		debugEventCollector.collectDebugEvent(new DebugEvent<>(
 				SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_MAP, page));
+		debugEventCollector.collectDebugEvent(
+				new DebugEvent<>(SimpleDebuggerEventTypes.SimpleDebuggerEventType.CLOSE_LOADING_POPUP, null));
 	}
 
 	private void iterateThroughMap() {
@@ -280,7 +282,9 @@ public final class MapDataProvider implements DataProvider {
 				Thread.sleep(100);
 			} catch (InterruptedException ignored) {
 			}
-			debugEventCollector.collectDebugEvent(new DebugEvent<>(SimpleDebuggerEventType.SHOW_LOADING_POPUP, "Just string"));
+			if ((mapElements.size() / DebugUtils.PAGE_SIZE) < pageNumber)
+				debugEventCollector.collectDebugEvent(new DebugEvent<>(SimpleDebuggerEventType.SHOW_LOADING_POPUP,
+						"Loading page: " + (mapElements.size() / DebugUtils.PAGE_SIZE)));
 		}
 	}
 

@@ -233,4 +233,10 @@ public class UserObjectStructureTab implements InspectorTab{
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public void closePopup() {
+		// TODO Auto-generated method stub
+		
+	}
 }

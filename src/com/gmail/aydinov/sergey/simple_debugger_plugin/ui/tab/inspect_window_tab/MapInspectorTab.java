@@ -41,12 +41,15 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.LoadingWindow;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 
 public class MapInspectorTab implements InspectorTab {
 	
-	private final LoadingPopup loadingPopup = new LoadingPopup();
+	private final int debugId = System.identityHashCode(this);
+
+//	private final LoadingPopup loadingPopup = new LoadingPopup();
 
 	private Label mapNameLabel;
 	private Label mapTypeLabel;
@@ -72,6 +75,7 @@ public class MapInspectorTab implements InspectorTab {
 	private InnerElementRepresentationDTO anchorMap;
 	private int currentPage = 0;
 	private int totalPages = -1;
+	LoadingWindow loadingWindow = null;
 
 	// ================= UI =================
 
@@ -254,10 +258,9 @@ public class MapInspectorTab implements InspectorTab {
 		content.setForeground(fg);
 
 		// ================= CONTENT =================
-		List<InnerElementRepresentationDTO> sortedList = new ArrayList<InnerElementRepresentationDTO>(dto.getElements());
-		sortedList.sort(Comparator.comparingInt(
-		        e -> DebugUtils.SORT_ORDER.getOrDefault(e.getElementType(), 100)
-		)); 
+		List<InnerElementRepresentationDTO> sortedList = new ArrayList<InnerElementRepresentationDTO>(
+				dto.getElements());
+		sortedList.sort(Comparator.comparingInt(e -> DebugUtils.SORT_ORDER.getOrDefault(e.getElementType(), 100)));
 		for (InnerElementRepresentationDTO el : sortedList) {
 			Label row = new Label(content, SWT.NONE);
 			row.setText(formatElement(el));
@@ -331,22 +334,19 @@ public class MapInspectorTab implements InspectorTab {
 
 				tooltipManager.closePopup();
 
-				if (dto != null
-				        && dto.getElements() != null
-				        && !dto.getElements().isEmpty()
-				        && isInspectable(dto.getValueCategory())) {
+				if (dto != null && dto.getElements() != null && !dto.getElements().isEmpty()
+						&& isInspectable(dto.getValueCategory())) {
 
-				    Point loc = display().getCursorLocation();
-				    showElementsPopup(dto, loc);
+					Point loc = display().getCursorLocation();
+					showElementsPopup(dto, loc);
 				}
 			}
 		});
 	}
 
 	private boolean isInspectable(ValueCategory category) {
-	    return category == ValueCategory.USER_OBJECT
-	        || category == ValueCategory.MAP
-	        || category == ValueCategory.COLLECTION;
+		return category == ValueCategory.USER_OBJECT || category == ValueCategory.MAP
+				|| category == ValueCategory.COLLECTION;
 	}
 
 	// ================= UTILS =================
@@ -458,7 +458,6 @@ public class MapInspectorTab implements InspectorTab {
 	public void showPage(AbstractInspectionDTO dto) {
 		if (!(dto instanceof MapPageDTO mapPageDTO))
 			return;
-
 		root.getDisplay().asyncExec(() -> {
 			if (root.isDisposed())
 				return;
@@ -505,7 +504,28 @@ public class MapInspectorTab implements InspectorTab {
 
 	@Override
 	public void showPopup(String message, Runnable cancelAction) {
-		loadingPopup.showPopup(message, cancelAction);
-		
+		System.out.println("SHOW POPUP TAB = " + debugId);
+		if (Objects.isNull(loadingWindow))
+			loadingWindow = new LoadingWindow();
+
+		loadingWindow.setOnCancel(() -> {
+			System.out.println("Loading cancelled");
+			// остановка твоего debug / evaluation / request
+		});
+
+		loadingWindow.setMessage(message);
+		loadingWindow.show();
+
+	}
+
+	@Override
+	public void closePopup() {
+		System.out.println("CLOSE POPUP TAB = " + debugId);
+		if (Objects.nonNull(loadingWindow)) {
+			loadingWindow.close();
+			loadingWindow = null;
+		}
+			
+
 	}
 }

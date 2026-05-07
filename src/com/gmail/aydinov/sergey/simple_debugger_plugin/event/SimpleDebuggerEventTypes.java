@@ -127,7 +127,9 @@ public final class SimpleDebuggerEventTypes {
 //		        new MapInspectionSeanceHandler()), 
 		USER_INSPECTS_ITERABLE(InnerElementRepresentationDTO.class, null), 
 		USER_CLICKED_BREADCRUMB(PairDTO.class, new UserClickedBreadcrumbHandler()), 
-		USER_CANCELLED_LOADING(null, null),
+		USER_CANCELLED_LOADING(null, null), 
+		CLOSE_LOADING_POPUP(null, null), 
+		
 
 		
 		;
@@ -167,7 +169,9 @@ public final class SimpleDebuggerEventTypes {
 		//	SimpleDebuggerEventType.USER_INSPECTS_MAP,
 			SimpleDebuggerEventType.USER_INSPECTS_ITERABLE,
 			SimpleDebuggerEventType.USER_CLICKED_BREADCRUMB,
-			SimpleDebuggerEventType.SHOW_LOADING_POPUP
+			SimpleDebuggerEventType.SHOW_LOADING_POPUP,
+			SimpleDebuggerEventType.CLOSE_LOADING_POPUP,
+			SimpleDebuggerEventType.USER_CANCELLED_LOADING
 
 	);
 

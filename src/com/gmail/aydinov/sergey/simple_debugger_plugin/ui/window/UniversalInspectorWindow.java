@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window;
 
+import java.util.Objects;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
@@ -28,7 +30,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.InspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.IterableInspectorTab;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.LoadingPopup;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.MapInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.UserObjectStructureTab;
 
@@ -38,6 +39,7 @@ public class UniversalInspectorWindow {
 	private static final String HEAD_SIGN = "➤ ";
 	private static final String EMPTY_SIGN = "  ";
 
+	private LoadingWindow loadingWindow = null;
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 	private java.util.List<PairDTO<Integer, BreadCrumbDTO>> currentBreadcrumbs = java.util.Collections.emptyList();
 
@@ -272,14 +274,32 @@ public class UniversalInspectorWindow {
 
 		}
 		case SHOW_LOADING_POPUP -> {
-			InspectorTab tab = getLinkToCurrentTab();
-			tab.showPopup(
-				    "Loading requested page...",
-				    () -> uiEventCollector.collectUiEvent(
-				            new UIEvent<>(
-				                SimpleDebuggerEventType.USER_CANCELLED_LOADING,
-				                null))
-				);
+//			InspectorTab tab = getLinkToCurrentTab();
+//			DebugEvent<String> e = (DebugEvent<String>) event;
+//			tab.showPopup(
+//				    e.getPayload(),
+//				    () -> uiEventCollector.collectUiEvent(
+//				            new UIEvent<>(
+//				                SimpleDebuggerEventType.USER_CANCELLED_LOADING,
+//				                null))
+//				);
+			if (Objects.isNull(loadingWindow))
+				loadingWindow = new LoadingWindow();
+			DebugEvent<String> e = (DebugEvent<String>) event;
+			loadingWindow.setOnCancel(() -> {
+				System.out.println("Loading cancelled");
+				// остановка твоего debug / evaluation / request
+			});
+
+			loadingWindow.setMessage(e.getPayload());
+			loadingWindow.show();
+			
+		}
+		case CLOSE_LOADING_POPUP -> {
+//			InspectorTab tab = getLinkToCurrentTab();
+//			tab.closePopup();
+			if (Objects.nonNull(loadingWindow))
+				loadingWindow.close();
 		}
 		default -> {
 		}
@@ -291,7 +311,7 @@ public class UniversalInspectorWindow {
 		case MAP -> mapInspectorTab;
 		case COLLECTION -> iterableInspectorTab;
 		case USER_OBJECT -> userObjectTab;
-		
+		case NONE -> throw new IllegalArgumentException("Tab not created yet");
 		default -> throw new IllegalArgumentException("Unexpected value: " + currentTab);
 		};
 		

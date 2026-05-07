@@ -305,4 +305,10 @@ public class IterableInspectorTab implements InspectorTab {
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public void closePopup() {
+		// TODO Auto-generated method stub
+		
+	}
 }
