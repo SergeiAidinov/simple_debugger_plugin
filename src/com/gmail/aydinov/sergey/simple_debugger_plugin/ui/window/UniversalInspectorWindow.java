@@ -262,42 +262,18 @@ public class UniversalInspectorWindow {
 		case DISPLAY_ADDITIONAL_INFO -> {
 			DebugEvent<UserInstanceDetailsDTO> e = (DebugEvent<UserInstanceDetailsDTO>) event;
 			if (currentTab == InspectionTabs.COLLECTION) {
-			//createIterableTabIfNeeded();
-		//	iterableInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
 				iterableInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
 			}
-			
-//			} else if (currentTab == InspectionTabs.MAP) {
-//				createMapTabIfNeeded();
-//				mapInspectorTab.showFieldInfoPopupFromBackend(e.getPayload());
-//			}
-
 		}
 		case SHOW_LOADING_POPUP -> {
-//			InspectorTab tab = getLinkToCurrentTab();
-//			DebugEvent<String> e = (DebugEvent<String>) event;
-//			tab.showPopup(
-//				    e.getPayload(),
-//				    () -> uiEventCollector.collectUiEvent(
-//				            new UIEvent<>(
-//				                SimpleDebuggerEventType.USER_CANCELLED_LOADING,
-//				                null))
-//				);
 			if (Objects.isNull(loadingWindow))
 				loadingWindow = new LoadingWindow();
 			DebugEvent<String> e = (DebugEvent<String>) event;
-			loadingWindow.setOnCancel(() -> {
-				System.out.println("Loading cancelled");
-				// остановка твоего debug / evaluation / request
-			});
-
 			loadingWindow.setMessage(e.getPayload());
 			loadingWindow.show();
 			
 		}
 		case CLOSE_LOADING_POPUP -> {
-//			InspectorTab tab = getLinkToCurrentTab();
-//			tab.closePopup();
 			if (Objects.nonNull(loadingWindow))
 				loadingWindow.close();
 		}

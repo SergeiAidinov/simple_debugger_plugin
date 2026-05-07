@@ -5,6 +5,11 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+
 public class LoadingWindow {
 
     private final Display display;
@@ -13,7 +18,7 @@ public class LoadingWindow {
     private final Label messageLabel;
     private final Button cancelButton;
 
-    private Runnable onCancel;
+    private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
 
     public LoadingWindow() {
         this.display = Display.getDefault();
@@ -36,15 +41,12 @@ public class LoadingWindow {
         cancelButton.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false));
 
         cancelButton.addListener(SWT.Selection, e -> {
-            if (onCancel != null) {
-                onCancel.run();
-            }
+           uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CANCELLED_LOADING, null));
             close();
         });
 
         shell.addListener(SWT.Close, e -> {
             e.doit = false;
-            close();
         });
     }
 
@@ -68,12 +70,7 @@ public class LoadingWindow {
         });
     }
 
-    public void setOnCancel(Runnable onCancel) {
-        this.onCancel = onCancel;
-    }
-
     public void close() {
-    	System.out.println("close() close() close() close() close() close() close() ");
         display.asyncExec(() -> {
             if (!shell.isDisposed()) {
                 shell.dispose();

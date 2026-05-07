@@ -300,15 +300,4 @@ public class IterableInspectorTab implements InspectorTab {
 		return value == null ? "" : value;
 	}
 
-	@Override
-	public void showPopup(String message, Runnable cancelAction) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void closePopup() {
-		// TODO Auto-generated method stub
-		
-	}
 }

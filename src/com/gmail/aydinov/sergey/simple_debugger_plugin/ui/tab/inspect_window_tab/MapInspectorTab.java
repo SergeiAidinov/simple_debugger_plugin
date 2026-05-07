@@ -502,30 +502,4 @@ public class MapInspectorTab implements InspectorTab {
 
 	}
 
-	@Override
-	public void showPopup(String message, Runnable cancelAction) {
-		System.out.println("SHOW POPUP TAB = " + debugId);
-		if (Objects.isNull(loadingWindow))
-			loadingWindow = new LoadingWindow();
-
-		loadingWindow.setOnCancel(() -> {
-			System.out.println("Loading cancelled");
-			// остановка твоего debug / evaluation / request
-		});
-
-		loadingWindow.setMessage(message);
-		loadingWindow.show();
-
-	}
-
-	@Override
-	public void closePopup() {
-		System.out.println("CLOSE POPUP TAB = " + debugId);
-		if (Objects.nonNull(loadingWindow)) {
-			loadingWindow.close();
-			loadingWindow = null;
-		}
-			
-
-	}
 }
