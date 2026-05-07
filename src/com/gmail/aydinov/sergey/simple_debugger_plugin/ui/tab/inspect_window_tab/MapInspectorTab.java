@@ -45,6 +45,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWi
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 
 public class MapInspectorTab implements InspectorTab {
+	
+	private final LoadingPopup loadingPopup = new LoadingPopup();
 
 	private Label mapNameLabel;
 	private Label mapTypeLabel;
@@ -499,5 +501,11 @@ public class MapInspectorTab implements InspectorTab {
 	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO userInstanceDetailsDTO) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public void showPopup(String message, Runnable cancelAction) {
+		loadingPopup.showPopup(message, cancelAction);
+		
 	}
 }

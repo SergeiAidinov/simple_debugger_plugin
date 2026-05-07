@@ -28,6 +28,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEv
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.InspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.IterableInspectorTab;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.LoadingPopup;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.MapInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.UserObjectStructureTab;
 
@@ -52,7 +53,7 @@ public class UniversalInspectorWindow {
 	private CTabItem mapTabItem;
 
 
-	private UserObjectStructureTab userObjectTab;
+	private InspectorTab userObjectTab;
 	private CTabItem userObjectTabItem;
 
 	private enum InspectionTabs {
@@ -60,6 +61,7 @@ public class UniversalInspectorWindow {
 	}
 
 	private static InspectionTabs currentTab = InspectionTabs.NONE;
+	
 
 	private UniversalInspectorWindow() {
 		Display display = Display.getDefault();
@@ -222,7 +224,7 @@ public class UniversalInspectorWindow {
 		Display.getDefault().asyncExec(() -> {
 			disposeAllTabs();
 			createUserObjectTabIfNeeded("USER OBJ.");
-			userObjectTab.showUserObject(userObjectPageDTO);
+			userObjectTab.showPage(userObjectPageDTO);
 		//	showBreadcrumbs(userObjectPageDTO.getBreadcrumbs());
 			showTab(userObjectTabItem, userObjectTab.getControl());
 			currentTab = InspectionTabs.USER_OBJECT;
@@ -269,9 +271,30 @@ public class UniversalInspectorWindow {
 //			}
 
 		}
+		case SHOW_LOADING_POPUP -> {
+			InspectorTab tab = getLinkToCurrentTab();
+			tab.showPopup(
+				    "Loading requested page...",
+				    () -> uiEventCollector.collectUiEvent(
+				            new UIEvent<>(
+				                SimpleDebuggerEventType.USER_CANCELLED_LOADING,
+				                null))
+				);
+		}
 		default -> {
 		}
 		}
+	}
+
+	private InspectorTab getLinkToCurrentTab() {
+		return switch (currentTab) {
+		case MAP -> mapInspectorTab;
+		case COLLECTION -> iterableInspectorTab;
+		case USER_OBJECT -> userObjectTab;
+		
+		default -> throw new IllegalArgumentException("Unexpected value: " + currentTab);
+		};
+		
 	}
 
 	// =========================================================

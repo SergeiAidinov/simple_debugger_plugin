@@ -299,4 +299,10 @@ public class IterableInspectorTab implements InspectorTab {
 	private String safe(String value) {
 		return value == null ? "" : value;
 	}
+
+	@Override
+	public void showPopup(String message, Runnable cancelAction) {
+		// TODO Auto-generated method stub
+		
+	}
 }

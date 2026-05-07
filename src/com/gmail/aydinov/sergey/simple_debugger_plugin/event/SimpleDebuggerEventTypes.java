@@ -108,6 +108,8 @@ public final class SimpleDebuggerEventTypes {
 		
 		DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE(ArrayPageDTO.class, null), 
 		
+		SHOW_LOADING_POPUP(String.class, null),
+		
 		
 		// === MAP ===
 
@@ -124,8 +126,8 @@ public final class SimpleDebuggerEventTypes {
 //		USER_INSPECTS_MAP(InnerElementRepresentationDTO.class,
 //		        new MapInspectionSeanceHandler()), 
 		USER_INSPECTS_ITERABLE(InnerElementRepresentationDTO.class, null), 
-		USER_CLICKED_BREADCRUMB(PairDTO.class, new UserClickedBreadcrumbHandler()),
-		
+		USER_CLICKED_BREADCRUMB(PairDTO.class, new UserClickedBreadcrumbHandler()), 
+		USER_CANCELLED_LOADING(null, null),
 
 		
 		;
@@ -164,7 +166,8 @@ public final class SimpleDebuggerEventTypes {
 			SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
 		//	SimpleDebuggerEventType.USER_INSPECTS_MAP,
 			SimpleDebuggerEventType.USER_INSPECTS_ITERABLE,
-			SimpleDebuggerEventType.USER_CLICKED_BREADCRUMB
+			SimpleDebuggerEventType.USER_CLICKED_BREADCRUMB,
+			SimpleDebuggerEventType.SHOW_LOADING_POPUP
 
 	);
 

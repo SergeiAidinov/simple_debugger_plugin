@@ -22,6 +22,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -34,7 +35,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWi
 /**
  * Простая вкладка инспектора объекта с иконками + header.
  */
-public class UserObjectStructureTab {
+public class UserObjectStructureTab implements InspectorTab{
 
     private final Composite root;
     private final TableViewer viewer;
@@ -78,7 +79,8 @@ public class UserObjectStructureTab {
     }
 
     // ================= SHOW =================
-    public void showUserObject(AbstractInspectionDTO abstractInspectionDTO) {
+    
+    public void showPage(AbstractInspectionDTO abstractInspectionDTO) {
     	
     	if (!(abstractInspectionDTO instanceof UserObjectPageDTO)) return;
     	
@@ -218,4 +220,17 @@ public class UserObjectStructureTab {
     private String safe(String v) {
         return v == null ? "" : v;
     }
+
+
+	@Override
+	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO userInstanceDetailsDTO) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void showPopup(String message, Runnable cancelAction) {
+		// TODO Auto-generated method stub
+		
+	}
 }

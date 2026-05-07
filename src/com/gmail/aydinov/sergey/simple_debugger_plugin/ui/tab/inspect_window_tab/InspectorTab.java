@@ -11,6 +11,7 @@ public interface InspectorTab {
 
 	void showPage(AbstractInspectionDTO page);
 	void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO userInstanceDetailsDTO);
+	void showPopup(String message, Runnable cancelAction);
 //	public void setDtoToDisplay(UserInstanceDetailsDTO dtoToDisplay);
 
 }
