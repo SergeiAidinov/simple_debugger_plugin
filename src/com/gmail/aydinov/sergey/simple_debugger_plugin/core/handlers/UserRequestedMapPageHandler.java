@@ -35,7 +35,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 		String descriprion = userReqeustedMapPageEvent.getPayload().getFirst().getElementName() + " page: "
 				+ userReqeustedMapPageEvent.getPayload().getSecond();
 		System.out.println(descriprion);
-		inspectionHandlerContext.getInspectionSeanceCache().addBreadCrumbIfNecessary(
+		inspectionHandlerContext.getInspectionSeanceCache().addOrModifyBreadCrumb(
 				userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(), userReqeustedMapPageEvent,
 				descriprion, userReqeustedMapPageEvent.getPayload().getSecond());
 		DataProviderHolderImpl dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()

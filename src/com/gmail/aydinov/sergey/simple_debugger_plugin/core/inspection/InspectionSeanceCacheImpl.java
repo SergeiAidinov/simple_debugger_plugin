@@ -13,7 +13,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.Inspectio
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 
 public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 
@@ -33,25 +32,14 @@ public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 	}
 
 	@Override
-	public void addBreadCrumbIfNecessary(Long objectId, AbstractUIEvent abstractUIEvent, String description, Integer pageNumber) {
-//		Integer order = -1;
-//		if (abstractUIEvent instanceof UIEvent uiEvent) {
-//			if (uiEvent.getPayload() instanceof PairDTO pair) {
-//				if (pair.getSecond() instanceof Integer cuurrentBreadCrumbOrder) {
-//					order = cuurrentBreadCrumbOrder;
-//				}
-//			}
-//		}
+	public void addOrModifyBreadCrumb(Long objectId, AbstractUIEvent abstractUIEvent, String description, Integer pageNumber) {
 		NavigationHistoryStep desiredNavigationHistoryStep = null;
-		System.out.println("REQUESTED PAGE #: " + pageNumber);
-		breadCrumbs.entrySet().stream().forEach(e -> System.out.println(e));
 		for (Entry<Integer, NavigationHistoryStep> entry : breadCrumbs.entrySet()) {
 			if (Objects.equals(entry.getValue().getPageNumber().get(), pageNumber)) {
 				desiredNavigationHistoryStep = breadCrumbs.get(entry.getKey());
 				break;
 			}
 		}
-		// NavigationHistoryStep existingBreadCrumb = breadCrumbs.get(order);
 		if (Objects.nonNull(desiredNavigationHistoryStep)) {
 			headPosition.set(desiredNavigationHistoryStep.getBreadCrumbOrder());
 		} else {
