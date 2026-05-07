@@ -33,21 +33,31 @@ public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 	}
 
 	@Override
-	public void addBreadCrumbIfNecessary(Long objectId, AbstractUIEvent abstractUIEvent, String description) {
-		int order = -1;
-		if (abstractUIEvent instanceof UIEvent uiEvent) {
-			if (uiEvent.getPayload() instanceof PairDTO pair) {
-				if (pair.getSecond() instanceof Integer cuurrentBreadCrumbOrder) {
-					order = cuurrentBreadCrumbOrder;
-				}
+	public void addBreadCrumbIfNecessary(Long objectId, AbstractUIEvent abstractUIEvent, String description, Integer pageNumber) {
+//		Integer order = -1;
+//		if (abstractUIEvent instanceof UIEvent uiEvent) {
+//			if (uiEvent.getPayload() instanceof PairDTO pair) {
+//				if (pair.getSecond() instanceof Integer cuurrentBreadCrumbOrder) {
+//					order = cuurrentBreadCrumbOrder;
+//				}
+//			}
+//		}
+		NavigationHistoryStep desiredNavigationHistoryStep = null;
+		System.out.println("REQUESTED PAGE #: " + pageNumber);
+		breadCrumbs.entrySet().stream().forEach(e -> System.out.println(e));
+		for (Entry<Integer, NavigationHistoryStep> entry : breadCrumbs.entrySet()) {
+			if (Objects.equals(entry.getValue().getPageNumber().get(), pageNumber)) {
+				desiredNavigationHistoryStep = breadCrumbs.get(entry.getKey());
+				break;
 			}
 		}
-		NavigationHistoryStep existingBreadCrumb = breadCrumbs.get(order);
-		if (Objects.nonNull(existingBreadCrumb)) {
-			headPosition.set(order);
+		// NavigationHistoryStep existingBreadCrumb = breadCrumbs.get(order);
+		if (Objects.nonNull(desiredNavigationHistoryStep)) {
+			headPosition.set(desiredNavigationHistoryStep.getBreadCrumbOrder());
 		} else {
-			order = breadCrumbOrder.getAndIncrement();
-			NavigationHistoryStep breadCrumb = new NavigationHistoryStep(order, objectId, abstractUIEvent, description, false);
+			int order = breadCrumbOrder.getAndIncrement();
+			NavigationHistoryStep breadCrumb = new NavigationHistoryStep(order, objectId, abstractUIEvent, description,
+					false, pageNumber);
 			breadCrumbs.put(order, breadCrumb);
 			headPosition.set(order);
 		}
@@ -61,7 +71,10 @@ public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 			final int order = orderAndBreadCrumb.getKey();
 			final int currentHeadPosition = headPosition.get();
 			orderAndBreadCrumb.getValue().setHoldsHead(order == currentHeadPosition);
-			result.add(PairDTO.of(order, new BreadCrumbDTO(order, orderAndBreadCrumb.getValue().getDescription(), orderAndBreadCrumb.getValue().doesHoldHead())));    
+			result.add(PairDTO.of(order,
+					new BreadCrumbDTO(order, orderAndBreadCrumb.getValue().getDescription(),
+							orderAndBreadCrumb.getValue().getPageNumber().get(),
+							orderAndBreadCrumb.getValue().doesHoldHead())));
 		}
 		return result;
 	}

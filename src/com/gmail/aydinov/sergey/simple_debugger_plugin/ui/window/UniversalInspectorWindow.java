@@ -83,12 +83,12 @@ public class UniversalInspectorWindow {
 				return;
 			}
 
-			PairDTO<Integer, BreadCrumbDTO> breadcrumb = currentBreadcrumbs.get(index);
-
+			PairDTO<Integer, BreadCrumbDTO> breadcrumbPair = currentBreadcrumbs.get(index);
+			PairDTO<Integer, BreadCrumbDTO> bp = PairDTO.of(breadcrumbPair.getSecond().getBreadCrumbOrder(), breadcrumbPair.getSecond());
 			uiEventCollector.collectUiEvent(
 				new UIEvent<>(
 					SimpleDebuggerEventType.USER_CLICKED_BREADCRUMB,
-					breadcrumb
+					bp
 				)
 			);
 		});

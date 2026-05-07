@@ -14,7 +14,7 @@ public interface InspectionSeanceCache {
 	
 	Map<Long, DataProviderHolderImpl> getDataProviderHolders();
 	SortedMap<Integer, NavigationHistoryStep> getBreadcrumbs();
-	void addBreadCrumbIfNecessary(Long objectId, AbstractUIEvent abstractUIEvent, String description);
+	void addBreadCrumbIfNecessary(Long objectId, AbstractUIEvent abstractUIEvent, String description,  Integer pageNumber);
 	List<PairDTO<Integer, BreadCrumbDTO>> groupBreadCrumbsintoPairs();
 	void setHeadPosition(int position);
 }

@@ -37,7 +37,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 		System.out.println(descriprion);
 		inspectionHandlerContext.getInspectionSeanceCache().addBreadCrumbIfNecessary(
 				userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(), userReqeustedMapPageEvent,
-				descriprion);
+				descriprion, userReqeustedMapPageEvent.getPayload().getSecond());
 		DataProviderHolderImpl dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()
 				.getDataProviderHolders().get(id);
 		// MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page
