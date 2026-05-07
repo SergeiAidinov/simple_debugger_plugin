@@ -70,6 +70,10 @@ public class DebugUtils {
 	public static final String N_A = "[N/A]";
 	public static final int PAGE_SIZE = 20;
 	public static final String GAP = "  ";
+	public static final Map<UniversalElementType, Integer> SORT_ORDER = Map.of(
+	        UniversalElementType.FIELD, 0,
+	        UniversalElementType.METHOD, 1
+	);
 
 	public static Value createJdiValueFromString(VirtualMachine virtualMachine, LocalVariable localVariable,
 			String sourceString) {

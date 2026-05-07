@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +42,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventC
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 
 public class MapInspectorTab implements InspectorTab {
 
@@ -250,7 +252,11 @@ public class MapInspectorTab implements InspectorTab {
 		content.setForeground(fg);
 
 		// ================= CONTENT =================
-		for (InnerElementRepresentationDTO el : dto.getElements()) {
+		List<InnerElementRepresentationDTO> sortedList = new ArrayList<InnerElementRepresentationDTO>(dto.getElements());
+		sortedList.sort(Comparator.comparingInt(
+		        e -> DebugUtils.SORT_ORDER.getOrDefault(e.getElementType(), 100)
+		)); 
+		for (InnerElementRepresentationDTO el : sortedList) {
 			Label row = new Label(content, SWT.NONE);
 			row.setText(formatElement(el));
 			row.setBackground(bg);
