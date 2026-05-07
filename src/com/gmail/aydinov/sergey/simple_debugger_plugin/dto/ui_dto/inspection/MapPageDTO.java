@@ -4,11 +4,12 @@ import java.util.List;
 import java.util.Map;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapEntryDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO.Builder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.BreadCrumb;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.NavigationHistoryStep;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 
 public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K, V>> {
@@ -62,7 +63,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 		private int toIndex;
 		private Map<MapEntryDTO, MapEntryDTO> entries;
 		private Tag anchorTag;
-		private List<PairDTO<Integer, BreadCrumb>> breadcrumbs = List.of(); // по умолчанию пустой список
+		private List<PairDTO<Integer, BreadCrumbDTO>> breadcrumbs = List.of(); // по умолчанию пустой список
 
 		public Builder<K, V> anchorMap(InnerElementRepresentationDTO anchorMap) {
 			this.anchorMap = anchorMap;
@@ -114,7 +115,7 @@ public class MapPageDTO<K, V> extends AbstractInspectionCollectionPage<PairDTO<K
 			return this;
 		}
 
-		public Builder<K, V> breadcrumbs(List<PairDTO<Integer, BreadCrumb>> breadcrumbs) {
+		public Builder<K, V> breadcrumbs(List<PairDTO<Integer, BreadCrumbDTO>> breadcrumbs) {
 			this.breadcrumbs = breadcrumbs;
 			return this;
 		}

@@ -16,10 +16,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.BreadCrumb;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.NavigationHistoryStep;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapEntryDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.MapPageDTO;
@@ -101,7 +102,7 @@ public final class MapDataProvider implements DataProvider {
 		NavigableMap<Integer, Entry<Value, Value>> selectedItems = waitForPageLoading();
 
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(selectedItems);
-		List<PairDTO<Integer, BreadCrumb>> breadCrumbs = inspectionHandlerContext.getInspectionSeanceCache()
+		List<PairDTO<Integer, BreadCrumbDTO>> breadCrumbs = inspectionHandlerContext.getInspectionSeanceCache()
 				.groupBreadCrumbsintoPairs();
 		
 		page.setBreadcrumbs(breadCrumbs);

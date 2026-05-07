@@ -12,8 +12,9 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.BreadCrumb;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.NavigationHistoryStep;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
@@ -37,7 +38,7 @@ public class UniversalInspectorWindow {
 	private static final String EMPTY_SIGN = "  ";
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
-	private java.util.List<PairDTO<Integer, BreadCrumb>> currentBreadcrumbs = java.util.Collections.emptyList();
+	private java.util.List<PairDTO<Integer, BreadCrumbDTO>> currentBreadcrumbs = java.util.Collections.emptyList();
 
 	private final Shell shell;
 	private final List navigationList;
@@ -82,7 +83,7 @@ public class UniversalInspectorWindow {
 				return;
 			}
 
-			PairDTO<Integer, BreadCrumb> breadcrumb = currentBreadcrumbs.get(index);
+			PairDTO<Integer, BreadCrumbDTO> breadcrumb = currentBreadcrumbs.get(index);
 
 			uiEventCollector.collectUiEvent(
 				new UIEvent<>(
@@ -315,7 +316,7 @@ public class UniversalInspectorWindow {
 		});
 	}
 
-	private void showBreadcrumbs(java.util.List<PairDTO<Integer, BreadCrumb>> list) {
+	private void showBreadcrumbs(java.util.List<PairDTO<Integer, BreadCrumbDTO>> list) {
 		if (navigationList.isDisposed())
 			return;
 

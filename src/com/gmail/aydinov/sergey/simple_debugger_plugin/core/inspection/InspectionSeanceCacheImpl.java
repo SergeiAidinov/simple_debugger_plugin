@@ -11,14 +11,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeanceCache;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 
 public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 
 	private final Map<Long, DataProviderHolderImpl> dataProviderHolders = new ConcurrentHashMap<Long, DataProviderHolderImpl>();
-	private final SortedMap<Integer, BreadCrumb> breadCrumbs = new java.util.concurrent.ConcurrentSkipListMap<>();
+	private final SortedMap<Integer, NavigationHistoryStep> breadCrumbs = new java.util.concurrent.ConcurrentSkipListMap<>();
 	private final AtomicInteger breadCrumbOrder = new AtomicInteger(0);
 	private final AtomicInteger headPosition = new AtomicInteger(0);
 
@@ -28,7 +28,7 @@ public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 	}
 
 	@Override
-	public SortedMap<Integer, BreadCrumb> getBreadcrumbs() {
+	public SortedMap<Integer, NavigationHistoryStep> getBreadcrumbs() {
 		return breadCrumbs;
 	}
 
@@ -42,12 +42,12 @@ public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 				}
 			}
 		}
-		BreadCrumb existingBreadCrumb = breadCrumbs.get(order);
+		NavigationHistoryStep existingBreadCrumb = breadCrumbs.get(order);
 		if (Objects.nonNull(existingBreadCrumb)) {
 			headPosition.set(order);
 		} else {
 			order = breadCrumbOrder.getAndIncrement();
-			BreadCrumb breadCrumb = new BreadCrumb(order, objectId, abstractUIEvent, description, false);
+			NavigationHistoryStep breadCrumb = new NavigationHistoryStep(order, objectId, abstractUIEvent, description, false);
 			breadCrumbs.put(order, breadCrumb);
 			headPosition.set(order);
 		}
@@ -55,13 +55,13 @@ public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 	}
 
 	@Override
-	public List<PairDTO<Integer, BreadCrumb>> groupBreadCrumbsintoPairs() {
-		List<PairDTO<Integer, BreadCrumb>> result = new ArrayList<PairDTO<Integer, BreadCrumb>>();
-		for (Entry<Integer, BreadCrumb> orderAndBreadCrumb : breadCrumbs.entrySet()) {
+	public List<PairDTO<Integer, BreadCrumbDTO>> groupBreadCrumbsintoPairs() {
+		List<PairDTO<Integer, BreadCrumbDTO>> result = new ArrayList<PairDTO<Integer, BreadCrumbDTO>>();
+		for (Entry<Integer, NavigationHistoryStep> orderAndBreadCrumb : breadCrumbs.entrySet()) {
 			final int order = orderAndBreadCrumb.getKey();
 			final int currentHeadPosition = headPosition.get();
 			orderAndBreadCrumb.getValue().setHoldsHead(order == currentHeadPosition);
-			result.add(PairDTO.of(order, orderAndBreadCrumb.getValue()));
+			result.add(PairDTO.of(order, new BreadCrumbDTO(order, orderAndBreadCrumb.getValue().getDescription(), orderAndBreadCrumb.getValue().doesHoldHead())));    
 		}
 		return result;
 	}

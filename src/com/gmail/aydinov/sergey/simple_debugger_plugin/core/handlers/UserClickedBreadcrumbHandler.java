@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.BreadCrumb;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.NavigationHistoryStep;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
@@ -24,7 +24,7 @@ public class UserClickedBreadcrumbHandler implements UIEventHandler {
 	public boolean handle(HandlerContext context, AbstractUIEvent event) {
 		UIEvent<PairDTO<Integer, ?>> uiEvent = (UIEvent<PairDTO<Integer, ?>>) event;
 		InspectionHandlerContext inspectionHandlerContext = (InspectionHandlerContext) context;
-		BreadCrumb breadCrumb = inspectionHandlerContext.getInspectionSeanceCache().getBreadcrumbs()
+		NavigationHistoryStep breadCrumb = inspectionHandlerContext.getInspectionSeanceCache().getBreadcrumbs()
 				.get(uiEvent.getPayload().getFirst());
 		if (Objects.nonNull(breadCrumb)) {
 			inspectionHandlerContext.setHeaderOrder(uiEvent.getPayload().getFirst());

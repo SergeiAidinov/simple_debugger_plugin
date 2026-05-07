@@ -2,7 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 
-public class BreadCrumb {
+public class NavigationHistoryStep {
 	
 	private final int breadCrumbOrder;
 	private final long objectId;
@@ -10,7 +10,7 @@ public class BreadCrumb {
 	private final String description;
 	private boolean holdsHead;
 	
-	public BreadCrumb(int breadCrumbOrder, long objectId, AbstractUIEvent abstractUIEvent, String description, boolean holdsHead) {
+	public NavigationHistoryStep(int breadCrumbOrder, long objectId, AbstractUIEvent abstractUIEvent, String description, boolean holdsHead) {
 		this.breadCrumbOrder = breadCrumbOrder;
 		this.objectId = objectId;
 		this.abstractUIEvent = abstractUIEvent;
