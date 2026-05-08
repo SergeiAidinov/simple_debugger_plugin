@@ -30,6 +30,7 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.CurrentlyInspectedObjectIdHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapEntryDTO;
@@ -48,8 +49,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 public class MapInspectorTab implements InspectorTab {
 	
 	private final int debugId = System.identityHashCode(this);
-
-//	private final LoadingPopup loadingPopup = new LoadingPopup();
 
 	private Label mapNameLabel;
 	private Label mapTypeLabel;
@@ -75,7 +74,7 @@ public class MapInspectorTab implements InspectorTab {
 	private InnerElementRepresentationDTO anchorMap;
 	private int currentPage = 0;
 	private int totalPages = -1;
-	LoadingWindow loadingWindow = null;
+	
 
 	// ================= UI =================
 
@@ -260,7 +259,7 @@ public class MapInspectorTab implements InspectorTab {
 		// ================= CONTENT =================
 		List<InnerElementRepresentationDTO> sortedList = new ArrayList<InnerElementRepresentationDTO>(
 				dto.getElements());
-		sortedList.sort(Comparator.comparingInt(e -> DebugUtils.SORT_ORDER.getOrDefault(e.getElementType(), 100)));
+		sortedList.sort(Comparator.comparingInt(e -> DebugUtils.SORT_ORDER.getOrDefault(e.getElementType(), DebugUtils.SORT_ORDER.size())));
 		for (InnerElementRepresentationDTO el : sortedList) {
 			Label row = new Label(content, SWT.NONE);
 			row.setText(formatElement(el));

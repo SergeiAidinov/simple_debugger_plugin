@@ -7,6 +7,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.EmptyHandle
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IgnoreEverntHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.IterableInspectionSeanceHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.MapInspectionSeanceHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserCancelledLoading;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedFieldHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChangedVariableHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserClickedBreadcrumbHandler;
@@ -127,7 +128,7 @@ public final class SimpleDebuggerEventTypes {
 //		        new MapInspectionSeanceHandler()), 
 		USER_INSPECTS_ITERABLE(InnerElementRepresentationDTO.class, null), 
 		USER_CLICKED_BREADCRUMB(PairDTO.class, new UserClickedBreadcrumbHandler()), 
-		USER_CANCELLED_LOADING(null, null), 
+		USER_CANCELLED_LOADING(Long.class, new UserCancelledLoading()), 
 		CLOSE_LOADING_POPUP(null, null), 
 		
 

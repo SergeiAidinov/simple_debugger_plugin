@@ -104,7 +104,7 @@ public final class MapDataProvider implements DataProvider {
 		}
 		NavigableMap<Integer, Entry<Value, Value>> selectedItems = waitForPageLoading();
 
-		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(selectedItems);
+		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(mapRepresentation, selectedItems);
 		List<PairDTO<Integer, BreadCrumbDTO>> breadCrumbs = inspectionHandlerContext.getInspectionSeanceCache()
 				.groupBreadCrumbsintoPairs();
 
@@ -196,7 +196,7 @@ public final class MapDataProvider implements DataProvider {
 	}
 
 	private MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> createPageOfMap(
-			NavigableMap<Integer, Entry<Value, Value>> selectedItems) {
+			UniversalElementRepresentation mapRepresentation, NavigableMap<Integer, Entry<Value, Value>> selectedItems) {
 		List<Integer> sortedIndexes = selectedItems.keySet().stream().sorted().toList();
 		Map<MapEntryDTO, MapEntryDTO> collectionElements = new LinkedHashMap<>();
 		for (Integer order : sortedIndexes) {
@@ -243,7 +243,9 @@ public final class MapDataProvider implements DataProvider {
 		InnerElementRepresentationDTO mapRepresentationDto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
 				.fromElement(mapRepresentation);
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = MapPageDTO
-				.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder().anchorMap(mapRepresentationDto)
+				.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder()
+				.anchorMap(mapRepresentationDto)
+				.objectId(mapRepresentation.getObjectReferenceId())
 				.elementName(mapRepresentation.getElementName()).elementType(mapRepresentation.getAdditionalInfo())
 				.totalEntries(totalEntries).currentPage(pageNumber).totalPages(totalPages).fromIndex(fromIndex)
 				.toIndex(toIndex).entries(collectionElements).anchorTag(mapRepresentation.getTag()).build();

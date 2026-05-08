@@ -1,6 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
@@ -15,6 +16,7 @@ import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.NavigationHistoryStep;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.CurrentlyInspectedObjectIdHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -33,7 +35,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.MapInspectorTab;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tab.inspect_window_tab.UserObjectStructureTab;
 
-public class UniversalInspectorWindow {
+public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolder {
 
 	private static UniversalInspectorWindow INSTANCE;
 	private static final String HEAD_SIGN = "➤ ";
@@ -63,6 +65,9 @@ public class UniversalInspectorWindow {
 	}
 
 	private static InspectionTabs currentTab = InspectionTabs.NONE;
+	
+	private AtomicLong currentlyInspectedObjectId = new AtomicLong();
+	private final CurrentlyInspectedObjectIdHolder currentlyInspectedObjectIdHolder;
 	
 
 	private UniversalInspectorWindow() {
@@ -118,6 +123,8 @@ public class UniversalInspectorWindow {
 				collectionTabItem.setControl(iterableInspectorTab.getControl());
 			}
 		});
+		
+		currentlyInspectedObjectIdHolder = this;
 	}
 
 	public static UniversalInspectorWindow getInstance() {
@@ -251,6 +258,7 @@ public class UniversalInspectorWindow {
 		}
 		case DISPLAY_PAGE_OF_INSPECTABLE_MAP -> {
 			DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> e = (DebugEvent<MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>) event;
+			currentlyInspectedObjectId.set(e.getPayload().getObjectId());
 			showBreadcrumbs(e.getPayload().getBreadcrumbs());
 			showMapTab(e.getPayload());
 		}
@@ -267,7 +275,7 @@ public class UniversalInspectorWindow {
 		}
 		case SHOW_LOADING_POPUP -> {
 			if (Objects.isNull(loadingWindow))
-				loadingWindow = new LoadingWindow();
+				loadingWindow = new LoadingWindow(currentlyInspectedObjectIdHolder);
 			DebugEvent<String> e = (DebugEvent<String>) event;
 			loadingWindow.setMessage(e.getPayload());
 			loadingWindow.show();
@@ -352,5 +360,10 @@ public class UniversalInspectorWindow {
 				navigationList.add(text);
 			}
 		});
+	}
+
+	@Override
+	public Long getCurrentlyInspectedObjectId() {
+		return currentlyInspectedObjectId.get();
 	}
 }
