@@ -8,4 +8,6 @@ public interface DataProvider {
 	
 	public static ReentrantLock jdiAccessLock = new ReentrantLock(true);
 
+	void terminateCurrentRequest();
+
 }

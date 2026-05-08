@@ -38,14 +38,14 @@ public class DataProviderHolderImpl implements DataProviderHolder {
 	}
 	
 	@Override
-	public void start() {
+	public void startDataProvider() {
 		 if (started.compareAndSet(false, true)) {
 		        thread.start();
 		    }
 	}
 	
 	@Override
-	public void stop() {
+	public void stopDataProvider() {
 		stopped.set(true);
 		thread.interrupt();
 	}
@@ -88,6 +88,12 @@ public class DataProviderHolderImpl implements DataProviderHolder {
 			dataProvider.handlePageRequest(uiEvent.getPayload().getSecond());
 
 		}
+	}
+
+	@Override
+	public void terminateCurrentRequest() {
+		dataProvider.terminateCurrentRequest();
+		
 	}
 
 }

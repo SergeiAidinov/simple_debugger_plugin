@@ -20,6 +20,12 @@ public class ObjectDataProvider implements DataProvider{
 		// TODO Auto-generated method stub
 		//return userObjectPageDTO;
 	}
+
+	@Override
+	public void terminateCurrentRequest() {
+		// TODO Auto-generated method stub
+		
+	}
 	
 
 }

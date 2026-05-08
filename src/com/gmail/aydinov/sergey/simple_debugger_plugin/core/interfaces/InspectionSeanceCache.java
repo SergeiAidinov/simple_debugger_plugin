@@ -12,7 +12,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
 
 public interface InspectionSeanceCache {
 	
-	Map<Long, DataProviderHolderImpl> getDataProviderHolders();
+	Map<Long, DataProviderHolder> getDataProviderHolders();
 	SortedMap<Integer, NavigationHistoryStep> getBreadcrumbs();
 	void addOrModifyBreadCrumb(Long objectId, AbstractUIEvent abstractUIEvent, String description,  Integer pageNumber);
 	List<PairDTO<Integer, BreadCrumbDTO>> groupBreadCrumbsintoPairs();

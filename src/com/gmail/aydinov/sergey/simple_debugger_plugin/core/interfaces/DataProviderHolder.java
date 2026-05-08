@@ -6,9 +6,11 @@ public interface DataProviderHolder {
 
 	void handleEvent(AbstractSimpleDebuggerEvent abstractSimpleDebuggerEvent);
 
-	void start();
+	void startDataProvider();
 
-	void stop();
+	void stopDataProvider();
+	
+	void terminateCurrentRequest();
 
 	DataProvider getDataProvider();
 

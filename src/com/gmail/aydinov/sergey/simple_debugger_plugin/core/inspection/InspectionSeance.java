@@ -73,7 +73,7 @@ public class InspectionSeance {
 			debugEventCollector
 					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 			for (DataProviderHolder dataProviderHolder : inspectionSeanceCache.getDataProviderHolders().values()) {
-				dataProviderHolder.stop();
+				dataProviderHolder.stopDataProvider();
 			}
 			inspectionSeanceCache.getDataProviderHolders().clear();
 			inspectionSeanceCache.getBreadcrumbs().clear();

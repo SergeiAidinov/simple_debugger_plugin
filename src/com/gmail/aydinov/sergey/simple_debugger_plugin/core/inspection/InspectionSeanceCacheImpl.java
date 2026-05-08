@@ -9,6 +9,7 @@ import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeanceCache;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
@@ -16,13 +17,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUI
 
 public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 
-	private final Map<Long, DataProviderHolderImpl> dataProviderHolders = new ConcurrentHashMap<Long, DataProviderHolderImpl>();
+	private final Map<Long, DataProviderHolder> dataProviderHolders = new ConcurrentHashMap<Long, DataProviderHolder>();
 	private final SortedMap<Integer, NavigationHistoryStep> navigationHistory = new java.util.concurrent.ConcurrentSkipListMap<>();
 	private final AtomicInteger breadCrumbOrder = new AtomicInteger(0);
 	private final AtomicInteger headPosition = new AtomicInteger(0);
 
 	@Override
-	public Map<Long, DataProviderHolderImpl> getDataProviderHolders() {
+	public Map<Long, DataProviderHolder> getDataProviderHolders() {
 		return dataProviderHolders;
 	}
 

@@ -66,6 +66,7 @@ public final class MapDataProvider implements DataProvider {
 	private InitializationState initState = InitializationState.NOT_STARTED;
 	private final AtomicBoolean allElementsLoaded = new AtomicBoolean(false);
 	private final AtomicBoolean readingStarted = new AtomicBoolean(false);
+	private boolean shoudWaitForPage = true;
 
 	public MapDataProvider(UniversalElementRepresentation mapRepresentation,
 			InspectionHandlerContext inspectionHandlerContext) {
@@ -272,7 +273,7 @@ public final class MapDataProvider implements DataProvider {
 			pageNumber = 0;
 		NavigableMap<Integer, Entry<Value, Value>> selectedItems = Collections.emptyNavigableMap();
 
-		while (true) {
+		while (shoudWaitForPage) {
 			selectedItems = mapElements.subMap(pageNumber * DebugUtils.PAGE_SIZE, true,
 					pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE, false);
 			if (selectedItems.size() == DebugUtils.PAGE_SIZE)
@@ -288,6 +289,8 @@ public final class MapDataProvider implements DataProvider {
 				debugEventCollector.collectDebugEvent(new DebugEvent<>(SimpleDebuggerEventType.SHOW_LOADING_POPUP,
 						"Loading page: " + (mapElements.size() / DebugUtils.PAGE_SIZE)));
 		}
+		shoudWaitForPage = true;
+		return selectedItems;
 	}
 
 	public List<UniversalElementRepresentation> populateSubordinatesElements(ObjectReference objRef) {
@@ -343,6 +346,12 @@ public final class MapDataProvider implements DataProvider {
 		} catch (Exception e) {
 			return null;
 		}
+	}
+
+	@Override
+	public void terminateCurrentRequest() {
+		shoudWaitForPage = false;
+		
 	}
 
 }

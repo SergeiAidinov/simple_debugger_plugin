@@ -11,6 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProvi
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -38,7 +39,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 		inspectionHandlerContext.getInspectionSeanceCache().addOrModifyBreadCrumb(
 				userReqeustedMapPageEvent.getPayload().getFirst().getObjectId(), userReqeustedMapPageEvent,
 				descriprion, userReqeustedMapPageEvent.getPayload().getSecond());
-		DataProviderHolderImpl dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()
+		DataProviderHolder dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()
 				.getDataProviderHolders().get(id);
 		// MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page
 		// = null;
@@ -55,7 +56,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 			DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, inspectionHandlerContext);
 			dataProviderHolder = new DataProviderHolderImpl(mapDataProvider,
 					DebuggerContext.context().getInspectionSeanceId());
-			dataProviderHolder.start();
+			dataProviderHolder.startDataProvider();
 			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id,
 					dataProviderHolder);
 			System.out.println(userReqeustedMapPageEvent);
