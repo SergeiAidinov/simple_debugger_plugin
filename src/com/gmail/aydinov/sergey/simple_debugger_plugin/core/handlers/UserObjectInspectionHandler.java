@@ -37,36 +37,38 @@ import com.sun.jdi.event.BreakpointEvent;
 
 public class UserObjectInspectionHandler implements UIEventHandler {
 
-	
-
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean handle(HandlerContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
-		
-		
+
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
 		try {
 			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
 		} catch (ClassCastException castException) {
 
 		}
-		if (Objects.isNull(uiEvent))  return false;
-			final long id = uiEvent.getPayload().getObjectId();
-			final InspectionHandlerContext inspectionHandlerContext = (InspectionHandlerContext) abstractUIEventContext;
-			DataProviderHolder dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id);
-			if (Objects.nonNull(dataProviderHolder)) {
-				dataProviderHolder.handleEvent(uiEvent);
-				
-			} else {
-				UserObjectDataProvider userObjectDataProvider = new UserObjectDataProvider(uiEvent.getPayload(), inspectionHandlerContext);
-				dataProviderHolder = new DataProviderHolderImpl(userObjectDataProvider, DebuggerContext.context().getInspectionSeanceId());
-				inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id, dataProviderHolder);
-				inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id).startDataProvider();
-				inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id).handleEvent(uiEvent);
-			}
+		if (Objects.isNull(uiEvent))
 			return false;
+		final long id = uiEvent.getPayload().getObjectId();
+		final InspectionHandlerContext inspectionHandlerContext = (InspectionHandlerContext) abstractUIEventContext;
+		inspectionHandlerContext.getInspectionSeanceCache().addOrModifyBreadCrumb(id, uiEvent, "descriprion", 0);
+		DataProviderHolder dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()
+				.getDataProviderHolders().get(id);
+		if (Objects.nonNull(dataProviderHolder)) {
+			dataProviderHolder.handleEvent(uiEvent);
+
+		} else {
+			UserObjectDataProvider userObjectDataProvider = new UserObjectDataProvider(uiEvent.getPayload(),
+					inspectionHandlerContext);
+			dataProviderHolder = new DataProviderHolderImpl(userObjectDataProvider,
+					DebuggerContext.context().getInspectionSeanceId());
+			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id, dataProviderHolder);
+			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id).startDataProvider();
+			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id).handleEvent(uiEvent);
+		}
+		return false;
 	}
-		//	
+	//
 //			final UserObjectDataProvider userObjectDataProvider = new UserObjectDataProvider(null, inspectionHandlerContext);
 ////			inspectionHandlerContext.getInspectionSeanceCache()
 ////			.getDataProviderHolders().put(uiEvent.getPayload().getObjectId(), 

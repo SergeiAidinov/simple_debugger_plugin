@@ -264,6 +264,7 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 		}
 		case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
         	DebugEvent<UserObjectPageDTO> e = (DebugEvent<UserObjectPageDTO>) event;
+        	showBreadcrumbs(e.getPayload().getBreadcrumbs());
         	showUserObjectTab(e.getPayload());
            // newAnchorTag = e.getPayload().getTag();
         }
