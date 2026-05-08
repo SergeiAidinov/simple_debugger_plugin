@@ -29,21 +29,21 @@ public class DataProviderHolderImpl implements DataProviderHolder {
 		this.dataProvider = dataProvider;
 		this.inspectionSeanceId = inspectionSeanceId;
 		this.thread = new Thread(this::starter);
-	//	this.thread.start();
+		// this.thread.start();
 	}
 
 	@Override
 	public void handleEvent(AbstractSimpleDebuggerEvent abstractSimpleDebuggerEvent) {
 		eventsForProvider.add(abstractSimpleDebuggerEvent);
 	}
-	
+
 	@Override
 	public void startDataProvider() {
-		 if (started.compareAndSet(false, true)) {
-		        thread.start();
-		    }
+		if (started.compareAndSet(false, true)) {
+			thread.start();
+		}
 	}
-	
+
 	@Override
 	public void stopDataProvider() {
 		stopped.set(true);
@@ -69,23 +69,27 @@ public class DataProviderHolderImpl implements DataProviderHolder {
 				&& DebuggerContext.context().getInspectionSeanceId() == inspectionSeanceId) {
 			AbstractSimpleDebuggerEvent abstractSimpleDebuggerUIEvent = null;
 			try {
-				abstractSimpleDebuggerUIEvent = eventsForProvider.poll(1, TimeUnit.SECONDS);;
+				abstractSimpleDebuggerUIEvent = eventsForProvider.poll(1, TimeUnit.SECONDS);
+				;
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				break;
 			}
 			if (Objects.isNull(abstractSimpleDebuggerUIEvent))
 				continue;
-			UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> uiEvent = null;
-			try {
-				if (abstractSimpleDebuggerUIEvent instanceof UIEvent)
+			if (abstractSimpleDebuggerUIEvent instanceof UIEvent uiEvent) {
+				if (uiEvent.getPayload() instanceof PairDTO pair) {
 					uiEvent = (UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>>) abstractSimpleDebuggerUIEvent;
-			} catch (ClassCastException castException) {
-
+					pair = (PairDTO<InnerElementRepresentationDTO, Integer>) uiEvent.getPayload();
+					Integer argument = (Integer) pair.getSecond();
+					dataProvider.handlePageRequest(argument);
+				} else {
+					if (uiEvent.getPayload() instanceof InnerElementRepresentationDTO innerElementRepresentationDTO) {
+						uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
+						dataProvider.handlePageRequest(null);
+					}
+				}
 			}
-			if (Objects.isNull(uiEvent))
-				continue;
-			dataProvider.handlePageRequest(uiEvent.getPayload().getSecond());
 
 		}
 	}
@@ -93,7 +97,7 @@ public class DataProviderHolderImpl implements DataProviderHolder {
 	@Override
 	public void terminateCurrentRequest() {
 		dataProvider.terminateCurrentRequest();
-		
+
 	}
 
 }
