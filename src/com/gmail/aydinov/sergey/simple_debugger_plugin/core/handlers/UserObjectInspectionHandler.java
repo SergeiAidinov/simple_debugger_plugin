@@ -29,7 +29,7 @@ public class UserObjectInspectionHandler implements UIEventHandler  {
 		final long id = uiEvent.getPayload().getObjectId();
 		final InspectionHandlerContext inspectionHandlerContext = (InspectionHandlerContext) abstractUIEventContext;
 		inspectionHandlerContext.getInspectionSeanceCache().addOrModifyBreadCrumb(id, uiEvent,
-				uiEvent.getPayload().getElementName(), 0);
+				uiEvent.getPayload().getValue(), 0);
 		DataProviderHolder dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()
 				.getDataProviderHolders().get(id);
 		if (Objects.nonNull(dataProviderHolder)) {

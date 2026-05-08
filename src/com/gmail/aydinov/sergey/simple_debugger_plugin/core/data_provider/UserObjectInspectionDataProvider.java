@@ -109,7 +109,6 @@ public class UserObjectInspectionDataProvider implements DataProvider {
 		UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(obj.type().name())
 				.elementType(obj.type().name()).classType(type.name()).entries(qq).anchorTag(new Tag(rootId, null))
 				.objectId(obj.uniqueID()).build();
-
 		return userObjectPageDTO;
 	}
 

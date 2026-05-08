@@ -234,7 +234,7 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 			disposeAllTabs();
 			createUserObjectTabIfNeeded("USER OBJ.");
 			userObjectTab.showPage(userObjectPageDTO);
-		//	showBreadcrumbs(userObjectPageDTO.getBreadcrumbs());
+			showBreadcrumbs(userObjectPageDTO.getBreadcrumbs());
 			showTab(userObjectTabItem, userObjectTab.getControl());
 			currentTab = InspectionTabs.USER_OBJECT;
 		});
