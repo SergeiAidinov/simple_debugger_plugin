@@ -97,9 +97,11 @@ public class UserObjectInspectionDataProvider implements DataProvider {
 		for (Method method : type.methods()) {
 			if (DebugUtils.shouldSkipMethod(method))
 				continue;
+			String returnValue = method.returnTypeName();
 			String params = String.join(", ", method.argumentTypeNames());
 			UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder().objectReference(obj)
-					.elementType(UniversalElementType.METHOD).value(method.toString())
+					.elementName(method.name() + "()")
+					.elementType(UniversalElementType.METHOD).value(returnValue + " " + method.name() + "(" + params + ")")
 					.typeOrReturnType(method.returnTypeName()).isStatic(method.isStatic()).parentUniqueId(rootId)
 					.level(1).build();
 			entries.add(methodElement);
