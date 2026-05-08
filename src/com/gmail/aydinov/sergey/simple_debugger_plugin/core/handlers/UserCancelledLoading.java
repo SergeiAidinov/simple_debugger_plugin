@@ -1,5 +1,7 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
+import java.util.Optional;
+
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProviderHolderImpl;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
@@ -12,11 +14,12 @@ public class UserCancelledLoading implements UIEventHandler {
 
 	@Override
 	public boolean handle(HandlerContext context, AbstractUIEvent event) {
-		System.out.println("CANCELLED <==============");
+		@SuppressWarnings("unchecked")
 		UIEvent<Long> uiEvent = (UIEvent<Long>) event;
 		InspectionHandlerContext inspectionHandlerContext = (InspectionHandlerContext) context;
-		DataProviderHolder q = inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(uiEvent.getPayload());
-		q.terminateCurrentRequest();
+		Optional.ofNullable(
+				inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(uiEvent.getPayload()))
+				.ifPresent(dataProvider -> dataProvider.terminateCurrentRequest());
 		return false;
 	}
 

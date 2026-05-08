@@ -16,7 +16,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.NavigationHistoryStep;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
@@ -29,7 +28,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEvent
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 import com.sun.jdi.BooleanValue;
 import com.sun.jdi.ClassNotLoadedException;
@@ -61,12 +59,11 @@ public final class MapDataProvider implements DataProvider {
 	private Integer pageNumber = null;
 	private volatile String totalPages = "calculating...";
 	private volatile String totalEntries = "calculating...";
-	// private AtomicBoolean pageSent = new AtomicBoolean(false);
 
 	private InitializationState initState = InitializationState.NOT_STARTED;
 	private final AtomicBoolean allElementsLoaded = new AtomicBoolean(false);
 	private final AtomicBoolean readingStarted = new AtomicBoolean(false);
-	private boolean shoudWaitForPage = true;
+	private final AtomicBoolean currentRequestActive = new AtomicBoolean(true);
 
 	public MapDataProvider(UniversalElementRepresentation mapRepresentation,
 			InspectionHandlerContext inspectionHandlerContext) {
@@ -103,9 +100,11 @@ public final class MapDataProvider implements DataProvider {
 		} finally {
 			DataProvider.jdiAccessLock.unlock();
 		}
+		currentRequestActive.set(true);
 		NavigableMap<Integer, Entry<Value, Value>> selectedItems = waitForPageLoading();
 
-		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(mapRepresentation, selectedItems);
+		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = createPageOfMap(
+				mapRepresentation, selectedItems);
 		List<PairDTO<Integer, BreadCrumbDTO>> breadCrumbs = inspectionHandlerContext.getInspectionSeanceCache()
 				.groupBreadCrumbsintoPairs();
 
@@ -137,7 +136,7 @@ public final class MapDataProvider implements DataProvider {
 					DataProvider.jdiAccessLock.unlock();
 				}
 			}
-			allElementsLoaded.compareAndSet(false, true);
+			allElementsLoaded.set(true);
 			totalEntries = String.valueOf(mapElements.size());
 			int total = Integer.parseInt(totalEntries);
 			int pages = (total + DebugUtils.PAGE_SIZE - 1) / DebugUtils.PAGE_SIZE;
@@ -197,7 +196,8 @@ public final class MapDataProvider implements DataProvider {
 	}
 
 	private MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> createPageOfMap(
-			UniversalElementRepresentation mapRepresentation, NavigableMap<Integer, Entry<Value, Value>> selectedItems) {
+			UniversalElementRepresentation mapRepresentation,
+			NavigableMap<Integer, Entry<Value, Value>> selectedItems) {
 		List<Integer> sortedIndexes = selectedItems.keySet().stream().sorted().toList();
 		Map<MapEntryDTO, MapEntryDTO> collectionElements = new LinkedHashMap<>();
 		for (Integer order : sortedIndexes) {
@@ -222,21 +222,7 @@ public final class MapDataProvider implements DataProvider {
 				collectionElements.put(new MapEntryDTO(keyValueText, keyReference.uniqueID(), keyCategory, keyEntries),
 						new MapEntryDTO(valueValueText, valueReference.uniqueID(), valueCategory, valueEntries));
 			}
-
-			// List<UniversalElementRepresentation> valueElement =
-			// createUniversalElementRepresentationFromValue(valueValue);
-
 		}
-//		List<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>> list = new ArrayList<PairDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO>>();
-//		for (Entry<UniversalElementRepresentation, UniversalElementRepresentation> entry : collectionElements
-//				.entrySet()) {
-//			PairDTO<UniversalElementRepresentation, UniversalElementRepresentation> e = PairDTO.of(entry.getKey(),
-//					entry.getValue());
-//			list.add(PairDTO.of(
-//					InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getFirst()),
-//					InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getSecond())));
-//
-//		}
 		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
 		final int mapSize = mapElements.size();
 		int toIndex = (mapSize >= fromIndex + DebugUtils.PAGE_SIZE) ? (fromIndex + DebugUtils.PAGE_SIZE - 1)
@@ -244,36 +230,21 @@ public final class MapDataProvider implements DataProvider {
 		InnerElementRepresentationDTO mapRepresentationDto = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
 				.fromElement(mapRepresentation);
 		MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page = MapPageDTO
-				.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder()
-				.anchorMap(mapRepresentationDto)
-				.objectId(mapRepresentation.getObjectReferenceId())
-				.elementName(mapRepresentation.getElementName()).elementType(mapRepresentation.getAdditionalInfo())
-				.totalEntries(totalEntries).currentPage(pageNumber).totalPages(totalPages).fromIndex(fromIndex)
-				.toIndex(toIndex).entries(collectionElements).anchorTag(mapRepresentation.getTag()).build();
+				.<InnerElementRepresentationDTO, InnerElementRepresentationDTO>builder().anchorMap(mapRepresentationDto)
+				.objectId(mapRepresentation.getObjectReferenceId()).elementName(mapRepresentation.getElementName())
+				.elementType(mapRepresentation.getAdditionalInfo()).totalEntries(totalEntries).currentPage(pageNumber)
+				.totalPages(totalPages).fromIndex(fromIndex).toIndex(toIndex).entries(collectionElements)
+				.anchorTag(mapRepresentation.getTag()).build();
 		return page;
 	}
-
-//	private UniversalElementRepresentation createUniversalElementRepresentationFromValue(Value value) {
-//		UniversalElementRepresentation element = null;
-//		if (value instanceof ObjectReference objRef) {
-//			String type = objRef.referenceType().name();
-//			String valueText = type.startsWith("java.lang.") ? objRef.toString() : type;
-//			element = UniversalElementRepresentation.builder().referenceType(objRef.referenceType())
-//					.objectReference(objRef).elementName(valueText)
-//					.elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
-//					.currentRole(UniversalElementRepresentation.CurrentRole.INNER)
-//					.value(DebugUtils.getObjectReferenceValueAsString(objRef))
-//					.valueCategory(DebugUtils.determineValueCategory(value)).build();
-//		}
-//		return element;
-//	}
 
 	private NavigableMap<Integer, Entry<Value, Value>> waitForPageLoading() {
 		if (Objects.isNull(pageNumber))
 			pageNumber = 0;
 		NavigableMap<Integer, Entry<Value, Value>> selectedItems = Collections.emptyNavigableMap();
+		int lastSentPageNumber = -1;
 
-		while (shoudWaitForPage) {
+		while (currentRequestActive.get()) {
 			selectedItems = mapElements.subMap(pageNumber * DebugUtils.PAGE_SIZE, true,
 					pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE, false);
 			if (selectedItems.size() == DebugUtils.PAGE_SIZE)
@@ -282,14 +253,16 @@ public final class MapDataProvider implements DataProvider {
 			if (allElementsLoaded.get())
 				return selectedItems;
 			try {
-				Thread.sleep(100);
+				Thread.sleep(250);
 			} catch (InterruptedException ignored) {
 			}
-			if ((mapElements.size() / DebugUtils.PAGE_SIZE) < pageNumber)
+			if (((mapElements.size() / DebugUtils.PAGE_SIZE) > lastSentPageNumber)
+					&& ((mapElements.size() / DebugUtils.PAGE_SIZE) < pageNumber)) {
 				debugEventCollector.collectDebugEvent(new DebugEvent<>(SimpleDebuggerEventType.SHOW_LOADING_POPUP,
-						"Loading page: " + (mapElements.size() / DebugUtils.PAGE_SIZE)));
+							"Loading page: " + (mapElements.size() / DebugUtils.PAGE_SIZE)));
+				lastSentPageNumber = mapElements.size() / DebugUtils.PAGE_SIZE;
+			}
 		}
-		shoudWaitForPage = true;
 		return selectedItems;
 	}
 
@@ -350,8 +323,8 @@ public final class MapDataProvider implements DataProvider {
 
 	@Override
 	public void terminateCurrentRequest() {
-		shoudWaitForPage = false;
-		
+		currentRequestActive.set(false);
+
 	}
 
 }
