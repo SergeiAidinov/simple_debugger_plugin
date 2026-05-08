@@ -37,7 +37,7 @@ import com.sun.jdi.event.BreakpointEvent;
 
 public class UserObjectInspectionHandler implements UIEventHandler {
 
-	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
+	
 
 	@SuppressWarnings("unchecked")
 	@Override
