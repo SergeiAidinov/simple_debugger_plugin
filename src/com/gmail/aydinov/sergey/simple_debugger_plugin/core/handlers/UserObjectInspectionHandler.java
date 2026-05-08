@@ -9,10 +9,14 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractEleme
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.ObjectDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.UserObjectDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProviderHolderImpl;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionSeance;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
@@ -38,61 +42,87 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean handle(HandlerContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
+		
+		
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;
 		try {
 			uiEvent = (UIEvent<InnerElementRepresentationDTO>) abstractSimpleDebuggerUIEvent;
 		} catch (ClassCastException castException) {
 
 		}
-		if (Objects.nonNull(uiEvent)) {
-			InnerElementRepresentationDTO userObject = uiEvent.getPayload();
-			List<UniversalElementRepresentation> uObjs = findAllUserObjects(userObject);
-			if (uObjs.isEmpty()) {
+		if (Objects.isNull(uiEvent))  return false;
+			final long id = uiEvent.getPayload().getObjectId();
+			final InspectionHandlerContext inspectionHandlerContext = (InspectionHandlerContext) abstractUIEventContext;
+			DataProviderHolder dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id);
+			if (Objects.nonNull(dataProviderHolder)) {
+				dataProviderHolder.handleEvent(uiEvent);
+				
+			} else {
+				UserObjectDataProvider userObjectDataProvider = new UserObjectDataProvider(uiEvent.getPayload(), inspectionHandlerContext);
+				dataProviderHolder = new DataProviderHolderImpl(userObjectDataProvider, DebuggerContext.context().getInspectionSeanceId());
+				inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id, dataProviderHolder);
+				inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id).startDataProvider();
+				inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id).handleEvent(uiEvent);
 			}
-			List<InnerElementRepresentationDTO> fields = new ArrayList<InnerElementRepresentationDTO>();
-			List<InnerElementRepresentationDTO> methods = new ArrayList<InnerElementRepresentationDTO>();
-			List<UniversalElementRepresentation> classElementList = new ArrayList<UniversalElementRepresentation>();
-			for (UniversalElementRepresentation universalElementRepresentation : uObjs) {
-				fields.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
-						.filter(e -> e instanceof UniversalElementRepresentation)
-						.map(e -> (UniversalElementRepresentation) e)
-						.filter(e -> Objects.equals(e.getTag().getParentId(),
-								universalElementRepresentation.getTag().getUniqueId()))
-						.toList().stream()
-						.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e))
-						.toList());
-				classElementList.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
-						.filter(e -> e instanceof UniversalElementRepresentation)
-						.map(e -> (UniversalElementRepresentation) e)
-						.filter(e -> Objects.equals(e.getAdditionalInfo(),
-								universalElementRepresentation.getAdditionalInfo()))
-						.filter(e -> Objects.isNull(e.getTag().getParentId())).toList());
-			}
-			for (UniversalElementRepresentation classRepresentation : classElementList) {
-				methods.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
-						.filter(e -> e instanceof UniversalElementRepresentation)
-						.map(e -> (UniversalElementRepresentation) e)
-						.filter(e -> e.getElementType() == UniversalElementType.METHOD)
-						.filter(e -> Objects.equals(e.getTag().getParentId(),
-								classRepresentation.getTag().getUniqueId()))
-						.toList().stream()
-						.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e))
-						.toList());
-			}
-			List<InnerElementRepresentationDTO> subordinates = new ArrayList<InnerElementRepresentationDTO>(fields);
-			subordinates.addAll(methods);
-			subordinates = subordinates.stream().distinct().toList();
-			UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(userObject.getElementName())
-					.elementType(userObject.getTypeOrReturnType()).objectId(userObject.getObjectId())
-					.entries(subordinates).classType(userObject.getTypeOrReturnType()).anchorTag(userObject.getTag())
-					.build();
-		//	InspectionSeance.inspectionSeanceCache.put(userObjectPageDTO.getObjectId(), new ObjectDataProvider(userObjectPageDTO));
-			debugEventCollector.collectDebugEvent(new DebugEvent<>(
-					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
-		}
-		return true;
-
+			return false;
 	}
+		//	
+//			final UserObjectDataProvider userObjectDataProvider = new UserObjectDataProvider(null, inspectionHandlerContext);
+////			inspectionHandlerContext.getInspectionSeanceCache()
+////			.getDataProviderHolders().put(uiEvent.getPayload().getObjectId(), 
+////					new DataProviderHolderImpl(userObjectDataProvider, 0);
+////					);
+//		
+//		
+//		if (Objects.nonNull(uiEvent)) {
+//			InnerElementRepresentationDTO userObject = uiEvent.getPayload();
+//			List<UniversalElementRepresentation> uObjs = findAllUserObjects(userObject);
+//			if (uObjs.isEmpty()) {
+//			}
+//			List<InnerElementRepresentationDTO> fields = new ArrayList<InnerElementRepresentationDTO>();
+//			List<InnerElementRepresentationDTO> methods = new ArrayList<InnerElementRepresentationDTO>();
+//			List<UniversalElementRepresentation> classElementList = new ArrayList<UniversalElementRepresentation>();
+//			for (UniversalElementRepresentation universalElementRepresentation : uObjs) {
+//				fields.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
+//						.filter(e -> e instanceof UniversalElementRepresentation)
+//						.map(e -> (UniversalElementRepresentation) e)
+//						.filter(e -> Objects.equals(e.getTag().getParentId(),
+//								universalElementRepresentation.getTag().getUniqueId()))
+//						.toList().stream()
+//						.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e))
+//						.toList());
+//				classElementList.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
+//						.filter(e -> e instanceof UniversalElementRepresentation)
+//						.map(e -> (UniversalElementRepresentation) e)
+//						.filter(e -> Objects.equals(e.getAdditionalInfo(),
+//								universalElementRepresentation.getAdditionalInfo()))
+//						.filter(e -> Objects.isNull(e.getTag().getParentId())).toList());
+//			}
+//			for (UniversalElementRepresentation classRepresentation : classElementList) {
+//				methods.addAll(TargetApplicationRepresentation.getInstance().getAllElements().stream()
+//						.filter(e -> e instanceof UniversalElementRepresentation)
+//						.map(e -> (UniversalElementRepresentation) e)
+//						.filter(e -> e.getElementType() == UniversalElementType.METHOD)
+//						.filter(e -> Objects.equals(e.getTag().getParentId(),
+//								classRepresentation.getTag().getUniqueId()))
+//						.toList().stream()
+//						.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e))
+//						.toList());
+//			}
+//			List<InnerElementRepresentationDTO> subordinates = new ArrayList<InnerElementRepresentationDTO>(fields);
+//			subordinates.addAll(methods);
+//			subordinates = subordinates.stream().distinct().toList();
+//			UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(userObject.getElementName())
+//					.elementType(userObject.getTypeOrReturnType()).objectId(userObject.getObjectId())
+//					.entries(subordinates).classType(userObject.getTypeOrReturnType()).anchorTag(userObject.getTag())
+//					.build();
+//		//	InspectionSeance.inspectionSeanceCache.put(userObjectPageDTO.getObjectId(), new ObjectDataProvider(userObjectPageDTO));
+//			debugEventCollector.collectDebugEvent(new DebugEvent<>(
+//					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, userObjectPageDTO));
+//		}
+//		return true;
+//
+//	}
 
 	private List<UniversalElementRepresentation> findAllUserObjects(InnerElementRepresentationDTO anchor) {
 		TargetApplicationRepresentation.getInstance().getAllElements().stream()
@@ -148,15 +178,21 @@ public class UserObjectInspectionHandler implements UIEventHandler {
 		// METHODS (class behavior)
 		// =========================================================
 		for (Method method : type.methods()) {
-			if (DebugUtils.shouldSkipMethod(method)) continue;
+			if (DebugUtils.shouldSkipMethod(method))
+				continue;
 			String params = String.join(", ", method.argumentTypeNames());
-				UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder()
-						.objectReference(obj) // можно убрать, но иногда полезно для контекста
-						.elementName(method.name() +"()").additionalInfo((method.name() + "(" + params + ")"))
-						.elementType(UniversalElementType.METHOD).value(method.toString())
-						.typeOrReturnType(method.returnTypeName()).isStatic(method.isStatic()).parentUniqueId(rootId)
-						.level(1).build();
-				entries.add(methodElement);
+			UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder().objectReference(obj) // можно
+																															// убрать,
+																															// но
+																															// иногда
+																															// полезно
+																															// для
+																															// контекста
+					.elementName(method.name() + "()").additionalInfo((method.name() + "(" + params + ")"))
+					.elementType(UniversalElementType.METHOD).value(method.toString())
+					.typeOrReturnType(method.returnTypeName()).isStatic(method.isStatic()).parentUniqueId(rootId)
+					.level(1).build();
+			entries.add(methodElement);
 		}
 		List<InnerElementRepresentationDTO> qq = entries.stream()
 				.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e)).toList();

@@ -98,8 +98,8 @@ public final class SimpleDebuggerEventTypes {
 
 		//USER_ENDED_INSPECTION_SESSION_FOR_ELEMENT(Void.class, null),
 
-		USER_STARTED_INSPECTION_SEANCE(InnerElementRepresentationDTO.class,
-				new IterableInspectionSeanceHandler()),
+//		USER_STARTED_INSPECTION_SEANCE(InnerElementRepresentationDTO.class,
+//				new IterableInspectionSeanceHandler()),
 		
 		USER_CLOSED_INSPECTION_SEANCE(null, new IgnoreEverntHandler()),
 
@@ -123,7 +123,7 @@ public final class SimpleDebuggerEventTypes {
 		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null), 
 	//	USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(UserInstanceInspectionDTO.class, new UserObjectInspectionHandler()), 
 		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectPageDTO.class, null), 
-		USER_INSPECTS_USER_OBJECT(MapEntryDTO.class, new UserObjectInspectionHandler()),
+		USER_INSPECTS_USER_OBJECT(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()),
 //		USER_INSPECTS_MAP(InnerElementRepresentationDTO.class,
 //		        new MapInspectionSeanceHandler()), 
 		USER_INSPECTS_ITERABLE(InnerElementRepresentationDTO.class, null), 
@@ -157,7 +157,7 @@ public final class SimpleDebuggerEventTypes {
 	
 	private static final EnumSet<SimpleDebuggerEventType> INSPECTION_EVENTS = EnumSet.of(
 			SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE,
-			SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
+		//	SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
 			SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
 			SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
 			SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE,
