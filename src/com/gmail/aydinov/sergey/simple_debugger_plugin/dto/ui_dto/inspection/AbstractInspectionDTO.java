@@ -27,7 +27,7 @@ public abstract class AbstractInspectionDTO {
      * @param breadcrumbs2  list of breadcrumb items representing the path from root
      */
     protected AbstractInspectionDTO(Tag tag, String elementName, String elementType, List<PairDTO<Integer, BreadCrumbDTO>> breadcrumbs, Long objectId) {
-        if (tag == null) throw new IllegalArgumentException("Tag must not be null");
+      //  if (tag == null) throw new IllegalArgumentException("Tag must not be null");
         this.tag = tag;
         this.elementName = elementName;
         this.elementType = elementType;

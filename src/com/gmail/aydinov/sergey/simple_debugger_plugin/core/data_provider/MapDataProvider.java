@@ -129,6 +129,13 @@ public final class MapDataProvider implements DataProvider {
 							ObjectReference.INVOKE_SINGLE_THREADED);
 					Value value = mapRepresentation.getObjectReference().invokeMethod(thread, getMethod, List.of(key),
 							ObjectReference.INVOKE_SINGLE_THREADED);
+					if (key instanceof ObjectReference keyObjectReference)
+						inspectionHandlerContext.getInspectionSeanceCache().getLoadedPieces()
+								.put(keyObjectReference.uniqueID(), keyObjectReference);
+					if (value instanceof ObjectReference valueObjectReference)
+						inspectionHandlerContext.getInspectionSeanceCache().getLoadedPieces()
+								.put(valueObjectReference.uniqueID(), valueObjectReference);
+
 					final int index = order.getAndIncrement();
 					mapElements.put(index, new AbstractMap.SimpleEntry<>(key, value));
 				} catch (Exception e) {
@@ -259,7 +266,7 @@ public final class MapDataProvider implements DataProvider {
 			if (((mapElements.size() / DebugUtils.PAGE_SIZE) > lastSentPageNumber)
 					&& ((mapElements.size() / DebugUtils.PAGE_SIZE) < pageNumber)) {
 				debugEventCollector.collectDebugEvent(new DebugEvent<>(SimpleDebuggerEventType.SHOW_LOADING_POPUP,
-							"Loading page: " + (mapElements.size() / DebugUtils.PAGE_SIZE)));
+						"Loading page: " + (mapElements.size() / DebugUtils.PAGE_SIZE)));
 				lastSentPageNumber = mapElements.size() / DebugUtils.PAGE_SIZE;
 			}
 		}

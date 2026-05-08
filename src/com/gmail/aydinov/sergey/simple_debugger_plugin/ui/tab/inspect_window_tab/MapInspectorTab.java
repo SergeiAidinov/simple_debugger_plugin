@@ -209,8 +209,9 @@ public class MapInspectorTab implements InspectorTab {
 			switch (category) {
 			case USER_OBJECT -> {
 				closeElementsPopup();
+				InnerElementRepresentationDTO innerElementRepresentationDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromMapEntry(mapDto);
 				uiEventCollector
-						.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, mapDto));
+						.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, innerElementRepresentationDTO));
 			}
 			case MAP -> {
 				uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,

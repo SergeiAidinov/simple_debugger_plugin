@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -25,14 +26,14 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.Value;
 
-public class UserObjectDataProvider implements DataProvider {
+public class UserObjectAtBreakpointDataProvider implements DataProvider {
 
 	private final InnerElementRepresentationDTO innerElementRepresentationDTO;
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 	private final InspectionHandlerContext inspectionHandlerContext;
 	private UserObjectPageDTO cachedUserObjectPageDTO;
 
-	public UserObjectDataProvider(InnerElementRepresentationDTO innerElementRepresentationDTO,
+	public UserObjectAtBreakpointDataProvider(InnerElementRepresentationDTO innerElementRepresentationDTO,
 			HandlerContext handlerContext) {
 		this.innerElementRepresentationDTO = innerElementRepresentationDTO;
 		this.inspectionHandlerContext = (InspectionHandlerContext) handlerContext;
@@ -59,6 +60,7 @@ public class UserObjectDataProvider implements DataProvider {
 	}
 
 	private UserObjectPageDTO cachePage() {
+		
 		InnerElementRepresentationDTO userObject = innerElementRepresentationDTO;
 		List<UniversalElementRepresentation> uObjs = findAllUserObjects(userObject);
 		if (uObjs.isEmpty()) {
@@ -98,6 +100,8 @@ public class UserObjectDataProvider implements DataProvider {
 		UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(userObject.getElementName())
 				.elementType(userObject.getTypeOrReturnType()).objectId(userObject.getObjectId()).entries(subordinates)
 				.classType(userObject.getTypeOrReturnType()).anchorTag(userObject.getTag()).build();
+		
+	//	UserObjectPageDTO qq = build(uObjs.get(0).getObjectReference());
 		return userObjectPageDTO;
 
 	}
@@ -122,56 +126,56 @@ public class UserObjectDataProvider implements DataProvider {
 				.filter(e -> e instanceof UniversalElementRepresentation).map(e -> (UniversalElementRepresentation) e)
 				.filter(e -> Objects.nonNull(e.getObjectReference()))
 				.filter(e -> Objects.equals(anchor.getTag(), e.getTag())).toList());
-
-		return userObjects;
+		
+			return userObjects;
 	}
 
-//	private UserObjectPageDTO build(ObjectReference obj) {
-//
-//		ReferenceType type = obj.referenceType();
-//
-//		// ===== ROOT OBJECT =====
-//
-//		UUID rootId = UUID.randomUUID();
-//		List<UniversalElementRepresentation> entries = new ArrayList<UniversalElementRepresentation>();
-//
-//		// =========================================================
-//		// FIELDS (instance data)
-//		// =========================================================
-//		for (Field field : type.allFields()) {
-//			try {
-//				Value value = obj.getValue(field);
-//
-//				UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
-//						.objectReference(obj).elementName(field.name()).additionalInfo(field.typeName())
-//						.elementType(UniversalElementType.FIELD).value(String.valueOf(value)).isStatic(field.isStatic())
-//						.valueCategory(DebugUtils.determineValueCategory(value)).typeOrReturnType(field.typeName())
-//						.parentUniqueId(rootId).level(1).build();
-//				entries.add(fieldElement);
-//			} catch (Exception ignored) {
-//			}
-//		}
-//
-//		// =========================================================
-//		// METHODS (class behavior)
-//		// =========================================================
-//		for (Method method : type.methods()) {
-//			if (DebugUtils.shouldSkipMethod(method))
-//				continue;
-//			String params = String.join(", ", method.argumentTypeNames());
-//			UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder().objectReference(obj)
-//					.elementType(UniversalElementType.METHOD).value(method.toString())
-//					.typeOrReturnType(method.returnTypeName()).isStatic(method.isStatic()).parentUniqueId(rootId)
-//					.level(1).build();
-//			entries.add(methodElement);
-//		}
-//		List<InnerElementRepresentationDTO> qq = entries.stream()
-//				.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e)).toList();
-//		UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(obj.type().name())
-//				.elementType(obj.type().name()).classType(type.name()).entries(qq).anchorTag(new Tag(rootId, null))
-//				.objectId(obj.uniqueID()).build();
-//
-//		return userObjectPageDTO;
-//	}
+	private UserObjectPageDTO build(ObjectReference obj) {
+
+		ReferenceType type = obj.referenceType();
+
+		// ===== ROOT OBJECT =====
+
+		UUID rootId = UUID.randomUUID();
+		List<UniversalElementRepresentation> entries = new ArrayList<UniversalElementRepresentation>();
+
+		// =========================================================
+		// FIELDS (instance data)
+		// =========================================================
+		for (Field field : type.allFields()) {
+			try {
+				Value value = obj.getValue(field);
+
+				UniversalElementRepresentation fieldElement = UniversalElementRepresentation.builder()
+						.objectReference(obj).elementName(field.name()).additionalInfo(field.typeName())
+						.elementType(UniversalElementType.FIELD).value(String.valueOf(value)).isStatic(field.isStatic())
+						.valueCategory(DebugUtils.determineValueCategory(value)).typeOrReturnType(field.typeName())
+						.parentUniqueId(rootId).level(1).build();
+				entries.add(fieldElement);
+			} catch (Exception ignored) {
+			}
+		}
+
+		// =========================================================
+		// METHODS (class behavior)
+		// =========================================================
+		for (Method method : type.methods()) {
+			if (DebugUtils.shouldSkipMethod(method))
+				continue;
+			String params = String.join(", ", method.argumentTypeNames());
+			UniversalElementRepresentation methodElement = UniversalElementRepresentation.builder().objectReference(obj)
+					.elementType(UniversalElementType.METHOD).value(method.toString())
+					.typeOrReturnType(method.returnTypeName()).isStatic(method.isStatic()).parentUniqueId(rootId)
+					.level(1).build();
+			entries.add(methodElement);
+		}
+		List<InnerElementRepresentationDTO> qq = entries.stream()
+				.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e)).toList();
+		UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(obj.type().name())
+				.elementType(obj.type().name()).classType(type.name()).entries(qq).anchorTag(new Tag(rootId, null))
+				.objectId(obj.uniqueID()).build();
+
+		return userObjectPageDTO;
+	}
 
 }

@@ -144,7 +144,7 @@ public class TooltipManager {
 		showPopup(dto, location, d -> buildUserObjectText((UserInstanceDetailsDTO) d),
 //				() -> uiEventCollector.collectUiEvent(new UIEvent<>(
 //						SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE, UiUtils.convertUserInstanceToInnerDTO(dto)))
-				() -> uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
+				() -> uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_EXAMINES_USER_OBJECT_AT_BREAKPOINT,
 						convertUserInstanceToInnerDTO(dto)))
 
 		);

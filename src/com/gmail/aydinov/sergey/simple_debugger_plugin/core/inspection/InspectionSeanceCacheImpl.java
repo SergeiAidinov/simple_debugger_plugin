@@ -14,10 +14,12 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.Inspectio
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
+import com.sun.jdi.ObjectReference;
 
 public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 
 	private final Map<Long, DataProviderHolder> dataProviderHolders = new ConcurrentHashMap<Long, DataProviderHolder>();
+	private final Map<Long, ObjectReference> loadedPieces = new ConcurrentHashMap<Long, ObjectReference>();
 	private final SortedMap<Integer, NavigationHistoryStep> navigationHistory = new java.util.concurrent.ConcurrentSkipListMap<>();
 	private final AtomicInteger breadCrumbOrder = new AtomicInteger(0);
 	private final AtomicInteger headPosition = new AtomicInteger(0);
@@ -72,5 +74,10 @@ public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 	@Override
 	public void setHeadPosition(int order) {
 		headPosition.set(order);
+	}
+
+	@Override
+	public Map<Long, ObjectReference> getLoadedPieces() {
+		return loadedPieces;
 	}
 }

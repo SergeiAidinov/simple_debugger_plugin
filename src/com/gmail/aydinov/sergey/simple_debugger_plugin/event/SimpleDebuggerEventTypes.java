@@ -13,12 +13,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserChanged
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserClickedBreadcrumbHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserClosedDebugWindowHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserInvokedMethodHandler;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserObjectInspectionHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserObjectExamHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserPressedResumeButtonHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedAdditionalInfoAboutCollectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedCollectionPageHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRequestedMapPageHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserRerquestedAdditionalInfoAboutObjectHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers.UserObjectInspectionHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.TopLevelElementRepresentationDTO;
@@ -122,7 +123,8 @@ public final class SimpleDebuggerEventTypes {
 
 		DISPLAY_PAGE_OF_INSPECTABLE_MAP(MapPageDTO.class, null), 
 	//	USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(UserInstanceInspectionDTO.class, new UserObjectInspectionHandler()), 
-		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectPageDTO.class, null), 
+		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectPageDTO.class, null),
+		USER_EXAMINES_USER_OBJECT_AT_BREAKPOINT(InnerElementRepresentationDTO.class, new UserObjectExamHandler()),
 		USER_INSPECTS_USER_OBJECT(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()),
 //		USER_INSPECTS_MAP(InnerElementRepresentationDTO.class,
 //		        new MapInspectionSeanceHandler()), 
@@ -172,7 +174,8 @@ public final class SimpleDebuggerEventTypes {
 			SimpleDebuggerEventType.USER_CLICKED_BREADCRUMB,
 			SimpleDebuggerEventType.SHOW_LOADING_POPUP,
 			SimpleDebuggerEventType.CLOSE_LOADING_POPUP,
-			SimpleDebuggerEventType.USER_CANCELLED_LOADING
+			SimpleDebuggerEventType.USER_CANCELLED_LOADING,
+			SimpleDebuggerEventType.USER_EXAMINES_USER_OBJECT_AT_BREAKPOINT
 
 	);
 
