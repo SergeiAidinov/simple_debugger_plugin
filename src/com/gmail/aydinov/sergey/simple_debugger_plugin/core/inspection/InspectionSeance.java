@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeanceCache;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.StoppableDataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
@@ -73,7 +74,8 @@ public class InspectionSeance {
 			debugEventCollector
 					.collectDebugEvent(new DebugEvent<Boolean>(SimpleDebuggerEventType.SET_RESUME_BUTTON_STATE, true));
 			for (DataProviderHolder dataProviderHolder : inspectionSeanceCache.getDataProviderHolders().values()) {
-				dataProviderHolder.stopDataProvider();
+				if (dataProviderHolder instanceof StoppableDataProviderHolder stoppableDataProviderHolder)
+					stoppableDataProviderHolder.stopDataProvider();
 			}
 			inspectionSeanceCache.getDataProviderHolders().clear();
 			inspectionSeanceCache.getBreadcrumbs().clear();
@@ -113,11 +115,8 @@ public class InspectionSeance {
 				}
 				if (uiEvent.getType().equals(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE))
 					break;
-				HandlerContext context = new InspectionHandlerContext(
-				        currentFrame,
-				        breakpointEvent,
-				        inspectionSeanceCache
-				);
+				HandlerContext context = new InspectionHandlerContext(currentFrame, breakpointEvent,
+						inspectionSeanceCache);
 				UIEventHandler handler = uiEvent.getType().getUiEventHandler();
 				handler.handle(context, uiEvent);
 			}

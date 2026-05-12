@@ -8,8 +8,6 @@ public interface DataProviderHolder {
 
 	void startDataProvider();
 
-	void stopDataProvider();
-	
 	void terminateCurrentRequest();
 
 	DataProvider getDataProvider();
