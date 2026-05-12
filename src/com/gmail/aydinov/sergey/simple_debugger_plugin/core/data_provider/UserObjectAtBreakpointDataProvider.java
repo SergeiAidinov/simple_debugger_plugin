@@ -53,12 +53,6 @@ public class UserObjectAtBreakpointDataProvider implements DataProvider {
 
 	}
 
-	@Override
-	public void terminateCurrentRequest() {
-		// TODO Auto-generated method stub
-
-	}
-
 	private UserObjectPageDTO cachePage() {
 		
 		InnerElementRepresentationDTO userObject = innerElementRepresentationDTO;

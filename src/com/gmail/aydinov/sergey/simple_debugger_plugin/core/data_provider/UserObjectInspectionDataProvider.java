@@ -54,16 +54,11 @@ public class UserObjectInspectionDataProvider implements DataProvider {
 	}
 
 	private UserObjectPageDTO cachePage() {
-		ObjectReference q = inspectionHandlerContext.getInspectionSeanceCache().getLoadedPieces().get(innerElementRepresentationDTO.getObjectId());
-		cachedUserObjectPageDTO = build(q);
+		ObjectReference objectReference = inspectionHandlerContext.getInspectionSeanceCache().getLoadedPieces().get(innerElementRepresentationDTO.getObjectId());
+		cachedUserObjectPageDTO = build(objectReference);
 		return cachedUserObjectPageDTO;
 	}
 
-	@Override
-	public void terminateCurrentRequest() {
-		// TODO Auto-generated method stub
-		
-	}
 	
 	private UserObjectPageDTO build(ObjectReference obj) {
 
@@ -106,10 +101,10 @@ public class UserObjectInspectionDataProvider implements DataProvider {
 					.level(1).build();
 			entries.add(methodElement);
 		}
-		List<InnerElementRepresentationDTO> qq = entries.stream()
+		List<InnerElementRepresentationDTO> dtoEntries = entries.stream()
 				.map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e)).toList();
 		UserObjectPageDTO userObjectPageDTO = UserObjectPageDTO.builder().elementName(obj.type().name())
-				.elementType(obj.type().name()).classType(type.name()).entries(qq).anchorTag(new Tag(rootId, null))
+				.elementType(obj.type().name()).classType(type.name()).entries(dtoEntries).anchorTag(new Tag(rootId, null))
 				.objectId(obj.uniqueID()).build();
 		return userObjectPageDTO;
 	}
