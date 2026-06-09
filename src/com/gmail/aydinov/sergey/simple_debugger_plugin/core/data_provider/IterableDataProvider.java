@@ -119,7 +119,7 @@ public class IterableDataProvider implements TerminableDataProvider {
 						.value(DebugUtils.getObjectReferenceValueAsString(objectReference)).uniqueId(UUID.randomUUID())
 						.build();
 
-				entries.put(index, representation);
+				entries.put(index++, representation);
 			} else {
 
 				UniversalElementRepresentation representation = UniversalElementRepresentation.builder()
@@ -128,7 +128,7 @@ public class IterableDataProvider implements TerminableDataProvider {
 						.valueCategory(DebugUtils.determineValueCategory(value)).value(String.valueOf(value))
 						.uniqueId(UUID.randomUUID()).build();
 
-				entries.put(index, representation);
+				entries.put(index++, representation);
 			}
 		}
 

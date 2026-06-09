@@ -16,6 +16,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.IterableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.MapDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProviderHolderImpl;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
@@ -80,8 +81,8 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler{
 						.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
 
 				UniversalElementRepresentation mapRepresentation = i.get();
-				DataProvider mapDataProvider = new MapDataProvider(mapRepresentation, inspectionHandlerContext);
-				dataProviderHolder = new DataProviderHolderImpl(mapDataProvider,
+				DataProvider iterableDataProvider = new IterableDataProvider(mapRepresentation, inspectionHandlerContext);
+				dataProviderHolder = new DataProviderHolderImpl(iterableDataProvider,
 						DebuggerContext.context().getInspectionSeanceId());
 				dataProviderHolder.startDataProvider();
 				inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id,

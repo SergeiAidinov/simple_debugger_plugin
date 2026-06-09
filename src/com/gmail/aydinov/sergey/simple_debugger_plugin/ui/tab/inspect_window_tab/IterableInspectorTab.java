@@ -146,13 +146,24 @@ public class IterableInspectorTab implements InspectorTab {
 			currentPage = page.getCurrentPage();
 
 			prevButton.setEnabled(page.hasPreviousPage());
-			nextButton.setEnabled(page.hasNextPage());
+		//	nextButton.setEnabled(page.hasNextPage());
 
+//			viewer.setInput(
+//				    page.getEntries().entrySet().stream()
+//				        .map(e -> PairDTO.of(
+//				            e.getKey(),
+//				            InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getValue())
+//				        ))
+//				        .toList()
+//				);
+			System.out.println("Entries size = " + page.getEntries().size());
 			viewer.setInput(
 				    page.getEntries().entrySet().stream()
 				        .map(e -> PairDTO.of(
 				            e.getKey(),
-				            InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getValue())
+				            InnerElementRepresentationDTO
+				                .InnerElementRepresentationDTOFactory
+				                .fromElement(e.getValue())
 				        ))
 				        .toList()
 				);
