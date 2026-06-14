@@ -72,7 +72,7 @@ public class IterableDataProvider implements TerminableDataProvider {
 	@Override
 	public void handlePageRequest(Integer pageNumber) {
 		this.pageNumber = (pageNumber == null) ? 0 : pageNumber;
-
+	//	totalPages = totalEntries = "calculating...";
 		DataProvider.jdiAccessLock.lock();
 		try {
 			if (initState == InitializationState.NOT_STARTED) {
@@ -83,17 +83,16 @@ public class IterableDataProvider implements TerminableDataProvider {
 			DataProvider.jdiAccessLock.unlock();
 		}
 
-		DataProvider.jdiAccessLock.lock();
-		try {
+//		DataProvider.jdiAccessLock.lock();
+//		try {
 			if (readingStarted.compareAndSet(false, true)) {
 				iterateThroughIterable();
 			}
-		} finally {
-			DataProvider.jdiAccessLock.unlock();
-		}
+//		} finally {
+//			DataProvider.jdiAccessLock.unlock();
+//		}
 
 		currentRequestActive.set(true);
-
 		NavigableMap<Integer, Value> selectedItems = waitForPageLoading();
 
 		ArrayPageDTO page = createPage(selectedItems);
@@ -260,8 +259,7 @@ public class IterableDataProvider implements TerminableDataProvider {
 
 	@Override
 	public void terminateCurrentRequest() {
-		// TODO Auto-generated method stub
-		System.out.println("TERMINATE");
+		totalPages = totalEntries = "canceled";
 		currentRequestActive.compareAndExchange(true, false);
 
 	}
