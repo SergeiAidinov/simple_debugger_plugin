@@ -27,7 +27,6 @@ import org.eclipse.swt.widgets.Text;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
@@ -39,7 +38,6 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 
 public class IterableInspectorTab implements InspectorTab {
 
@@ -47,8 +45,6 @@ public class IterableInspectorTab implements InspectorTab {
     private final Composite root;
     private final TableViewer viewer;
 
-    // Labels in info panel
-    private Label breadcrumbsLabel;        // ← Добавлено сюда
     private final Label collectionNameLabel;
     private final Label collectionTypeLabel;
     private final Label elementTypeLabel;
@@ -79,13 +75,10 @@ public class IterableInspectorTab implements InspectorTab {
         headerComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
         headerComposite.setLayout(new GridLayout(2, false));
 
-        // ---- Левая часть (инфо + breadcrumbs) ----
+        // Левая часть — информация
         Composite infoComposite = new Composite(headerComposite, SWT.NONE);
         infoComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         infoComposite.setLayout(new GridLayout(1, false));
-
-        breadcrumbsLabel = new Label(infoComposite, SWT.WRAP);           // ← Breadcrumbs здесь
-        breadcrumbsLabel.setText("Breadcrumbs: ");
 
         collectionNameLabel = new Label(infoComposite, SWT.NONE);
         collectionTypeLabel = new Label(infoComposite, SWT.NONE);
@@ -93,7 +86,7 @@ public class IterableInspectorTab implements InspectorTab {
         sizeLabel = new Label(infoComposite, SWT.NONE);
         pageInfoLabel = new Label(infoComposite, SWT.NONE);
 
-        // ---- Правая часть (пагинация) ----
+        // Правая часть — пагинация
         Composite paginationComposite = new Composite(headerComposite, SWT.NONE);
         paginationComposite.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
         paginationComposite.setLayout(new GridLayout(4, false));
@@ -131,22 +124,6 @@ public class IterableInspectorTab implements InspectorTab {
         createColumn("Value", 600,
                 pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
                 pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
-    }
-
-    // ==================== BREADCRUMBS ====================
-    private void updateBreadcrumbs(ArrayPageDTO page) {
-        if (page.getBreadcrumbs() == null || page.getBreadcrumbs().isEmpty()) {
-            breadcrumbsLabel.setText("Breadcrumbs: /");
-            return;
-        }
-
-        StringBuilder sb = new StringBuilder("Breadcrumbs: ");
-        for (int i = 0; i < page.getBreadcrumbs().size(); i++) {
-            BreadCrumbDTO crumb = page.getBreadcrumbs().get(i).getSecond();
-            if (i > 0) sb.append(" → ");
-            sb.append(crumb.getDescription() != null ? crumb.getDescription() : "[no desc]");
-        }
-        breadcrumbsLabel.setText(sb.toString());
     }
 
     // ==================== HOVER POPUP ====================
@@ -355,8 +332,6 @@ public class IterableInspectorTab implements InspectorTab {
 
         root.getDisplay().asyncExec(() -> {
             if (root.isDisposed() || viewer.getTable().isDisposed()) return;
-
-            updateBreadcrumbs(page);
 
             collectionNameLabel.setText("Collection name: " + safe(page.getElementName()));
             collectionTypeLabel.setText("Collection type: " + safe(page.getElementType()));
