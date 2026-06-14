@@ -129,7 +129,7 @@ public class IterableInspectorTab implements InspectorTab {
 			return;
 
 		ArrayPageDTO page = (ArrayPageDTO) abstractInspectionDTO;
-	//	inspectableCollectionId = page.getObjectId();
+		inspectableCollectionId = page.getObjectId();
 
 		root.getDisplay().asyncExec(() -> {
 			if (root.isDisposed() || viewer.getTable().isDisposed())
