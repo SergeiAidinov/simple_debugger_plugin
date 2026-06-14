@@ -16,6 +16,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvi
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.TerminableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
@@ -230,6 +231,7 @@ public class IterableDataProvider implements TerminableDataProvider {
 		}
 
 		NavigableMap<Integer, Value> selected;
+		int lastSentPageNumber = -1;
 
 		while (currentRequestActive.get()) {
 			selected = elements.subMap(pageNumber * DebugUtils.PAGE_SIZE, true,
@@ -240,8 +242,14 @@ public class IterableDataProvider implements TerminableDataProvider {
 			}
 
 			try {
-				Thread.sleep(200);
+				Thread.sleep(250);
 			} catch (InterruptedException ignored) {
+			}
+			if (((elements.size() / DebugUtils.PAGE_SIZE) > lastSentPageNumber)
+					&& ((elements.size() / DebugUtils.PAGE_SIZE) < pageNumber)) {
+				debugEventCollector.collectDebugEvent(new DebugEvent<>(SimpleDebuggerEventType.SHOW_LOADING_POPUP,
+						"Loading page: " + (elements.size() / DebugUtils.PAGE_SIZE)));
+				lastSentPageNumber = elements.size() / DebugUtils.PAGE_SIZE;
 			}
 		}
 
