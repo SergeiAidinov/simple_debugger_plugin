@@ -194,16 +194,20 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 //	}
 
 	public void showIterableTab(ArrayPageDTO payload) {
-		if (tabFolder.isDisposed())
-			return;
-		Display.getDefault().asyncExec(() -> {
-			disposeAllTabs();
-			createIterableTabIfNeeded();
-			iterableInspectorTab.showPage(payload);
-			// showBreadcrumbs(payload.getBreadcrumbs());
-			showTab(collectionTabItem, iterableInspectorTab.getControl());
-			currentTab = InspectionTabs.COLLECTION;
-		});
+	    if (tabFolder.isDisposed()) return;
+
+	    Display.getDefault().asyncExec(() -> {
+	        disposeAllTabs();
+	        createIterableTabIfNeeded();
+	        
+	        iterableInspectorTab.showPage(payload);
+	        
+	        // ← Добавь эту строку:
+	        showBreadcrumbs(payload.getBreadcrumbs());
+	        
+	        showTab(collectionTabItem, iterableInspectorTab.getControl());
+	        currentTab = InspectionTabs.COLLECTION;
+	    });
 	}
 
 	public void showMapTab(MapPageDTO<InnerElementRepresentationDTO, InnerElementRepresentationDTO> page) {

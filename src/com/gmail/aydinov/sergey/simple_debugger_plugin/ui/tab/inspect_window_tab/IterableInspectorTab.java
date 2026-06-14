@@ -8,20 +8,26 @@ import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
@@ -33,283 +39,363 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager.TooltipManager;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.utils.UiUtils;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.ui.window.SimpleDebugerWindowsManager;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
 
 public class IterableInspectorTab implements InspectorTab {
 
-	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
-	private final Composite root;
-	private final TableViewer viewer;
-	private final Label collectionNameLabel;
-	private final Label collectionTypeLabel;
-	private final Label elementTypeLabel;
-	private final Label sizeLabel;
-	private final Label pageInfoLabel;
+    private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
+    private final Composite root;
+    private final TableViewer viewer;
 
-	private final Button prevButton;
-	private final Text pageText;
-	private final Button goButton;
-	private final Button nextButton;
-	private TooltipManager tooltipManager;
+    // Labels in info panel
+    private Label breadcrumbsLabel;        // ← Добавлено сюда
+    private final Label collectionNameLabel;
+    private final Label collectionTypeLabel;
+    private final Label elementTypeLabel;
+    private final Label sizeLabel;
+    private final Label pageInfoLabel;
 
-	private int currentPage = 0;
-	private long inspectableCollectionId;
+    private final Button prevButton;
+    private final Text pageText;
+    private final Button goButton;
+    private final Button nextButton;
 
-	public IterableInspectorTab(Composite parent) {
-		root = new Composite(parent, SWT.NONE);
-		root.setLayout(new GridLayout(1, false));
+    private TooltipManager tooltipManager;
 
-		// ===== Header =====
-		Composite headerComposite = new Composite(root, SWT.NONE);
-		headerComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-		headerComposite.setLayout(new GridLayout(2, false));
+    // Hover popup
+    private Shell elementsPopup;
+    private final Listener popupCloseFilter = e -> closeElementsPopup();
+    private InnerElementRepresentationDTO lastInspected;
 
-		Composite infoComposite = new Composite(headerComposite, SWT.NONE);
-		infoComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		infoComposite.setLayout(new GridLayout(1, false));
+    private int currentPage = 0;
+    private long inspectableCollectionId;
 
-		collectionNameLabel = new Label(infoComposite, SWT.NONE);
-		collectionTypeLabel = new Label(infoComposite, SWT.NONE);
-		elementTypeLabel = new Label(infoComposite, SWT.NONE);
-		sizeLabel = new Label(infoComposite, SWT.NONE);
-		pageInfoLabel = new Label(infoComposite, SWT.NONE);
+    public IterableInspectorTab(Composite parent) {
+        root = new Composite(parent, SWT.NONE);
+        root.setLayout(new GridLayout(1, false));
 
-		Composite paginationComposite = new Composite(headerComposite, SWT.NONE);
-		paginationComposite.setLayoutData(new GridData(SWT.END, SWT.BEGINNING, false, false));
-		paginationComposite.setLayout(new GridLayout(4, false));
+        // ==================== HEADER ====================
+        Composite headerComposite = new Composite(root, SWT.NONE);
+        headerComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+        headerComposite.setLayout(new GridLayout(2, false));
 
-		prevButton = new Button(paginationComposite, SWT.PUSH);
-		prevButton.setText("Prev");
-		prevButton.addListener(SWT.Selection, e -> {
-			uiEventCollector.collectUiEvent(
-				new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, PairDTO.of(inspectableCollectionId, currentPage - 1)));
-		}
-				
-				);
+        // ---- Левая часть (инфо + breadcrumbs) ----
+        Composite infoComposite = new Composite(headerComposite, SWT.NONE);
+        infoComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        infoComposite.setLayout(new GridLayout(1, false));
 
-		pageText = new Text(paginationComposite, SWT.BORDER);
-		pageText.setLayoutData(new GridData(70, SWT.DEFAULT));
+        breadcrumbsLabel = new Label(infoComposite, SWT.WRAP);           // ← Breadcrumbs здесь
+        breadcrumbsLabel.setText("Breadcrumbs: ");
 
-		goButton = new Button(paginationComposite, SWT.PUSH);
-		goButton.setText("Go");
-		goButton.addListener(SWT.Selection, e -> requestPage());
-		pageText.addListener(SWT.DefaultSelection, e -> requestPage());
+        collectionNameLabel = new Label(infoComposite, SWT.NONE);
+        collectionTypeLabel = new Label(infoComposite, SWT.NONE);
+        elementTypeLabel = new Label(infoComposite, SWT.NONE);
+        sizeLabel = new Label(infoComposite, SWT.NONE);
+        pageInfoLabel = new Label(infoComposite, SWT.NONE);
 
-		nextButton = new Button(paginationComposite, SWT.PUSH);
-		nextButton.setText("Next");
-		nextButton.addListener(SWT.Selection, e -> uiEventCollector.collectUiEvent(
-				new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, PairDTO.of(inspectableCollectionId, currentPage +1))));
+        // ---- Правая часть (пагинация) ----
+        Composite paginationComposite = new Composite(headerComposite, SWT.NONE);
+        paginationComposite.setLayoutData(new GridData(SWT.END, SWT.CENTER, false, false));
+        paginationComposite.setLayout(new GridLayout(4, false));
 
-		// ===== Table =====
-		Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION);
-		table.setHeaderVisible(true);
-		table.setLinesVisible(true);
-		table.setLayoutData(new GridData(GridData.FILL_BOTH));
+        prevButton = new Button(paginationComposite, SWT.PUSH);
+        prevButton.setText("Prev");
+        prevButton.addListener(SWT.Selection, e -> requestPage(currentPage - 1));
 
-		viewer = new TableViewer(table);
-		viewer.setContentProvider(ArrayContentProvider.getInstance());
+        pageText = new Text(paginationComposite, SWT.BORDER);
+        pageText.setLayoutData(new GridData(70, SWT.DEFAULT));
 
-		setupTooltips(table);
+        goButton = new Button(paginationComposite, SWT.PUSH);
+        goButton.setText("Go");
+        goButton.addListener(SWT.Selection, e -> requestPage());
+        pageText.addListener(SWT.DefaultSelection, e -> requestPage());
 
-		createColumn("Index", 80, pair -> String.valueOf(pair.getFirst()));
+        nextButton = new Button(paginationComposite, SWT.PUSH);
+        nextButton.setText("Next");
+        nextButton.addListener(SWT.Selection, e -> requestPage(currentPage + 1));
 
-		createColumn("Value", 600, pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
-				pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
+        // ==================== TABLE ====================
+        Table table = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+        table.setHeaderVisible(true);
+        table.setLinesVisible(true);
+        table.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-		setupClickListener(table);
-	}
+        viewer = new TableViewer(table);
+        viewer.setContentProvider(ArrayContentProvider.getInstance());
 
-	@Override
-	public Composite getControl() {
-		return root;
-	}
+        setupTooltips(table);
+        setupHoverInspectionListener();
+        setupClickListener(table);
 
-	@Override
-	public void showPage(AbstractInspectionDTO abstractInspectionDTO) {
-		if (!(abstractInspectionDTO instanceof ArrayPageDTO))
-			return;
+        createColumn("Index", 80, pair -> String.valueOf(pair.getFirst()));
+        createColumn("Value", 600,
+                pair -> formatValue((InnerElementRepresentationDTO) pair.getSecond()),
+                pair -> getIcon((InnerElementRepresentationDTO) pair.getSecond()));
+    }
 
-		ArrayPageDTO page = (ArrayPageDTO) abstractInspectionDTO;
-		inspectableCollectionId = page.getObjectId();
+    // ==================== BREADCRUMBS ====================
+    private void updateBreadcrumbs(ArrayPageDTO page) {
+        if (page.getBreadcrumbs() == null || page.getBreadcrumbs().isEmpty()) {
+            breadcrumbsLabel.setText("Breadcrumbs: /");
+            return;
+        }
 
-		root.getDisplay().asyncExec(() -> {
-			if (root.isDisposed() || viewer.getTable().isDisposed())
-				return;
+        StringBuilder sb = new StringBuilder("Breadcrumbs: ");
+        for (int i = 0; i < page.getBreadcrumbs().size(); i++) {
+            BreadCrumbDTO crumb = page.getBreadcrumbs().get(i).getSecond();
+            if (i > 0) sb.append(" → ");
+            sb.append(crumb.getDescription() != null ? crumb.getDescription() : "[no desc]");
+        }
+        breadcrumbsLabel.setText(sb.toString());
+    }
 
-			collectionNameLabel.setText("Collection name: " + safe(page.getElementName()));
-			collectionTypeLabel.setText("Collection type: " + safe(page.getElementType()));
-			elementTypeLabel.setText("Element type: " + safe(page.getElementType()));
-			sizeLabel.setText("Size: " + page.getTotalElements());
+    // ==================== HOVER POPUP ====================
+    private void showElementsPopup(InnerElementRepresentationDTO dto) {
+        closeElementsPopup();
+        if (dto == null || dto.getValueCategory() != ValueCategory.USER_OBJECT) return;
 
-			pageInfoLabel.setText("Page (0-based): " + page.getCurrentPage() + " of " + page.getTotalPages()
-			+ "   Showing: " + page.getFromIndex() + "–" + page.getToIndex());
+        Display display = root.getDisplay();
+        Color bg = display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
+        Color fg = display.getSystemColor(SWT.COLOR_WIDGET_FOREGROUND);
 
-			pageText.setText(String.valueOf(page.getCurrentPage()));
-			currentPage = page.getCurrentPage();
+        Shell popup = new Shell(root.getShell(), SWT.ON_TOP | SWT.TOOL | SWT.NO_FOCUS);
+        popup.setLayout(new FillLayout());
+        popup.setBackground(bg);
+        popup.setBackgroundMode(SWT.INHERIT_FORCE);
 
-			prevButton.setEnabled(page.hasPreviousPage());
-		//	nextButton.setEnabled(page.hasNextPage());
+        ScrolledComposite scrolled = new ScrolledComposite(popup, SWT.V_SCROLL | SWT.H_SCROLL);
+        scrolled.setExpandHorizontal(true);
+        scrolled.setExpandVertical(true);
 
-//			viewer.setInput(
-//				    page.getEntries().entrySet().stream()
-//				        .map(e -> PairDTO.of(
-//				            e.getKey(),
-//				            InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getValue())
-//				        ))
-//				        .toList()
-//				);
-			System.out.println("Entries size = " + page.getEntries().size());
-			viewer.setInput(
-				    page.getEntries().entrySet().stream()
-				        .map(e -> PairDTO.of(
-				            e.getKey(),
-				            InnerElementRepresentationDTO
-				                .InnerElementRepresentationDTOFactory
-				                .fromElement(e.getValue())
-				        ))
-				        .toList()
-				);
-			root.layout(true, true);
-		});
-	}
+        Composite content = new Composite(scrolled, SWT.NONE);
+        content.setLayout(new GridLayout(1, false));
+        content.setBackground(bg);
+        content.setForeground(fg);
 
+        Label info = new Label(content, SWT.NONE);
+        info.setText("Object ID: " + dto.getObjectId() +
+                     "\nType: " + dto.getTypeOrReturnType() +
+                     "\nValue: " + dto.getValue());
+        info.setForeground(fg);
 
-	private int getColumnIndexAtPoint(Table table, int x) {
-		int offset = 0;
-		for (int i = 0; i < table.getColumnCount(); i++) {
-			offset += table.getColumn(i).getWidth();
-			if (x < offset)
-				return i;
-		}
-		return table.getColumnCount() - 1;
-	}
+        content.pack();
+        scrolled.setContent(content);
+        scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 
-	private void setupClickListener(Table table) {
+        popup.setSize(500, 350);
+        Point loc = display.getCursorLocation();
+        popup.setLocation(loc.x + 15, loc.y + 15);
+        popup.open();
 
-		table.addListener(SWT.MouseDown, event -> {
-			TableItem item = table.getItem(new Point(event.x, event.y));
-			if (item == null)
-				return;
-			int colIndex = getColumnIndexAtPoint(table, event.x);
-			if (colIndex != 1)
-				return; // только третья колонка
-			Object data = item.getData();
-			if (!(data instanceof PairDTO<?, ?> pair))
-				return;
-			if (!(pair.getSecond() instanceof InnerElementRepresentationDTO dto))
-				return;
-			ValueCategory category = dto.getValueCategory();
-			if (category == ValueCategory.USER_OBJECT)
-				uiEventCollector.collectUiEvent(
-					new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
-			else if (category == ValueCategory.MAP)
-				uiEventCollector.collectUiEvent(
-						new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, dto));
-			else if (category == ValueCategory.COLLECTION )
-				return;
-			
-		});
-	}
+        elementsPopup = popup;
+        display.addFilter(SWT.MouseDown, popupCloseFilter);
+    }
 
-	public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO userInstanceInspectionDTO) {
-		if ((Objects.isNull(userInstanceInspectionDTO)))
-			return;
-		Display display = root.getDisplay();
-		display.asyncExec(() -> {
-			if (root.isDisposed())
-				return;
-			Point location = display.getCursorLocation();
-			tooltipManager.showTooltipForUserObject(userInstanceInspectionDTO, location);
-		});
-	}
+    private void closeElementsPopup() {
+        if (elementsPopup != null && !elementsPopup.isDisposed()) {
+            Display display = elementsPopup.getDisplay();
+            elementsPopup.dispose();
+            if (display != null && !display.isDisposed()) {
+                display.removeFilter(SWT.MouseDown, popupCloseFilter);
+            }
+        }
+        elementsPopup = null;
+    }
 
-	private void setupTooltips(Table table) {
-		TooltipManager tooltipManager = new TooltipManager(table, root);
-		tooltipManager.setTooltipProvider(item -> {
-			int col = TooltipManager.getColumnIndexAtPoint(table,
-					table.getDisplay().getCursorLocation().x - table.toDisplay(0, 0).x);
-			Object tip = item.getData("tooltip_col_" + col);
-			return tip instanceof String ? (String) tip : null;
-		});
-		this.tooltipManager = tooltipManager;
-	}
+    private void setupHoverInspectionListener() {
+        Table table = viewer.getTable();
+        table.addListener(SWT.MouseMove, event -> {
+            TableItem item = table.getItem(new Point(event.x, event.y));
+            InnerElementRepresentationDTO dto = null;
 
-	private String formatValue(InnerElementRepresentationDTO dto) {
-		if (dto == null)
-			return "";
-		String value = dto.getValue();
-		if (value == null)
-			return "null";
-		String type = dto.getTypeOrReturnType();
-		if ("String".equals(type)) {
-			return "\"" + value + "\"";
-		}
-		return value + " (id=" + dto.getAdditionalInfo() + ")";
-	}
+            if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
+                int col = getColumnIndexAtPoint(table, event.x);
+                if (col == 1 && pair.getSecond() instanceof InnerElementRepresentationDTO value) {
+                    dto = value;
+                }
+            }
 
-	private <K, V> TableViewerColumn createColumn(String title, int width,
-			Function<PairDTO<K, V>, String> textExtractor, Function<PairDTO<K, V>, Image> imageExtractor) {
-		TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
-		column.getColumn().setText(title);
-		column.getColumn().setWidth(width);
-		column.setLabelProvider(new ColumnLabelProvider() {
-			@Override
-			public String getText(Object element) {
-				if (element instanceof PairDTO<?, ?> pair) {
-					@SuppressWarnings("unchecked")
-					PairDTO<K, V> typed = (PairDTO<K, V>) pair;
-					return textExtractor.apply(typed);
-				}
-				return "";
-			}
+            if (!Objects.equals(dto, lastInspected)) {
+                lastInspected = dto;
+                if (dto != null && isInspectable(dto.getValueCategory())) {
+                    showElementsPopup(dto);
+                }
+            }
+        });
+    }
 
-			@Override
-			public Image getImage(Object element) {
-				if (!(element instanceof PairDTO<?, ?> pair))
-					return null;
+    private boolean isInspectable(ValueCategory category) {
+        return category == ValueCategory.USER_OBJECT ||
+               category == ValueCategory.MAP ||
+               category == ValueCategory.COLLECTION;
+    }
 
-				@SuppressWarnings("unchecked")
-				PairDTO<K, V> typed = (PairDTO<K, V>) pair;
+    private void setupClickListener(Table table) {
+        table.addListener(SWT.MouseDown, event -> {
+            TableItem item = table.getItem(new Point(event.x, event.y));
+            if (item == null) return;
 
-				return imageExtractor.apply(typed);
-			}
-		});
+            int colIndex = getColumnIndexAtPoint(table, event.x);
+            if (colIndex != 1) return;
 
-		return column;
-	}
+            Object data = item.getData();
+            if (!(data instanceof PairDTO<?, ?> pair)) return;
+            if (!(pair.getSecond() instanceof InnerElementRepresentationDTO dto)) return;
 
-	private <K, V> TableViewerColumn createColumn(String title, int width,
-			Function<PairDTO<K, V>, String> textExtractor) {
-		return createColumn(title, width, textExtractor, pair -> null);
-	}
+            ValueCategory category = dto.getValueCategory();
+            if (category == ValueCategory.USER_OBJECT) {
+                uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
+            } else if (category == ValueCategory.MAP) {
+                uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, dto));
+            }
+        });
+    }
 
-	private Image getIcon(InnerElementRepresentationDTO dto) {
-		if (dto == null)
-			return null;
+    private int getColumnIndexAtPoint(Table table, int x) {
+        int offset = 0;
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            offset += table.getColumn(i).getWidth();
+            if (x < offset) return i;
+        }
+        return table.getColumnCount() - 1;
+    }
 
-		ValueCategory category = dto.getValueCategory();
-		if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) 
-			return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
-		
-		if (category == ValueCategory.USER_OBJECT && dto.getValue() != null
-				&& !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) 
-			return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
-		return null;
-	}
+    private String formatValue(InnerElementRepresentationDTO dto) {
+        if (dto == null) return "";
+        String value = dto.getValue();
+        if (value == null) return "null";
+        String type = dto.getTypeOrReturnType();
+        if ("String".equals(type)) return "\"" + value + "\"";
+        return value + " (id=" + dto.getAdditionalInfo() + ")";
+    }
 
-	private void requestPage() {
-		int pageNumber;
-		try {
-			pageNumber = Integer.parseInt(pageText.getText().trim());
-		} catch (Exception e) {
-			pageNumber = 0;
-		}
-		if (pageNumber < 0)
-			pageNumber = 0;
-		uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE, PairDTO.of(inspectableCollectionId, pageNumber)));
-	}
+    private Image getIcon(InnerElementRepresentationDTO dto) {
+        if (dto == null) return null;
+        ValueCategory category = dto.getValueCategory();
+        if (category == ValueCategory.COLLECTION || category == ValueCategory.MAP) {
+            return SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst();
+        }
+        if (category == ValueCategory.USER_OBJECT && dto.getObjectId() != null
+                && !UiUtils.isStandartJavaType(dto.getTypeOrReturnType())) {
+            return SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst();
+        }
+        return null;
+    }
 
-	private String safe(String value) {
-		return value == null ? "" : value;
-	}
+    private void setupTooltips(Table table) {
+        tooltipManager = new TooltipManager(table, root);
+        tooltipManager.setTooltipProvider(item -> {
+            int col = TooltipManager.getColumnIndexAtPoint(table,
+                    table.getDisplay().getCursorLocation().x - table.toDisplay(0, 0).x);
+            Object tip = item.getData("tooltip_col_" + col);
+            return tip instanceof String ? (String) tip : null;
+        });
+    }
 
+    private <K, V> TableViewerColumn createColumn(String title, int width,
+            Function<PairDTO<K, V>, String> textExtractor,
+            Function<PairDTO<K, V>, Image> imageExtractor) {
+        TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);
+        column.getColumn().setText(title);
+        column.getColumn().setWidth(width);
+        column.setLabelProvider(new ColumnLabelProvider() {
+            @Override
+            public String getText(Object element) {
+                if (element instanceof PairDTO<?, ?> pair) {
+                    @SuppressWarnings("unchecked")
+                    PairDTO<K, V> typed = (PairDTO<K, V>) pair;
+                    return textExtractor.apply(typed);
+                }
+                return "";
+            }
+
+            @Override
+            public Image getImage(Object element) {
+                if (!(element instanceof PairDTO<?, ?> pair)) return null;
+                @SuppressWarnings("unchecked")
+                PairDTO<K, V> typed = (PairDTO<K, V>) pair;
+                return imageExtractor.apply(typed);
+            }
+        });
+        return column;
+    }
+
+    private <K, V> TableViewerColumn createColumn(String title, int width,
+            Function<PairDTO<K, V>, String> textExtractor) {
+        return createColumn(title, width, textExtractor, p -> null);
+    }
+
+    private void requestPage(int page) {
+        if (page < 0) page = 0;
+        uiEventCollector.collectUiEvent(
+            new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
+                    PairDTO.of(inspectableCollectionId, page)));
+    }
+
+    private void requestPage() {
+        int pageNumber;
+        try {
+            pageNumber = Integer.parseInt(pageText.getText().trim());
+        } catch (Exception e) {
+            pageNumber = 0;
+        }
+        requestPage(pageNumber);
+    }
+
+    @Override
+    public Composite getControl() {
+        return root;
+    }
+
+    @Override
+    public void showPage(AbstractInspectionDTO abstractInspectionDTO) {
+        if (!(abstractInspectionDTO instanceof ArrayPageDTO page)) return;
+
+        inspectableCollectionId = page.getObjectId();
+
+        root.getDisplay().asyncExec(() -> {
+            if (root.isDisposed() || viewer.getTable().isDisposed()) return;
+
+            updateBreadcrumbs(page);
+
+            collectionNameLabel.setText("Collection name: " + safe(page.getElementName()));
+            collectionTypeLabel.setText("Collection type: " + safe(page.getElementType()));
+            elementTypeLabel.setText("Element type: " + safe(page.getElementType()));
+            sizeLabel.setText("Size: " + page.getTotalElements());
+
+            pageInfoLabel.setText("Page (0-based): " + page.getCurrentPage() + " of " + page.getTotalPages()
+                    + " Showing: " + page.getFromIndex() + "–" + page.getToIndex());
+
+            pageText.setText(String.valueOf(page.getCurrentPage()));
+            currentPage = page.getCurrentPage();
+
+            prevButton.setEnabled(page.hasPreviousPage());
+
+            viewer.setInput(
+                page.getEntries().entrySet().stream()
+                    .map(e -> PairDTO.of(
+                        e.getKey(),
+                        InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e.getValue())
+                    ))
+                    .toList()
+            );
+
+            root.layout(true, true);
+        });
+    }
+
+    @Override
+    public void showFieldInfoPopupFromBackend(UserInstanceDetailsDTO userInstanceInspectionDTO) {
+        if (userInstanceInspectionDTO == null) return;
+        Display display = root.getDisplay();
+        display.asyncExec(() -> {
+            if (root.isDisposed()) return;
+            Point location = display.getCursorLocation();
+            tooltipManager.showTooltipForUserObject(userInstanceInspectionDTO, location);
+        });
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
+    }
 }
