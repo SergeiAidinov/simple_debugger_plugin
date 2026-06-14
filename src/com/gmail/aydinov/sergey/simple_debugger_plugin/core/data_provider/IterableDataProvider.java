@@ -3,6 +3,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -103,11 +104,11 @@ public class IterableDataProvider implements TerminableDataProvider {
 	private ArrayPageDTO createPage(NavigableMap<Integer, Value> selectedItems) {
 
 		Map<Integer, UniversalElementRepresentation> entries = new LinkedHashMap<>();
-		Integer index = 0;
-		for (Value outer : selectedItems.values()) {
+		// Integer index = 0;
+		for (Entry<Integer, Value> entry : selectedItems.entrySet()) {
 
 			// Integer index = outer.getKey();
-			Value value = outer;
+			Value value = entry.getValue();
 
 			if (value instanceof ObjectReference objectReference) {
 
@@ -119,7 +120,7 @@ public class IterableDataProvider implements TerminableDataProvider {
 						.value(DebugUtils.getObjectReferenceValueAsString(objectReference)).uniqueId(UUID.randomUUID())
 						.build();
 
-				entries.put(index++, representation);
+				entries.put(entry.getKey(), representation);
 			} else {
 
 				UniversalElementRepresentation representation = UniversalElementRepresentation.builder()
@@ -128,12 +129,12 @@ public class IterableDataProvider implements TerminableDataProvider {
 						.valueCategory(DebugUtils.determineValueCategory(value)).value(String.valueOf(value))
 						.uniqueId(UUID.randomUUID()).build();
 
-				entries.put(index++, representation);
+				entries.put(entry.getKey(), representation);
 			}
 		}
 
 		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
-		int toIndex = Math.min(entries.size(), fromIndex + DebugUtils.PAGE_SIZE);
+		int toIndex = Math.min(elements.size(), fromIndex + DebugUtils.PAGE_SIZE);
 
 		return ArrayPageDTO.builder().objectId(iterableRepresentation.getObjectReferenceId())
 				.elementName(iterableRepresentation.getElementName())

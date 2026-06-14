@@ -59,7 +59,7 @@ public class TargetImpl implements Target {
 	
 	private Set<Integer> compileSet() {
 		Set<Integer> set = new HashSet();
-		for (int i = -256; i < 256; i++) {
+		for (int i = -32768; i < 32768; i++) {
 			set.add(new Integer(i));
 		}
 		return set;

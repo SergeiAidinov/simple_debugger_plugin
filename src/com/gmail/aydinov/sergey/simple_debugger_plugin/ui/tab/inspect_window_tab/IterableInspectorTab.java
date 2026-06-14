@@ -140,7 +140,8 @@ public class IterableInspectorTab implements InspectorTab {
 			elementTypeLabel.setText("Element type: " + safe(page.getElementType()));
 			sizeLabel.setText("Size: " + page.getTotalElements());
 
-			pageInfoLabel.setText("Page: " + page.getCurrentPage() + "/" + page.getTotalPages());
+			pageInfoLabel.setText("Page (0-based): " + page.getCurrentPage() + " of " + page.getTotalPages()
+			+ "   Showing: " + page.getFromIndex() + "–" + page.getToIndex());
 
 			pageText.setText(String.valueOf(page.getCurrentPage()));
 			currentPage = page.getCurrentPage();
