@@ -28,6 +28,7 @@ import org.eclipse.swt.widgets.Text;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.AbstractInspectionDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
@@ -62,9 +63,10 @@ public class IterableInspectorTab implements InspectorTab {
     private Shell elementsPopup;
     private final Listener popupCloseFilter = e -> closeElementsPopup();
     private InnerElementRepresentationDTO lastInspected;
+    private ArrayPageDTO inspectableCollection;
 
     private int currentPage = 0;
-    private long inspectableCollectionId;
+  //  private long inspectableCollectionId;
 
     public IterableInspectorTab(Composite parent) {
         root = new Composite(parent, SWT.NONE);
@@ -306,7 +308,7 @@ public class IterableInspectorTab implements InspectorTab {
         if (page < 0) page = 0;
         uiEventCollector.collectUiEvent(
             new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
-                    PairDTO.of(inspectableCollectionId, page)));
+                    PairDTO.of(InnerElementRepresentationDTOFactory.fromArrayPage(inspectableCollection), page)));
     }
 
     private void requestPage() {
@@ -328,7 +330,7 @@ public class IterableInspectorTab implements InspectorTab {
     public void showPage(AbstractInspectionDTO abstractInspectionDTO) {
         if (!(abstractInspectionDTO instanceof ArrayPageDTO page)) return;
 
-        inspectableCollectionId = page.getObjectId();
+        inspectableCollection = page;
 
         root.getDisplay().asyncExec(() -> {
             if (root.isDisposed() || viewer.getTable().isDisposed()) return;

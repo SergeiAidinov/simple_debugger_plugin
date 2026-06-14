@@ -9,6 +9,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractEleme
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 
 /**
  * Представление внутреннего элемента (поле, метод, локальная переменная) для UI.
@@ -180,6 +181,26 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
                     dto.getTypeName(),
                     0,                                          // уровень — можно потом передавать
                     objectId
+            );
+        }
+        
+        public static InnerElementRepresentationDTO fromArrayPage(ArrayPageDTO page) {
+            if (page == null) return null;
+
+            String name = page.getElementName() != null ? page.getElementName() : "Collection";
+            String type = page.getElementType() != null ? page.getElementType() : "java.util.Collection";
+
+            return new InnerElementRepresentationDTO(
+                    null,                          // tag
+                    name,                          // elementName
+                    String.valueOf(page.getObjectId()), // additionalInfo
+                    UniversalElementType.COLLECTION_ELEMENT, // elementType
+                    name + " (size=" + page.getTotalElements() + ")", // value
+                    false,                         // isStatic
+                    ValueCategory.COLLECTION,      // valueCategory
+                    type,                          // typeOrReturnType
+                    0,                             // level
+                    page.getObjectId()             // objectId
             );
         }
 
