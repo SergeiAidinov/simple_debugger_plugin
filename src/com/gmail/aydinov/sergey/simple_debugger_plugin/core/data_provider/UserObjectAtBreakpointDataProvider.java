@@ -32,6 +32,7 @@ public class UserObjectAtBreakpointDataProvider implements DataProvider {
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 	private final InspectionHandlerContext inspectionHandlerContext;
 	private UserObjectPageDTO cachedUserObjectPageDTO;
+	private long dataProviderHolderId;
 
 	public UserObjectAtBreakpointDataProvider(InnerElementRepresentationDTO innerElementRepresentationDTO,
 			HandlerContext handlerContext) {
@@ -170,6 +171,17 @@ public class UserObjectAtBreakpointDataProvider implements DataProvider {
 				.objectId(obj.uniqueID()).build();
 
 		return userObjectPageDTO;
+	}
+	
+	@Override
+	public void setDataProviderHolderId(long id) {
+		dataProviderHolderId = id;
+		
+	}
+
+	@Override
+	public long getDataProviderHolderId() {
+		return dataProviderHolderId;
 	}
 
 }

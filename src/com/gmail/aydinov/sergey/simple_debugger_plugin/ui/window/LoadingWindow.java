@@ -5,7 +5,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.CurrentlyInspectedObjectIdHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.UiEventCollector;
@@ -20,11 +19,13 @@ public class LoadingWindow {
 	private final Button cancelButton;
 
 	private final UiEventCollector uiEventCollector = SimpleDebuggerEventCollector.instance();
-	private final CurrentlyInspectedObjectIdHolder currentlyInspectedObjectIdHolder;
-
-	public LoadingWindow(CurrentlyInspectedObjectIdHolder currentlyInspectedObjectIdHolder) {
+//	private final CurrentlyInspectedObjectIdHolder currentlyInspectedObjectIdHolder;
+	private final long dataProviderHolderId;
+	
+	public LoadingWindow(long dataProviderHolderId) {
 		this.display = Display.getDefault();
-		this.currentlyInspectedObjectIdHolder = currentlyInspectedObjectIdHolder;
+		this.dataProviderHolderId = dataProviderHolderId;
+	//	this.currentlyInspectedObjectIdHolder = currentlyInspectedObjectIdHolder;
 		// ✅ полноценное окно с рамкой как в Eclipse
 		shell = new Shell(display.getActiveShell(), SWT.SHELL_TRIM);
 		shell.setText("Loading");
@@ -44,7 +45,7 @@ public class LoadingWindow {
 
 		cancelButton.addListener(SWT.Selection, e -> {
 			uiEventCollector.collectUiEvent(
-					new UIEvent<>(SimpleDebuggerEventType.USER_CANCELLED_LOADING, currentlyInspectedObjectIdHolder.getCurrentlyInspectedObjectId()));
+					new UIEvent<>(SimpleDebuggerEventType.USER_CANCELLED_LOADING, dataProviderHolderId));
 			close();
 		});
 

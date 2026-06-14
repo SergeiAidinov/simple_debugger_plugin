@@ -6,6 +6,10 @@ public interface DataProvider {
 	
 	void handlePageRequest(Integer pageNumber);
 	
+	void setDataProviderHolderId(long id);
+	
+	long getDataProviderHolderId();
+	
 	public static ReentrantLock jdiAccessLock = new ReentrantLock(true);
 
 }

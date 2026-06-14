@@ -30,6 +30,7 @@ public class UserObjectInspectionDataProvider implements DataProvider {
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 	private final InspectionHandlerContext inspectionHandlerContext;
 	private UserObjectPageDTO cachedUserObjectPageDTO;
+	private long dataProviderHolderId;
 	
 	
 
@@ -107,6 +108,17 @@ public class UserObjectInspectionDataProvider implements DataProvider {
 				.elementType(obj.type().name()).classType(type.name()).entries(dtoEntries).anchorTag(new Tag(rootId, null))
 				.objectId(obj.uniqueID()).build();
 		return userObjectPageDTO;
+	}
+	
+	@Override
+	public void setDataProviderHolderId(long id) {
+		dataProviderHolderId = id;
+		
+	}
+
+	@Override
+	public long getDataProviderHolderId() {
+		return dataProviderHolderId;
 	}
 
 }

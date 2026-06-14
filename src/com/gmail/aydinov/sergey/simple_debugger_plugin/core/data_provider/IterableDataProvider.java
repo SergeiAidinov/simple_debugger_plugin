@@ -14,6 +14,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.TerminableDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -52,6 +53,8 @@ public class IterableDataProvider implements TerminableDataProvider {
 	private Integer pageNumber;
 	private volatile String totalPages = "calculating...";
 	private volatile String totalEntries = "calculating...";
+	
+	private long dataProviderHolderId;
 
 	private enum InitializationState {
 		NOT_STARTED, IN_PROGRESS, SUCCESS, FAILED
@@ -248,8 +251,7 @@ public class IterableDataProvider implements TerminableDataProvider {
 			if (((elements.size() / DebugUtils.PAGE_SIZE) > lastSentPageNumber)
 					&& ((elements.size() / DebugUtils.PAGE_SIZE) < pageNumber)) {
 				debugEventCollector.collectDebugEvent(new DebugEvent<>(SimpleDebuggerEventType.SHOW_LOADING_POPUP,
-						"Loading page: " + (elements.size() / DebugUtils.PAGE_SIZE)));
-				lastSentPageNumber = elements.size() / DebugUtils.PAGE_SIZE;
+					PairDTO.of("Loading page: " + (elements.size() / DebugUtils.PAGE_SIZE), getDataProviderHolderId())));
 			}
 		}
 
@@ -259,7 +261,20 @@ public class IterableDataProvider implements TerminableDataProvider {
 	@Override
 	public void terminateCurrentRequest() {
 		// TODO Auto-generated method stub
+		System.out.println("TERMINATE");
+		currentRequestActive.compareAndExchange(true, false);
 
+	}
+
+	@Override
+	public void setDataProviderHolderId(long id) {
+		dataProviderHolderId = id;
+		
+	}
+
+	@Override
+	public long getDataProviderHolderId() {
+		return dataProviderHolderId;
 	}
 
 }

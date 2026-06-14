@@ -50,6 +50,7 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler{
 	 
 	 @Override
 	 public boolean handle(HandlerContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
+		 if (!(abstractUIEventContext instanceof InspectionHandlerContext)) return false;
 		 InspectionHandlerContext inspectionHandlerContext =  (InspectionHandlerContext) abstractUIEventContext;
 			// UIEvent<T> uiEvent = (UIEvent<T>) abstractSimpleDebuggerUIEvent;
 			UIEvent<PairDTO<Long, Integer>> userReqeustedMapPageEvent = null;
@@ -82,6 +83,7 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler{
 
 				UniversalElementRepresentation mapRepresentation = i.get();
 				DataProvider iterableDataProvider = new IterableDataProvider(mapRepresentation, inspectionHandlerContext);
+				iterableDataProvider.setDataProviderHolderId(id);
 				dataProviderHolder = new DataProviderHolderImpl(iterableDataProvider,
 						DebuggerContext.context().getInspectionSeanceId());
 				dataProviderHolder.startDataProvider();

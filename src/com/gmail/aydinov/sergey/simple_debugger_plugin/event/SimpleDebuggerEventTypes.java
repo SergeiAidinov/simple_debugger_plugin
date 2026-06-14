@@ -110,7 +110,7 @@ public final class SimpleDebuggerEventTypes {
 		
 		DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE(ArrayPageDTO.class, null), 
 		
-		SHOW_LOADING_POPUP(String.class, null),
+		SHOW_LOADING_POPUP(PairDTO.class, null),
 		
 		
 		// === MAP ===

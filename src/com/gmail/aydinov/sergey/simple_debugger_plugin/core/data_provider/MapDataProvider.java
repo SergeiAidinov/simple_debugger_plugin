@@ -65,6 +65,7 @@ public final class MapDataProvider implements TerminableDataProvider {
 	private final AtomicBoolean allElementsLoaded = new AtomicBoolean(false);
 	private final AtomicBoolean readingStarted = new AtomicBoolean(false);
 	private final AtomicBoolean currentRequestActive = new AtomicBoolean(true);
+	private long dataProviderHolderId;
 
 	public MapDataProvider(UniversalElementRepresentation mapRepresentation,
 			InspectionHandlerContext inspectionHandlerContext) {
@@ -333,6 +334,17 @@ public final class MapDataProvider implements TerminableDataProvider {
 	public void terminateCurrentRequest() {
 		currentRequestActive.set(false);
 
+	}
+	
+	@Override
+	public void setDataProviderHolderId(long id) {
+		dataProviderHolderId = id;
+		
+	}
+
+	@Override
+	public long getDataProviderHolderId() {
+		return dataProviderHolderId;
 	}
 
 }

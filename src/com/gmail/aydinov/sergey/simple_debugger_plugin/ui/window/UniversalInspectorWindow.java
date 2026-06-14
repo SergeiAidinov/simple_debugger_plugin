@@ -56,7 +56,6 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 	private InspectorTab mapInspectorTab;
 	private CTabItem mapTabItem;
 
-
 	private InspectorTab userObjectTab;
 	private CTabItem userObjectTabItem;
 
@@ -65,10 +64,9 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 	}
 
 	private static InspectionTabs currentTab = InspectionTabs.NONE;
-	
+
 	private AtomicLong currentlyInspectedObjectId = new AtomicLong();
 	private final CurrentlyInspectedObjectIdHolder currentlyInspectedObjectIdHolder;
-	
 
 	private UniversalInspectorWindow() {
 		Display display = Display.getDefault();
@@ -93,13 +91,9 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 			}
 
 			PairDTO<Integer, BreadCrumbDTO> breadcrumbPair = currentBreadcrumbs.get(index);
-			PairDTO<Integer, BreadCrumbDTO> bp = PairDTO.of(breadcrumbPair.getSecond().getBreadCrumbOrder(), breadcrumbPair.getSecond());
-			uiEventCollector.collectUiEvent(
-				new UIEvent<>(
-					SimpleDebuggerEventType.USER_CLICKED_BREADCRUMB,
-					bp
-				)
-			);
+			PairDTO<Integer, BreadCrumbDTO> bp = PairDTO.of(breadcrumbPair.getSecond().getBreadCrumbOrder(),
+					breadcrumbPair.getSecond());
+			uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CLICKED_BREADCRUMB, bp));
 		});
 
 		// правая панель вкладок
@@ -110,12 +104,12 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 		sash.setWeights(new int[] { 20, 80 });
 
 		shell.addListener(SWT.Close, e -> {
-		    e.doit = false; 
-		    close();        
+			e.doit = false;
+			close();
 		});
 		shell.open();
 		display.asyncExec(() -> {
-		//	iterableInspectorTab = new IterableInspectorTab(rightPanel);
+			// iterableInspectorTab = new IterableInspectorTab(rightPanel);
 			if (iterableInspectorTab == null || collectionTabItem == null) {
 				iterableInspectorTab = new IterableInspectorTab(tabFolder);
 				collectionTabItem = new CTabItem(tabFolder, SWT.NONE);
@@ -123,7 +117,7 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 				collectionTabItem.setControl(iterableInspectorTab.getControl());
 			}
 		});
-		
+
 		currentlyInspectedObjectIdHolder = this;
 	}
 
@@ -146,22 +140,22 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 //		if (userObjectTab != null && !userObjectTab.getControl().isDisposed())
 //			userObjectTab.getControl().setVisible(false);
 	}
-	
+
 	private void disposeAllTabs() {
-	    for (CTabItem item : tabFolder.getItems()) {
-	        if (!item.isDisposed()) {
-	            item.dispose();
-	        }
-	    }
-	    // обнуляем ссылки (важно!)
-	    iterableInspectorTab = null;
-	    collectionTabItem = null;
+		for (CTabItem item : tabFolder.getItems()) {
+			if (!item.isDisposed()) {
+				item.dispose();
+			}
+		}
+		// обнуляем ссылки (важно!)
+		iterableInspectorTab = null;
+		collectionTabItem = null;
 
-	    mapInspectorTab = null;
-	    mapTabItem = null;
+		mapInspectorTab = null;
+		mapTabItem = null;
 
-	    userObjectTab = null;
-	    userObjectTabItem = null;
+		userObjectTab = null;
+		userObjectTabItem = null;
 	}
 
 	private void showTab(CTabItem tabItem, Composite content) {
@@ -203,10 +197,10 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 		if (tabFolder.isDisposed())
 			return;
 		Display.getDefault().asyncExec(() -> {
-			 disposeAllTabs();
+			disposeAllTabs();
 			createIterableTabIfNeeded();
 			iterableInspectorTab.showPage(payload);
-		//	showBreadcrumbs(payload.getBreadcrumbs());
+			// showBreadcrumbs(payload.getBreadcrumbs());
 			showTab(collectionTabItem, iterableInspectorTab.getControl());
 			currentTab = InspectionTabs.COLLECTION;
 		});
@@ -217,10 +211,10 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 			return;
 
 		Display.getDefault().asyncExec(() -> {
-			 disposeAllTabs();
+			disposeAllTabs();
 			createMapTabIfNeeded();
 			mapInspectorTab.showPage(page);
-		//	showBreadcrumbs(page.getBreadcrumbs());
+			// showBreadcrumbs(page.getBreadcrumbs());
 			showTab(mapTabItem, mapInspectorTab.getControl());
 			currentTab = InspectionTabs.MAP;
 		});
@@ -239,15 +233,15 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 			currentTab = InspectionTabs.USER_OBJECT;
 		});
 	}
-	
-	 private void createUserObjectTabIfNeeded(String title) {
-	        if (userObjectTab == null || userObjectTabItem == null) {
-	            userObjectTab = new UserObjectStructureTab(tabFolder);
-	            userObjectTabItem = new CTabItem(tabFolder, SWT.NONE);
-	            userObjectTabItem.setText(title);
-	            userObjectTabItem.setControl(userObjectTab.getControl());
-	        }
-	    }
+
+	private void createUserObjectTabIfNeeded(String title) {
+		if (userObjectTab == null || userObjectTabItem == null) {
+			userObjectTab = new UserObjectStructureTab(tabFolder);
+			userObjectTabItem = new CTabItem(tabFolder, SWT.NONE);
+			userObjectTabItem.setText(title);
+			userObjectTabItem.setControl(userObjectTab.getControl());
+		}
+	}
 
 	@SuppressWarnings({ "unchecked", "static-access" })
 	public void handleDebugEvent(AbstractDebugEvent event) {
@@ -263,11 +257,11 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 			showMapTab(e.getPayload());
 		}
 		case DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT -> {
-        	DebugEvent<UserObjectPageDTO> e = (DebugEvent<UserObjectPageDTO>) event;
-        	showBreadcrumbs(e.getPayload().getBreadcrumbs());
-        	showUserObjectTab(e.getPayload());
-           // newAnchorTag = e.getPayload().getTag();
-        }
+			DebugEvent<UserObjectPageDTO> e = (DebugEvent<UserObjectPageDTO>) event;
+			showBreadcrumbs(e.getPayload().getBreadcrumbs());
+			showUserObjectTab(e.getPayload());
+			// newAnchorTag = e.getPayload().getTag();
+		}
 		case DISPLAY_ADDITIONAL_INFO -> {
 			DebugEvent<UserInstanceDetailsDTO> e = (DebugEvent<UserInstanceDetailsDTO>) event;
 			if (currentTab == InspectionTabs.COLLECTION) {
@@ -275,12 +269,12 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 			}
 		}
 		case SHOW_LOADING_POPUP -> {
+			DebugEvent<PairDTO<String, Long>> e = (DebugEvent<PairDTO<String, Long>>) event;
 			if (Objects.isNull(loadingWindow))
-				loadingWindow = new LoadingWindow(currentlyInspectedObjectIdHolder);
-			DebugEvent<String> e = (DebugEvent<String>) event;
-			loadingWindow.setMessage(e.getPayload());
+				loadingWindow = new LoadingWindow(e.getPayload().getSecond());
+			loadingWindow.setMessage(e.getPayload().getFirst());
 			loadingWindow.show();
-			
+
 		}
 		case CLOSE_LOADING_POPUP -> {
 			if (Objects.nonNull(loadingWindow))
@@ -299,7 +293,7 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 		case NONE -> throw new IllegalArgumentException("Tab not created yet");
 		default -> throw new IllegalArgumentException("Unexpected value: " + currentTab);
 		};
-		
+
 	}
 
 	// =========================================================
@@ -312,15 +306,14 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 	}
 
 	public void close() {
-			Display.getDefault().asyncExec(() -> {
-				if (!shell.isDisposed())
-					shell.dispose();
-				INSTANCE = null;
-			//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-				uiEventCollector
-						.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE, null));
-			});
-		
+		Display.getDefault().asyncExec(() -> {
+			if (!shell.isDisposed())
+				shell.dispose();
+			INSTANCE = null;
+			// DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
+			uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_CLOSED_INSPECTION_SEANCE, null));
+		});
+
 	}
 
 	public Shell getShell() {
