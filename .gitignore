@@ -1,1 +1,50 @@
-/.metadata/
+# ==================== Java / Maven / Gradle ====================
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# Build directories
+target/
+bin/
+build/
+out/
+dist/
+
+# Eclipse specific
+.settings/
+.project
+.classpath
+.metadata/
+.recommenders/
+bin/
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Logs
+*.log
+logs/
+
+# Virtual environments (если используешь)
+venv/
+env/
