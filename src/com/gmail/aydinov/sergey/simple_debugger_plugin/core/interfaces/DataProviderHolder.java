@@ -10,6 +10,6 @@ public interface DataProviderHolder {
 
 	void terminateCurrentRequest();
 
-	DataProvider getDataProvider();
+	PageableDataProvider getDataProvider();
 
 }

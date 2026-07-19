@@ -7,12 +7,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeanceCache;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.StoppableDataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.TerminableDataProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebuggerEvent;
@@ -20,7 +20,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 
 public class DataProviderHolderImpl implements StoppableDataProviderHolder {
 
-	private final DataProvider dataProvider;
+	private final PageableDataProvider dataProvider;
 	private final int inspectionSeanceId;
 	private final Thread thread;
 	private final AtomicBoolean started = new AtomicBoolean(false);
@@ -28,7 +28,7 @@ public class DataProviderHolderImpl implements StoppableDataProviderHolder {
 
 	private final BlockingQueue<AbstractSimpleDebuggerEvent> eventsForProvider = new LinkedBlockingQueue<>();
 
-	public DataProviderHolderImpl(DataProvider dataProvider, int inspectionSeanceId) {
+	public DataProviderHolderImpl(PageableDataProvider dataProvider, int inspectionSeanceId) {
 		this.dataProvider = dataProvider;
 		this.inspectionSeanceId = inspectionSeanceId;
 		this.thread = new Thread(this::starter);
@@ -58,7 +58,7 @@ public class DataProviderHolderImpl implements StoppableDataProviderHolder {
 //	}
 
 	@Override
-	public DataProvider getDataProvider() {
+	public PageableDataProvider getDataProvider() {
 		return dataProvider;
 	}
 
