@@ -7,7 +7,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.MapDataProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProviderHolderImpl;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.PageableDataProviderHolderImpl;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
@@ -54,7 +54,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 
 			UniversalElementRepresentation mapRepresentation = i.get();
 			PageableDataProvider mapDataProvider = new MapDataProvider(mapRepresentation, inspectionHandlerContext);
-			dataProviderHolder = new DataProviderHolderImpl(mapDataProvider,
+			dataProviderHolder = new PageableDataProviderHolderImpl(mapDataProvider,
 					DebuggerContext.context().getInspectionSeanceId());
 			dataProviderHolder.startDataProvider();
 			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id,

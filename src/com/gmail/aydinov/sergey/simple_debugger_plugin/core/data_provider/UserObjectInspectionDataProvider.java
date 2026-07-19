@@ -11,6 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractEleme
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.SimpleDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -24,7 +25,7 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.Value;
 
-public class UserObjectInspectionDataProvider implements PageableDataProvider {
+public class UserObjectInspectionDataProvider implements SimpleDataProvider {
 	
 	private final InnerElementRepresentationDTO innerElementRepresentationDTO;
 	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
@@ -41,7 +42,7 @@ public class UserObjectInspectionDataProvider implements PageableDataProvider {
 	}
 
 	@Override
-	public void handlePageRequest(Integer pageNumber) {
+	public void handleElementRequest(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		System.out.println("OBJECT REQUEST");
 		if (Objects.isNull(cachedUserObjectPageDTO))
 			cachedUserObjectPageDTO = cachePage();

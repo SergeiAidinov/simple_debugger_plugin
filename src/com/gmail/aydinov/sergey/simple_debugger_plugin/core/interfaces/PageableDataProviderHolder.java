@@ -1,6 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces;
 
-public interface StoppableDataProviderHolder extends DataProviderHolder{
+public interface PageableDataProviderHolder extends DataProviderHolder {
 	
 	void stopDataProvider();
 

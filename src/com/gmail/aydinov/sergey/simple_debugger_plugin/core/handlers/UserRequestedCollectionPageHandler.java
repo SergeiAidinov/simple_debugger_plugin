@@ -8,7 +8,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.IterableDataProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.DataProviderHolderImpl;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.PageableDataProviderHolderImpl;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
@@ -64,7 +64,7 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler{
 				UniversalElementRepresentation mapRepresentation = i.get();
 				PageableDataProvider iterableDataProvider = new IterableDataProvider(mapRepresentation, inspectionHandlerContext);
 				iterableDataProvider.setDataProviderHolderId(id);
-				dataProviderHolder = new DataProviderHolderImpl(iterableDataProvider,
+				dataProviderHolder = new PageableDataProviderHolderImpl(iterableDataProvider,
 						DebuggerContext.context().getInspectionSeanceId());
 				dataProviderHolder.startDataProvider();
 				inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id,

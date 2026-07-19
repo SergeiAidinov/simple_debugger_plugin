@@ -10,7 +10,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.InspectionSeanceCache;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.StoppableDataProviderHolder;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.TerminableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
@@ -18,7 +18,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebuggerEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 
-public class DataProviderHolderImpl implements StoppableDataProviderHolder {
+public class PageableDataProviderHolderImpl implements PageableDataProviderHolder {
 
 	private final PageableDataProvider dataProvider;
 	private final int inspectionSeanceId;
@@ -28,7 +28,7 @@ public class DataProviderHolderImpl implements StoppableDataProviderHolder {
 
 	private final BlockingQueue<AbstractSimpleDebuggerEvent> eventsForProvider = new LinkedBlockingQueue<>();
 
-	public DataProviderHolderImpl(PageableDataProvider dataProvider, int inspectionSeanceId) {
+	public PageableDataProviderHolderImpl(PageableDataProvider dataProvider, int inspectionSeanceId) {
 		this.dataProvider = dataProvider;
 		this.inspectionSeanceId = inspectionSeanceId;
 		this.thread = new Thread(this::starter);
