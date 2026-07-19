@@ -11,9 +11,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.Iterab
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.PageableDataProviderHolderImpl;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.holder.DataProviderHolder;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.PageableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEventCollector;
@@ -62,9 +62,9 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler{
 						.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
 
 				UniversalElementRepresentation mapRepresentation = i.get();
-				PageableDataProvider iterableDataProvider = new IterableDataProvider(mapRepresentation, inspectionHandlerContext);
-				iterableDataProvider.setDataProviderHolderId(id);
-				dataProviderHolder = new PageableDataProviderHolderImpl(iterableDataProvider,
+				PageableDataProvider pageableDataProvider = new IterableDataProvider(mapRepresentation, inspectionHandlerContext);
+			//	iterableDataProvider.setDataProviderHolderId(id);
+				dataProviderHolder = new PageableDataProviderHolderImpl(pageableDataProvider,
 						DebuggerContext.context().getInspectionSeanceId());
 				dataProviderHolder.startDataProvider();
 				inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id,

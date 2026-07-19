@@ -15,9 +15,9 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.PageableD
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionSeance;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProviderHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.UIEventHandler;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.holder.DataProviderHolder;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.PageableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -50,6 +50,7 @@ public class UserObjectExamHandler implements UIEventHandler {
 		if (Objects.isNull(uiEvent))
 			return false;
 		final long id = uiEvent.getPayload().getObjectId();
+		if (!(abstractUIEventContext instanceof InspectionHandlerContext)) return false;
 		final InspectionHandlerContext inspectionHandlerContext = (InspectionHandlerContext) abstractUIEventContext;
 		inspectionHandlerContext.getInspectionSeanceCache().addOrModifyBreadCrumb(id, uiEvent,
 				uiEvent.getPayload().getElementName(), 0);

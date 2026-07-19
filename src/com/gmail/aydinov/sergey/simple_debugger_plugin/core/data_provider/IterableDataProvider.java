@@ -13,9 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.DataProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.TerminableDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.DataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.PageableDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.TerminableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.ArrayPageDTO;
@@ -270,11 +270,11 @@ public class IterableDataProvider implements TerminableDataProvider {
 
 	}
 
-	@Override
-	public void setDataProviderHolderId(long id) {
-		dataProviderHolderId = id;
-		
-	}
+//	@Override
+//	public void setDataProviderHolderId(long id) {
+//		dataProviderHolderId = id;
+//		
+//	}
 
 	@Override
 	public long getDataProviderHolderId() {

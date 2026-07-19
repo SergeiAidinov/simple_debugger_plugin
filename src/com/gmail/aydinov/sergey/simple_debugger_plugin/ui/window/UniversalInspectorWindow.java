@@ -16,7 +16,7 @@ import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.NavigationHistoryStep;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.CurrentlyInspectedObjectIdHolder;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.holder.CurrentlyInspectedObjectIdHolder;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;

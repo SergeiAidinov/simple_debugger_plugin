@@ -12,7 +12,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.PageableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -173,11 +173,11 @@ public class UserObjectAtBreakpointDataProvider implements PageableDataProvider 
 		return userObjectPageDTO;
 	}
 	
-	@Override
-	public void setDataProviderHolderId(long id) {
-		dataProviderHolderId = id;
-		
-	}
+//	@Override
+//	public void setDataProviderHolderId(long id) {
+//		dataProviderHolderId = id;
+//		
+//	}
 
 	@Override
 	public long getDataProviderHolderId() {

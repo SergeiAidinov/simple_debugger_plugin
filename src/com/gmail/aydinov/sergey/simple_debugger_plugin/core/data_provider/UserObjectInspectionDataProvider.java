@@ -10,8 +10,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.PageableDataProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.SimpleDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.PageableDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.SimpleDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -111,11 +111,11 @@ public class UserObjectInspectionDataProvider implements SimpleDataProvider {
 		return userObjectPageDTO;
 	}
 	
-	@Override
-	public void setDataProviderHolderId(long id) {
-		dataProviderHolderId = id;
-		
-	}
+//	@Override
+//	public void setDataProviderHolderId(long id) {
+//		dataProviderHolderId = id;
+//		
+//	}
 
 	@Override
 	public long getDataProviderHolderId() {

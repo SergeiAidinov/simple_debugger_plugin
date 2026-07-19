@@ -1,5 +1,6 @@
-package com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces;
+package com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.holder;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.PageableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebuggerEvent;
 
 public interface DataProviderHolder {
