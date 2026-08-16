@@ -2,6 +2,7 @@ package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
 import java.util.Objects;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.UserObjectAtBreakpointDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.UserObjectInspectionDataProvider;
@@ -17,6 +18,8 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.sun.jdi.ObjectReference;
+import com.sun.jdi.VirtualMachine;
 
 public class UserObjectInspectionHandler implements UIEventHandler  {
 
@@ -34,18 +37,20 @@ public class UserObjectInspectionHandler implements UIEventHandler  {
 		final InspectionHandlerContext inspectionHandlerContext = (InspectionHandlerContext) abstractUIEventContext;
 		inspectionHandlerContext.getInspectionSeanceCache().addOrModifyBreadCrumb(id, uiEvent,
 				uiEvent.getPayload().getValue(), 0);
-		SimpleDataProvider dataProvider =   (SimpleDataProvider) inspectionHandlerContext.getInspectionSeanceCache()
+		DataProviderHolder dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()
 				.getDataProviderHolders().get(id);
-		if (Objects.nonNull(dataProvider)) {
-			dataProvider.handleElementRequest(uiEvent.getPayload());
-
+		if (Objects.nonNull(dataProviderHolder)) {
+			SimpleDataProvider simpleDataProvider = (SimpleDataProvider) dataProviderHolder.getDataProvider();
+			System.out.println(dataProviderHolder.getDataProvider());
+			simpleDataProvider.handleElementRequest(uiEvent.getPayload());
 		} else {
 			UserObjectInspectionDataProvider userObjectInspectionDataProvider = new UserObjectInspectionDataProvider(uiEvent.getPayload(),
 					inspectionHandlerContext);
 			
-			dataProvider = new SimpleDataProviderHolderImpl(userObjectInspectionDataProvider,
+			dataProviderHolder = new SimpleDataProviderHolderImpl(userObjectInspectionDataProvider,
 					DebuggerContext.context().getInspectionSeanceId());
-			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id,  (DataProviderHolder) dataProvider);
+			System.out.println(dataProviderHolder.getClass());
+			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id, dataProviderHolder);
 			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id).startDataProvider();
 			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id).handleEvent(uiEvent);
 		}

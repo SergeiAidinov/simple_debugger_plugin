@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.PageableDataProvider;
@@ -19,11 +21,13 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEve
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
+import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.Value;
+import com.sun.jdi.VirtualMachine;
 
 public class UserObjectInspectionDataProvider implements SimpleDataProvider {
 	
@@ -56,7 +60,22 @@ public class UserObjectInspectionDataProvider implements SimpleDataProvider {
 	}
 
 	private UserObjectPageDTO cachePage() {
-		ObjectReference objectReference = inspectionHandlerContext.getInspectionSeanceCache().getLoadedPieces().get(innerElementRepresentationDTO.getObjectId());
+		VirtualMachine vm = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine();
+		List<ReferenceType> qq = vm.allClasses();
+		List<ReferenceType> ww = qq.stream().filter(c -> c.name().contains(innerElementRepresentationDTO.getTypeOrReturnType())).collect(Collectors.toList());
+		ObjectReference objectReference = null;
+		loop:
+		for (ReferenceType type : ww) {
+		    if (type instanceof ClassType classType) {
+		            List<ObjectReference> objects = classType.instances(0);
+		            for (ObjectReference object : objects) {
+		                if (object.uniqueID() == innerElementRepresentationDTO.getObjectId()) {
+		                	objectReference = object;
+		                	break loop;
+		                }
+		            }
+		    }
+		}
 		cachedUserObjectPageDTO = build(objectReference);
 		return cachedUserObjectPageDTO;
 	}
