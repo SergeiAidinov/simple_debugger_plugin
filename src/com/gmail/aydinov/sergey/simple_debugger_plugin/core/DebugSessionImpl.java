@@ -214,11 +214,12 @@ public class DebugSessionImpl implements DebugSession {
 		try {
 			frame = thread.frame(0);
 			ObjectReference thisObject = frame.thisObject();
-			List<UniversalElementRepresentation> allEntities = new ArrayList<UniversalElementRepresentation>();
-			allEntities.addAll(snapShot.getFirst().values().stream().toList());
-			allEntities.addAll(snapShot.getFirst().values().stream()
-					.filter(e -> (e instanceof UniversalElementRepresentation))
-					.toList());
+		//	List<UniversalElementRepresentation> allEntities = new ArrayList<UniversalElementRepresentation>();
+			List<UniversalElementRepresentation> allEntities = new ArrayList<>(snapShot.getFirst().values());
+//			allEntities.addAll(snapShot.getFirst().values().stream().toList());
+//			allEntities.addAll(snapShot.getFirst().values().stream()
+//					.filter(e -> (e instanceof UniversalElementRepresentation))
+//					.toList());
 			if (thisObject != null) {
 			   System.out.println("Instance: " + thisObject);
 			   breakpointInstance = allEntities.stream()

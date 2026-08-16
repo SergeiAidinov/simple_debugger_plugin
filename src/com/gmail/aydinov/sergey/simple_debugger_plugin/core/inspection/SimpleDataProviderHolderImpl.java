@@ -8,56 +8,52 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.AbstractSimpleDebug
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
 
-public class SimpleDataProviderHolderImpl implements DataProviderHolder{
-	
-	private final SimpleDataProvider simpleDataProvider;
-	private final int inspectionSeanceId;
+public class SimpleDataProviderHolderImpl implements DataProviderHolder {
 
-	public SimpleDataProviderHolderImpl(SimpleDataProvider simpleDataProvider,
-			int inspectionSeanceId) {
-		this.simpleDataProvider = simpleDataProvider;
-		this.inspectionSeanceId = inspectionSeanceId;
-	}
+    private final SimpleDataProvider simpleDataProvider;
+    private final int inspectionSeanceId;
 
-//	@Override
-//	public void setDataProviderHolderId(long id) {
-//		// TODO Auto-generated method stub
-//		
-//	}
+    public SimpleDataProviderHolderImpl(
+            SimpleDataProvider simpleDataProvider,
+            int inspectionSeanceId) {
 
-	public long getDataProviderHolderId() {
-		return inspectionSeanceId;
-	}
+        this.simpleDataProvider = simpleDataProvider;
+        this.inspectionSeanceId = inspectionSeanceId;
+    }
 
-	public void handleElementRequest(InnerElementRepresentationDTO innerElementRepresentationDTO) {
-		simpleDataProvider.handleElementRequest(innerElementRepresentationDTO);
-		
-	}
+    public long getDataProviderHolderId() {
+        return inspectionSeanceId;
+    }
 
-	@Override
-	public void handleEvent(AbstractSimpleDebuggerEvent abstractSimpleDebuggerEvent) {
-		AbstractUIEvent event = (AbstractUIEvent) abstractSimpleDebuggerEvent;
-		UIEvent<InnerElementRepresentationDTO> uiEvent = (UIEvent<InnerElementRepresentationDTO>) event;
-		simpleDataProvider.handleElementRequest(uiEvent.getPayload());
-		
-	}
+    public void handleElementRequest(
+            InnerElementRepresentationDTO innerElementRepresentationDTO) {
 
-	@Override
-	public void startDataProvider() {
-		// TODO Auto-generated method stub
-		
-	}
+        simpleDataProvider.handleElementRequest(innerElementRepresentationDTO);
+    }
 
-	@Override
-	public void terminateCurrentRequest() {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void handleEvent(
+            AbstractSimpleDebuggerEvent abstractSimpleDebuggerEvent) {
 
-	@Override
-	public DataProvider getDataProvider() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+        AbstractUIEvent event =
+                (AbstractUIEvent) abstractSimpleDebuggerEvent;
 
+        UIEvent<InnerElementRepresentationDTO> uiEvent =
+                (UIEvent<InnerElementRepresentationDTO>) event;
+
+        simpleDataProvider.handleElementRequest(uiEvent.getPayload());
+    }
+
+    @Override
+    public void startDataProvider() {
+    }
+
+    @Override
+    public void terminateCurrentRequest() {
+    }
+
+    @Override
+    public DataProvider getDataProvider() {
+        return simpleDataProvider;       // ВОТ ЭТО
+    }
 }

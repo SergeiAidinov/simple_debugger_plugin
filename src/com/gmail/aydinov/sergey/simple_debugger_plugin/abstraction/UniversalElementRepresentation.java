@@ -177,7 +177,9 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
     public static UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId, ObjectReference objectReference, int level) {
         return UniversalElementRepresentation.builder()
                 .referenceType(field.declaringType())
-                .objectReference(objectReference)
+                .objectReference(value instanceof ObjectReference
+                        ? (ObjectReference) value
+                                : null)
                 .elementName(field.name())
                 .additionalInfo(field.typeName())
                 .elementType(UniversalElementType.FIELD)

@@ -211,7 +211,7 @@ public class MapInspectorTab implements InspectorTab {
 				closeElementsPopup();
 				InnerElementRepresentationDTO innerElementRepresentationDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromMapEntry(mapDto);
 				uiEventCollector
-						.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, innerElementRepresentationDTO));
+						.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_DEBUG_SESSION, innerElementRepresentationDTO));
 			}
 			case MAP -> {
 				uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
@@ -268,7 +268,7 @@ public class MapInspectorTab implements InspectorTab {
 			row.setForeground(fg);
 			row.addListener(SWT.MouseDown, e -> {
 				System.out.println("CLICK EVENT: " + dto.getValueCategory());
-				uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
+				uiEventCollector.collectUiEvent(new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_DEBUG_SESSION, dto));
 			});
 		}
 

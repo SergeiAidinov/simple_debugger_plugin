@@ -86,15 +86,28 @@ public class UserObjectStructureTab implements InspectorTab {
         if (!(abstractInspectionDTO instanceof UserObjectPageDTO dto)) return;
 
         List<InnerElementRepresentationDTO> entries = dto.getEntries() != null ? dto.getEntries() : List.of();
+        System.out.println("=== SHOW PAGE ===");
+        System.out.println("dto       = " + System.identityHashCode(dto));
+        System.out.println("entries   = " + System.identityHashCode(entries));
+        System.out.println("objectId  = " + dto.getObjectId());
 
+        for (InnerElementRepresentationDTO e : entries) {
+            System.out.println(
+                "DTO       = " + System.identityHashCode(e)
+                + " name=" + e.getElementName()
+                + " value=" + e.getValue()
+                + " tag=" + e.getTag()
+                + " objectId=" + e.getObjectId()
+            );
+        }
         Display.getDefault().asyncExec(() -> {
             if (root.isDisposed() || viewer.getTable().isDisposed()) return;
 
             objectTypeLabel.setText("Type: " + safe(dto.getClassType()));
             objectSizeLabel.setText("Object id : " + dto.getObjectId());
-
+            viewer.setInput(null);
             viewer.setInput(entries);
-            viewer.refresh();
+            viewer.refresh(true);
             root.layout(true, true);
         });
     }
@@ -251,6 +264,7 @@ public class UserObjectStructureTab implements InspectorTab {
 
     private void setupClickListener(Table table) {
         table.addListener(SWT.MouseDown, event -> {
+        	
             TableItem item = table.getItem(new Point(event.x, event.y));
             if (item == null) return;
 
@@ -258,13 +272,29 @@ public class UserObjectStructureTab implements InspectorTab {
             if (colIndex != 1) return;
 
             Object data = item.getData();
+            if (data instanceof InnerElementRepresentationDTO dto) {
+                System.out.println("=== CLICK ===");
+                System.out.println(
+                    "DTO       = " + System.identityHashCode(dto)
+                    + " name=" + dto.getElementName()
+                    + " value=" + dto.getValue()
+                    + " tag=" + dto.getTag()
+                    + "objectId     = " + dto.getObjectId()
+                );
+            }
             if (!(data instanceof InnerElementRepresentationDTO dto)) return;
 
             ValueCategory category = dto.getValueCategory();
 
             if (category == ValueCategory.USER_OBJECT) {
+            	System.out.println("=== SEND INSPECT EVENT ===");
+            	System.out.println("dto identity = " + System.identityHashCode(dto));
+            	System.out.println("name         = " + dto.getElementName());
+            	System.out.println("value        = " + dto.getValue());
+            	System.out.println("tag          = " + dto.getTag());
+            	System.out.println("objectId     = " + dto.getObjectId());
                 uiEventCollector.collectUiEvent(
-                        new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT, dto));
+                        new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_INSPECTION_SEANCE, dto));
             } else if (category == ValueCategory.MAP) {
                 uiEventCollector.collectUiEvent(
                         new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, dto));

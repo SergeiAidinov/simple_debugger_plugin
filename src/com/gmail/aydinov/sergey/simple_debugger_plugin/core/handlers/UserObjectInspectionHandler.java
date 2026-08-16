@@ -1,5 +1,6 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
+import java.util.Map.Entry;
 import java.util.Objects;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
@@ -39,6 +40,25 @@ public class UserObjectInspectionHandler implements UIEventHandler  {
 				uiEvent.getPayload().getValue(), 0);
 		DataProviderHolder dataProviderHolder = inspectionHandlerContext.getInspectionSeanceCache()
 				.getDataProviderHolders().get(id);
+		System.out.println("=================================");
+		System.out.println("REQUEST OBJECT ID = " + id);
+
+		System.out.println("PROVIDERS:");
+
+//		inspectionHandlerContext
+//		        .getInspectionSeanceCache()
+//		        .getDataProviderHolders()
+//		        .forEach((objectId, holder) -> {
+//		            System.out.println(
+//		                    "  objectId=" + objectId
+//		                    + " holder=" + holder
+//		                    + " provider=" + holder.getDataProvider());
+//		        });
+		for (Entry<Long, DataProviderHolder> entry : inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().entrySet()) {
+			System.out.println(entry.getKey() + " : " + entry.getValue());
+		}
+
+		System.out.println("=================================");
 		if (Objects.nonNull(dataProviderHolder)) {
 			SimpleDataProvider simpleDataProvider = (SimpleDataProvider) dataProviderHolder.getDataProvider();
 			System.out.println(dataProviderHolder.getDataProvider());

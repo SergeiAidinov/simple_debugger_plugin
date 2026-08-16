@@ -48,14 +48,15 @@ public class UserObjectInspectionDataProvider implements SimpleDataProvider {
 	@Override
 	public void handleElementRequest(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 		System.out.println("OBJECT REQUEST");
-		if (Objects.isNull(cachedUserObjectPageDTO))
+	//	if (Objects.isNull(cachedUserObjectPageDTO))
 			cachedUserObjectPageDTO = cachePage();
-		if (Objects.nonNull(cachedUserObjectPageDTO)) {
+	//	if (Objects.nonNull(cachedUserObjectPageDTO)) {
 			cachedUserObjectPageDTO
 					.setBreadcrumbs(inspectionHandlerContext.getInspectionSeanceCache().groupBreadCrumbsintoPairs());
+			System.out.println(cachedUserObjectPageDTO);
 			debugEventCollector.collectDebugEvent(new DebugEvent<>(
 					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, cachedUserObjectPageDTO));
-		}
+	//	}
 		
 	}
 

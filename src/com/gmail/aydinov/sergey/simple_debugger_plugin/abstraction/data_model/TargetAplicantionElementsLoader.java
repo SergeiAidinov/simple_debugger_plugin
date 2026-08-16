@@ -103,7 +103,7 @@ public class TargetAplicantionElementsLoader {
 		ObjectReference valueObj = (value instanceof ObjectReference) ? (ObjectReference) value : null;
 		String valueText = (value == null) ? "<null>" : value.toString();
 		ValueCategory category = DebugUtils.determineValueCategory(value);
-		if (List.of(ValueCategory.COLLECTION, ValueCategory.ARRAY, ValueCategory.MAP).contains(category)
+		if (List.of(ValueCategory.ARRAY /*, ValueCategory.COLLECTION,  ValueCategory.MAP */).contains(category)
 				&& Objects.nonNull(breakpointEvent)) {
 			int size = DebugUtils.getCollectionSize(valueObj, breakpointEvent);
 			TripletDTO<String, String, String> data = DebugUtils.determinCollectionType(valueObj, breakpointEvent);

@@ -125,7 +125,8 @@ public final class SimpleDebuggerEventTypes {
 	//	USER_STARTED_INSPECTION_SEANCE_FOR_USER_OBJECT(UserInstanceInspectionDTO.class, new UserObjectInspectionHandler()), 
 		DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT(UserObjectPageDTO.class, null),
 		USER_EXAMINES_USER_OBJECT_AT_BREAKPOINT(InnerElementRepresentationDTO.class, new UserObjectExamHandler()),
-		USER_INSPECTS_USER_OBJECT(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()),
+		USER_INSPECTS_USER_OBJECT_IN_DEBUG_SESSION(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()),
+		USER_INSPECTS_USER_OBJECT_IN_INSPECTION_SEANCE(InnerElementRepresentationDTO.class, new UserObjectInspectionHandler()),
 //		USER_INSPECTS_MAP(InnerElementRepresentationDTO.class,
 //		        new MapInspectionSeanceHandler()), 
 		USER_INSPECTS_ITERABLE(InnerElementRepresentationDTO.class, null), 
@@ -168,7 +169,7 @@ public final class SimpleDebuggerEventTypes {
 			
 		//	SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT,
 		//	SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_COLLECTION,
-			SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT,
+			SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_INSPECTION_SEANCE,
 		//	SimpleDebuggerEventType.USER_INSPECTS_MAP,
 			SimpleDebuggerEventType.USER_INSPECTS_ITERABLE,
 			SimpleDebuggerEventType.USER_CLICKED_BREADCRUMB,
