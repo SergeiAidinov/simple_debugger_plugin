@@ -24,6 +24,7 @@ import com.sun.jdi.VirtualMachine;
 
 public class UserObjectInspectionHandler implements UIEventHandler  {
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public boolean handle(HandlerContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
 		UIEvent<InnerElementRepresentationDTO> uiEvent = null;

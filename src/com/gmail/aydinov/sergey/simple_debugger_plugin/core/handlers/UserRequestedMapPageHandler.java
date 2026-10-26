@@ -23,6 +23,7 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean handle(HandlerContext abstractUIEventContext, AbstractUIEvent abstractSimpleDebuggerUIEvent) {
+		if (DebuggerContext.context().isInspectionSeanceActive() == false) return true;
 		InspectionHandlerContext inspectionHandlerContext =  (InspectionHandlerContext) abstractUIEventContext;
 		// UIEvent<T> uiEvent = (UIEvent<T>) abstractSimpleDebuggerUIEvent;
 		UIEvent<PairDTO<InnerElementRepresentationDTO, Integer>> userReqeustedMapPageEvent = null;
