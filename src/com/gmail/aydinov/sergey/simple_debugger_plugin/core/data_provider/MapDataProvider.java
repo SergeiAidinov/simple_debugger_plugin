@@ -269,7 +269,9 @@ public final class MapDataProvider implements TerminableDataProvider {
 			if (((mapElements.size() / DebugUtils.PAGE_SIZE) > lastSentPageNumber)
 					&& ((mapElements.size() / DebugUtils.PAGE_SIZE) < pageNumber)) {
 				debugEventCollector.collectDebugEvent(new DebugEvent<>(SimpleDebuggerEventType.SHOW_LOADING_POPUP,
-						"Loading page: " + (mapElements.size() / DebugUtils.PAGE_SIZE)));
+						// TODO: Replace this workaround with a proper solution
+						PairDTO.of("Loading page: " + (mapElements.size() / DebugUtils.PAGE_SIZE), Long.valueOf(mapElements.size() / DebugUtils.PAGE_SIZE))
+						));
 				lastSentPageNumber = mapElements.size() / DebugUtils.PAGE_SIZE;
 			}
 		}
