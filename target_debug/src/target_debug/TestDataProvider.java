@@ -8,11 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class Utils {
+public class TestDataProvider {
 	
-	private static final Random random = new Random();
-
-	private static List<String> names = List.of("Jean", "Pierre", "Louis", "Francois", "Henri", "Gabriel", "Rene",
+	private final Random random = new Random();
+	private Map<Integer, Tourist> mapOfTourists; 
+	
+	private  List<String> names = List.of("Jean", "Pierre", "Louis", "Francois", "Henri", "Gabriel", "Rene",
 			"Marcel", "Etienne", "Jacques", "Claude", "Bernard", "Luc", "Thierry", "Paul", "Philippe", "Alain",
 			"Dominique", "Yves", "Serge", "Georges", "Olivier", "Antoine", "Michel", "Gerard", "Christian", "Leon",
 			"Armand", "Benoit", "Raoul", "Robert", "Andre",
@@ -31,7 +32,7 @@ public class Utils {
 			"Nadine", "Simone", "Heike", "Franziska", "Theresa", "Lena", "Leonie", "Marlene", "Johanna", "Paula",
 			"Lisa");
 
-	private static List<String> surNames = List.of("Dupont", "Martin", "Bernard", "Dubois", "Moreau", "Laurent",
+	private List<String> surNames = List.of("Dupont", "Martin", "Bernard", "Dubois", "Moreau", "Laurent",
 			"Simon", "Michel", "Leroy", "Roux", "David", "Bertrand", "Thomas", "Robert", "Richard", "Durand", "Petit",
 			"Garcia", "Fournier", "Girard", "Andre", "Lefebvre", "Mercier", "Blanc", "Chevalier", "Muller", "Fontaine",
 			"Rousseau", "Vincent", "Henry", "Gautier", "Lambert",
@@ -49,9 +50,20 @@ public class Utils {
 			"Taylor", "Brown", "Wilson", "Thompson", "Johnson", "White", "Harris", "Martin", "Jackson", "Clark",
 			"Lewis", "Walker", "Hall", "Allen", "Young", "King", "Wright", "Scott", "Green", "Baker", "Adams", "Nelson",
 			"Hill", "Campbell", "Mitchell", "Roberts", "Carter", "Phillips", "Evans", "Turner", "Parker", "Collins");
+	
+	public TestDataProvider() {
+		createMapOfTourists();
+	}
 
-	public static Map<Integer, Tourist> createMapOfTourists() {
-		int order = 0;
+	public  List<Tourist> getListOfTourists() {
+		return  mapOfTourists.values().stream().toList();
+	}
+	
+	public Map<Integer, Tourist> getMapOfTourists() {
+		return mapOfTourists;
+	}
+	
+	public void createMapOfTourists() {
 		Map<Integer, Tourist> tuoristsMap = new HashMap<Integer, Tourist>();
 		List<Tourist> touristList = new ArrayList<Tourist>();
 		for (String name : names) {
@@ -64,10 +76,10 @@ public class Utils {
 		for (int i = 0; i < touristList.size(); i++) {
 			tuoristsMap.put(i, touristList.get(i));
 		}
-		return tuoristsMap;
+		mapOfTourists = tuoristsMap;
 	}
-
-	private static List<Tourist> defineFriends(List<Tourist> touristList) {
+	
+	private List<Tourist> defineFriends(List<Tourist> touristList) {
 	    int head = 0;
 	    while (head < touristList.size()) {
 	        int groupSize = random.nextInt(5) + 2;

@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TargetImpl implements Target {
 	
@@ -17,7 +18,10 @@ public class TargetImpl implements Target {
 	Map<String, Person> fieldPersonsMap = Map.of("Sergei", person1,
 			"Ethan", person2);
 	Set<Integer> longIntegerSet = compileSet();
-	Map<Integer, Tourist> tourists = Utils.createMapOfTourists();
+	private final TestDataProvider testDataProvider = new TestDataProvider();
+	Map<Integer, Tourist> touristMap = testDataProvider.getMapOfTourists();
+	Set<Tourist> touristSet = testDataProvider.getListOfTourists().stream().collect(Collectors.toSet());
+	List<Tourist> touristList = testDataProvider.getListOfTourists();
 	
 	@Override
 	public void work() {
@@ -31,6 +35,7 @@ public class TargetImpl implements Target {
 		Map<String, Person> persons = Map.of("Sergei", person1,
 				"Ethan", person2);
 		List<Person> personList = List.of(person1, person2);
+		Set<Person> personSet = Set.of(person1, person2);
 		System.out.println("CouCou!");
 //		strings.stream().forEach(e -> System.out.println(e));
 //		integers.stream().forEach(e -> System.out.println(e));

@@ -1,6 +1,7 @@
 package target_debug;
 
 import java.util.List;
+import java.util.Objects;
 
 public class Tourist {
 	
@@ -28,5 +29,22 @@ public class Tourist {
 
 	public List<Tourist> getFriends() {
 		return friends;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, surname);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Tourist other = (Tourist) obj;
+		return Objects.equals(name, other.name) && Objects.equals(surname, other.surname);
 	}
 }
