@@ -313,4 +313,34 @@ public class TooltipManager {
 	            .fromUserInstanceDetails(dto);
 	}
 	
+	public void showTooltipForMapEntry(
+	        InnerElementRepresentationDTO dto,
+	        String entryName,
+	        Point location) {
+
+	    showPopup(
+	            dto,
+	            location,
+	            d -> buildMapEntryText((InnerElementRepresentationDTO) d, entryName),
+	            null
+	    );
+	}
+	
+	private String buildMapEntryText(
+	        InnerElementRepresentationDTO dto,
+	        String entryName) {
+
+	    StringBuilder info = new StringBuilder();
+
+	    info.append("Map entry:\n")
+	        .append(UiUtils.GAP)
+	        .append("element: ").append(entryName).append("\n")
+	        .append(UiUtils.GAP)
+	        .append("id: ").append(dto.getAdditionalInfo()).append("\n")
+	        .append(UiUtils.GAP)
+	        .append("value: ").append(dto.getValue());
+
+	    return info.toString();
+	}
+	
 }

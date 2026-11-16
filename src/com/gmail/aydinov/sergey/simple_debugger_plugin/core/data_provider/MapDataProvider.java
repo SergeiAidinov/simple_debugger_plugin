@@ -119,6 +119,7 @@ public final class MapDataProvider implements TerminableDataProvider {
 	}
 
 	private void iterateThroughMap() {
+		if (allElementsLoaded.get()) return;
 		new Thread(() -> {
 			while (true) {
 				Value hasNextVal = null;
@@ -229,8 +230,22 @@ public final class MapDataProvider implements TerminableDataProvider {
 				ValueCategory valueCategory = DebugUtils.determineValueCategory(valueValue);
 				String valueValueText = DebugUtils.getObjectReferenceValueAsString(valueReference) + " (id="
 						+ valueReference.uniqueID() + ")";
-				collectionElements.put(new MapEntryDTO(keyValueText, keyReference.uniqueID(), keyCategory, keyEntries),
-						new MapEntryDTO(valueValueText, valueReference.uniqueID(), valueCategory, valueEntries));
+				collectionElements.put(
+					    new MapEntryDTO(
+					        keyValueText,
+					        keyReference.uniqueID(),
+					        keyCategory,
+					        keyEntries,
+					        keyReference.type().name()
+					    ),
+					    new MapEntryDTO(
+					        valueValueText,
+					        valueReference.uniqueID(),
+					        valueCategory,
+					        valueEntries,
+					        valueReference.type().name()
+					    )
+					);
 			}
 		}
 		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;

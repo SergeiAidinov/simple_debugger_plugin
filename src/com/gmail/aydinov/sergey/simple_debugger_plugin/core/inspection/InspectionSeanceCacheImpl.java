@@ -24,6 +24,10 @@ public class InspectionSeanceCacheImpl implements InspectionSeanceCache {
 	private final AtomicInteger breadCrumbOrder = new AtomicInteger(0);
 	private final AtomicInteger headPosition = new AtomicInteger(0);
 
+	public InspectionSeanceCacheImpl() {
+		super();
+	}
+
 	@Override
 	public Map<Long, DataProviderHolder> getDataProviderHolders() {
 		return dataProviderHolders;

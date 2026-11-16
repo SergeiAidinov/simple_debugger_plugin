@@ -160,27 +160,53 @@ public class DebugSessionImpl implements DebugSession {
 		// event.resume();
 	}
 
-	private void handleSingleUiEvent(AbstractUIEvent abstractSimpleDebuggerUIEvent, BreakpointEvent breakpointEvent) {
-		StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
-		if (currentFrame == null)
-			return;
-		try {
-			if (SimpleDebuggerEventTypes.isInspectionEvent(abstractSimpleDebuggerUIEvent.getType())) {
-				DebuggerContext.context().setStatus(SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING);
-			//	while (DebuggerContext.context().getStatus() != SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING) {}
-				//InspectionSeance inspectionSeance = InspectionSeanceImpl.;
-				InspectionSeance.startInspectionSeanceForAnchorElement(abstractSimpleDebuggerUIEvent, currentFrame, breakpointEvent);
-			}
-			DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
-			UIEventHandler qq = abstractSimpleDebuggerUIEvent.getType().getUiEventHandler();
-			System.out.println(abstractSimpleDebuggerUIEvent.getType() + " handler: " + qq);
-			if (Objects.isNull(qq)) return;
-			shouldRefreshSnapsotAndUi.set(abstractSimpleDebuggerUIEvent.getType().getUiEventHandler()
-					.handle(new DebugHandlerContext(currentFrame, breakpointEvent), abstractSimpleDebuggerUIEvent));
-			System.out.println(shouldRefreshSnapsotAndUi);
-		} catch (Exception exception) {
-			SimpleDebuggerLogger.error(exception.getMessage(), exception);
-		}
+	private void handleSingleUiEvent(
+	        AbstractUIEvent abstractSimpleDebuggerUIEvent,
+	        BreakpointEvent breakpointEvent) {
+
+	    StackFrame currentFrame = getTopFrame(breakpointEvent.thread());
+
+	    if (currentFrame == null)
+	        return;
+
+	    try {
+
+	        if (SimpleDebuggerEventTypes.isInspectionEvent(
+	                abstractSimpleDebuggerUIEvent.getType())) {
+
+	            DebuggerContext.context().setStatus(
+	                    SimpleDebuggerStatus.INSPECTION_SEANCE_RUNNING
+	            );
+
+	            InspectionSeance.startInspectionSeanceForAnchorElement(
+	                    abstractSimpleDebuggerUIEvent,
+	                    currentFrame,
+	                    breakpointEvent
+	            );
+
+	            DebuggerContext.context().setStatus(
+	                    SimpleDebuggerStatus.DEBUG_SESSION_RUNNING
+	            );
+
+	            return;
+	        }
+
+	        UIEventHandler handler =
+	                abstractSimpleDebuggerUIEvent.getType().getUiEventHandler();
+
+	        if (Objects.isNull(handler))
+	            return;
+
+	        shouldRefreshSnapsotAndUi.set(
+	                handler.handle(
+	                        new DebugHandlerContext(currentFrame, breakpointEvent),
+	                        abstractSimpleDebuggerUIEvent
+	                )
+	        );
+
+	    } catch (Exception exception) {
+	        SimpleDebuggerLogger.error(exception.getMessage(), exception);
+	    }
 	}
 
 	private StackFrame getTopFrame(ThreadReference thread) {

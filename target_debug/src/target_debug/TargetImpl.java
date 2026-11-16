@@ -22,6 +22,7 @@ public class TargetImpl implements Target {
 	Map<Integer, Tourist> touristMap = testDataProvider.getMapOfTourists();
 	Set<Tourist> touristSet = testDataProvider.getListOfTourists().stream().collect(Collectors.toSet());
 	List<Tourist> touristList = testDataProvider.getListOfTourists();
+	private Tourist justTourist = touristMap.get(0);
 	
 	@Override
 	public void work() {

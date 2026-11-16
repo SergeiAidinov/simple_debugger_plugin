@@ -63,6 +63,14 @@ public class UserObjectInspectionDataProvider implements SimpleDataProvider {
 	private UserObjectPageDTO cachePage() {
 		VirtualMachine vm = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine();
 		List<ReferenceType> qq = vm.allClasses();
+		System.out.println("================================");
+		System.out.println("TYPE: " +
+		        innerElementRepresentationDTO.getTypeOrReturnType());
+		System.out.println("VALUE: " +
+		        innerElementRepresentationDTO.getValue());
+		System.out.println("OBJECT ID: " +
+		        innerElementRepresentationDTO.getObjectId());
+		System.out.println("================================");
 		List<ReferenceType> ww = qq.stream().filter(c -> c.name().contains(innerElementRepresentationDTO.getTypeOrReturnType())).collect(Collectors.toList());
 		ObjectReference objectReference = null;
 		loop:

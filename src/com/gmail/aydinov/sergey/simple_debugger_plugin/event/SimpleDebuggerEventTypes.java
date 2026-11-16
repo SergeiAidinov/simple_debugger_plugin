@@ -159,6 +159,11 @@ public final class SimpleDebuggerEventTypes {
 	// --- Groups of event types ---
 	
 	private static final EnumSet<SimpleDebuggerEventType> INSPECTION_EVENTS = EnumSet.of(
+			
+			// Workaround
+			SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_DEBUG_SESSION,
+			
+			
 			SimpleDebuggerEventType.SET_COLLECTION_INSPECT_WINDOW_STATE,
 		//	SimpleDebuggerEventType.USER_STARTED_INSPECTION_SEANCE,
 			SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,

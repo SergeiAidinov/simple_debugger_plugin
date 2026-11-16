@@ -248,14 +248,14 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
             Long objectId = dto.getObjectId();
 
             return new InnerElementRepresentationDTO(
-                    null, // tag — у map entry обычно нет
-                    null, // или dto.getValue() если это value-side
+                    null,
+                    null,
                     objectId == null ? "<null>" : String.valueOf(objectId),
                     UniversalElementType.FIELD,
                     dto.getValue(),
                     false,
                     dto.getValueCategory(),
-                    null, // если есть
+                    dto.getTypeName(), // <-- здесь исправление
                     0,
                     objectId
             );
