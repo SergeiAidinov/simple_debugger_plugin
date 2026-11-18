@@ -286,18 +286,9 @@ public class MapInspectorTab implements InspectorTab {
 
             switch (dto.getValueCategory()) {
 
-                case USER_OBJECT -> {
-
-                    // Запрашиваем подробную информацию у backend.
-                    // Результат придёт в showFieldInfoPopupFromBackend().
-
-                    uiEventCollector.collectUiEvent(
-                            new UIEvent<>(
-                                    SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_DEBUG_SESSION,
-                                    innerDto
-                            )
-                    );
-                }
+            case USER_OBJECT -> {
+                tooltipManager.showTooltipForMapUserObject(dto, location);
+            }
 
                 case MAP, COLLECTION -> {
 

@@ -1,8 +1,11 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.ui.tooltip_manager;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.MapEntryDTO;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -324,6 +327,86 @@ public class TooltipManager {
 	            d -> buildMapEntryText((InnerElementRepresentationDTO) d, entryName),
 	            null
 	    );
+	}
+	
+	public void showTooltipForMapUserObject(
+	        MapEntryDTO dto,
+	        Point location) {
+
+	    if (dto == null)
+	        return;
+
+	    InnerElementRepresentationDTO anchor =
+	            InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+	                    .fromMapEntry(dto);
+
+	    showPopup(
+	            dto,
+	            location,
+	            d -> buildMapUserObjectText((MapEntryDTO) d),
+	            () -> {
+	                uiEventCollector.collectUiEvent(
+	                        new UIEvent<>(
+	                                SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_DEBUG_SESSION,
+	                                anchor
+	                        )
+	                );
+	            }
+	    );
+	}
+	
+	private String buildMapUserObjectText(MapEntryDTO dto) {
+
+	    StringBuilder info = new StringBuilder();
+
+	    info.append(dto.getTypeName())
+	        .append("\n")
+	        .append("Object ID: ")
+	        .append(dto.getObjectId())
+	        .append("\n\n");
+
+	    List<InnerElementRepresentationDTO> fields =
+	            dto.getElements() == null
+	                    ? List.of()
+	                    : dto.getElements().stream()
+	                            .filter(Objects::nonNull)
+	                            .filter(e -> e.getElementType()
+	                                    == UniversalElementType.FIELD)
+	                            .sorted(Comparator.comparing(
+	                                    InnerElementRepresentationDTO::getElementName,
+	                                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+	                            ))
+	                            .toList();
+
+	    info.append("Fields (")
+	        .append(fields.size())
+	        .append("):\n\n");
+
+	    for (InnerElementRepresentationDTO field : fields) {
+
+	        info.append(field.getElementName())
+	            .append(" : ")
+	            .append(field.getTypeOrReturnType());
+
+	        if (field.isStatic())
+	            info.append(" [static]");
+
+	        info.append("\n");
+
+	        String value = field.getValue();
+
+	        if (value == null)
+	            value = "null";
+
+	        if (value.length() > 120)
+	            value = value.substring(0, 117) + "...";
+
+	        info.append(UiUtils.GAP)
+	            .append(value)
+	            .append("\n\n");
+	    }
+
+	    return info.toString();
 	}
 	
 	private String buildMapEntryText(
