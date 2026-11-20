@@ -129,16 +129,33 @@ public class UserObjectAtBreakpointDataProvider implements SimpleDataProvider {
 
         Tag anchorTag = anchor.getTag();
 
-        // 1. Exact match by representation identity.
+        System.out.println("=== TAG LOOKUP ===");
+        System.out.println("ANCHOR TAG: " + anchorTag);
+
         if (anchorTag != null) {
             for (UniversalElementRepresentation element : elements) {
-                if (Objects.equals(element.getTag(), anchorTag)) {
+                Tag elementTag = element.getTag();
+
+                if (elementTag != null
+                        && Objects.equals(
+                                elementTag.getUniqueId(),
+                                anchorTag.getUniqueId())) {
+
+                    System.out.println("SAME UNIQUE ID FOUND");
+                    System.out.println("ELEMENT TAG: " + elementTag);
+                    System.out.println("TAGS EQUAL: "
+                            + Objects.equals(elementTag, anchorTag));
+                }
+
+                if (Objects.equals(elementTag, anchorTag)) {
+                    System.out.println("EXACT TAG MATCH");
                     return element;
                 }
             }
         }
 
-        // 2. Fallback by JDI object identity.
+        System.out.println("NO EXACT TAG MATCH");
+
         Long objectId = anchor.getObjectId();
 
         if (objectId != null) {
