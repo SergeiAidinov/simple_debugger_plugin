@@ -420,7 +420,7 @@ public class ClassMembersAtBreakpointTab {
 					if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("inspectIcon").getFirst()) {
 					//	DebuggerContext.context().setStatus(SimpleDebuggerStatus.DEBUG_SESSION_RUNNING);
 						uiEventCollector.collectUiEvent(new UIEvent<>(
-								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
+								SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT_IN_DEBUG_SESSION, dto));
 					} else if (getIcon(dto) == SimpleDebugerWindowsManager.instance().icons.get("lens").getFirst()) {
 						Display display = root.getDisplay();
 						Point location = display.getCursorLocation();

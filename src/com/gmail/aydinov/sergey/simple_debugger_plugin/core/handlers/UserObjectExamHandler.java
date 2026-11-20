@@ -12,6 +12,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.Ta
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider.UserObjectAtBreakpointDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.PageableDataProviderHolderImpl;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.SimpleDataProviderHolderImpl;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionSeance;
@@ -62,7 +63,7 @@ public class UserObjectExamHandler implements UIEventHandler {
 		} else {
 			UserObjectAtBreakpointDataProvider userObjectDataProvider = new UserObjectAtBreakpointDataProvider(uiEvent.getPayload(),
 					inspectionHandlerContext);
-			dataProviderHolder = new PageableDataProviderHolderImpl(userObjectDataProvider,
+			dataProviderHolder = new SimpleDataProviderHolderImpl(userObjectDataProvider,
 					DebuggerContext.context().getInspectionSeanceId());
 			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().put(id, dataProviderHolder);
 			inspectionHandlerContext.getInspectionSeanceCache().getDataProviderHolders().get(id).startDataProvider();

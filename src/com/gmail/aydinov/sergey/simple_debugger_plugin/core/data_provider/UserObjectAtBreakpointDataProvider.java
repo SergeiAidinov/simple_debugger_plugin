@@ -11,6 +11,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.Ta
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.HandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.PageableDataProvider;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.SimpleDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.SimpleDebuggerEventTypes.SimpleDebuggerEventType;
@@ -19,7 +20,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDe
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.sun.jdi.ObjectReference;
 
-public class UserObjectAtBreakpointDataProvider implements PageableDataProvider {
+public class UserObjectAtBreakpointDataProvider implements SimpleDataProvider {
 
     private final InnerElementRepresentationDTO anchor;
     private final InspectionHandlerContext inspectionHandlerContext;
@@ -40,7 +41,7 @@ public class UserObjectAtBreakpointDataProvider implements PageableDataProvider 
     }
 
     @Override
-    public void handlePageRequest(Integer pageNumber) {
+    public void handleElementRequest(InnerElementRepresentationDTO innerElementRepresentationDTO) {
 
         System.out.println("=== OBJECT PAGE REQUEST ===");
         System.out.println("anchor name     = " + anchor.getElementName());
@@ -126,60 +127,26 @@ public class UserObjectAtBreakpointDataProvider implements PageableDataProvider 
         List<UniversalElementRepresentation> elements =
                 getUniversalElements();
 
-        Long objectId = anchor.getObjectId();
+        Tag anchorTag = anchor.getTag();
 
-        /*
-         * 1. Основной вариант.
-         *
-         * Ищем по JDI ObjectReference.uniqueID().
-         */
-        if (objectId != null) {
-
+        // 1. Exact match by representation identity.
+        if (anchorTag != null) {
             for (UniversalElementRepresentation element : elements) {
-
-                ObjectReference reference =
-                        element.getObjectReference();
-
-                if (reference == null) {
-                    continue;
-                }
-
-                if (Objects.equals(reference.uniqueID(), objectId)) {
-
-                    System.out.println(
-                            "FOUND OBJECT BY OBJECT ID: " + element
-                    );
-
+                if (Objects.equals(element.getTag(), anchorTag)) {
                     return element;
                 }
             }
         }
 
-        /*
-         * 2. Fallback.
-         *
-         * Если объект уже отсутствует в текущем наборе
-         * representations, пытаемся найти его по Tag.
-         */
-        Tag anchorTag = anchor.getTag();
+        // 2. Fallback by JDI object identity.
+        Long objectId = anchor.getObjectId();
 
-        if (anchorTag != null) {
-
+        if (objectId != null) {
             for (UniversalElementRepresentation element : elements) {
+                ObjectReference reference = element.getObjectReference();
 
-                ObjectReference reference =
-                        element.getObjectReference();
-
-                if (reference == null) {
-                    continue;
-                }
-
-                if (Objects.equals(element.getTag(), anchorTag)) {
-
-                    System.out.println(
-                            "FOUND OBJECT BY TAG: " + element
-                    );
-
+                if (reference != null
+                        && Objects.equals(reference.uniqueID(), objectId)) {
                     return element;
                 }
             }
@@ -205,6 +172,20 @@ public class UserObjectAtBreakpointDataProvider implements PageableDataProvider 
         if (objectTag == null) {
             return List.of();
         }
+        
+        System.out.println("=== FIND OBJECT FIELDS ===");
+        System.out.println("object name = " + object.getElementName());
+        System.out.println("object tag = " + object.getTag());
+        System.out.println("object uniqueId = "
+                + object.getTag().getUniqueId());
+
+        getUniversalElements().stream()
+                .filter(this::isField)
+                .filter(element -> element.getTag() != null)
+                .forEach(element -> System.out.println(
+                        "FIELD: " + element.getElementName()
+                        + ", parentId = " + element.getTag().getParentId()
+                ));
 
         return getUniversalElements()
                 .stream()
@@ -359,4 +340,6 @@ public class UserObjectAtBreakpointDataProvider implements PageableDataProvider 
     public long getDataProviderHolderId() {
         return dataProviderHolderId;
     }
+
+	
 }

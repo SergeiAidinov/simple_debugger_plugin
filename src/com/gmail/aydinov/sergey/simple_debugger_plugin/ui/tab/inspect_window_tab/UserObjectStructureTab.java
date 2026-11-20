@@ -337,7 +337,7 @@ public class UserObjectStructureTab implements InspectorTab {
 
                     if (icon == inspectIcon) {
                         uiEventCollector.collectUiEvent(
-                                new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT, dto));
+                                new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_ADDITIONAL_INFO_ABOUT_OBJECT_IN_DEBUG_SESSION, dto));
                     } else if (icon == lensIcon) {
                         Point location = root.getDisplay().getCursorLocation();
                         tooltipManager.showTooltipForCollection(dto, location);
