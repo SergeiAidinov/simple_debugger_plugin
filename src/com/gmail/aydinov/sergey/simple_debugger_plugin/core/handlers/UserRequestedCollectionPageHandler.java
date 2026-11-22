@@ -1,9 +1,11 @@
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.handlers;
 
+import java.sql.Ref;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.data_model.TargetApplicationRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.DebuggerContext;
@@ -66,7 +68,9 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler {
 					.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
 			if (i.isEmpty()) {
 				TargetObjectResolver targetObjectResolver = new TargetObjectResolver();
-				Optional<ObjectReference> reference = targetObjectResolver.findById(id, inspectionHandlerContext);
+				long parentId = userReqeustedMapPageEvent.getPayload().getFirst().getObjectId();
+				ObjectReference refff = inspectionHandlerContext.getInspectionSeanceCache().getLoadedPieces().get(parentId);
+				Optional<ObjectReference> reference = targetObjectResolver.findById(id, refff);
 				System.out.println(reference);
 				if (reference.isPresent()) {
 					ObjectReference objectReference = reference.get();
@@ -74,7 +78,6 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler {
 					System.out.println(referenceType);
 					InnerElementRepresentationDTO innerElementRepresentationDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromObjectReference(objectReference);
 					System.out.println();
-
 				}
 			}
 				UniversalElementRepresentation mapRepresentation = i.get();
