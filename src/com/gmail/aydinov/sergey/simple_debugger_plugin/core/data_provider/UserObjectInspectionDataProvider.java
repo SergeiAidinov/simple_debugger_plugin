@@ -1,18 +1,16 @@
+
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.AbstractElementRepresentation.Tag;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.TargetVirtualMachineRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.PageableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.SimpleDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.inspection.UserObjectPageDTO;
@@ -21,6 +19,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.DebugEve
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.collectors.SimpleDebuggerEventCollector;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.debug_event.DebugEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.utils.DebugUtils;
+
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
 import com.sun.jdi.Method;
@@ -30,155 +29,242 @@ import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 
 public class UserObjectInspectionDataProvider implements SimpleDataProvider {
-	
-	private final InnerElementRepresentationDTO innerElementRepresentationDTO;
-	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
-	private final InspectionHandlerContext inspectionHandlerContext;
-	private UserObjectPageDTO cachedUserObjectPageDTO;
-	private long dataProviderHolderId;
-	
-	
 
-	public UserObjectInspectionDataProvider(InnerElementRepresentationDTO innerElementRepresentationDTO,
-			InspectionHandlerContext inspectionHandlerContext) {
-		this.innerElementRepresentationDTO = innerElementRepresentationDTO;
-		this.inspectionHandlerContext = inspectionHandlerContext;
-	}
+    private final InnerElementRepresentationDTO innerElementRepresentationDTO;
+    private final DebugEventCollector debugEventCollector =
+            SimpleDebuggerEventCollector.instance();
+    private final InspectionHandlerContext inspectionHandlerContext;
 
-	@Override
-	public void handleElementRequest(InnerElementRepresentationDTO innerElementRepresentationDTO) {
-		System.out.println("OBJECT REQUEST");
-	//	if (Objects.isNull(cachedUserObjectPageDTO))
-			cachedUserObjectPageDTO = cachePage();
-	//	if (Objects.nonNull(cachedUserObjectPageDTO)) {
-			cachedUserObjectPageDTO
-					.setBreadcrumbs(inspectionHandlerContext.getInspectionSeanceCache().groupBreadCrumbsintoPairs());
-			System.out.println(cachedUserObjectPageDTO);
-			debugEventCollector.collectDebugEvent(new DebugEvent<>(
-					SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT, cachedUserObjectPageDTO));
-	//	}
-		
-	}
+    private UserObjectPageDTO cachedUserObjectPageDTO;
+    private long dataProviderHolderId;
 
-	private UserObjectPageDTO cachePage() {
-		VirtualMachine vm = TargetVirtualMachineRepresentation.getInstance().getVirtualMachine();
-		List<ReferenceType> qq = vm.allClasses();
-		System.out.println("================================");
-		System.out.println("TYPE: " +
-		        innerElementRepresentationDTO.getTypeOrReturnType());
-		System.out.println("VALUE: " +
-		        innerElementRepresentationDTO.getValue());
-		System.out.println("OBJECT ID: " +
-		        innerElementRepresentationDTO.getObjectId());
-		System.out.println("================================");
-		List<ReferenceType> ww = qq.stream().filter(c -> c.name().contains(innerElementRepresentationDTO.getTypeOrReturnType())).collect(Collectors.toList());
-		ObjectReference objectReference = null;
-		loop:
-		for (ReferenceType type : ww) {
-		    if (type instanceof ClassType classType) {
-		            List<ObjectReference> objects = classType.instances(0);
-		            for (ObjectReference object : objects) {
-		                if (object.uniqueID() == innerElementRepresentationDTO.getObjectId()) {
-		                	objectReference = object;
-		                	break loop;
-		                }
-		            }
-		    }
-		}
-		cachedUserObjectPageDTO = build(objectReference);
-		return cachedUserObjectPageDTO;
-	}
+    public UserObjectInspectionDataProvider(
+            InnerElementRepresentationDTO innerElementRepresentationDTO,
+            InspectionHandlerContext inspectionHandlerContext) {
 
-	
+        this.innerElementRepresentationDTO = innerElementRepresentationDTO;
+        this.inspectionHandlerContext = inspectionHandlerContext;
+    }
 
-private UserObjectPageDTO build(ObjectReference obj) {
+    @Override
+    public void handleElementRequest(
+            InnerElementRepresentationDTO innerElementRepresentationDTO) {
 
-    ReferenceType type = obj.referenceType();
+        System.out.println("OBJECT REQUEST");
 
-    // ===== ROOT OBJECT =====
+        cachedUserObjectPageDTO = cachePage();
 
-    UUID rootId = UUID.randomUUID();
-    List<UniversalElementRepresentation> entries = new ArrayList<>();
+        if (cachedUserObjectPageDTO == null) {
+            System.err.println("Unable to build user object page.");
+            return;
+        }
 
-    // =========================================================
-    // FIELDS (instance data)
-    // =========================================================
-    for (Field field : type.allFields()) {
-        try {
-            Value value = obj.getValue(field);
+        cachedUserObjectPageDTO.setBreadcrumbs(
+                inspectionHandlerContext.getInspectionSeanceCache()
+                        .groupBreadCrumbsintoPairs());
 
-            ObjectReference fieldObjectReference =
-                    value instanceof ObjectReference reference ? reference : null;
+        System.out.println(cachedUserObjectPageDTO);
 
-            UniversalElementRepresentation fieldElement =
-                    UniversalElementRepresentation.builder()
-                            .objectReference(fieldObjectReference)
-                            .elementName(field.name())
-                            .additionalInfo(field.typeName())
-                            .elementType(UniversalElementType.FIELD)
-                            .value(String.valueOf(value))
-                            .isStatic(field.isStatic())
-                            .valueCategory(DebugUtils.determineValueCategory(value))
-                            .typeOrReturnType(field.typeName())
-                            .parentUniqueId(rootId)
-                            .level(1)
-                            .build();
+        debugEventCollector.collectDebugEvent(
+                new DebugEvent<>(
+                        SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_USER_OBJECT,
+                        cachedUserObjectPageDTO));
+    }
 
-            entries.add(fieldElement);
 
-        } catch (Exception ignored) {
+private UserObjectPageDTO cachePage() {
+
+    long requestedObjectId = innerElementRepresentationDTO.getObjectId();
+
+    System.out.println("================================");
+    System.out.println("TYPE: "
+            + innerElementRepresentationDTO.getTypeOrReturnType());
+    System.out.println("VALUE: "
+            + innerElementRepresentationDTO.getValue());
+    System.out.println("OBJECT ID: " + requestedObjectId);
+    System.out.println("================================");
+
+    // First, try to retrieve the object from the inspection cache.
+    ObjectReference objectReference = inspectionHandlerContext
+            .getInspectionSeanceCache()
+            .getLoadedPieces()
+            .get(requestedObjectId);
+
+    // If the object is not cached, search for it in the target JVM.
+    if (objectReference == null) {
+
+        VirtualMachine vm =
+                TargetVirtualMachineRepresentation.getInstance()
+                        .getVirtualMachine();
+
+        if (vm == null) {
+            System.err.println("Target Virtual Machine is unavailable.");
+            return null;
+        }
+
+        search:
+        for (ReferenceType type : vm.allClasses()) {
+
+            if (!(type instanceof ClassType classType)) {
+                continue;
+            }
+
+            for (ObjectReference object : classType.instances(0)) {
+
+                if (object.uniqueID() == requestedObjectId) {
+                    objectReference = object;
+                    break search;
+                }
+            }
         }
     }
 
-    // =========================================================
-    // METHODS (class behavior)
-    // =========================================================
-    for (Method method : type.methods()) {
-        if (DebugUtils.shouldSkipMethod(method))
-            continue;
-
-        String returnValue = method.returnTypeName();
-        String params = String.join(", ", method.argumentTypeNames());
-
-        UniversalElementRepresentation methodElement =
-                UniversalElementRepresentation.builder()
-                        .objectReference(obj)
-                        .elementName(method.name() + "()")
-                        .elementType(UniversalElementType.METHOD)
-                        .value(returnValue + " " + method.name() + "(" + params + ")")
-                        .typeOrReturnType(method.returnTypeName())
-                        .isStatic(method.isStatic())
-                        .parentUniqueId(rootId)
-                        .level(1)
-                        .build();
-
-        entries.add(methodElement);
+    if (objectReference == null) {
+        System.err.println(
+                "Object not found in target JVM or inspection cache. ID: "
+                        + requestedObjectId);
+        return null;
     }
 
-    List<InnerElementRepresentationDTO> dtoEntries = entries.stream()
-            .map(e -> InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromElement(e))
-            .toList();
+    // Register the inspected object in the inspection cache.
+    registerObjectReference(objectReference);
 
-    return UserObjectPageDTO.builder()
-            .elementName(obj.type().name())
-            .elementType(obj.type().name())
-            .classType(type.name())
-            .entries(dtoEntries)
-            .anchorTag(new Tag(rootId, null))
-            .objectId(obj.uniqueID())
-            .build();
+    return build(objectReference);
 }
 
-	
-//	@Override
-//	public void setDataProviderHolderId(long id) {
-//		dataProviderHolderId = id;
-//		
-//	}
 
-	@Override
-	public long getDataProviderHolderId() {
-		return dataProviderHolderId;
-	}
+    private UserObjectPageDTO build(ObjectReference obj) {
 
+        ReferenceType type = obj.referenceType();
+
+        // ===== ROOT OBJECT =====
+
+        UUID rootId = UUID.randomUUID();
+
+        List<UniversalElementRepresentation> entries =
+                new ArrayList<>();
+
+        // =========================================================
+        // FIELDS (instance data)
+        // =========================================================
+
+        for (Field field : type.allFields()) {
+
+            try {
+
+                Value value = field.isStatic()
+                        ? null
+                        : obj.getValue(field);
+
+                ObjectReference fieldObjectReference =
+                        value instanceof ObjectReference reference
+                                ? reference
+                                : null;
+
+                // Register every referenced object in the inspection cache.
+                if (fieldObjectReference != null) {
+                    registerObjectReference(fieldObjectReference);
+                }
+
+                UniversalElementRepresentation fieldElement =
+                        UniversalElementRepresentation.builder()
+                                .objectReference(fieldObjectReference)
+                                .elementName(field.name())
+                                .additionalInfo(field.typeName())
+                                .elementType(UniversalElementType.FIELD)
+                                .value(String.valueOf(value))
+                                .isStatic(field.isStatic())
+                                .valueCategory(
+                                        DebugUtils.determineValueCategory(value))
+                                .typeOrReturnType(field.typeName())
+                                .parentUniqueId(rootId)
+                                .level(1)
+                                .build();
+
+                entries.add(fieldElement);
+
+            } catch (Exception exception) {
+                System.err.println(
+                        "Unable to inspect field "
+                                + field.name() + ": " + exception);
+            }
+        }
+
+        // =========================================================
+        // METHODS (class behavior)
+        // =========================================================
+
+        for (Method method : type.methods()) {
+
+            if (DebugUtils.shouldSkipMethod(method)) {
+                continue;
+            }
+
+            try {
+
+                String returnValue = method.returnTypeName();
+
+                String params = String.join(
+                        ", ", method.argumentTypeNames());
+
+                UniversalElementRepresentation methodElement =
+                        UniversalElementRepresentation.builder()
+                                .objectReference(obj)
+                                .elementName(method.name() + "()")
+                                .elementType(UniversalElementType.METHOD)
+                                .value(
+                                        returnValue + " "
+                                                + method.name()
+                                                + "(" + params + ")")
+                                .typeOrReturnType(method.returnTypeName())
+                                .isStatic(method.isStatic())
+                                .parentUniqueId(rootId)
+                                .level(1)
+                                .build();
+
+                entries.add(methodElement);
+
+            } catch (Exception exception) {
+                System.err.println(
+                        "Unable to inspect method "
+                                + method.name() + ": " + exception);
+            }
+        }
+
+        List<InnerElementRepresentationDTO> dtoEntries =
+                entries.stream()
+                        .map(InnerElementRepresentationDTO
+                                .InnerElementRepresentationDTOFactory
+                                ::fromElement)
+                        .toList();
+
+        return UserObjectPageDTO.builder()
+                .elementName(obj.type().name())
+                .elementType(obj.type().name())
+                .classType(type.name())
+                .entries(dtoEntries)
+                .anchorTag(new Tag(rootId, null))
+                .objectId(obj.uniqueID())
+                .build();
+    }
+
+    /**
+     * Registers an object reference in the current inspection session.
+     * The key is the JDI unique object ID.
+     */
+    private void registerObjectReference(ObjectReference objectReference) {
+
+        if (objectReference == null) {
+            return;
+        }
+
+        inspectionHandlerContext.getInspectionSeanceCache()
+                .getLoadedPieces()
+                .put(objectReference.uniqueID(), objectReference);
+    }
+
+    @Override
+    public long getDataProviderHolderId() {
+        return dataProviderHolderId;
+    }
 }

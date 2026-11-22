@@ -172,6 +172,32 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
     }
 
     public static Builder builder() { return new Builder(); }
+    
+    public static UniversalElementRepresentation fromObjectReference(
+            ObjectReference reference) {
+
+        if (reference == null) {
+            return null;
+        }
+
+        ReferenceType referenceType = reference.referenceType();
+        String typeName = referenceType.name();
+        Long objectId = reference.uniqueID();
+
+        return UniversalElementRepresentation.builder()
+                .referenceType(referenceType)
+                .objectReference(reference)
+                .elementName(typeName)
+                .additionalInfo(String.valueOf(objectId))
+                .elementType(UniversalElementType.CACHED)
+                .currentRole(CurrentRole.INNER)
+                .value(reference.toString())
+                .isStatic(false)
+                .valueCategory(DebugUtils.determineValueCategory(reference))
+                .typeOrReturnType(typeName)
+                .objectId(objectId)
+                .build();
+    }
 
     // ===================== Utility Builders =====================
 //    public static UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId, ObjectReference objectReference, int level) {

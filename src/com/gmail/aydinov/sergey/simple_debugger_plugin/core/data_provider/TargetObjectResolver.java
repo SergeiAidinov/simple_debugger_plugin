@@ -8,11 +8,12 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.Value;
 
 public final class TargetObjectResolver {
-
+	
     public TargetObjectResolver() {
-    }
+		super();
+	}
 
-    public static Optional<ObjectReference> findById(
+	public Optional<ObjectReference> findById(
             long objectId,
             ObjectReference inspectedObject) {
 

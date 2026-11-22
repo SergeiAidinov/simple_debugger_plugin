@@ -66,24 +66,46 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler {
 					.stream().filter(e -> e instanceof UniversalElementRepresentation)
 					.map(e -> (UniversalElementRepresentation) e)
 					.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
-			if (i.isEmpty()) {
-				TargetObjectResolver targetObjectResolver = new TargetObjectResolver();
-				long parentId = userReqeustedMapPageEvent.getPayload().getFirst().getObjectId();
-				ObjectReference refff = inspectionHandlerContext.getInspectionSeanceCache().getLoadedPieces().get(parentId);
-				Optional<ObjectReference> reference = targetObjectResolver.findById(id, refff);
-				System.out.println(reference);
-				if (reference.isPresent()) {
-					ObjectReference objectReference = reference.get();
-					ReferenceType referenceType = objectReference.referenceType();
-					System.out.println(referenceType);
-					InnerElementRepresentationDTO innerElementRepresentationDTO = InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory.fromObjectReference(objectReference);
-					System.out.println();
+			UniversalElementRepresentation mapRepresentation;
+
+			if (i.isPresent()) {
+
+			    mapRepresentation = i.get();
+
+			} else {
+
+				ObjectReference objectReference =
+				        inspectionHandlerContext.getInspectionSeanceCache()
+				                .getLoadedPieces()
+				                .get(id);
+
+				if (objectReference == null) {
+				    System.err.println(
+				            "Object not found in inspection cache. ID: " + id);
+				    return false;
 				}
+
+				mapRepresentation =
+				        UniversalElementRepresentation.fromObjectReference(objectReference);
+
+				PageableDataProvider pageableDataProvider =
+				        new IterableDataProvider(mapRepresentation, inspectionHandlerContext);
+
+				dataProviderHolder = new PageableDataProviderHolderImpl(
+				        pageableDataProvider,
+				        DebuggerContext.context().getInspectionSeanceId());
+
+				dataProviderHolder.startDataProvider();
+
+				inspectionHandlerContext.getInspectionSeanceCache()
+				        .getDataProviderHolders()
+				        .put(id, dataProviderHolder);
+
+				dataProviderHolder.handleEvent(userReqeustedMapPageEvent);
 			}
-				UniversalElementRepresentation mapRepresentation = i.get();
-				PageableDataProvider pageableDataProvider = new IterableDataProvider(mapRepresentation,
-						inspectionHandlerContext);
-				// iterableDataProvider.setDataProviderHolderId(id);
+
+			PageableDataProvider pageableDataProvider =
+			        new IterableDataProvider(mapRepresentation, inspectionHandlerContext);
 				dataProviderHolder = new PageableDataProviderHolderImpl(pageableDataProvider,
 						DebuggerContext.context().getInspectionSeanceId());
 				dataProviderHolder.startDataProvider();
