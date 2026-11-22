@@ -218,7 +218,7 @@ public class MapInspectorTab implements InspectorTab {
 
                     uiEventCollector.collectUiEvent(
                             new UIEvent<>(
-                                    SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_DEBUG_SESSION,
+                                    SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_INSPECTION_SEANCE,
                                     innerDto
                             )
                     );

@@ -144,6 +144,11 @@ public class IterableDataProvider implements TerminableDataProvider {
 
 		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
 		int toIndex = Math.min(elements.size(), fromIndex + DebugUtils.PAGE_SIZE);
+		
+		System.out.println("=== ITERABLE PAGE ===");
+		System.out.println("Element name: " + iterableRepresentation.getElementName());
+		System.out.println("Stored object ID: " + iterableRepresentation.getObjectReferenceId());
+		System.out.println("JDI object ID: " + iterableRepresentation.getObjectReference().uniqueID());
 
 		return ArrayPageDTO.builder().objectId(iterableRepresentation.getObjectReferenceId())
 				.elementName(iterableRepresentation.getElementName())

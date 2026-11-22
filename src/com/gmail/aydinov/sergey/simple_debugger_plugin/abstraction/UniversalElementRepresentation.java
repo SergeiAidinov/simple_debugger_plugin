@@ -174,41 +174,41 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
     public static Builder builder() { return new Builder(); }
 
     // ===================== Utility Builders =====================
-    public static UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId, ObjectReference objectReference, int level) {
-        return UniversalElementRepresentation.builder()
-                .referenceType(field.declaringType())
-                .objectReference(value instanceof ObjectReference
-                        ? (ObjectReference) value
-                                : null)
-                .elementName(field.name())
-                .additionalInfo(field.typeName())
-                .elementType(UniversalElementType.FIELD)
-                .currentRole(CurrentRole.INNER)
-                .value(value != null ? value.toString() : "null")
-                .isStatic(field.isStatic())
-                .valueCategory(DebugUtils.determineValueCategory(value))
-                .typeOrReturnType(DebugUtils.valueToString(value))
-                .uniqueId(UUID.randomUUID())
-                .parentUniqueId(parentId)
-                .level(level)
-                .build();
-    }
+//    public static UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId, ObjectReference objectReference, int level) {
+//        return UniversalElementRepresentation.builder()
+//                .referenceType(field.declaringType())
+//                .objectReference(value instanceof ObjectReference
+//                        ? (ObjectReference) value
+//                                : null)
+//                .elementName(field.name())
+//                .additionalInfo(field.typeName())
+//                .elementType(UniversalElementType.FIELD)
+//                .currentRole(CurrentRole.INNER)
+//                .value(value != null ? value.toString() : "null")
+//                .isStatic(field.isStatic())
+//                .valueCategory(DebugUtils.determineValueCategory(value))
+//                .typeOrReturnType(DebugUtils.valueToString(value))
+//                .uniqueId(UUID.randomUUID())
+//                .parentUniqueId(parentId)
+//                .level(level)
+//                .build();
+//    }
 
-    public static UniversalElementRepresentation buildElementForMethod(Method method, UUID parentId, ObjectReference objectReference, int level) {
-        return UniversalElementRepresentation.builder()
-                .referenceType(method.declaringType())
-                .objectReference(objectReference)
-                .elementName(method.name() + "()")
-                .additionalInfo(String.join(",", method.argumentTypeNames()))
-                .elementType(UniversalElementType.METHOD)
-                .currentRole(CurrentRole.INNER)
-                .value(method.name() + "(" + String.join(",", method.argumentTypeNames()) + ")")
-                .isStatic(method.isStatic())
-                .valueCategory(ValueCategory.NOT_SPECIFIED)
-                .typeOrReturnType(method.returnTypeName())
-                .uniqueId(UUID.randomUUID())
-                .parentUniqueId(parentId)
-                .level(level)
-                .build();
-    }
+//    public static UniversalElementRepresentation buildElementForMethod(Method method, UUID parentId, ObjectReference objectReference, int level) {
+//        return UniversalElementRepresentation.builder()
+//                .referenceType(method.declaringType())
+//                .objectReference(objectReference)
+//                .elementName(method.name() + "()")
+//                .additionalInfo(String.join(",", method.argumentTypeNames()))
+//                .elementType(UniversalElementType.METHOD)
+//                .currentRole(CurrentRole.INNER)
+//                .value(method.name() + "(" + String.join(",", method.argumentTypeNames()) + ")")
+//                .isStatic(method.isStatic())
+//                .valueCategory(ValueCategory.NOT_SPECIFIED)
+//                .typeOrReturnType(method.returnTypeName())
+//                .uniqueId(UUID.randomUUID())
+//                .parentUniqueId(parentId)
+//                .level(level)
+//                .build();
+//    }
 }

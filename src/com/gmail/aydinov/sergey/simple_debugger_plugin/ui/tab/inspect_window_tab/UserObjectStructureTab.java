@@ -299,8 +299,8 @@ public class UserObjectStructureTab implements InspectorTab {
                 uiEventCollector.collectUiEvent(
                         new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, dto));
             } else if (category == ValueCategory.COLLECTION) {
-                uiEventCollector.collectUiEvent(
-                        new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_ITERABLE, dto));
+//                uiEventCollector.collectUiEvent(
+//                        new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_ITERABLE, dto));
             }
             // Для обычных полей и методов клик по иконке ничего не делает (как в главной вкладке)
         });
