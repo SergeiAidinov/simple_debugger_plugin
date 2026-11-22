@@ -22,6 +22,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.UniversalElementType;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation.ValueCategory;
+import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.UserChangedFieldEventDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.details.UserInstanceDetailsDTO;
@@ -299,8 +300,10 @@ public class UserObjectStructureTab implements InspectorTab {
                 uiEventCollector.collectUiEvent(
                         new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, dto));
             } else if (category == ValueCategory.COLLECTION) {
-//                uiEventCollector.collectUiEvent(
-//                        new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_ITERABLE, dto));
+            	uiEventCollector.collectUiEvent(
+            	new UIEvent<>(
+            	        SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
+            	        PairDTO.of(dto, 0)));
             }
             // Для обычных полей и методов клик по иконке ничего не делает (как в главной вкладке)
         });
