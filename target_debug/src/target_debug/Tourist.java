@@ -1,6 +1,7 @@
 package target_debug;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class Tourist {
@@ -8,11 +9,13 @@ public class Tourist {
 	private final String name;
 	private final String surname;
 	private List<Tourist> friends;
+	private final Map<String, Object> attractions;
 	
-	public Tourist(String name, String surname) {
-		super();
-		this.name = name;
-		this.surname = surname;
+	public Tourist(String name, String surname, Map<String, Object> attractions) {
+	    super();
+	    this.name = name;
+	    this.surname = surname;
+	    this.attractions = attractions;
 	}
 
 	public String getName() {
@@ -29,6 +32,10 @@ public class Tourist {
 
 	public List<Tourist> getFriends() {
 		return friends;
+	}
+	
+	public Map<String, Object> getAttractions() {
+	    return attractions;
 	}
 
 	@Override
