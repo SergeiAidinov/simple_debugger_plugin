@@ -17,6 +17,7 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.AbstractUIEvent;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.event.ui_event.UIEvent;
+import com.sun.jdi.ObjectReference;
 
 public class UserRequestedMapPageHandler implements UIEventHandler {
 
@@ -53,7 +54,24 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 					.map(e -> (UniversalElementRepresentation) e)
 					.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
 
-			UniversalElementRepresentation mapRepresentation = i.get();
+			UniversalElementRepresentation mapRepresentation;
+
+			if (i.isPresent()) {
+			    mapRepresentation = i.get();
+			} else {
+			    ObjectReference objectReference = inspectionHandlerContext
+			            .getInspectionSeanceCache()
+			            .getLoadedPieces()
+			            .get(id);
+
+			    if (objectReference == null) {
+			        System.err.println("Map object not found in inspection cache. ID: " + id);
+			        return false;
+			    }
+
+			    mapRepresentation =
+			            UniversalElementRepresentation.fromObjectReference(objectReference);
+			}
 			PageableDataProvider mapDataProvider = new MapDataProvider(mapRepresentation, inspectionHandlerContext);
 			dataProviderHolder = new PageableDataProviderHolderImpl(mapDataProvider,
 					DebuggerContext.context().getInspectionSeanceId());

@@ -297,8 +297,12 @@ public class UserObjectStructureTab implements InspectorTab {
                 uiEventCollector.collectUiEvent(
                         new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_INSPECTION_SEANCE, dto));
             } else if (category == ValueCategory.MAP) {
-                uiEventCollector.collectUiEvent(
-                        new UIEvent<>(SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE, dto));
+            	uiEventCollector.collectUiEvent(
+                        new UIEvent<>(
+                                SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
+                                PairDTO.of(dto, 0)
+                        )
+                );
             } else if (category == ValueCategory.COLLECTION) {
             	uiEventCollector.collectUiEvent(
             	new UIEvent<>(

@@ -184,7 +184,7 @@ public class MapInspectorTab implements InspectorTab {
     private void setupClickListener(Table table) {
 
         table.addListener(SWT.MouseDown, event -> {
-
+        	System.out.println("MAP TAB: MOUSE DOWN");
             TableItem item = table.getItem(new Point(event.x, event.y));
 
             if (item == null)
@@ -225,7 +225,7 @@ public class MapInspectorTab implements InspectorTab {
                 }
 
                 case MAP -> {
-
+                	System.out.println("MAP TAB: MAP CLICK EVENT");
                     InnerElementRepresentationDTO innerDto =
                             InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
                                     .fromMapEntry(dto);
@@ -239,7 +239,15 @@ public class MapInspectorTab implements InspectorTab {
                 }
 
                 case COLLECTION -> {
-                    // Пока открытие инспектора коллекции здесь не реализовано.
+                    InnerElementRepresentationDTO innerDto =
+                            InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+                                    .fromMapEntry(dto);
+                    uiEventCollector.collectUiEvent(
+                            new UIEvent<>(
+                                    SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
+                                    PairDTO.of(innerDto, 0)
+                            )
+                    );
                 }
 
                 default -> {

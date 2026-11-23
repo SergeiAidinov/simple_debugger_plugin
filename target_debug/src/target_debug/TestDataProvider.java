@@ -148,6 +148,10 @@ public class TestDataProvider {
 	    preferences.put("Visited attractions", visited);
 	    preferences.put("Wants to visit", wanted);
 	    preferences.put("Does not want to visit", unwanted);
+	    
+	    System.out.println("Visited: " + visited.size()
+        + ", Wanted: " + wanted.size()
+        + ", Unwanted: " + unwanted.size());
 
 	    return preferences;
 	}
