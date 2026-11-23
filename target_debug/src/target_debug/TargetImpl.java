@@ -15,6 +15,7 @@ public class TargetImpl implements Target {
 //	private Set<String> strings = Set.of("One", "Two", "Three");
 	private Person person1 = new Person("Sergei", "Aidinov");
 	private Person person2 = new Person("Ethan", "Caldwell");
+	
 	Map<String, Person> fieldPersonsMap = Map.of("Sergei", person1,
 			"Ethan", person2);
 	Set<Integer> longIntegerSet = compileSet();
@@ -31,6 +32,9 @@ public class TargetImpl implements Target {
 		System.out.println(person2);
 		person1.setFriend(person2);
 		person2.setFriend(person1);
+		System.out.println(person1.getClass() == person2.getClass());
+		System.out.println(person1.generalInfo);
+		System.out.println(person2.generalInfo);
 		person1.introduceYourself();
 		person2.introduceYourself();
 		Map<String, Person> persons = Map.of("Sergei", person1,

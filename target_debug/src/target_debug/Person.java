@@ -4,7 +4,7 @@ import java.util.List;
 
 public class Person {
 	
-	private static String generalInfo = "just person";
+	static String generalInfo = "just person";
 	private final String name;
 	private String surname;
 	private int mqm = 42;

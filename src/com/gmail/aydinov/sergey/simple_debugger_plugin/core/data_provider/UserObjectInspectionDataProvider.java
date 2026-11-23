@@ -102,6 +102,8 @@ private UserObjectPageDTO cachePage() {
             return null;
         }
 
+        long searchStart = System.currentTimeMillis();
+
         search:
         for (ReferenceType type : vm.allClasses()) {
 
@@ -117,6 +119,9 @@ private UserObjectPageDTO cachePage() {
                 }
             }
         }
+
+        System.out.println("JDI OBJECT SEARCH TIME: "
+                + (System.currentTimeMillis() - searchStart) + " ms");
     }
 
     if (objectReference == null) {
@@ -134,6 +139,8 @@ private UserObjectPageDTO cachePage() {
 
 
     private UserObjectPageDTO build(ObjectReference obj) {
+    	
+    	long start = System.currentTimeMillis();
 
         ReferenceType type = obj.referenceType();
 
@@ -189,10 +196,16 @@ private UserObjectPageDTO cachePage() {
                                 + field.name() + ": " + exception);
             }
         }
+        
+        System.out.println(
+                "FIELDS TIME: "
+                        + (System.currentTimeMillis() - start) + " ms");
 
         // =========================================================
         // METHODS (class behavior)
         // =========================================================
+        
+        long methodsStart = System.currentTimeMillis();
 
         for (Method method : type.methods()) {
 
@@ -230,6 +243,10 @@ private UserObjectPageDTO cachePage() {
                                 + method.name() + ": " + exception);
             }
         }
+        
+        System.out.println(
+                "TOTAL BUILD TIME: "
+                        + (System.currentTimeMillis() - start) + " ms");
 
         List<InnerElementRepresentationDTO> dtoEntries =
                 entries.stream()
@@ -253,7 +270,7 @@ private UserObjectPageDTO cachePage() {
      * The key is the JDI unique object ID.
      */
     private void registerObjectReference(ObjectReference objectReference) {
-
+    	System.out.println("REGISTER OBJECT: " + objectReference.uniqueID());
         if (objectReference == null) {
             return;
         }

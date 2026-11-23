@@ -214,6 +214,16 @@ public class UserObjectAtBreakpointDataProvider implements SimpleDataProvider {
                                 element.getTag().getParentId(),
                                 objectTag.getUniqueId()
                         ))
+                .peek(element -> {
+                    ObjectReference reference = element.getObjectReference();
+
+                    if (reference != null) {
+                        inspectionHandlerContext
+                                .getInspectionSeanceCache()
+                                .getLoadedPieces()
+                                .put(reference.uniqueID(), reference);
+                    }
+                })
                 .map(InnerElementRepresentationDTO
                         .InnerElementRepresentationDTOFactory::fromElement)
                 .toList();
