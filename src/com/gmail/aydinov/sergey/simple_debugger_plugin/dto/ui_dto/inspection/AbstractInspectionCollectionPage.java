@@ -10,44 +10,53 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.InnerElementRepresentationDTO;
 
+
 public abstract class AbstractInspectionCollectionPage<T> extends AbstractInspectionDTO {
 
-	private final String totalElements;
-	private final int currentPage;
-	private final String totalPages;
-//	private final Map<Integer, UniversalElementRepresentation> entries;
+    private final String totalElements;
+    private final int currentPage;
+    private final String totalPages;
+    private final String collectionType;
 
-	protected AbstractInspectionCollectionPage(Tag tag, String elementName, String elementType, String totalElements,
-			int currentPage, String totalPages,  List<PairDTO<Integer, BreadCrumbDTO>> breadcrumbs, Long objectId) {
-		super(tag, elementName, elementType, breadcrumbs, objectId);
-		this.totalElements = totalElements;
-		this.currentPage = currentPage;
-		this.totalPages = totalPages;
-		
-	}
+    protected AbstractInspectionCollectionPage(
+            Tag tag,
+            String elementName,
+            String elementType,
+            String collectionType,
+            String totalElements,
+            int currentPage,
+            String totalPages,
+            List<PairDTO<Integer, BreadCrumbDTO>> breadcrumbs,
+            Long objectId) {
 
+        super(tag, elementName, elementType, breadcrumbs, objectId);
+        this.collectionType = collectionType;
+        this.totalElements = totalElements;
+        this.currentPage = currentPage;
+        this.totalPages = totalPages;
+    }
 
-	public String getTotalElements() {
-		return totalElements;
-	}
+    public String getTotalElements() {
+        return totalElements;
+    }
 
-	public int getCurrentPage() {
-		return currentPage;
-	}
+    public int getCurrentPage() {
+        return currentPage;
+    }
 
-	public String getTotalPages() {
-		return totalPages;
-	}
+    public String getTotalPages() {
+        return totalPages;
+    }
 
-//	public Map<Integer, UniversalElementRepresentation> getEntries() {
-//		return entries;
-//	}
+    public String getCollectionType() {
+        return collectionType;
+    }
 
-	public boolean hasNextPage() {
-		return currentPage < Integer.valueOf(totalPages) - 1;
-	}
+    public boolean hasNextPage() {
+        return currentPage < Integer.valueOf(totalPages) - 1;
+    }
 
-	public boolean hasPreviousPage() {
-		return currentPage > 0;
-	}
+    public boolean hasPreviousPage() {
+        return currentPage > 0;
+    }
 }

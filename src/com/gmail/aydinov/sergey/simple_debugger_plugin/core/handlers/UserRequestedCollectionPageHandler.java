@@ -66,11 +66,11 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler {
 					.stream().filter(e -> e instanceof UniversalElementRepresentation)
 					.map(e -> (UniversalElementRepresentation) e)
 					.filter(e -> Objects.equals(e.getObjectReferenceId(), id)).findAny();
-			UniversalElementRepresentation mapRepresentation;
+			UniversalElementRepresentation collectionRepresentation;
 
 			if (i.isPresent()) {
 
-			    mapRepresentation = i.get();
+			    collectionRepresentation = i.get();
 
 			} else {
 
@@ -85,13 +85,23 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler {
 				    return false;
 				}
 
-				mapRepresentation =
-				        UniversalElementRepresentation.fromObjectReference(objectReference);
+				InnerElementRepresentationDTO requestedCollection =
+				        userReqeustedMapPageEvent.getPayload().getFirst();
+
+				collectionRepresentation = UniversalElementRepresentation.fromObjectReference(
+				        objectReference,
+				        requestedCollection.getElementName(),
+				        requestedCollection.getAdditionalInfo(),
+				        requestedCollection.getElementType(),
+				        requestedCollection.getValueCategory(),
+				        requestedCollection.getTypeOrReturnType(),
+				        requestedCollection.getObjectId()
+				);
 
 			}
 
 			PageableDataProvider pageableDataProvider =
-			        new IterableDataProvider(mapRepresentation, inspectionHandlerContext);
+			        new IterableDataProvider(collectionRepresentation, inspectionHandlerContext);
 				dataProviderHolder = new PageableDataProviderHolderImpl(pageableDataProvider,
 						DebuggerContext.context().getInspectionSeanceId());
 				dataProviderHolder.startDataProvider();

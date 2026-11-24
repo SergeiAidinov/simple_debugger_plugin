@@ -336,7 +336,7 @@ public class IterableInspectorTab implements InspectorTab {
             if (root.isDisposed() || viewer.getTable().isDisposed()) return;
 
             collectionNameLabel.setText("Collection name: " + safe(page.getElementName()));
-            collectionTypeLabel.setText("Collection type: " + safe(page.getElementType()));
+            collectionTypeLabel.setText("Collection type: " + safe(page.getCollectionType()));
             elementTypeLabel.setText("Element type: " + safe(page.getElementType()));
             sizeLabel.setText("Size: " + page.getTotalElements());
 

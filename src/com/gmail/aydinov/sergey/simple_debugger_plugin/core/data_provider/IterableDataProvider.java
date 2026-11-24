@@ -1,3 +1,4 @@
+
 package com.gmail.aydinov.sergey.simple_debugger_plugin.core.data_provider;
 
 import java.util.Collections;
@@ -14,7 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElementRepresentation;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.inspection.InspectionHandlerContext;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.DataProvider;
-import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.PageableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.core.interfaces.provider.TerminableDataProvider;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.PairDTO;
 import com.gmail.aydinov.sergey.simple_debugger_plugin.dto.ui_dto.BreadCrumbDTO;
@@ -35,255 +35,318 @@ import com.sun.jdi.Value;
 
 public class IterableDataProvider implements TerminableDataProvider {
 
-	private final UniversalElementRepresentation iterableRepresentation;
-	private final InspectionHandlerContext inspectionHandlerContext;
+    private final UniversalElementRepresentation iterableRepresentation;
+    private final InspectionHandlerContext inspectionHandlerContext;
 
-	private final NavigableMap<Integer, Value> elements = new ConcurrentSkipListMap<>();
-	private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
+    private final NavigableMap<Integer, Value> elements = new ConcurrentSkipListMap<>();
+    private final DebugEventCollector debugEventCollector = SimpleDebuggerEventCollector.instance();
 
-	private final AtomicInteger order = new AtomicInteger(0);
-	private final AtomicBoolean allElementsLoaded = new AtomicBoolean(false);
-	private final AtomicBoolean readingStarted = new AtomicBoolean(false);
-	private final AtomicBoolean currentRequestActive = new AtomicBoolean(true);
+    private final AtomicInteger order = new AtomicInteger(0);
+    private final AtomicBoolean allElementsLoaded = new AtomicBoolean(false);
+    private final AtomicBoolean readingStarted = new AtomicBoolean(false);
+    private final AtomicBoolean currentRequestActive = new AtomicBoolean(true);
 
-	private ThreadReference thread;
-	private ObjectReference iterator;
+    private ThreadReference thread;
+    private ObjectReference iterator;
 
-	private Method hasNextMethod;
-	private Method nextMethod;
-	private ClassType iteratorType;
+    private Method hasNextMethod;
+    private Method nextMethod;
+    private ClassType iteratorType;
 
-	private Integer pageNumber;
-	private volatile String totalPages = "calculating...";
-	private volatile String totalEntries = "calculating...";
-	
-	private long dataProviderHolderId;
+    private Integer pageNumber;
+    private volatile String totalPages = "calculating...";
+    private volatile String totalEntries = "calculating...";
 
-	private enum InitializationState {
-		NOT_STARTED, IN_PROGRESS, SUCCESS, FAILED
-	}
+    private long dataProviderHolderId;
 
-	private InitializationState initState = InitializationState.NOT_STARTED;
+    private enum InitializationState {
+        NOT_STARTED, IN_PROGRESS, SUCCESS, FAILED
+    }
 
-	public IterableDataProvider(UniversalElementRepresentation iterableRepresentation,
-			InspectionHandlerContext inspectionHandlerContext) {
-		super();
-		this.iterableRepresentation = iterableRepresentation;
-		this.inspectionHandlerContext = inspectionHandlerContext;
-	}
+    private InitializationState initState = InitializationState.NOT_STARTED;
 
-	@Override
-	public void handlePageRequest(Integer pageNumber) {
-		this.pageNumber = (pageNumber == null) ? 0 : pageNumber;
-	//	totalPages = totalEntries = "calculating...";
-		DataProvider.jdiAccessLock.lock();
-		try {
-			if (initState == InitializationState.NOT_STARTED) {
-				initState = InitializationState.IN_PROGRESS;
-				initState = initiate() ? InitializationState.SUCCESS : InitializationState.FAILED;
-			}
-		} finally {
-			DataProvider.jdiAccessLock.unlock();
-		}
+    public IterableDataProvider(
+            UniversalElementRepresentation iterableRepresentation,
+            InspectionHandlerContext inspectionHandlerContext) {
+        super();
+        this.iterableRepresentation = iterableRepresentation;
+        this.inspectionHandlerContext = inspectionHandlerContext;
+    }
 
-//		DataProvider.jdiAccessLock.lock();
-//		try {
-			if (readingStarted.compareAndSet(false, true)) {
-				iterateThroughIterable();
-			}
-//		} finally {
-//			DataProvider.jdiAccessLock.unlock();
-//		}
+    @Override
+    public void handlePageRequest(Integer pageNumber) {
+        this.pageNumber = (pageNumber == null) ? 0 : pageNumber;
 
-		currentRequestActive.set(true);
-		NavigableMap<Integer, Value> selectedItems = waitForPageLoading();
+        DataProvider.jdiAccessLock.lock();
+        try {
+            if (initState == InitializationState.NOT_STARTED) {
+                initState = InitializationState.IN_PROGRESS;
+                initState = initiate() ? InitializationState.SUCCESS : InitializationState.FAILED;
+            }
+        } finally {
+            DataProvider.jdiAccessLock.unlock();
+        }
 
-		ArrayPageDTO page = createPage(selectedItems);
-		List<PairDTO<Integer, BreadCrumbDTO>> breadCrumbs = inspectionHandlerContext.getInspectionSeanceCache()
-				.groupBreadCrumbsintoPairs();
+        if (readingStarted.compareAndSet(false, true)) {
+            iterateThroughIterable();
+        }
 
-		page.setBreadcrumbs(breadCrumbs);
-		debugEventCollector.collectDebugEvent(new DebugEvent<>(
-				SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE, page));
+        currentRequestActive.set(true);
+        NavigableMap<Integer, Value> selectedItems = waitForPageLoading();
 
-		debugEventCollector.collectDebugEvent(
-				new DebugEvent<>(SimpleDebuggerEventTypes.SimpleDebuggerEventType.CLOSE_LOADING_POPUP, null));
-	}
+        ArrayPageDTO page = createPage(selectedItems);
 
-	private ArrayPageDTO createPage(NavigableMap<Integer, Value> selectedItems) {
+        List<PairDTO<Integer, BreadCrumbDTO>> breadCrumbs =
+                inspectionHandlerContext.getInspectionSeanceCache()
+                        .groupBreadCrumbsintoPairs();
 
-		Map<Integer, UniversalElementRepresentation> entries = new LinkedHashMap<>();
-		// Integer index = 0;
-		for (Entry<Integer, Value> entry : selectedItems.entrySet()) {
+        page.setBreadcrumbs(breadCrumbs);
 
-			// Integer index = outer.getKey();
-			Value value = entry.getValue();
+        debugEventCollector.collectDebugEvent(new DebugEvent<>(
+                SimpleDebuggerEventTypes.SimpleDebuggerEventType.DISPLAY_PAGE_OF_INSPECTABLE_ITERABLE,
+                page));
 
-			if (value instanceof ObjectReference objectReference) {
+        debugEventCollector.collectDebugEvent(
+                new DebugEvent<>(SimpleDebuggerEventTypes.SimpleDebuggerEventType.CLOSE_LOADING_POPUP, null));
+    }
 
-				UniversalElementRepresentation representation = UniversalElementRepresentation.builder()
-						.objectReference(objectReference).referenceType(objectReference.referenceType())
-						.elementName(DebugUtils.getObjectReferenceValueAsString(objectReference))
-						.elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
-						.valueCategory(DebugUtils.determineValueCategory(value))
-						.value(DebugUtils.getObjectReferenceValueAsString(objectReference)).uniqueId(UUID.randomUUID())
-						.build();
+    private ArrayPageDTO createPage(NavigableMap<Integer, Value> selectedItems) {
+    	
+    	ObjectReference collectionReference = iterableRepresentation.getObjectReference();
 
-				entries.put(entry.getKey(), representation);
-			} else {
+        System.out.println("=== JDI TYPE DIAGNOSTICS ===");
+        System.out.println("Collection reference type: "
+                + collectionReference.referenceType().name());
 
-				UniversalElementRepresentation representation = UniversalElementRepresentation.builder()
-						.objectReference(null).referenceType(null).elementName(String.valueOf(value))
-						.elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
-						.valueCategory(DebugUtils.determineValueCategory(value)).value(String.valueOf(value))
-						.uniqueId(UUID.randomUUID()).build();
+        for (Value value : elements.values()) {
+            if (value != null) {
+                System.out.println("Element value type: " + value.type().name());
+                break;
+            }
+        }
 
-				entries.put(entry.getKey(), representation);
-			}
-		}
+        Map<Integer, UniversalElementRepresentation> entries = new LinkedHashMap<>();
 
-		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
-		int toIndex = Math.min(elements.size(), fromIndex + DebugUtils.PAGE_SIZE);
-		
-		System.out.println("=== ITERABLE PAGE ===");
-		System.out.println("Element name: " + iterableRepresentation.getElementName());
-		System.out.println("Stored object ID: " + iterableRepresentation.getObjectReferenceId());
-		System.out.println("JDI object ID: " + iterableRepresentation.getObjectReference().uniqueID());
+        for (Entry<Integer, Value> entry : selectedItems.entrySet()) {
 
-		return ArrayPageDTO.builder().objectId(iterableRepresentation.getObjectReferenceId())
-				.elementName(iterableRepresentation.getElementName())
-				.elementType(iterableRepresentation.getAdditionalInfo()).totalElements(totalEntries)
-				.currentPage(pageNumber).totalPages(totalPages).fromIndex(fromIndex).toIndex(toIndex).entries(entries)
-				.anchorTag(iterableRepresentation.getTag()).build();
-	}
+            Value value = entry.getValue();
 
-	private void iterateThroughIterable() {
-		new Thread(() -> {
-			while (true) {
-				Value hasNextVal;
+            if (value instanceof ObjectReference objectReference) {
 
-				DataProvider.jdiAccessLock.lock();
-				try {
-					hasNextVal = iterator.invokeMethod(thread, hasNextMethod, Collections.emptyList(),
-							ObjectReference.INVOKE_SINGLE_THREADED);
+                UniversalElementRepresentation representation =
+                        UniversalElementRepresentation.builder()
+                                .objectReference(objectReference)
+                                .referenceType(objectReference.referenceType())
+                                .elementName(DebugUtils.getObjectReferenceValueAsString(objectReference))
+                                .elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
+                                .valueCategory(DebugUtils.determineValueCategory(value))
+                                .value(DebugUtils.getObjectReferenceValueAsString(objectReference))
+                                .uniqueId(UUID.randomUUID())
+                                .build();
 
-					if (!(hasNextVal instanceof BooleanValue bv) || !bv.value()) {
-						break;
-					}
+                entries.put(entry.getKey(), representation);
 
-					Value next = iterator.invokeMethod(thread, nextMethod, Collections.emptyList(),
-							ObjectReference.INVOKE_SINGLE_THREADED);
+            } else {
 
-					if (next instanceof ObjectReference ref) {
-						inspectionHandlerContext.getInspectionSeanceCache().getLoadedPieces().put(ref.uniqueID(), ref);
-					}
+                UniversalElementRepresentation representation =
+                        UniversalElementRepresentation.builder()
+                                .objectReference(null)
+                                .referenceType(null)
+                                .elementName(String.valueOf(value))
+                                .elementType(UniversalElementRepresentation.UniversalElementType.COLLECTION_ELEMENT)
+                                .valueCategory(DebugUtils.determineValueCategory(value))
+                                .value(String.valueOf(value))
+                                .uniqueId(UUID.randomUUID())
+                                .build();
 
-					int index = order.getAndIncrement();
-					elements.put(index, next);
+                entries.put(entry.getKey(), representation);
+            }
+        }
 
-				} catch (Exception ignored) {
-				} finally {
-					DataProvider.jdiAccessLock.unlock();
-				}
-			}
+        int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;
+        int toIndex = Math.min(elements.size(), fromIndex + DebugUtils.PAGE_SIZE);
 
-			allElementsLoaded.set(true);
-			totalEntries = String.valueOf(elements.size());
+        String collectionType = iterableRepresentation
+                .getObjectReference()
+                .referenceType()
+                .name();
 
-			int total = Integer.parseInt(totalEntries);
-			int pages = (total + DebugUtils.PAGE_SIZE - 1) / DebugUtils.PAGE_SIZE;
-			totalPages = String.valueOf(pages);
+        String elementType = elements.values().stream()
+                .filter(value -> value != null)
+                .findFirst()
+                .map(value -> value.type().name())
+                .orElse(null);
 
-		}).start();
-	}
+        System.out.println("=== ARRAY PAGE DTO ===");
+        System.out.println("Collection name: " + iterableRepresentation.getElementName());
+        System.out.println("Collection type: " + collectionType);
+        System.out.println("Element type: " + elementType);
 
-	private boolean initiate() {
-		ReferenceType refType = iterableRepresentation.getObjectReference().referenceType();
-		if (!(refType instanceof ClassType classType)) {
-			return false;
-		}
+        ArrayPageDTO page = ArrayPageDTO.builder()
+                .objectId(iterableRepresentation.getObjectReferenceId())
+                .elementName(iterableRepresentation.getElementName())
+                .collectionType(collectionType)
+                .elementType(elementType)
+                .totalElements(totalEntries)
+                .currentPage(pageNumber)
+                .totalPages(totalPages)
+                .fromIndex(fromIndex)
+                .toIndex(toIndex)
+                .entries(entries)
+                .anchorTag(iterableRepresentation.getTag())
+                .build();
 
-		boolean isIterable = classType.allInterfaces().stream().anyMatch(i -> "java.lang.Iterable".equals(i.name()));
+        System.out.println("=== BUILT DTO ===");
+        System.out.println("Collection type: " + page.getCollectionType());
+        System.out.println("Element type: " + page.getElementType());
 
-		if (!isIterable) {
-			return false;
-		}
+        return page;
+    }
 
-		thread = inspectionHandlerContext.getBreakpointEvent().thread();
+    private void iterateThroughIterable() {
+        new Thread(() -> {
+            while (true) {
+                Value hasNextVal;
 
-		Method iteratorMethod = classType.concreteMethodByName("iterator", "()Ljava/util/Iterator;");
-		if (iteratorMethod == null) {
-			return false;
-		}
+                DataProvider.jdiAccessLock.lock();
+                try {
+                    hasNextVal = iterator.invokeMethod(
+                            thread,
+                            hasNextMethod,
+                            Collections.emptyList(),
+                            ObjectReference.INVOKE_SINGLE_THREADED);
 
-		Value iteratorValue;
+                    if (!(hasNextVal instanceof BooleanValue bv) || !bv.value()) {
+                        break;
+                    }
 
-		try {
-			iteratorValue = iterableRepresentation.getObjectReference().invokeMethod(thread, iteratorMethod,
-					Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
-		} catch (Exception e) {
-			return false;
-		}
+                    Value next = iterator.invokeMethod(
+                            thread,
+                            nextMethod,
+                            Collections.emptyList(),
+                            ObjectReference.INVOKE_SINGLE_THREADED);
 
-		if (!(iteratorValue instanceof ObjectReference it)) {
-			return false;
-		}
+                    if (next instanceof ObjectReference ref) {
+                        inspectionHandlerContext.getInspectionSeanceCache()
+                                .getLoadedPieces()
+                                .put(ref.uniqueID(), ref);
+                    }
 
-		this.iterator = it;
+                    int index = order.getAndIncrement();
+                    elements.put(index, next);
 
-		iteratorType = (ClassType) iterator.referenceType();
-		hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
-		nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+                } catch (Exception ignored) {
+                } finally {
+                    DataProvider.jdiAccessLock.unlock();
+                }
+            }
 
-		return hasNextMethod != null && nextMethod != null;
-	}
+            allElementsLoaded.set(true);
+            totalEntries = String.valueOf(elements.size());
 
-	private NavigableMap<Integer, Value> waitForPageLoading() {
-		if (pageNumber == null) {
-			pageNumber = 0;
-		}
+            int total = Integer.parseInt(totalEntries);
+            int pages = (total + DebugUtils.PAGE_SIZE - 1) / DebugUtils.PAGE_SIZE;
+            totalPages = String.valueOf(pages);
 
-		NavigableMap<Integer, Value> selected;
-		int lastSentPageNumber = -1;
+        }).start();
+    }
 
-		while (currentRequestActive.get()) {
-			selected = elements.subMap(pageNumber * DebugUtils.PAGE_SIZE, true,
-					pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE, false);
+    private boolean initiate() {
+        ReferenceType refType = iterableRepresentation.getObjectReference().referenceType();
 
-			if (selected.size() == DebugUtils.PAGE_SIZE || allElementsLoaded.get()) {
-				return selected;
-			}
+        if (!(refType instanceof ClassType classType)) {
+            return false;
+        }
 
-			try {
-				Thread.sleep(250);
-			} catch (InterruptedException ignored) {
-			}
-			if (((elements.size() / DebugUtils.PAGE_SIZE) > lastSentPageNumber)
-					&& ((elements.size() / DebugUtils.PAGE_SIZE) < pageNumber)) {
-				debugEventCollector.collectDebugEvent(new DebugEvent<>(SimpleDebuggerEventType.SHOW_LOADING_POPUP,
-					PairDTO.of("Loading page: " + (elements.size() / DebugUtils.PAGE_SIZE), getDataProviderHolderId())));
-			}
-		}
+        boolean isIterable = classType.allInterfaces().stream()
+                .anyMatch(i -> "java.lang.Iterable".equals(i.name()));
 
-		return Collections.emptyNavigableMap();
-	}
+        if (!isIterable) {
+            return false;
+        }
 
-	@Override
-	public void terminateCurrentRequest() {
-		totalPages = totalEntries = "canceled";
-		currentRequestActive.compareAndExchange(true, false);
+        thread = inspectionHandlerContext.getBreakpointEvent().thread();
 
-	}
+        Method iteratorMethod = classType.concreteMethodByName(
+                "iterator", "()Ljava/util/Iterator;");
 
-//	@Override
-//	public void setDataProviderHolderId(long id) {
-//		dataProviderHolderId = id;
-//		
-//	}
+        if (iteratorMethod == null) {
+            return false;
+        }
 
-	@Override
-	public long getDataProviderHolderId() {
-		return dataProviderHolderId;
-	}
+        Value iteratorValue;
 
+        try {
+            iteratorValue = iterableRepresentation.getObjectReference().invokeMethod(
+                    thread,
+                    iteratorMethod,
+                    Collections.emptyList(),
+                    ObjectReference.INVOKE_SINGLE_THREADED);
+        } catch (Exception e) {
+            return false;
+        }
+
+        if (!(iteratorValue instanceof ObjectReference it)) {
+            return false;
+        }
+
+        this.iterator = it;
+
+        iteratorType = (ClassType) iterator.referenceType();
+
+        hasNextMethod = iteratorType.concreteMethodByName("hasNext", "()Z");
+        nextMethod = iteratorType.concreteMethodByName("next", "()Ljava/lang/Object;");
+
+        return hasNextMethod != null && nextMethod != null;
+    }
+
+    private NavigableMap<Integer, Value> waitForPageLoading() {
+        if (pageNumber == null) {
+            pageNumber = 0;
+        }
+
+        NavigableMap<Integer, Value> selected;
+        int lastSentPageNumber = -1;
+
+        while (currentRequestActive.get()) {
+
+            selected = elements.subMap(
+                    pageNumber * DebugUtils.PAGE_SIZE,
+                    true,
+                    pageNumber * DebugUtils.PAGE_SIZE + DebugUtils.PAGE_SIZE,
+                    false);
+
+            if (selected.size() == DebugUtils.PAGE_SIZE || allElementsLoaded.get()) {
+                return selected;
+            }
+
+            try {
+                Thread.sleep(250);
+            } catch (InterruptedException ignored) {
+            }
+
+            if (((elements.size() / DebugUtils.PAGE_SIZE) > lastSentPageNumber)
+                    && ((elements.size() / DebugUtils.PAGE_SIZE) < pageNumber)) {
+
+                debugEventCollector.collectDebugEvent(new DebugEvent<>(
+                        SimpleDebuggerEventType.SHOW_LOADING_POPUP,
+                        PairDTO.of(
+                                "Loading page: " + (elements.size() / DebugUtils.PAGE_SIZE),
+                                getDataProviderHolderId())));
+            }
+        }
+
+        return Collections.emptyNavigableMap();
+    }
+
+    @Override
+    public void terminateCurrentRequest() {
+        totalPages = totalEntries = "canceled";
+        currentRequestActive.compareAndExchange(true, false);
+    }
+
+    @Override
+    public long getDataProviderHolderId() {
+        return dataProviderHolderId;
+    }
 }
