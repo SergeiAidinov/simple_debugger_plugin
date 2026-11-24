@@ -127,31 +127,39 @@ public class TestDataProvider {
 		createMapOfTourists();
 	}
 	
-	private Map<String, List<String>> createAttractionPreferences() {
+	private Map<String, Map<String, List<String>>> createAttractionPreferences() {
 
-	    List<String> attractions = new ArrayList<>(getAllAttractions());
-	    Collections.shuffle(attractions, random);
+	    Map<String, Map<String, List<String>>> preferences = new LinkedHashMap<>();
 
-	    int visitedCount = random.nextInt(attractions.size() + 1);
-	    int wantedCount = random.nextInt(attractions.size() - visitedCount + 1);
+	    Map<String, List<String>> visited = new LinkedHashMap<>();
+	    Map<String, List<String>> wanted = new LinkedHashMap<>();
+	    Map<String, List<String>> unwanted = new LinkedHashMap<>();
 
-	    List<String> visited = new ArrayList<>(
-	            attractions.subList(0, visitedCount));
+	    for (Map.Entry<String, List<String>> entry : attractionsByCountry.entrySet()) {
 
-	    List<String> wanted = new ArrayList<>(
-	            attractions.subList(visitedCount, visitedCount + wantedCount));
+	        String country = entry.getKey();
 
-	    List<String> unwanted = new ArrayList<>(
-	            attractions.subList(visitedCount + wantedCount, attractions.size()));
+	        List<String> attractions = new ArrayList<>(entry.getValue());
+	        Collections.shuffle(attractions, random);
 
-	    Map<String, List<String>> preferences = new LinkedHashMap<>();
+	        int visitedCount = random.nextInt(attractions.size() + 1);
+	        int wantedCount = random.nextInt(attractions.size() - visitedCount + 1);
+
+	        visited.put(country,
+	                new ArrayList<>(attractions.subList(0, visitedCount)));
+
+	        wanted.put(country,
+	                new ArrayList<>(attractions.subList(
+	                        visitedCount, visitedCount + wantedCount)));
+
+	        unwanted.put(country,
+	                new ArrayList<>(attractions.subList(
+	                        visitedCount + wantedCount, attractions.size())));
+	    }
+
 	    preferences.put("Visited attractions", visited);
 	    preferences.put("Wants to visit", wanted);
 	    preferences.put("Does not want to visit", unwanted);
-	    
-	    System.out.println("Visited: " + visited.size()
-        + ", Wanted: " + wanted.size()
-        + ", Unwanted: " + unwanted.size());
 
 	    return preferences;
 	}
