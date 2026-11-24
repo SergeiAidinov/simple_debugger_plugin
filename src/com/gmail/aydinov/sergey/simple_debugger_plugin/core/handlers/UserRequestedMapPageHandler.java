@@ -69,8 +69,18 @@ public class UserRequestedMapPageHandler implements UIEventHandler {
 			        return false;
 			    }
 
-			    mapRepresentation =
-			            UniversalElementRepresentation.fromObjectReference(objectReference);
+			    InnerElementRepresentationDTO requestedMap =
+			            userReqeustedMapPageEvent.getPayload().getFirst();
+
+			    mapRepresentation = UniversalElementRepresentation.fromObjectReference(
+			            objectReference,
+			            requestedMap.getElementName(),
+			            requestedMap.getAdditionalInfo(),
+			            requestedMap.getElementType(),
+			            requestedMap.getValueCategory(),
+			            requestedMap.getTypeOrReturnType(),
+			            requestedMap.getObjectId()
+			    );
 			}
 			PageableDataProvider mapDataProvider = new MapDataProvider(mapRepresentation, inspectionHandlerContext);
 			dataProviderHolder = new PageableDataProviderHolderImpl(mapDataProvider,

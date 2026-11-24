@@ -198,6 +198,36 @@ public class UniversalElementRepresentation extends AbstractElementRepresentatio
                 .objectId(objectId)
                 .build();
     }
+    
+    public static UniversalElementRepresentation fromObjectReference(
+            ObjectReference reference,
+            String elementName,
+            String additionalInfo,
+            UniversalElementType elementType,
+            ValueCategory valueCategory,
+            String typeOrReturnType,
+            Long objectId) {
+
+        if (reference == null) {
+            return null;
+        }
+
+        return UniversalElementRepresentation.builder()
+                .referenceType(reference.referenceType())
+                .objectReference(reference)
+                .elementName(elementName)
+                .additionalInfo(additionalInfo)
+                .elementType(elementType)
+                .currentRole(CurrentRole.INNER)
+                .value(reference.toString())
+                .isStatic(false)
+                .valueCategory(valueCategory != null
+                        ? valueCategory
+                        : DebugUtils.determineValueCategory(reference))
+                .typeOrReturnType(typeOrReturnType)
+                .objectId(objectId != null ? objectId : reference.uniqueID())
+                .build();
+    }
 
     // ===================== Utility Builders =====================
 //    public static UniversalElementRepresentation buildElementForField(Field field, Value value, UUID parentId, ObjectReference objectReference, int level) {

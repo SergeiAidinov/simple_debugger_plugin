@@ -231,21 +231,23 @@ public final class MapDataProvider implements TerminableDataProvider {
 				String valueValueText = DebugUtils.getObjectReferenceValueAsString(valueReference) + " (id="
 						+ valueReference.uniqueID() + ")";
 				collectionElements.put(
-					    new MapEntryDTO(
-					        keyValueText,
-					        keyReference.uniqueID(),
-					        keyCategory,
-					        keyEntries,
-					        keyReference.type().name()
-					    ),
-					    new MapEntryDTO(
-					        valueValueText,
-					        valueReference.uniqueID(),
-					        valueCategory,
-					        valueEntries,
-					        valueReference.type().name()
-					    )
-					);
+				        new MapEntryDTO(
+				                null,
+				                keyValueText,
+				                keyReference.uniqueID(),
+				                keyCategory,
+				                keyEntries,
+				                keyReference.type().name()
+				        ),
+				        new MapEntryDTO(
+				                DebugUtils.getObjectReferenceValueAsString(keyReference),
+				                valueValueText,
+				                valueReference.uniqueID(),
+				                valueCategory,
+				                valueEntries,
+				                valueReference.type().name()
+				        )
+				);
 			}
 		}
 		int fromIndex = pageNumber * DebugUtils.PAGE_SIZE;

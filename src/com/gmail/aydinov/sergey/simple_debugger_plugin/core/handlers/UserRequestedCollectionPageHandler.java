@@ -88,20 +88,6 @@ public class UserRequestedCollectionPageHandler implements UIEventHandler {
 				mapRepresentation =
 				        UniversalElementRepresentation.fromObjectReference(objectReference);
 
-				PageableDataProvider pageableDataProvider =
-				        new IterableDataProvider(mapRepresentation, inspectionHandlerContext);
-
-				dataProviderHolder = new PageableDataProviderHolderImpl(
-				        pageableDataProvider,
-				        DebuggerContext.context().getInspectionSeanceId());
-
-				dataProviderHolder.startDataProvider();
-
-				inspectionHandlerContext.getInspectionSeanceCache()
-				        .getDataProviderHolders()
-				        .put(id, dataProviderHolder);
-
-				dataProviderHolder.handleEvent(userReqeustedMapPageEvent);
 			}
 
 			PageableDataProvider pageableDataProvider =

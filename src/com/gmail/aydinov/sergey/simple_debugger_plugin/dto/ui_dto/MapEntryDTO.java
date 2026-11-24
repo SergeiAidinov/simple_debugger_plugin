@@ -6,19 +6,21 @@ import com.gmail.aydinov.sergey.simple_debugger_plugin.abstraction.UniversalElem
 
 public class MapEntryDTO {
 
+	private final String elementName;
     private final String value;
     private final long objectId;
     private final ValueCategory valueCategory;
     private final List<InnerElementRepresentationDTO> elements;
     private final String typeName;
 
-    public MapEntryDTO(
+    public MapEntryDTO(String elementName,
             String value,
             long objectId,
             ValueCategory valueCategory,
             List<InnerElementRepresentationDTO> elements,
             String typeName) {
-
+    	
+    	this.elementName = elementName;
         this.value = value;
         this.objectId = objectId;
         this.valueCategory = valueCategory;
@@ -26,7 +28,11 @@ public class MapEntryDTO {
         this.typeName = typeName;
     }
 
-    public String getValue() {
+    public String getElementName() {
+		return elementName;
+	}
+
+	public String getValue() {
         return value;
     }
 
