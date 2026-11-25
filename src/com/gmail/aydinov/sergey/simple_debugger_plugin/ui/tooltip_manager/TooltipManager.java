@@ -321,11 +321,23 @@ public class TooltipManager {
 	        String entryName,
 	        Point location) {
 
+	    showTooltipForMapEntry(dto, entryName, location, null);
+	}
+
+	public void showTooltipForMapEntry(
+	        InnerElementRepresentationDTO dto,
+	        String entryName,
+	        Point location,
+	        Runnable onClick) {
+
 	    showPopup(
 	            dto,
 	            location,
-	            d -> buildMapEntryText((InnerElementRepresentationDTO) d, entryName),
-	            null
+	            d -> buildMapEntryText(
+	                    (InnerElementRepresentationDTO) d,
+	                    entryName
+	            ),
+	            onClick
 	    );
 	}
 	

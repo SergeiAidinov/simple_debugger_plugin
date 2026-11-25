@@ -180,6 +180,37 @@ public class MapInspectorTab implements InspectorTab {
     }
 
     // ================= CLICK =================
+    
+    private void requestMapOrCollectionPage(MapEntryDTO dto) {
+
+        if (dto == null || dto.getValueCategory() == null)
+            return;
+
+        InnerElementRepresentationDTO innerDto =
+                InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
+                        .fromMapEntry(dto);
+
+        switch (dto.getValueCategory()) {
+
+            case MAP -> uiEventCollector.collectUiEvent(
+                    new UIEvent<>(
+                            SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
+                            PairDTO.of(innerDto, 0)
+                    )
+            );
+
+            case COLLECTION -> uiEventCollector.collectUiEvent(
+                    new UIEvent<>(
+                            SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
+                            PairDTO.of(innerDto, 0)
+                    )
+            );
+
+            default -> {
+                // No-op.
+            }
+        }
+    }
 
     private void setupClickListener(Table table) {
 
@@ -224,31 +255,7 @@ public class MapInspectorTab implements InspectorTab {
                     );
                 }
 
-                case MAP -> {
-                	System.out.println("MAP TAB: MAP CLICK EVENT");
-                    InnerElementRepresentationDTO innerDto =
-                            InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-                                    .fromMapEntry(dto);
-
-                    uiEventCollector.collectUiEvent(
-                            new UIEvent<>(
-                                    SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
-                                    PairDTO.of(innerDto, 0)
-                            )
-                    );
-                }
-
-                case COLLECTION -> {
-                    InnerElementRepresentationDTO innerDto =
-                            InnerElementRepresentationDTO.InnerElementRepresentationDTOFactory
-                                    .fromMapEntry(dto);
-                    uiEventCollector.collectUiEvent(
-                            new UIEvent<>(
-                                    SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
-                                    PairDTO.of(innerDto, 0)
-                            )
-                    );
-                }
+                case MAP, COLLECTION -> requestMapOrCollectionPage(dto);
 
                 default -> {
                     // No-op.
@@ -267,14 +274,16 @@ public class MapInspectorTab implements InspectorTab {
 
             TableItem item = table.getItem(new Point(event.x, event.y));
 
-            MapEntryDTO dto = null;
+            
             int col = -1;
+            MapEntryDTO hoveredDto = null;
+
             if (item != null && item.getData() instanceof PairDTO<?, ?> pair) {
-
-                 col = getColumnIndexAtPoint(table, event.x);
-
-                dto = getMapEntryForColumn(pair, col);
+                col = getColumnIndexAtPoint(table, event.x);
+                hoveredDto = getMapEntryForColumn(pair, col);
             }
+
+            final MapEntryDTO dto = hoveredDto;
 
             if (Objects.equals(dto, lastInspected))
                 return;
@@ -298,17 +307,15 @@ public class MapInspectorTab implements InspectorTab {
                 tooltipManager.showTooltipForMapUserObject(dto, location);
             }
 
-                case MAP, COLLECTION -> {
+            case MAP, COLLECTION -> {
 
-                    // Для Map и Collection используем существующий
-                    // механизм TooltipManager.
-
-                	tooltipManager.showTooltipForMapEntry(
-                	        innerDto,
-                	        col == 0 ? "Key" : "Value",
-                	        location
-                	);
-                }
+                tooltipManager.showTooltipForMapEntry(
+                        innerDto,
+                        col == 0 ? "Key" : "Value",
+                        location,
+                        () -> requestMapOrCollectionPage(dto)
+                );
+            }
 
                 default -> {
                     // Для остальных категорий popup не нужен.
