@@ -344,15 +344,30 @@ public class TooltipManager {
 	            dto,
 	            location,
 	            d -> buildMapUserObjectText((MapEntryDTO) d),
-	            () -> {
-	                uiEventCollector.collectUiEvent(
-	                        new UIEvent<>(
-	                                SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_DEBUG_SESSION,
-	                                anchor
-	                        )
-	                );
-	            }
+	            () -> fireMapUserObjectInspectionEvent(anchor)
 	    );
+	}
+	
+	private void fireMapUserObjectInspectionEvent(
+	        InnerElementRepresentationDTO anchor) {
+
+	    DebuggerContext context = DebuggerContext.context();
+
+	    SimpleDebuggerEventType eventType = null;
+
+	    if (context.isInspectionSeanceActive()) {
+	        eventType = SimpleDebuggerEventType
+	                .USER_INSPECTS_USER_OBJECT_IN_INSPECTION_SEANCE;
+	    } else if (context.isDebugSessionActive()) {
+	        eventType = SimpleDebuggerEventType
+	                .USER_INSPECTS_USER_OBJECT_IN_DEBUG_SESSION;
+	    }
+
+	    if (eventType != null) {
+	        uiEventCollector.collectUiEvent(
+	                new UIEvent<>(eventType, anchor)
+	        );
+	    }
 	}
 	
 	private String buildMapUserObjectText(MapEntryDTO dto) {
