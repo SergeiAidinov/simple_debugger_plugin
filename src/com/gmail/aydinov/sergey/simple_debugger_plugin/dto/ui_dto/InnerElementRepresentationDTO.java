@@ -252,7 +252,7 @@ public class InnerElementRepresentationDTO implements Comparable<InnerElementRep
             return new InnerElementRepresentationDTO(
                     null,
                     dto.getElementName(),
-                    dto.getTypeName(),
+                    objectId == null ? "<null>" : String.valueOf(objectId),
                     UniversalElementType.FIELD,
                     dto.getValue(),
                     false,
