@@ -108,15 +108,15 @@ public class UniversalInspectorWindow implements CurrentlyInspectedObjectIdHolde
 			close();
 		});
 		shell.open();
-		display.asyncExec(() -> {
-			// iterableInspectorTab = new IterableInspectorTab(rightPanel);
-			if (iterableInspectorTab == null || collectionTabItem == null) {
-				iterableInspectorTab = new IterableInspectorTab(tabFolder);
-				collectionTabItem = new CTabItem(tabFolder, SWT.NONE);
-				collectionTabItem.setText("Iterable");
-				collectionTabItem.setControl(iterableInspectorTab.getControl());
-			}
-		});
+//		display.asyncExec(() -> {
+//			// iterableInspectorTab = new IterableInspectorTab(rightPanel);
+//			if (iterableInspectorTab == null || collectionTabItem == null) {
+//				iterableInspectorTab = new IterableInspectorTab(tabFolder);
+//				collectionTabItem = new CTabItem(tabFolder, SWT.NONE);
+//				collectionTabItem.setText("Iterable");
+//				collectionTabItem.setControl(iterableInspectorTab.getControl());
+//			}
+//		});
 
 		currentlyInspectedObjectIdHolder = this;
 	}

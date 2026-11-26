@@ -394,8 +394,35 @@ public class ClassMembersAtBreakpointTab {
 				return;
 
 			// Открываем инспектор для данного объекта
-			 SimpleDebugerWindowsManager.instance().getUniversalInspectorWindowFor(dto);
+			requestMapOrCollectionPage(dto);
 		});
+	}
+	
+	private void requestMapOrCollectionPage(InnerElementRepresentationDTO dto) {
+
+	    if (dto == null || dto.getValueCategory() == null)
+	        return;
+
+	    switch (dto.getValueCategory()) {
+
+	        case MAP -> uiEventCollector.collectUiEvent(
+	                new UIEvent<>(
+	                        SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
+	                        PairDTO.of(dto, 0)
+	                )
+	        );
+
+	        case COLLECTION -> uiEventCollector.collectUiEvent(
+	                new UIEvent<>(
+	                        SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
+	                        PairDTO.of(dto, 0)
+	                )
+	        );
+
+	        default -> {
+	            // No-op.
+	        }
+	    }
 	}
 
 	private void setupHoverInspectionListener() {

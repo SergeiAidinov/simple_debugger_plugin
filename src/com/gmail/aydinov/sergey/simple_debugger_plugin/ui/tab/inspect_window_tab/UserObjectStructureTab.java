@@ -74,7 +74,7 @@ public class UserObjectStructureTab implements InspectorTab {
 
         setupColumns();
         setupTooltips(table);
-        setupClickListener(table);
+      //  setupClickListener(table);
         setupHoverInspectionListener();
     }
 
@@ -263,55 +263,55 @@ public class UserObjectStructureTab implements InspectorTab {
         tooltipManager = new TooltipManager(table, root);
     }
 
-    private void setupClickListener(Table table) {
-        table.addListener(SWT.MouseDown, event -> {
-        	
-            TableItem item = table.getItem(new Point(event.x, event.y));
-            if (item == null) return;
-
-            int colIndex = getColumnIndexAtPoint(table, event.x);
-            if (colIndex != 1) return;
-
-            Object data = item.getData();
-            if (data instanceof InnerElementRepresentationDTO dto) {
-                System.out.println("=== CLICK ===");
-                System.out.println(
-                    "DTO       = " + System.identityHashCode(dto)
-                    + " name=" + dto.getElementName()
-                    + " value=" + dto.getValue()
-                    + " tag=" + dto.getTag()
-                    + "objectId     = " + dto.getObjectId()
-                );
-            }
-            if (!(data instanceof InnerElementRepresentationDTO dto)) return;
-
-            ValueCategory category = dto.getValueCategory();
-
-            if (category == ValueCategory.USER_OBJECT) {
-            	System.out.println("=== SEND INSPECT EVENT ===");
-            	System.out.println("dto identity = " + System.identityHashCode(dto));
-            	System.out.println("name         = " + dto.getElementName());
-            	System.out.println("value        = " + dto.getValue());
-            	System.out.println("tag          = " + dto.getTag());
-            	System.out.println("objectId     = " + dto.getObjectId());
-                uiEventCollector.collectUiEvent(
-                        new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_INSPECTION_SEANCE, dto));
-            } else if (category == ValueCategory.MAP) {
-            	uiEventCollector.collectUiEvent(
-                        new UIEvent<>(
-                                SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
-                                PairDTO.of(dto, 0)
-                        )
-                );
-            } else if (category == ValueCategory.COLLECTION) {
-            	uiEventCollector.collectUiEvent(
-            	new UIEvent<>(
-            	        SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
-            	        PairDTO.of(dto, 0)));
-            }
-            // Для обычных полей и методов клик по иконке ничего не делает (как в главной вкладке)
-        });
-    }
+//    private void setupClickListener(Table table) {
+//        table.addListener(SWT.MouseDown, event -> {
+//        	
+//            TableItem item = table.getItem(new Point(event.x, event.y));
+//            if (item == null) return;
+//
+//            int colIndex = getColumnIndexAtPoint(table, event.x);
+//            if (colIndex != 1) return;
+//
+//            Object data = item.getData();
+//            if (data instanceof InnerElementRepresentationDTO dto) {
+//                System.out.println("=== CLICK ===");
+//                System.out.println(
+//                    "DTO       = " + System.identityHashCode(dto)
+//                    + " name=" + dto.getElementName()
+//                    + " value=" + dto.getValue()
+//                    + " tag=" + dto.getTag()
+//                    + "objectId     = " + dto.getObjectId()
+//                );
+//            }
+//            if (!(data instanceof InnerElementRepresentationDTO dto)) return;
+//
+//            ValueCategory category = dto.getValueCategory();
+//
+//            if (category == ValueCategory.USER_OBJECT) {
+//            	System.out.println("=== SEND INSPECT EVENT ===");
+//            	System.out.println("dto identity = " + System.identityHashCode(dto));
+//            	System.out.println("name         = " + dto.getElementName());
+//            	System.out.println("value        = " + dto.getValue());
+//            	System.out.println("tag          = " + dto.getTag());
+//            	System.out.println("objectId     = " + dto.getObjectId());
+//                uiEventCollector.collectUiEvent(
+//                        new UIEvent<>(SimpleDebuggerEventType.USER_INSPECTS_USER_OBJECT_IN_INSPECTION_SEANCE, dto));
+//            } else if (category == ValueCategory.MAP) {
+//            	uiEventCollector.collectUiEvent(
+//                        new UIEvent<>(
+//                                SimpleDebuggerEventType.USER_REQUESTED_MAP_PAGE,
+//                                PairDTO.of(dto, 0)
+//                        )
+//                );
+//            } else if (category == ValueCategory.COLLECTION) {
+//            	uiEventCollector.collectUiEvent(
+//            	new UIEvent<>(
+//            	        SimpleDebuggerEventType.USER_REQUESTED_COLLECTION_PAGE,
+//            	        PairDTO.of(dto, 0)));
+//            }
+//            // Для обычных полей и методов клик по иконке ничего не делает (как в главной вкладке)
+//        });
+//    }
 
     private void setupHoverInspectionListener() {
         Table table = viewer.getTable();
